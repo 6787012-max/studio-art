@@ -1,0 +1,24 @@
+[
+ {
+  "name": "head_blink",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": [
+   896,
+   1152
+  ],
+  "seconds": 37.6
+ },
+ {
+  "name": "hand_thumb",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": [
+   896,
+   1152
+  ],
+  "seconds": 81.7
+ }
+]
