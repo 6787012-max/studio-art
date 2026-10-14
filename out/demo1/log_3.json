@@ -1,0 +1,24 @@
+[
+ {
+  "name": "plane_side",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1344,
+   768
+  ],
+  "seconds": 24.7
+ },
+ {
+  "name": "bg_room_empty",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1344,
+   768
+  ],
+  "seconds": 19.2
+ }
+]
