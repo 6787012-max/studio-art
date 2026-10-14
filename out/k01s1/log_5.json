@@ -1,0 +1,29 @@
+[
+ {
+  "name": "n6_bye",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": [
+   1360,
+   768
+  ],
+  "seconds": 36.1
+ },
+ {
+  "name": "p7_storm",
+  "ok": true,
+  "tries": [
+   {
+    "model": "flux-dev",
+    "error": "AppError: No GPU was available after 60s. <a style=\"white-space: nowrap;text-underline-offset: 2px;color: var(--body-text-color)\" href=\"https://huggingface.co/join\">Create a free account</a> to get a higher priority in ZeroGPU queues."
+   }
+  ],
+  "model": "flux-schnell",
+  "size": [
+   1344,
+   768
+  ],
+  "seconds": 4.9
+ }
+]
