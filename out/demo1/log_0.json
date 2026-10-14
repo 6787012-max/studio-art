@@ -1,0 +1,24 @@
+[
+ {
+  "name": "hand_relax2",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": [
+   896,
+   1152
+  ],
+  "seconds": 33.1
+ },
+ {
+  "name": "cloud_1",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1344,
+   768
+  ],
+  "seconds": 24.0
+ }
+]
