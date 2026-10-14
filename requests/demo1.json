@@ -1,0 +1,60 @@
+{
+ "jobs": [
+  {
+   "name": "hand_relax2",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 81,
+   "prompt": "Create a close-up image of ONE single relaxed hand only, no person, no face: the man's right hand hanging down loosely, fingers gently curled and pointing down, thumb side facing the viewer, a white shirt cuff at the top of the image, same skin tone and Pixar style, isolated on a plain pure white background, nothing else, Pixar style 3D render, no text"
+  },
+  {
+   "name": "hand_relax3",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 82,
+   "prompt": "Close-up of just a single hand, no person: a relaxed hand hanging downward with softly curled fingers, seen from the side, white shirt cuff at the top, same skin tone and Pixar style as this man, isolated on a plain pure white background, nothing else, Pixar style 3D render, no text"
+  },
+  {
+   "name": "fg_table",
+   "seed": 83,
+   "w": 1344,
+   "h": 768,
+   "prompt": "Pixar style 3D render, a wooden study table edge in the foreground with a large open holy book and a stack of old leather books, seen at eye level, isolated on a plain pure white background, nothing else, Pixar style 3D render, no text"
+  },
+  {
+   "name": "plane_side",
+   "seed": 84,
+   "w": 1344,
+   "h": 768,
+   "prompt": "Pixar style 3D render, a white passenger airplane flying, seen from the side, landing gear up, cute stylized design, no logos, isolated on a plain pure white background, nothing else, Pixar style 3D render, no text"
+  },
+  {
+   "name": "cloud_1",
+   "seed": 85,
+   "w": 1344,
+   "h": 768,
+   "prompt": "Pixar style 3D render, one big fluffy white cartoon cloud, soft golden sunlight from the left, isolated on a plain pure white background, nothing else, Pixar style 3D render, no text"
+  },
+  {
+   "name": "cloud_2",
+   "seed": 86,
+   "w": 1344,
+   "h": 768,
+   "prompt": "Pixar style 3D render, a long flat fluffy white cartoon cloud, soft warm light, isolated on a plain pure white background, nothing else, Pixar style 3D render, no text"
+  },
+  {
+   "name": "sky_plate",
+   "seed": 87,
+   "w": 1344,
+   "h": 768,
+   "prompt": "Pixar style 3D animated film background, a wide open sky at golden hour above a sea of soft clouds far below, warm sun glow on the left, beautiful gradient, no airplane, no text"
+  },
+  {
+   "name": "bg_room_empty",
+   "seed": 88,
+   "w": 1344,
+   "h": 768,
+   "prompt": "Pixar style 3D animated film background, interior of a cozy traditional beit midrash study hall, back wall with tall wooden bookshelves full of holy books, arched window with warm golden sunlight beams, wooden floor, empty space in the center, no tables in the foreground, no people, no text"
+  }
+ ]
+}
