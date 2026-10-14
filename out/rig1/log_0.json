@@ -1,0 +1,24 @@
+[
+ {
+  "name": "head_neutral",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": [
+   896,
+   1152
+  ],
+  "seconds": 36.4
+ },
+ {
+  "name": "body_armless",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": [
+   896,
+   1152
+  ],
+  "seconds": 82.7
+ }
+]
