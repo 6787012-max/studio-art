@@ -26,6 +26,7 @@ KEY = 0xA7
 xor = lambda b: bytes(x ^ KEY for x in b)
 batch = sys.argv[1]
 order = (sys.argv[2] if len(sys.argv) > 2 else 'flux-dev,flux-schnell').split(',')
+shard, nshards = (int(x) for x in (sys.argv[3] if len(sys.argv) > 3 else '0/1').split('/'))   # each shard = its own runner = its own free quota
 req = json.load(io.open('requests/%s.json' % batch, encoding='utf-8'))
 out = Path('out') / batch
 out.mkdir(parents=True, exist_ok=True)
@@ -80,7 +81,9 @@ def to_png(res):
 
 
 log = []
-for j in req['jobs']:
+for idx, j in enumerate(req['jobs']):
+    if idx % nshards != shard:
+        continue
     models = [j['model']] if j.get('model') else order
     rec = {'name': j['name'], 'ok': False, 'tries': []}
     for m in models:
@@ -100,5 +103,5 @@ for j in req['jobs']:
             traceback.print_exc(limit=1)
     log.append(rec)
 
-(out / 'log.json').write_text(json.dumps(log, ensure_ascii=False, indent=1), encoding='utf-8')
+(out / ('log_%d.json' % shard)).write_text(json.dumps(log, ensure_ascii=False, indent=1), encoding='utf-8')
 print('done: %d/%d' % (sum(r['ok'] for r in log), len(log)))

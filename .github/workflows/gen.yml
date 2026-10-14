@@ -4,12 +4,16 @@ on:
     inputs:
       batch: { description: 'requests/<batch>.json', required: true }
       order: { description: 'model fallback order', required: false, default: 'flux-dev,flux-schnell' }
+      shards: { description: 'JSON list of shard indexes, e.g. [0,1,2]', required: false, default: '[0]' }
 permissions:
   contents: write
-concurrency: { group: gen, cancel-in-progress: false }
 jobs:
   gen:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(inputs.shards) }}
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
@@ -17,7 +21,7 @@ jobs:
         with: { python-version: '3.11' }
       - run: pip install -q gradio_client pillow
       - run: curl -s https://api.ipify.org; echo
-      - run: python gen.py "${{ inputs.batch }}" "${{ inputs.order }}"
+      - run: python gen.py "${{ inputs.batch }}" "${{ inputs.order }}" "${{ matrix.shard }}/${{ strategy.job-total }}"
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
       - name: push results
@@ -26,4 +30,4 @@ jobs:
           git config user.email studio-bot@users.noreply.github.com
           git add out
           git commit -m "results ${{ inputs.batch }}" || echo "nothing to commit"
-          for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 5; done
+          for i in 1 2 3 4 5 6 7 8; do git pull --rebase -q && git push -q && break; sleep $((RANDOM % 7 + 3)); done
