@@ -1,0 +1,39 @@
+{
+ "jobs": [
+  {
+   "name": "tpose_51",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 51,
+   "prompt": "Show this exact same man (same face, same beard, same round glasses, same black hat, same long black coat, same style) standing in a T-pose: both arms stretched straight out horizontally to the sides at shoulder height, palms facing down, fingers together, legs straight, facing the viewer, full body from hat to shoes, isolated on a plain pure white background, nothing else, Pixar style 3D render"
+  },
+  {
+   "name": "tpose_52",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 52,
+   "prompt": "Show this exact same man (same face, same beard, same round glasses, same black hat, same long black coat, same style) standing in a T-pose: both arms stretched straight out horizontally to the sides at shoulder height, palms facing down, fingers together, legs straight, facing the viewer, full body from hat to shoes, isolated on a plain pure white background, nothing else, Pixar style 3D render"
+  },
+  {
+   "name": "tpose_53",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 53,
+   "prompt": "Show this exact same man (same face, same beard, same round glasses, same black hat, same long black coat, same style) standing in a T-pose: both arms stretched straight out horizontally to the sides at shoulder height, palms facing down, fingers together, legs straight, facing the viewer, full body from hat to shoes, isolated on a plain pure white background, nothing else, Pixar style 3D render"
+  },
+  {
+   "name": "head_blink_61",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "headn",
+   "seed": 61,
+   "prompt": "Close both of his eyes completely, eyelids shut as if sleeping peacefully, keep everything else exactly the same (same head, hat, glasses, beard, smile, white background)"
+  },
+  {
+   "name": "head_blink_62",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "headn",
+   "seed": 62,
+   "prompt": "Close both of his eyes completely, eyelids shut as if sleeping peacefully, keep everything else exactly the same (same head, hat, glasses, beard, smile, white background)"
+  }
+ ]
+}
