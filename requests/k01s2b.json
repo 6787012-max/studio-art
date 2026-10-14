@@ -1,0 +1,16 @@
+{
+ "jobs": [
+  {
+   "name": "v_p3_cockpit_calm",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "r_p3_cockpit_calm",
+   "prompt": "the airplane flies calmly, soft clouds drift past the windshield, the pilots are relaxed, gentle motion, Pixar 3D animation"
+  },
+  {
+   "name": "v_p7_storm",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "r_p7_storm",
+   "prompt": "the airplane dives through the storm, lightning flashes, dark clouds rush past, dramatic camera shake, Pixar 3D animation"
+  }
+ ]
+}
