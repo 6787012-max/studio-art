@@ -1,0 +1,24 @@
+[
+ {
+  "name": "y3_pray",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": [
+   1360,
+   768
+  ],
+  "seconds": 32.7
+ },
+ {
+  "name": "p10_waiting",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1344,
+   768
+  ],
+  "seconds": 41.4
+ }
+]
