@@ -1,0 +1,67 @@
+{
+ "jobs": [
+  {
+   "name": "pixar_s58",
+   "seed": 58,
+   "w": 896,
+   "h": 1152,
+   "prompt": "3D animated feature film character in the style of Pixar and Disney, full body, a cheerful young Haredi Jewish yeshiva man, black wide-brim fedora hat, long black frock coat (kapote) buttoned to the chest, plain white shirt buttoned to the collar with no tie, neat dark brown beard, long spiral curly sidelocks hanging down past his jaw beside his ears, round wire glasses, big kind expressive eyes, warm smile, standing facing the viewer, arms relaxed at his sides, plain light warm grey background, soft studio lighting, highly detailed, no text"
+  },
+  {
+   "name": "pixar_s64",
+   "seed": 64,
+   "w": 896,
+   "h": 1152,
+   "prompt": "3D animated feature film character in the style of Pixar and Disney, full body, a cheerful young Haredi Jewish yeshiva man, black wide-brim fedora hat, long black frock coat (kapote) buttoned to the chest, plain white shirt buttoned to the collar with no tie, neat dark brown beard, long spiral curly sidelocks hanging down past his jaw beside his ears, round wire glasses, big kind expressive eyes, warm smile, standing facing the viewer, arms relaxed at his sides, plain light warm grey background, soft studio lighting, highly detailed, no text"
+  },
+  {
+   "name": "pixar_s75",
+   "seed": 75,
+   "w": 896,
+   "h": 1152,
+   "prompt": "3D animated feature film character in the style of Pixar and Disney, full body, a cheerful young Haredi Jewish yeshiva man, black wide-brim fedora hat, long black frock coat (kapote) buttoned to the chest, plain white shirt buttoned to the collar with no tie, neat dark brown beard, long spiral curly sidelocks hanging down past his jaw beside his ears, round wire glasses, big kind expressive eyes, warm smile, standing facing the viewer, arms relaxed at his sides, plain light warm grey background, soft studio lighting, highly detailed, no text"
+  },
+  {
+   "name": "cartoon_s21",
+   "seed": 21,
+   "w": 896,
+   "h": 1152,
+   "prompt": "2D cartoon illustration, clean bold dark outlines, flat colors with soft cel shading, modern children's animated series style, full body, a cheerful young Haredi Jewish yeshiva man, black wide-brim fedora hat, long black frock coat (kapote) buttoned to the chest, plain white shirt buttoned to the collar with no tie, neat dark brown beard, long spiral curly sidelocks hanging down past his jaw beside his ears, round glasses, big expressive eyes, warm smile, standing facing the viewer, arms relaxed at his sides, plain white background, no text"
+  },
+  {
+   "name": "cartoon_s33",
+   "seed": 33,
+   "w": 896,
+   "h": 1152,
+   "prompt": "2D cartoon illustration, clean bold dark outlines, flat colors with soft cel shading, modern children's animated series style, full body, a cheerful young Haredi Jewish yeshiva man, black wide-brim fedora hat, long black frock coat (kapote) buttoned to the chest, plain white shirt buttoned to the collar with no tie, neat dark brown beard, long spiral curly sidelocks hanging down past his jaw beside his ears, round glasses, big expressive eyes, warm smile, standing facing the viewer, arms relaxed at his sides, plain white background, no text"
+  },
+  {
+   "name": "cartoon_s47",
+   "seed": 47,
+   "w": 896,
+   "h": 1152,
+   "prompt": "2D cartoon illustration, clean bold dark outlines, flat colors with soft cel shading, modern children's animated series style, full body, a cheerful young Haredi Jewish yeshiva man, black wide-brim fedora hat, long black frock coat (kapote) buttoned to the chest, plain white shirt buttoned to the collar with no tie, neat dark brown beard, long spiral curly sidelocks hanging down past his jaw beside his ears, round glasses, big expressive eyes, warm smile, standing facing the viewer, arms relaxed at his sides, plain white background, no text"
+  },
+  {
+   "name": "cartoon_s58",
+   "seed": 58,
+   "w": 896,
+   "h": 1152,
+   "prompt": "2D cartoon illustration, clean bold dark outlines, flat colors with soft cel shading, modern children's animated series style, full body, a cheerful young Haredi Jewish yeshiva man, black wide-brim fedora hat, long black frock coat (kapote) buttoned to the chest, plain white shirt buttoned to the collar with no tie, neat dark brown beard, long spiral curly sidelocks hanging down past his jaw beside his ears, round glasses, big expressive eyes, warm smile, standing facing the viewer, arms relaxed at his sides, plain white background, no text"
+  },
+  {
+   "name": "cartoon_s64",
+   "seed": 64,
+   "w": 896,
+   "h": 1152,
+   "prompt": "2D cartoon illustration, clean bold dark outlines, flat colors with soft cel shading, modern children's animated series style, full body, a cheerful young Haredi Jewish yeshiva man, black wide-brim fedora hat, long black frock coat (kapote) buttoned to the chest, plain white shirt buttoned to the collar with no tie, neat dark brown beard, long spiral curly sidelocks hanging down past his jaw beside his ears, round glasses, big expressive eyes, warm smile, standing facing the viewer, arms relaxed at his sides, plain white background, no text"
+  },
+  {
+   "name": "cartoon_s75",
+   "seed": 75,
+   "w": 896,
+   "h": 1152,
+   "prompt": "2D cartoon illustration, clean bold dark outlines, flat colors with soft cel shading, modern children's animated series style, full body, a cheerful young Haredi Jewish yeshiva man, black wide-brim fedora hat, long black frock coat (kapote) buttoned to the chest, plain white shirt buttoned to the collar with no tie, neat dark brown beard, long spiral curly sidelocks hanging down past his jaw beside his ears, round glasses, big expressive eyes, warm smile, standing facing the viewer, arms relaxed at his sides, plain white background, no text"
+  }
+ ]
+}
