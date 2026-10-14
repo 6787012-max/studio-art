@@ -1,0 +1,24 @@
+[
+ {
+  "name": "n3_book",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": [
+   1360,
+   768
+  ],
+  "seconds": 60.5
+ },
+ {
+  "name": "p4_grab",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1344,
+   768
+  ],
+  "seconds": 28.2
+ }
+]
