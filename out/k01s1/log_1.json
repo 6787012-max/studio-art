@@ -1,0 +1,24 @@
+[
+ {
+  "name": "n2_question",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": [
+   1360,
+   768
+  ],
+  "seconds": 62.7
+ },
+ {
+  "name": "p3_cockpit_calm",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1344,
+   768
+  ],
+  "seconds": 24.4
+ }
+]
