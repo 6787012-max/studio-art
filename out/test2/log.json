@@ -1,0 +1,161 @@
+[
+ {
+  "name": "pixar_s21",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   896,
+   1152
+  ],
+  "seconds": 24.5
+ },
+ {
+  "name": "pixar_s33",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   896,
+   1152
+  ],
+  "seconds": 19.5
+ },
+ {
+  "name": "pixar_s47",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   896,
+   1152
+  ],
+  "seconds": 25.4
+ },
+ {
+  "name": "pixar_s58",
+  "ok": false,
+  "tries": [
+   {
+    "model": "flux-dev",
+    "error": "AppError: You have exceeded your ZeroGPU runs limit. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens"
+   },
+   {
+    "model": "flux-schnell",
+    "error": "AppError: You have exceeded your ZeroGPU quota (90s requested vs. 0s left). Try again in 0:00:00. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens"
+   }
+  ]
+ },
+ {
+  "name": "pixar_s64",
+  "ok": false,
+  "tries": [
+   {
+    "model": "flux-dev",
+    "error": "AppError: You have exceeded your ZeroGPU runs limit. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens"
+   },
+   {
+    "model": "flux-schnell",
+    "error": "AppError: You have exceeded your ZeroGPU quota (90s requested vs. 0s left). Try again in 0:00:00. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens"
+   }
+  ]
+ },
+ {
+  "name": "pixar_s75",
+  "ok": false,
+  "tries": [
+   {
+    "model": "flux-dev",
+    "error": "AppError: You have exceeded your ZeroGPU runs limit. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens"
+   },
+   {
+    "model": "flux-schnell",
+    "error": "AppError: You have exceeded your ZeroGPU quota (90s requested vs. 0s left). Try again in 0:00:00. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens"
+   }
+  ]
+ },
+ {
+  "name": "cartoon_s21",
+  "ok": false,
+  "tries": [
+   {
+    "model": "flux-dev",
+    "error": "AppError: You have exceeded your ZeroGPU runs limit. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens"
+   },
+   {
+    "model": "flux-schnell",
+    "error": "AppError: You have exceeded your ZeroGPU quota (90s requested vs. 0s left). Try again in 0:00:00. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens"
+   }
+  ]
+ },
+ {
+  "name": "cartoon_s33",
+  "ok": false,
+  "tries": [
+   {
+    "model": "flux-dev",
+    "error": "AppError: You have exceeded your ZeroGPU runs limit. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens"
+   },
+   {
+    "model": "flux-schnell",
+    "error": "AppError: You have exceeded your ZeroGPU quota (90s requested vs. 0s left). Try again in 0:00:00. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens"
+   }
+  ]
+ },
+ {
+  "name": "cartoon_s47",
+  "ok": false,
+  "tries": [
+   {
+    "model": "flux-dev",
+    "error": "AppError: You have exceeded your ZeroGPU runs limit. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens"
+   },
+   {
+    "model": "flux-schnell",
+    "error": "AppError: You have exceeded your ZeroGPU quota (90s requested vs. 0s left). Try again in 0:00:00. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens"
+   }
+  ]
+ },
+ {
+  "name": "cartoon_s58",
+  "ok": false,
+  "tries": [
+   {
+    "model": "flux-dev",
+    "error": "AppError: You have exceeded your ZeroGPU runs limit. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens"
+   },
+   {
+    "model": "flux-schnell",
+    "error": "AppError: You have exceeded your ZeroGPU quota (90s requested vs. 0s left). Try again in 0:00:00. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens"
+   }
+  ]
+ },
+ {
+  "name": "cartoon_s64",
+  "ok": false,
+  "tries": [
+   {
+    "model": "flux-dev",
+    "error": "AppError: You have exceeded your ZeroGPU runs limit. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens"
+   },
+   {
+    "model": "flux-schnell",
+    "error": "AppError: You have exceeded your ZeroGPU quota (90s requested vs. 0s left). Try again in 0:00:00. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens"
+   }
+  ]
+ },
+ {
+  "name": "cartoon_s75",
+  "ok": false,
+  "tries": [
+   {
+    "model": "flux-dev",
+    "error": "AppError: You have exceeded your ZeroGPU runs limit. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens"
+   },
+   {
+    "model": "flux-schnell",
+    "error": "AppError: You have exceeded your ZeroGPU quota (90s requested vs. 0s left). Try again in 0:00:00. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens"
+   }
+  ]
+ }
+]
