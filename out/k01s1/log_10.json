@@ -1,0 +1,24 @@
+[
+ {
+  "name": "p1_dive",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1344,
+   768
+  ],
+  "seconds": 24.8
+ },
+ {
+  "name": "p12_title",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1344,
+   768
+  ],
+  "seconds": 46.8
+ }
+]
