@@ -1,0 +1,241 @@
+{
+ "audio": "audio.flac",
+ "duration": 228.99,
+ "assets": "a",
+ "clips": "c",
+ "words": "words.json",
+ "word_shift": [
+  [
+   0,
+   -6.58
+  ],
+  [
+   20.44,
+   -9.66
+  ]
+ ],
+ "drop_ranges": [
+  [
+   17.36,
+   20.44
+  ]
+ ],
+ "drop_tokens": [
+  "ה",
+  ">>"
+ ],
+ "titles": [
+  {
+   "t0": 0.4,
+   "t1": 5.6,
+   "text": "נס המטוס",
+   "style": "Title"
+  },
+  {
+   "t0": 0.9,
+   "t1": 5.6,
+   "text": "משל לעבודת ה' · קצר ולענין · הרב אבשלום שניידר",
+   "style": "Kicker"
+  },
+  {
+   "t0": 225.6,
+   "t1": 228.9,
+   "text": "קצר ולענין",
+   "style": "End"
+  }
+ ],
+ "scenes": [
+  {
+   "t": 0.0,
+   "img": "p12_title",
+   "move": "in_slow",
+   "cx": 0.45,
+   "cy": 0.6
+  },
+  {
+   "t": 5.9,
+   "img": "p1_dive",
+   "move": "in",
+   "cx": 0.5,
+   "cy": 0.55
+  },
+  {
+   "t": 8.7,
+   "img": "p2_interchange",
+   "move": "down",
+   "cx": 0.5,
+   "cy": 0.55
+  },
+  {
+   "t": 15.5,
+   "img": "p7_storm",
+   "clip": "v_p7_storm",
+   "move": "in",
+   "cx": 0.55,
+   "cy": 0.5
+  },
+  {
+   "t": 18.2,
+   "img": "n2_question",
+   "clip": "v_n2_question",
+   "move": "in",
+   "cx": 0.48,
+   "cy": 0.4
+  },
+  {
+   "t": 25.8,
+   "img": "p3_cockpit_calm",
+   "clip": "v_p3_cockpit_calm",
+   "move": "out",
+   "cx": 0.5,
+   "cy": 0.5
+  },
+  {
+   "t": 33.5,
+   "img": "p4_grab",
+   "clip": "v_p4_grab",
+   "move": "in",
+   "cx": 0.35,
+   "cy": 0.5
+  },
+  {
+   "t": 43.6,
+   "img": "p5_hero",
+   "move": "in",
+   "cx": 0.5,
+   "cy": 0.4
+  },
+  {
+   "t": 54.1,
+   "img": "p6_captains",
+   "move": "in",
+   "cx": 0.5,
+   "cy": 0.45
+  },
+  {
+   "t": 59.2,
+   "img": "n3_book",
+   "move": "in",
+   "cx": 0.5,
+   "cy": 0.45
+  },
+  {
+   "t": 67.6,
+   "img": "y4_sneaky",
+   "move": "right",
+   "cx": 0.55,
+   "cy": 0.5
+  },
+  {
+   "t": 75.2,
+   "img": "p7_storm",
+   "move": "out",
+   "cx": 0.55,
+   "cy": 0.5
+  },
+  {
+   "t": 83.8,
+   "img": "p8_grip",
+   "move": "in",
+   "cx": 0.35,
+   "cy": 0.55
+  },
+  {
+   "t": 89.1,
+   "img": "y1_cockpit_man",
+   "move": "in",
+   "cx": 0.6,
+   "cy": 0.45
+  },
+  {
+   "t": 102.8,
+   "img": "n4_heart",
+   "move": "in",
+   "cx": 0.62,
+   "cy": 0.4
+  },
+  {
+   "t": 108.0,
+   "img": "p9_landing",
+   "clip": "v_p9_landing",
+   "move": "out",
+   "cx": 0.5,
+   "cy": 0.55
+  },
+  {
+   "t": 120.5,
+   "img": "y4_sneaky",
+   "move": "in",
+   "cx": 0.72,
+   "cy": 0.5
+  },
+  {
+   "t": 131.8,
+   "img": "p4_grab",
+   "move": "left",
+   "cx": 0.4,
+   "cy": 0.5
+  },
+  {
+   "t": 139.8,
+   "img": "n5_point",
+   "clip": "v_n5_point",
+   "move": "in",
+   "cx": 0.45,
+   "cy": 0.4
+  },
+  {
+   "t": 153.6,
+   "img": "y2_mountain",
+   "clip": "v_y2_mountain",
+   "move": "in",
+   "cx": 0.62,
+   "cy": 0.45
+  },
+  {
+   "t": 166.4,
+   "img": "y1_cockpit_man",
+   "move": "out",
+   "cx": 0.6,
+   "cy": 0.45
+  },
+  {
+   "t": 178.1,
+   "img": "p10_waiting",
+   "move": "in",
+   "cx": 0.5,
+   "cy": 0.4
+  },
+  {
+   "t": 192.5,
+   "img": "p6_captains",
+   "move": "right",
+   "cx": 0.5,
+   "cy": 0.45
+  },
+  {
+   "t": 198.5,
+   "img": "y3_pray",
+   "move": "in",
+   "cx": 0.5,
+   "cy": 0.45
+  },
+  {
+   "t": 208.7,
+   "img": "p11_soar",
+   "clip": "v_p11_soar",
+   "move": "right",
+   "cx": 0.5,
+   "cy": 0.5
+  },
+  {
+   "t": 217.3,
+   "img": "n6_bye",
+   "clip": "v_n6_bye",
+   "move": "out",
+   "cx": 0.62,
+   "cy": 0.45
+  }
+ ],
+ "fontsdir": "fonts"
+}
