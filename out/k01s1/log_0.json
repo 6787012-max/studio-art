@@ -1,0 +1,24 @@
+[
+ {
+  "name": "n1_intro",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": [
+   1360,
+   768
+  ],
+  "seconds": 57.8
+ },
+ {
+  "name": "p2_interchange",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1344,
+   768
+  ],
+  "seconds": 57.9
+ }
+]
