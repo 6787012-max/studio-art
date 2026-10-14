@@ -1,0 +1,12 @@
+[
+ {
+  "name": "body_fix_0",
+  "ok": false,
+  "tries": [
+   {
+    "model": "space",
+    "error": "ValueError: The current space is in the invalid state: RUNTIME_ERROR. Please contact the owner to fix this."
+   }
+  ]
+ }
+]
