@@ -1,0 +1,24 @@
+[
+ {
+  "name": "tpose_51",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": [
+   896,
+   1152
+  ],
+  "seconds": 29.2
+ },
+ {
+  "name": "head_blink_61",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": [
+   896,
+   1152
+  ],
+  "seconds": 28.2
+ }
+]
