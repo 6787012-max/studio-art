@@ -1,0 +1,10 @@
+{
+  "jobs": [
+    {
+      "name": "wave_wan",
+      "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+      "ref": "pixar5",
+      "prompt": "The cheerful man smiles warmly and waves hello with his right hand, then lowers it, small natural head and body movement, his sidelocks sway slightly, static camera, high quality 3D Pixar animation"
+    }
+  ]
+}
