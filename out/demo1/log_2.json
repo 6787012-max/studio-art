@@ -1,0 +1,24 @@
+[
+ {
+  "name": "fg_table",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1344,
+   768
+  ],
+  "seconds": 25.2
+ },
+ {
+  "name": "sky_plate",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1344,
+   768
+  ],
+  "seconds": 19.1
+ }
+]
