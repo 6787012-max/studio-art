@@ -1,0 +1,88 @@
+{
+ "jobs": [
+  {
+   "name": "head_neutral",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 40,
+   "prompt": "Show only the head of this exact same man (same face, same beard, same round glasses, same black hat, same style), front view, calm friendly expression, mouth closed with a gentle smile, the head fills the image, no neck, no body, isolated on a plain pure white background, nothing else in the image, Pixar style 3D render"
+  },
+  {
+   "name": "head_ah",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 41,
+   "prompt": "Show only the head of this exact same man (same face, same beard, same round glasses, same black hat, same style), front view, mouth wide open as if saying 'aah', the head fills the image, no body, isolated on a plain pure white background, nothing else in the image, Pixar style 3D render"
+  },
+  {
+   "name": "head_ee",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 42,
+   "prompt": "Show only the head of this exact same man (same face, same beard, same round glasses, same black hat, same style), front view, big open smile showing his teeth as if saying 'eee', the head fills the image, no body, isolated on a plain pure white background, nothing else in the image, Pixar style 3D render"
+  },
+  {
+   "name": "head_oh",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 43,
+   "prompt": "Show only the head of this exact same man (same face, same beard, same round glasses, same black hat, same style), front view, lips rounded in a small 'oh' shape, the head fills the image, no body, isolated on a plain pure white background, nothing else in the image, Pixar style 3D render"
+  },
+  {
+   "name": "head_mm",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 44,
+   "prompt": "Show only the head of this exact same man (same face, same beard, same round glasses, same black hat, same style), front view, lips pressed together as if saying 'mmm', the head fills the image, no body, isolated on a plain pure white background, nothing else in the image, Pixar style 3D render"
+  },
+  {
+   "name": "head_blink",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 45,
+   "prompt": "Show only the head of this exact same man (same face, same beard, same round glasses, same black hat, same style), front view, both eyes fully closed, relaxed gentle smile, the head fills the image, no body, isolated on a plain pure white background, nothing else in the image, Pixar style 3D render"
+  },
+  {
+   "name": "body_armless",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 46,
+   "prompt": "Show this exact same man (same face, same beard, same round glasses, same black hat, same style) standing straight facing the viewer but with NO arms at all (armless, smooth coat sides where the arms would be), full body from hat to shoes, isolated on a plain pure white background, nothing else in the image, Pixar style 3D render"
+  },
+  {
+   "name": "arm_right",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 47,
+   "prompt": "Show only his right arm: the black coat sleeve with the white shirt cuff and the relaxed hand, hanging straight down vertically, from the shoulder to the fingertips, isolated on a plain pure white background, nothing else in the image, Pixar style 3D render"
+  },
+  {
+   "name": "arm_left",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 48,
+   "prompt": "Show only his left arm: the black coat sleeve with the white shirt cuff and the relaxed hand, hanging straight down vertically, from the shoulder to the fingertips, isolated on a plain pure white background, nothing else in the image, Pixar style 3D render"
+  },
+  {
+   "name": "hand_wave",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 49,
+   "prompt": "Show only his right hand, open with the palm facing the viewer and fingers spread up as in waving hello, with a short white shirt cuff, isolated on a plain pure white background, nothing else in the image, Pixar style 3D render"
+  },
+  {
+   "name": "hand_point",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 50,
+   "prompt": "Show only his right hand pointing up and to the side with the index finger, with a short white shirt cuff, isolated on a plain pure white background, nothing else in the image, Pixar style 3D render"
+  },
+  {
+   "name": "hand_thumb",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 51,
+   "prompt": "Show only his right hand making a thumbs up gesture, with a short white shirt cuff, isolated on a plain pure white background, nothing else in the image, Pixar style 3D render"
+  }
+ ]
+}
