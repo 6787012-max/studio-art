@@ -1,0 +1,29 @@
+name: gen
+on:
+  workflow_dispatch:
+    inputs:
+      batch: { description: 'requests/<batch>.json', required: true }
+      order: { description: 'model fallback order', required: false, default: 'flux-dev,flux-schnell' }
+permissions:
+  contents: write
+concurrency: { group: gen, cancel-in-progress: false }
+jobs:
+  gen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - run: pip install -q gradio_client pillow
+      - run: curl -s https://api.ipify.org; echo
+      - run: python gen.py "${{ inputs.batch }}" "${{ inputs.order }}"
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      - name: push results
+        run: |
+          git config user.name studio-bot
+          git config user.email studio-bot@users.noreply.github.com
+          git add out
+          git commit -m "results ${{ inputs.batch }}" || echo "nothing to commit"
+          for i in 1 2 3; do git pull --rebase -q && git push -q && break; sleep 5; done

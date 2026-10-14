@@ -1,0 +1,19 @@
+{
+  "jobs": [
+    {
+      "name": "char_pixar",
+      "seed": 11, "w": 896, "h": 1152,
+      "prompt": "3D animated feature film character in the style of Pixar and Disney, full body, a cheerful young Haredi Jewish yeshiva man, black wide-brim fedora hat, long black buttoned frock coat, white shirt, neat dark brown beard, long curly sidelocks hanging beside his ears, round wire glasses, big kind expressive eyes, warm smile, standing straight facing the viewer, arms relaxed at his sides, plain light warm grey background, soft studio lighting, highly detailed, no text"
+    },
+    {
+      "name": "char_cartoon",
+      "seed": 11, "w": 896, "h": 1152,
+      "prompt": "2D cartoon illustration, clean bold dark outlines, flat colors with soft cel shading, modern children's animated series style, full body, a cheerful young Haredi Jewish yeshiva man, black wide-brim fedora hat, long black buttoned frock coat, white shirt, neat dark brown beard, long curly sidelocks beside his ears, round glasses, big expressive eyes, warm smile, standing facing the viewer, arms relaxed, plain white background, no text"
+    },
+    {
+      "name": "bg_beit_midrash",
+      "seed": 5, "w": 1344, "h": 768,
+      "prompt": "Pixar style 3D animated film background, interior of a cozy traditional Jewish study hall (beit midrash), tall wooden bookshelves full of holy books with gold lettering on the spines, long wooden tables with large open books, wooden lectern, arched window with warm golden sunlight beams and floating dust, warm cinematic lighting, depth, no people, wide establishing shot, no text"
+    }
+  ]
+}
