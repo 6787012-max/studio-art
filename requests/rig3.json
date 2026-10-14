@@ -1,0 +1,25 @@
+{
+ "jobs": [
+  {
+   "name": "hand_relax",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 70,
+   "prompt": "Show only his right hand hanging down relaxed at his side, seen from the side, fingers gently curled, the wrist at the top and fingers pointing down, with a short white shirt cuff and a little of the black coat sleeve, same skin tone and style as this man, isolated on a plain pure white background, nothing else, Pixar style 3D render"
+  },
+  {
+   "name": "hand_talk",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 71,
+   "prompt": "Show only his right hand open with the palm facing up, fingers together and slightly curved, as in a calm explaining gesture, the wrist on the left and fingers pointing to the right, with a short white shirt cuff and a little of the black coat sleeve, same skin tone and style as this man, isolated on a plain pure white background, nothing else, Pixar style 3D render"
+  },
+  {
+   "name": "hand_point2",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 72,
+   "prompt": "Show only his right hand pointing straight forward with the index finger fully extended and the other fingers curled, seen from the side, the wrist on the left and the index finger pointing to the right, with a short white shirt cuff and a little of the black coat sleeve, same skin tone and style as this man, isolated on a plain pure white background, nothing else, Pixar style 3D render"
+  }
+ ]
+}
