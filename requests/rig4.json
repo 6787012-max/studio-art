@@ -1,0 +1,25 @@
+{
+ "jobs": [
+  {
+   "name": "body_fix_91",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "armless",
+   "seed": 91,
+   "prompt": "Repair this image: the man has no arms. Complete his shoulders and the sides of his long black coat smoothly and naturally where the arms were cut off, with rounded shoulders and clean coat sides, as if the arms were never there. Keep everything else exactly identical: same face, hat, beard, glasses, coat, legs, shoes, same pose, same white background, Pixar style 3D render"
+  },
+  {
+   "name": "body_fix_92",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "armless",
+   "seed": 92,
+   "prompt": "Repair this image: the man has no arms. Complete his shoulders and the sides of his long black coat smoothly and naturally where the arms were cut off, with rounded shoulders and clean coat sides, as if the arms were never there. Keep everything else exactly identical: same face, hat, beard, glasses, coat, legs, shoes, same pose, same white background, Pixar style 3D render"
+  },
+  {
+   "name": "body_fix_93",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "armless",
+   "seed": 93,
+   "prompt": "Repair this image: the man has no arms. Complete his shoulders and the sides of his long black coat smoothly and naturally where the arms were cut off, with rounded shoulders and clean coat sides, as if the arms were never there. Keep everything else exactly identical: same face, hat, beard, glasses, coat, legs, shoes, same pose, same white background, Pixar style 3D render"
+  }
+ ]
+}
