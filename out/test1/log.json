@@ -1,44 +1,35 @@
 [
  {
   "name": "char_pixar",
-  "ok": false,
-  "tries": [
-   {
-    "model": "flux-dev",
-    "error": "TypeError: Client.__init__() got an unexpected keyword argument 'hf_token'"
-   },
-   {
-    "model": "flux-schnell",
-    "error": "TypeError: Client.__init__() got an unexpected keyword argument 'hf_token'"
-   }
-  ]
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   896,
+   1152
+  ],
+  "seconds": 29.9
  },
  {
   "name": "char_cartoon",
-  "ok": false,
-  "tries": [
-   {
-    "model": "flux-dev",
-    "error": "TypeError: Client.__init__() got an unexpected keyword argument 'hf_token'"
-   },
-   {
-    "model": "flux-schnell",
-    "error": "TypeError: Client.__init__() got an unexpected keyword argument 'hf_token'"
-   }
-  ]
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   896,
+   1152
+  ],
+  "seconds": 30.9
  },
  {
   "name": "bg_beit_midrash",
-  "ok": false,
-  "tries": [
-   {
-    "model": "flux-dev",
-    "error": "TypeError: Client.__init__() got an unexpected keyword argument 'hf_token'"
-   },
-   {
-    "model": "flux-schnell",
-    "error": "TypeError: Client.__init__() got an unexpected keyword argument 'hf_token'"
-   }
-  ]
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1344,
+   768
+  ],
+  "seconds": 44.2
  }
 ]
