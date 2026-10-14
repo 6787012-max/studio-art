@@ -82,17 +82,26 @@ def build_ass(e, path):
         return t + d
     drops = e.get('drop_ranges', []); dtok = set(e.get('drop_tokens', []))
     ws = [(A(w['t']), w['w']) for w in words if w['w'] not in dtok and not any(a <= w['t'] < b for a, b in drops)]
+    # שורות מלאות: עד 8 מילים, שבירה בסוף משפט, בפסיק/מקף אחרי 4 מילים, או בהפסקה ארוכה באמת (1.6 ש')
     lines, cur = [], []
     for i, (t, w) in enumerate(ws):
         cur.append((t, w))
         nxt = ws[i + 1][0] if i + 1 < len(ws) else None
-        if len(cur) >= 7 or w.endswith(('.', '?', ':', '!')) or (nxt is not None and nxt - t > .9) or (len(cur) >= 4 and w.endswith((',', '-'))):
+        if len(cur) >= 8 or w.endswith(('.', '?', ':', '!')) or (nxt is not None and nxt - t > 1.6) or (len(cur) >= 4 and w.endswith((',', '-'))):
             lines.append(cur); cur = []
     if cur: lines.append(cur)
+    # שורה של 1-2 מילים מתמזגת עם השכנה אם זה לא יוצר שורה ארוכה מדי — בלי הבהוב של מילה בודדת
+    merged = []
+    for ln in lines:
+        if merged and (len(ln) <= 2 or len(merged[-1]) <= 2) and len(merged[-1]) + len(ln) <= 9 and ln[0][0] - merged[-1][-1][0] < 2.2:
+            merged[-1] = merged[-1] + ln
+        else:
+            merged.append(ln)
+    lines = merged
     ev = []
     for i, ln in enumerate(lines):
         t0 = ln[0][0] - .05
-        t1 = min(lines[i + 1][0][0] - .05 if i + 1 < len(lines) else ln[-1][0] + 1.2, ln[-1][0] + 1.4)
+        t1 = min(lines[i + 1][0][0] - .05 if i + 1 < len(lines) else ln[-1][0] + 1.2, ln[-1][0] + 1.8)
         ev.append('Dialogue: 0,%s,%s,Sub,,0,0,0,,%s' % (ass_time(t0), ass_time(t1), ' '.join(w for _, w in ln)))
     for tt in e.get('titles', []):
         ev.append('Dialogue: 1,%s,%s,%s,,0,0,0,,{\\fad(400,400)}%s' % (ass_time(tt['t0']), ass_time(tt['t1']), tt.get('style', 'Title'), tt['text']))
@@ -104,10 +113,10 @@ WrapStyle: 0
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Sub,Assistant,66,&H00FFFFFF,&H00FFFFFF,&H00101010,&H96000000,1,0,0,0,100,100,0,0,1,4.5,2,2,120,120,62,177
-Style: Title,Secular One,128,&H00FFFFFF,&H00FFFFFF,&H00141E3A,&H96000000,0,0,0,0,100,100,0,0,1,6,3,8,80,80,120,177
-Style: Kicker,Assistant,54,&H0050C8FF,&H00FFFFFF,&H00101010,&H96000000,1,0,0,0,100,100,1,0,1,4,2,8,80,80,280,177
-Style: End,Secular One,110,&H00FFFFFF,&H00FFFFFF,&H00141E3A,&H96000000,0,0,0,0,100,100,0,0,1,6,3,5,80,80,0,177
+Style: Sub,Assistant,74,&H00FFFFFF,&H00FFFFFF,&H00101010,&H96000000,1,0,0,0,100,100,0,0,1,5,2,2,140,140,64,-1
+Style: Title,Secular One,128,&H00FFFFFF,&H00FFFFFF,&H00141E3A,&H96000000,0,0,0,0,100,100,0,0,1,6,3,8,80,80,120,-1
+Style: Kicker,Assistant,54,&H0050C8FF,&H00FFFFFF,&H00101010,&H96000000,1,0,0,0,100,100,0,0,1,4,2,8,80,80,280,-1
+Style: End,Secular One,110,&H00FFFFFF,&H00FFFFFF,&H00141E3A,&H96000000,0,0,0,0,100,100,0,0,1,6,3,5,80,80,0,-1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
