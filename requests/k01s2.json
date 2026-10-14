@@ -1,0 +1,64 @@
+{
+ "jobs": [
+  {
+   "name": "v_n1_intro",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "r_n1_intro",
+   "prompt": "the man talks warmly to the viewer, gesturing with his hands, natural head and eyebrow movement, static camera, Pixar 3D animation"
+  },
+  {
+   "name": "v_n2_question",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "r_n2_question",
+   "prompt": "the man raises his finger and asks a question, thoughtful slight head tilt, then smiles, static camera, Pixar 3D animation"
+  },
+  {
+   "name": "v_n5_point",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "r_n5_point",
+   "prompt": "the man points at the viewer and nods encouragingly, lively expression, static camera, Pixar 3D animation"
+  },
+  {
+   "name": "v_n6_bye",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "r_n6_bye",
+   "prompt": "the man waves goodbye with a big warm smile, static camera, Pixar 3D animation"
+  },
+  {
+   "name": "v_p3_cockpit_calm",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "r_p3_cockpit_calm",
+   "prompt": "the airplane flies calmly, soft clouds drift past the windshield, the pilots are relaxed, gentle motion, Pixar 3D animation"
+  },
+  {
+   "name": "v_p4_grab",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "r_p4_grab",
+   "prompt": "the co-pilot pushes the control yoke, the horizon tilts sharply through the windshield, red warning lights flash, Pixar 3D animation"
+  },
+  {
+   "name": "v_p7_storm",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "r_p7_storm",
+   "prompt": "the airplane dives through the storm, lightning flashes, dark clouds rush past, dramatic camera shake, Pixar 3D animation"
+  },
+  {
+   "name": "v_p9_landing",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "r_p9_landing",
+   "prompt": "the airplane touches down gently on the runway, warm sun rays, slow calm motion, Pixar 3D animation"
+  },
+  {
+   "name": "v_p11_soar",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "r_p11_soar",
+   "prompt": "the airplane flies forward above the golden clouds at sunrise, camera follows smoothly, uplifting, Pixar 3D animation"
+  },
+  {
+   "name": "v_y2_mountain",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "r_y2_mountain",
+   "prompt": "the wind blows his long coat, the golden light in his chest glows brighter, he looks up and smiles, Pixar 3D animation"
+  }
+ ]
+}
