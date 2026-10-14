@@ -1,0 +1,184 @@
+{
+ "canvas": [
+  896,
+  1152
+ ],
+ "joints": {
+  "shoulderA": [
+   338,
+   505
+  ],
+  "elbowA": [
+   240,
+   512
+  ],
+  "wristA": [
+   140,
+   520
+  ],
+  "shoulderB": [
+   550,
+   505
+  ],
+  "elbowB": [
+   648,
+   512
+  ],
+  "wristB": [
+   752,
+   520
+  ],
+  "neck": [
+   444,
+   420
+  ],
+  "brim": [
+   444,
+   211
+  ],
+  "brim_w": 430
+ },
+ "parts": {
+  "upperA": {
+   "img": "upperA.png",
+   "pivot": [
+    144,
+    44
+   ],
+   "rest": 180
+  },
+  "foreA": {
+   "img": "foreA.png",
+   "pivot": [
+    112,
+    34
+   ],
+   "rest": 180
+  },
+  "handA": {
+   "img": "handA.png",
+   "pivot": [
+    121,
+    48
+   ],
+   "rest": 180
+  },
+  "upperB": {
+   "img": "upperB.png",
+   "pivot": [
+    2,
+    44
+   ],
+   "rest": 0
+  },
+  "foreB": {
+   "img": "foreB.png",
+   "pivot": [
+    44,
+    34
+   ],
+   "rest": 0
+  },
+  "handB": {
+   "img": "handB.png",
+   "pivot": [
+    6,
+    47
+   ],
+   "rest": 0
+  },
+  "body": {
+   "img": "body.png",
+   "origin": [
+    303,
+    405
+   ]
+  },
+  "head": {
+   "img": "head.png",
+   "origin": [
+    226,
+    55
+   ],
+   "pivot": [
+    444,
+    420
+   ]
+  },
+  "mouth_ah": {
+   "img": "mouth_ah.png",
+   "origin": [
+    343,
+    264
+   ]
+  },
+  "mouth_ee": {
+   "img": "mouth_ee.png",
+   "origin": [
+    342,
+    264
+   ]
+  },
+  "mouth_oh": {
+   "img": "mouth_oh.png",
+   "origin": [
+    342,
+    264
+   ]
+  },
+  "mouth_mm": {
+   "img": "mouth_mm.png",
+   "origin": [
+    347,
+    264
+   ]
+  },
+  "eyes_closed": {
+   "img": "eyes_closed.png",
+   "origin": [
+    286,
+    195
+   ]
+  },
+  "hand_wave": {
+   "img": "hand_wave.png",
+   "pivot": [
+    268,
+    861
+   ],
+   "dir": -90,
+   "scale": 0.2,
+   "flip": "side"
+  },
+  "hand_point": {
+   "img": "hand_point.png",
+   "pivot": [
+    190,
+    687
+   ],
+   "dir": -90,
+   "scale": 0.19,
+   "flip": "side"
+  },
+  "hand_thumb": {
+   "img": "hand_thumb.png",
+   "pivot": [
+    484,
+    423
+   ],
+   "dir": 180,
+   "scale": 0.27,
+   "flip": "upright"
+  },
+  "hand_relax": {
+   "img": "hand_relax.png",
+   "pivot": [
+    200,
+    22
+   ],
+   "dir": 90,
+   "scale": 0.15,
+   "flip": "side"
+  }
+ }
+}

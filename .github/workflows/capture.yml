@@ -1,0 +1,25 @@
+name: capture
+on:
+  workflow_dispatch:
+    inputs:
+      job: { description: 'capture/<job>', required: true }
+permissions:
+  contents: write
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - run: sudo apt-get update -q && sudo apt-get install -y -q ffmpeg fontconfig
+      - run: pip install -q playwright psutil && python -m playwright install --with-deps chromium
+      - run: python3 capture_job.py "${{ inputs.job }}"
+      - name: push results
+        run: |
+          git config user.name studio-bot
+          git config user.email studio-bot@users.noreply.github.com
+          git add capture/${{ inputs.job }}/out
+          git commit -m "capture ${{ inputs.job }}" || echo "nothing to commit"
+          for i in 1 2 3 4 5 6; do git pull --rebase -q && git push -q && break; sleep 7; done
