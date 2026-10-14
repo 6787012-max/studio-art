@@ -1,0 +1,12 @@
+[
+ {
+  "name": "body_fix_1",
+  "ok": false,
+  "tries": [
+   {
+    "model": "space",
+    "error": "ValueError: The current space is in the invalid state: PAUSED. Please contact the owner to fix this."
+   }
+  ]
+ }
+]
