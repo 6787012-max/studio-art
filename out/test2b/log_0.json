@@ -1,0 +1,35 @@
+[
+ {
+  "name": "pixar_s58",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   896,
+   1152
+  ],
+  "seconds": 25.3
+ },
+ {
+  "name": "cartoon_s21",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   896,
+   1152
+  ],
+  "seconds": 19.4
+ },
+ {
+  "name": "cartoon_s58",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   896,
+   1152
+  ],
+  "seconds": 19.3
+ }
+]
