@@ -1,0 +1,24 @@
+[
+ {
+  "name": "y1_cockpit_man",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": [
+   1360,
+   768
+  ],
+  "seconds": 57.9
+ },
+ {
+  "name": "p8_grip",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1344,
+   768
+  ],
+  "seconds": 66.1
+ }
+]
