@@ -1,0 +1,24 @@
+[
+ {
+  "name": "n5_point",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": [
+   1360,
+   768
+  ],
+  "seconds": 61.0
+ },
+ {
+  "name": "p6_captains",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1344,
+   768
+  ],
+  "seconds": 23.1
+ }
+]
