@@ -54,6 +54,44 @@ SPACES = {
 clients = {}
 
 
+def generic(j):
+    space = j['space']
+    if space not in clients:
+        tok = os.environ.get('HF_TOKEN') or None
+        try:
+            clients[space] = Client(space, token=tok, verbose=False)
+        except TypeError:
+            clients[space] = Client(space, hf_token=tok, verbose=False)
+    c = clients[space]
+    eps = c.view_api(return_format='dict', print_info=False)['named_endpoints']
+    print('endpoints:', {k: [q['parameter_name'] for q in v['parameters']] for k, v in eps.items()}, flush=True)
+    name = j.get('api') or next(iter(eps))
+    kw, params = {}, j.get('params', {})
+    for q in eps[name]['parameters']:
+        pn = q['parameter_name']; key = pn.lower()
+        if pn in params:
+            kw[pn] = params[pn]
+        elif 'image' in key and j.get('ref') and not kw.get('_img_' + pn):
+            kw[pn] = handle_file(ref_path(j['ref']))
+        elif 'prompt' in key and 'neg' not in key:
+            kw[pn] = j['prompt']
+        elif not q.get('parameter_has_default'):
+            print('  no value for required param', pn, q.get('python_type'), flush=True)
+    print('  calling', name, sorted(kw), flush=True)
+    return c.predict(api_name=name, **kw)
+
+
+def find_files(res, acc):
+    if isinstance(res, (list, tuple)):
+        for r in res: find_files(r, acc)
+    elif isinstance(res, dict):
+        for k in ('video', 'path', 'image', 'url', 'value'):
+            if k in res: find_files(res[k], acc)
+    elif isinstance(res, str) and os.path.exists(res):
+        acc.append(res)
+    return acc
+
+
 def client(model):
     space = SPACES[model][0]
     if space not in clients:
@@ -84,15 +122,25 @@ log = []
 for idx, j in enumerate(req['jobs']):
     if idx % nshards != shard:
         continue
-    models = [j['model']] if j.get('model') else order
+    models = ['space'] if j.get('space') else ([j['model']] if j.get('model') else order)
     rec = {'name': j['name'], 'ok': False, 'tries': []}
     for m in models:
         t0 = time.time()
         try:
-            space, api, args = SPACES[m]
-            res = client(m).predict(api_name=api, **args(j))
-            png, size = to_png(res)
-            (out / ('%s.bin' % j['name'])).write_bytes(xor(png))
+            if m == 'space':
+                files = find_files(generic(j), [])
+                vids = [f for f in files if f.lower().endswith(('.mp4', '.webm', '.mov'))]
+                if vids:
+                    (out / ('%s.mp4.bin' % j['name'])).write_bytes(xor(Path(vids[0]).read_bytes()))
+                    size = os.path.getsize(vids[0])
+                else:
+                    png, size = to_png(files[0])
+                    (out / ('%s.png.bin' % j['name'])).write_bytes(xor(png))
+            else:
+                space, api, args = SPACES[m]
+                res = client(m).predict(api_name=api, **args(j))
+                png, size = to_png(res)
+                (out / ('%s.png.bin' % j['name'])).write_bytes(xor(png))
             rec.update(ok=True, model=m, size=size, seconds=round(time.time() - t0, 1))
             print('OK  %-24s %s %s %.1fs' % (j['name'], m, size, time.time() - t0), flush=True)
             break
