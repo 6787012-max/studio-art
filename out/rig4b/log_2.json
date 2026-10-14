@@ -1,0 +1,12 @@
+[
+ {
+  "name": "body_fix_2",
+  "ok": false,
+  "tries": [
+   {
+    "model": "space",
+    "error": "AppError: RuntimeError"
+   }
+  ]
+ }
+]
