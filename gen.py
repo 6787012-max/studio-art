@@ -56,9 +56,13 @@ clients = {}
 def client(model):
     space = SPACES[model][0]
     if space not in clients:
-        clients[space] = Client(space, hf_token=os.environ.get('HF_TOKEN') or None, verbose=False)
+        tok = os.environ.get('HF_TOKEN') or None
         try:
-            print(clients[space].view_api(return_format='str', print_info=False)[:2500])
+            clients[space] = Client(space, token=tok, verbose=False)
+        except TypeError:
+            clients[space] = Client(space, hf_token=tok, verbose=False)
+        try:
+            print(str(clients[space].view_api(return_format='dict'))[:3000])
         except Exception as e:
             print('view_api failed:', e)
     return clients[space]
