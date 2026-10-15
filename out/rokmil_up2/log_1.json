@@ -1,0 +1,13 @@
+[
+ {
+  "name": "up_finegrain",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": [
+   768,
+   1808
+  ],
+  "seconds": 62.7
+ }
+]
