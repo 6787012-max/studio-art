@@ -1,0 +1,24 @@
+[
+ {
+  "name": "burgundy_wood_arch",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1808
+  ],
+  "seconds": 27.2
+ },
+ {
+  "name": "navy_marble_columns",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1808
+  ],
+  "seconds": 26.7
+ }
+]
