@@ -1,0 +1,12 @@
+[
+ {
+  "name": "up_finegrain",
+  "ok": false,
+  "tries": [
+   {
+    "model": "space",
+    "error": "KeyError: 'prompt'"
+   }
+  ]
+ }
+]
