@@ -1,0 +1,5 @@
+{"jobs": [
+ {"name": "up_doevent", "space": "doevent/Face-Real-ESRGAN", "ref": "bgA", "params": {"size": "4x"}},
+ {"name": "up_nick", "space": "Nick088/Real-ESRGAN_Pytorch", "ref": "bgA"},
+ {"name": "up_finegrain", "space": "finegrain/finegrain-image-enhancer", "ref": "bgA"}
+]}
