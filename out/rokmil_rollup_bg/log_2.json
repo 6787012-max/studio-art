@@ -1,0 +1,24 @@
+[
+ {
+  "name": "ivory_marble_gold",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1808
+  ],
+  "seconds": 31.3
+ },
+ {
+  "name": "teal_gold_palace",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1808
+  ],
+  "seconds": 26.3
+ }
+]
