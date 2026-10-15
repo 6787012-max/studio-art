@@ -1,0 +1,6 @@
+{"jobs": [
+ {"name": "up_nick", "space": "Nick088/Real-ESRGAN_Pytorch", "ref": "bgA", "params": {"size_modifier": "4"}},
+ {"name": "up_finegrain", "space": "finegrain/finegrain-image-enhancer", "ref": "bgA",
+  "prompt": "ornate gold baroque frame, navy velvet curtains, damask wallpaper, violins, roses, marble, highly detailed, sharp, photorealistic",
+  "params": {"upscale_factor": 4, "negative_prompt": "blurry, text, letters, watermark, low quality"}}
+]}

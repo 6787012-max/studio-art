@@ -71,7 +71,7 @@ def generic(j):
         pn = q['parameter_name']; key = pn.lower()
         if pn in params:
             kw[pn] = params[pn]
-        elif 'image' in key and j.get('ref') and not kw.get('_img_' + pn):
+        elif ('image' in key or key in ('img', 'input_img')) and j.get('ref') and not kw.get('_img_' + pn):
             kw[pn] = handle_file(ref_path(j['ref']))
         elif 'prompt' in key and 'neg' not in key:
             kw[pn] = j['prompt']
