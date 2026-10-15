@@ -1,0 +1,12 @@
+[
+ {
+  "name": "up_nick",
+  "ok": false,
+  "tries": [
+   {
+    "model": "space",
+    "error": "TypeError: No value provided for required argument: img"
+   }
+  ]
+ }
+]
