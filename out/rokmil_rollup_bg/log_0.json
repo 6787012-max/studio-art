@@ -1,0 +1,24 @@
+[
+ {
+  "name": "navy_gold_arch",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1808
+  ],
+  "seconds": 30.9
+ },
+ {
+  "name": "navy_damask_gold",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1808
+  ],
+  "seconds": 25.6
+ }
+]
