@@ -134,7 +134,10 @@ for idx, j in enumerate(req['jobs']):
                     (out / ('%s.mp4.bin' % j['name'])).write_bytes(xor(Path(vids[0]).read_bytes()))
                     size = os.path.getsize(vids[0])
                 else:
-                    png, size = to_png(files[0])
+                    # מגדילים מחזירים לפעמים זוג לפני/אחרי — לוקחים את הגדולה
+                    imgs = [f for f in files if f.lower().endswith(('.png', '.jpg', '.jpeg', '.webp'))] or files
+                    best = max(imgs, key=lambda f: (lambda s: s[0] * s[1])(Image.open(f).size))
+                    png, size = to_png(best)
                     (out / ('%s.png.bin' % j['name'])).write_bytes(xor(png))
             else:
                 space, api, args = SPACES[m]
