@@ -1,0 +1,12 @@
+{
+ "jobs": [
+  {
+   "name": "single_test",
+   "model": "flux-schnell",
+   "seed": 1,
+   "w": 512,
+   "h": 512,
+   "prompt": "a golden ornamental divider on cream paper, no text"
+  }
+ ]
+}
