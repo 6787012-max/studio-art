@@ -1,0 +1,24 @@
+[
+ {
+  "name": "a4_papercut_pomegranate",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1024,
+   1440
+  ],
+  "seconds": 55.6
+ },
+ {
+  "name": "rollup_royal_purple",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1808
+  ],
+  "seconds": 45.8
+ }
+]
