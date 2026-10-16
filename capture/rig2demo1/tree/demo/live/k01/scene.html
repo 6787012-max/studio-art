@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>נס המטוס: הדגמת דמות חיה</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../../lib/marionette.js"></script>
+<script src="../../../lib/live2d_lite.js"></script>
+<script src="../../rig/k01/cues.js"></script>
+<script src="../../rig/k01/subs.js"></script>
+<script src="env.js"></script>
+<script>
+'use strict';
+// 45 השניות הראשונות של "נס המטוס" בשפה מקצועית: המספר הוא איור שלם שזז (עיוות חלק — ראש, נשימה, זקן),
+// עובר בין תנוחות בתזמון לדיבור, פה מסונכרן לקול הרב, הנהונים לפי ההדגשות; המשל בקטעי וידאו שזזים באמת.
+const M = MARIONETTE, T = M.track, EASE = M.EASE, clamp = M.clamp, lerp = M.lerp;
+const W = 1920, H = 1080, FPS = 30, SUBN = 4, DUR = 45, XF = .28;
+const main = document.getElementById('c'), mg = main.getContext('2d');
+const mk = () => { const c = document.createElement('canvas'); c.width = W; c.height = H; return c; };
+const acc = mk(), ag = acc.getContext('2d'), shotA = mk(), shotB = mk();
+const IMG = {}, CLIP = {};
+const loadImg = src => new Promise((res, rej) => { const i = new Image(); i.onload = () => res(i); i.onerror = () => rej(new Error(src)); i.src = src; });
+let L = null, R = null;
+
+// ---------- השוטים ----------
+const SHOTS = [
+  { t: 0, k: 'narr', f: 'med' }, { t: 5.9, k: 'clip', c: 'v_p1_dive' }, { t: 8.7, k: 'clip', c: 'v_p2_interchange' },
+  { t: 12.4, k: 'narr', f: 'close' }, { t: 18.2, k: 'narr', f: 'med' }, { t: 28.1, k: 'clip', c: 'v_p3_cockpit_calm' },
+  { t: 31.6, k: 'clip', c: 'v_p11_soar' }, { t: 33.5, k: 'clip', c: 'v_p4_grab' }, { t: 37.0, k: 'narr', f: 'med' },
+  { t: 41.8, k: 'clip', c: 'v_p7_storm' }, { t: 43.6, k: 'narr', f: 'close' }];
+// מילות מפתח על המסך ברגעי השיא (רק בשוטים של המספר בגודל בינוני)
+const CARDS = [{ t0: 18.6, t1: 22.4, big: 'מה אפשר ללמוד?' }, { t0: 23.3, t1: 27.9, big: 'משל ונמשל', small: 'כל דבר בעולם' },
+  { t0: 37.3, t1: 41.6, big: 'הטייס המשנה', small: 'מנסה להסיט את המטוס' }];
+const SHD = (() => { const c = document.createElement('canvas'); c.width = 120; c.height = 68; return { c, g: c.getContext('2d') }; })();
+const shotIdx = t => { let i = 0; SHOTS.forEach((s, k) => { if (t >= s.t) i = k; }); return i; };
+
+// ---------- תנוחות בתזמון לדיבור ----------
+const POSES = [[0, 'pose_wave'], [1.9, 'pose_explain'], [12.4, 'pose_wide'], [15.5, 'pose_heart'], [18.2, 'pose_finger'],
+  [22.5, 'pose_explain'], [23.1, 'pose_point'], [25.8, 'pose_wide'], [37.0, 'pose_point'], [39.5, 'pose_explain'], [43.6, 'pose_think']];
+const POSE_HEAD = { pose_wave: { turn: 0, tilt: -3 }, pose_explain: { turn: -.15, tilt: 2 }, pose_wide: { turn: 0, tilt: -2 }, pose_heart: { turn: .1, tilt: 4 },
+  pose_finger: { turn: .2, tilt: -3 }, pose_point: { turn: 0, tilt: 0 }, pose_think: { turn: .35, tilt: 6 }, pose_neutral: { turn: 0, tilt: 0 } };
+function poseAt(t) {
+  let i = 0; POSES.forEach((p, k) => { if (t >= p[0]) i = k; });
+  const [t0, p] = POSES[i], prev = i > 0 ? POSES[i - 1][1] : p;
+  return { pose: p, from: prev, blend: i > 0 ? EASE.io(clamp((t - t0) / .24)) : 1, since: t - t0 };
+}
+// קפיץ דטרמיניסטי על פונקציה של הזמן
+function spring(fn, k, c) { let st = null; return t => {
+  if (!st || t < st.t - 1e-9) st = { t: 0, p: fn(0), v: 0 };
+  while (st.t < t - 1e-9) { const h = Math.min(1 / 240, t - st.t); st.t += h; st.v += (k * (fn(st.t) - st.p) - c * st.v) * h; st.p += st.v * h; }
+  return st.p; }; }
+const env = t => { const i = Math.floor(t * 30); return (ENV[i] || 0) * (1 - (t * 30 - i)) + (ENV[i + 1] || 0) * (t * 30 - i); };
+const onset = t => { let s = 0; for (let k = -6; k <= 0; k++) s += (ONSET[Math.floor(t * 30) + k] || 0) * Math.exp(k / 3); return s; };
+const tiltT = spring(t => POSE_HEAD[poseAt(t).pose].tilt + 2.2 * Math.sin(t * .9) + 1.2 * Math.sin(t * 2.3 + 1), 90, 11);
+const turnT = spring(t => POSE_HEAD[poseAt(t).pose].turn + .12 * Math.sin(t * .5), 60, 10);
+const nodT = spring(t => -26 * Math.min(1, onset(t) * 1.4) + 6 * env(t), 160, 13);
+const squashT = spring(t => { const s = poseAt(t).since; return s < .3 && t > .3 ? (s < .12 ? -.8 : .5) : 0; }, 220, 14);
+// הזקן נגרר אחרי תנועת הראש: ההפרש בין הראש ל"זקן עצל"
+const lazyTilt = spring(tiltT, 40, 7), lazyNod = spring(nodT, 40, 7);
+const BL = []; { let t = .8, r = 7; while (t < DUR) { BL.push(t); r = (r * 9301 + 49297) % 233280; t += 2.2 + (r / 233280) * 2.6; } }
+POSES.forEach(p => BL.push(p[0] + .05));
+const blink = t => { let b = 0; for (const x of BL) { const k = (t - x) / .16; if (k > 0 && k < 1) b = Math.max(b, 1 - Math.abs(2 * k - 1)); } return b; };
+
+function narrator(t) {
+  const P = poseAt(t), tl = tiltT(t), nd = nodT(t);
+  return { pose: P.pose, from: P.from, blend: P.blend, tilt: tl, nod: nd, turn: turnT(t), breath: Math.sin(t * 2 * Math.PI / 3.8),
+    sway: .5 * Math.sin(t * .6), squash: squashT(t), mouth: LIVE.mouthAt(CUES, t), blink: blink(t),
+    beard: { x: (lazyTilt(t) - tl) * 2.2, y: (lazyNod(t) - nd) * .5 } };
+}
+
+// ---------- ציור שוט ----------
+function cover(g, im, z, px, py) { const s = Math.max(W / im.width, H / im.height) * z; g.drawImage(im, (W - im.width * s) / 2 + px, (H - im.height * s) / 2 + py, im.width * s, im.height * s); }
+function drawNarr(g, t, shot) {
+  const k = t - shot.t, close = shot.f === 'close';
+  const push = 1 + .035 * EASE.io(clamp(k / 6)), dx = 10 * Math.sin(t * .27), dy = 5 * Math.sin(t * .33);
+  cover(g, IMG.roomB, 1.06 * push, -dx * .4, -dy * .4);
+  const gl = g.createRadialGradient(1250, 300, 50, 1250, 380, 900); gl.addColorStop(0, 'rgba(255,205,140,.28)'); gl.addColorStop(1, 'rgba(255,205,140,0)');
+  g.save(); g.globalCompositeOperation = 'screen'; g.fillStyle = gl; g.fillRect(0, 0, W, H); g.restore();
+  const s = (close ? 1.32 : .96) * push, x = (close ? 760 : 620) + dx, ht = close ? 30 : 50;
+  const y = ht + (L.feet_y - L.head_top[1]) * s + dy;
+  R.draw(Object.assign({ x: x - (L.center_x - L.center_x) , y, s }, narrator(t)));
+  // צל רך מאחורי הדמות על הרקע — מחבר אותה לחדר (טשטוש זול: הקטנה פי 8 והגדלה חזרה)
+  SHD.g.clearRect(0, 0, 120, 68); SHD.g.drawImage(R.canvas, 0, 0, 120, 68);
+  g.save(); g.globalAlpha = .24; g.globalCompositeOperation = 'multiply'; g.imageSmoothingQuality = 'high';
+  g.filter = 'brightness(0)'; g.drawImage(SHD.c, 22, 10, W, H); g.restore();
+  g.drawImage(R.canvas, 0, 0);
+  // אור מהחלון על הקצה של הדמות
+  g.save(); g.globalCompositeOperation = 'soft-light'; const rim = g.createLinearGradient(x + 300, 0, x - 200, 0);
+  rim.addColorStop(0, 'rgba(255,220,170,.35)'); rim.addColorStop(1, 'rgba(255,220,170,0)'); g.fillStyle = rim; g.fillRect(0, 0, W, H); g.restore();
+}
+function drawClip(g, t, shot) {
+  const fr = CLIP[shot.c], k = Math.max(0, t - shot.t), f = k * 16, i = Math.min(fr.length - 1, Math.floor(f)), j = Math.min(fr.length - 1, i + 1), a = f - Math.floor(f);
+  const z = 1.02 + .05 * EASE.io(clamp(k / 3.6));
+  cover(g, fr[i], z, 0, 0);
+  if (j !== i && a > .02) { g.save(); g.globalAlpha = a; cover(g, fr[j], z, 0, 0); g.restore(); }   // החלקת תנועה בין פריימים
+}
+function drawShot(g, t, idx) { g.setTransform(1, 0, 0, 1, 0, 0); g.globalAlpha = 1; g.filter = 'none'; const s = SHOTS[idx]; if (s.k === 'narr') drawNarr(g, t, s); else drawClip(g, t, s); }
+
+function text(g, s, x, y, font, fill, stroke, lw, a, align) {
+  g.save(); g.globalAlpha = a; g.font = font; g.direction = 'rtl'; g.textAlign = align || 'center'; g.lineJoin = 'round';
+  g.strokeStyle = stroke; g.lineWidth = lw; g.strokeText(s, x, y); g.fillStyle = fill; g.fillText(s, x, y); g.restore();
+}
+function overlays(g, t) {
+  const ta = clamp((t - .5) / .5) * clamp((5.6 - t) / .5), ty = (1 - EASE.out(clamp((t - .5) / .6))) * 30;
+  if (ta > 0) {
+    g.save(); g.globalAlpha = ta * .55; const bg = g.createLinearGradient(1050, 0, 1920, 0); bg.addColorStop(0, 'rgba(20,10,4,0)'); bg.addColorStop(1, 'rgba(20,10,4,.8)');
+    g.fillStyle = bg; g.fillRect(1050, 300, 870, 340); g.restore();
+    text(g, 'נס המטוס', 1830, 450 + ty, '400 150px "Secular One"', '#fff', '#1a1208', 14, ta, 'right');
+    text(g, "משל לעבודת ה'", 1830, 535 + ty, '700 60px Assistant', '#ffc54d', '#1a1208', 10, ta, 'right');
+    text(g, 'קצר ולענין · הרב אבשלום שניידר', 1830, 600 + ty, '700 42px Assistant', '#fff', '#1a1208', 8, ta, 'right');
+  }
+  // כרטיסי מילת מפתח בצד הפנוי של השוט — נכנסים בקפיצה קטנה ויוצאים בהחלקה
+  for (const c of CARDS) {
+    const k = t - c.t0, out = c.t1 - t; if (k < 0 || out < 0) continue;
+    const a = clamp(k / .25) * clamp(out / .3), sc = .85 + .15 * EASE.back(clamp(k / .45)), dx = (1 - EASE.out(clamp(k / .45))) * 80;
+    g.save(); g.globalAlpha = a; g.translate(1460 + dx, 420); g.scale(sc, sc);
+    g.font = '400 92px "Secular One"'; const w = Math.max(g.measureText(c.big).width, 300) + 110;
+    g.fillStyle = 'rgba(18,10,4,.72)'; g.beginPath(); g.roundRect(-w / 2, -120, w, c.small ? 250 : 190, 28); g.fill();
+    g.fillStyle = '#ffc54d'; g.fillRect(-w / 2 + 40, -88, 70, 8);
+    g.restore();
+    text(g, c.big, 1460 + dx + w / 2 * 0 , 420 + 18, '400 92px "Secular One"', '#fff', '#120a04', 8, a);
+    if (c.small) text(g, c.small, 1460 + dx, 420 + 95, '700 46px Assistant', '#ffc54d', '#120a04', 6, a);
+  }
+  const s = SUBS.find(s => t >= s.t0 && t < s.t1);
+  if (s) { g.save(); g.font = '700 64px Assistant'; const w = g.measureText(s.text).width; g.fillStyle = 'rgba(10,6,3,.55)';
+    g.beginPath(); g.roundRect(W / 2 - w / 2 - 34, H - 138, w + 68, 92, 22); g.fill(); g.restore();
+    text(g, s.text, W / 2, H - 70, '700 64px Assistant', '#fff', '#0a0603', 6, 1); }
+}
+function frameAt(g, t) {
+  const i = shotIdx(t), s = SHOTS[i], since = t - s.t;
+  if (i > 0 && since < XF) {     // מעבר רך בין השוטים
+    drawShot(shotA.getContext('2d'), t, i - 1); drawShot(shotB.getContext('2d'), t, i);
+    g.drawImage(shotA, 0, 0); g.save(); g.globalAlpha = EASE.io(since / XF); g.drawImage(shotB, 0, 0); g.restore();
+  } else { drawShot(shotB.getContext('2d'), t, i); g.drawImage(shotB, 0, 0); }
+  // צבע קולנועי: חום עדין + וינייטה
+  g.save(); g.globalCompositeOperation = 'soft-light'; g.fillStyle = 'rgba(255,170,100,.16)'; g.fillRect(0, 0, W, H); g.restore();
+  const v = g.createRadialGradient(W / 2, H / 2, H * .42, W / 2, H / 2, H * 1.02); v.addColorStop(0, 'rgba(0,0,0,0)'); v.addColorStop(1, 'rgba(12,6,2,.5)');
+  g.fillStyle = v; g.fillRect(0, 0, W, H);
+  overlays(g, t);
+  const fin = clamp(1 - t / .5); if (fin > 0) { g.fillStyle = `rgba(0,0,0,${fin})`; g.fillRect(0, 0, W, H); }
+}
+
+window.__seek = t => {
+  const sh = .5 / FPS;
+  for (let k = 0; k < SUBN; k++) { ag.setTransform(1, 0, 0, 1, 0, 0); frameAt(ag, Math.max(0, t + (k / (SUBN - 1) - .5) * sh)); mg.globalAlpha = 1 / (k + 1); mg.drawImage(acc, 0, 0); }
+  mg.globalAlpha = 1;
+};
+(async () => {
+  L = await LIVE.load('../../../assets/live/haredi'); R = LIVE.renderer(L, W, H);
+  IMG.room = await loadImg('../../../assets/ai/demo1/bg_room_empty.png');
+  const c = document.createElement('canvas'); c.width = IMG.room.width; c.height = IMG.room.height; const x = c.getContext('2d'); x.filter = 'blur(7px)'; x.drawImage(IMG.room, 0, 0); IMG.roomB = c;
+  for (const s of SHOTS) if (s.k === 'clip' && !CLIP[s.c]) CLIP[s.c] = await Promise.all(Array.from({ length: 57 }, (_, i) => loadImg('frames/' + s.c + '/' + String(i + 1).padStart(3, '0') + '.jpg')));
+  await document.fonts.load('400 150px "Secular One"'); await document.fonts.load('700 64px Assistant');
+  window.__seek(0); window.__ready = true;
+})().catch(e => console.error('load failed', e.message || e));
+</script>
+</html>

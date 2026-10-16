@@ -1,0 +1,183 @@
+{
+ "size": [
+  1792,
+  2304
+ ],
+ "arms": {
+  "A": {
+   "img": "armA.png",
+   "origin": [
+    251,
+    938
+   ],
+   "hand": "handA_own.png",
+   "hand_origin": [
+    169,
+    1426
+   ],
+   "shoulder": [
+    612,
+    990
+   ],
+   "elbow": [
+    470,
+    1200
+   ],
+   "wrist": [
+    342,
+    1462
+   ],
+   "tip": [
+    205,
+    1675
+   ],
+   "cap": "capA.png",
+   "cap_origin": [
+    587,
+    867
+   ]
+  },
+  "B": {
+   "img": "armB.png",
+   "origin": [
+    1193,
+    954
+   ],
+   "hand": "handB_own.png",
+   "hand_origin": [
+    1379,
+    1434
+   ],
+   "shoulder": [
+    1180,
+    990
+   ],
+   "elbow": [
+    1330,
+    1200
+   ],
+   "wrist": [
+    1452,
+    1468
+   ],
+   "tip": [
+    1605,
+    1675
+   ],
+   "cap": "capB.png",
+   "cap_origin": [
+    1030,
+    878
+   ]
+  }
+ },
+ "torso_origin": [
+  411,
+  93
+ ],
+ "patches": {
+  "mouth_rest": {
+   "img": "mouth_rest.png",
+   "origin": [
+    771,
+    614
+   ]
+  },
+  "mouth_ah": {
+   "img": "mouth_ah.png",
+   "origin": [
+    771,
+    614
+   ]
+  },
+  "mouth_ee": {
+   "img": "mouth_ee.png",
+   "origin": [
+    771,
+    614
+   ]
+  },
+  "mouth_oh": {
+   "img": "mouth_oh.png",
+   "origin": [
+    771,
+    614
+   ]
+  },
+  "mouth_mm": {
+   "img": "mouth_mm.png",
+   "origin": [
+    771,
+    614
+   ]
+  },
+  "eyes_closed": {
+   "img": "eyes_closed.png",
+   "origin": [
+    611,
+    444
+   ]
+  }
+ },
+ "head_top": [
+  876.9128487809971,
+  73.84570875952247
+ ],
+ "chin": [
+  884.0385292932556,
+  881.8077956182494
+ ],
+ "neck": [
+  883.1834476317845,
+  784.8523451952021
+ ],
+ "face": [
+  908.3716395952097,
+  654.7476764612146
+ ],
+ "head_w": 948.0457161649501,
+ "feet_y": 2250.0,
+ "center_x": 879.5,
+ "hands": {
+  "wave": {
+   "img": "g_wave.png",
+   "pivot": [
+    268,
+    861
+   ],
+   "dir": -90,
+   "scale": 0.40910392771108794,
+   "flip": "side"
+  },
+  "point": {
+   "img": "g_point.png",
+   "pivot": [
+    190,
+    687
+   ],
+   "dir": -90,
+   "scale": 0.38538775798870606,
+   "flip": "side"
+  },
+  "thumb": {
+   "img": "g_thumb.png",
+   "pivot": [
+    484,
+    423
+   ],
+   "dir": 180,
+   "scale": 0.6331370309814457,
+   "flip": "upright"
+  },
+  "relax": {
+   "img": "g_relax.png",
+   "pivot": [
+    200,
+    22
+   ],
+   "dir": 90,
+   "scale": 0.30920645699093857,
+   "flip": "side"
+  }
+ }
+}
