@@ -1,0 +1,24 @@
+[
+ {
+  "name": "up_pose_wide",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": [
+   1792,
+   2304
+  ],
+  "seconds": 7.9
+ },
+ {
+  "name": "up_pose_wave",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": [
+   1792,
+   2304
+  ],
+  "seconds": 4.3
+ }
+]
