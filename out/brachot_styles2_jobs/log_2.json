@@ -1,0 +1,24 @@
+[
+ {
+  "name": "a4_navy_stars_dark",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1024,
+   1440
+  ],
+  "seconds": 40.6
+ },
+ {
+  "name": "a4_gold_damask_light",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1024,
+   1440
+  ],
+  "seconds": 59.5
+ }
+]
