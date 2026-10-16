@@ -1,0 +1,24 @@
+[
+ {
+  "name": "up_pose_explain",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": [
+   1792,
+   2304
+  ],
+  "seconds": 6.3
+ },
+ {
+  "name": "up_pose_point",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": [
+   1792,
+   2304
+  ],
+  "seconds": 3.9
+ }
+]
