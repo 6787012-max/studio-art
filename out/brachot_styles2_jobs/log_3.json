@@ -1,0 +1,24 @@
+[
+ {
+  "name": "a4_marble_gold_minimal",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1024,
+   1440
+  ],
+  "seconds": 63.6
+ },
+ {
+  "name": "rollup_white_roses_hall",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1808
+  ],
+  "seconds": 34.8
+ }
+]
