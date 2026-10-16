@@ -1,0 +1,68 @@
+{
+ "jobs": [
+  {
+   "name": "up_pose_neutral",
+   "space": "Nick088/Real-ESRGAN_Pytorch",
+   "ref": "pose_neutral",
+   "params": {
+    "size_modifier": 2
+   }
+  },
+  {
+   "name": "up_pose_explain",
+   "space": "Nick088/Real-ESRGAN_Pytorch",
+   "ref": "pose_explain",
+   "params": {
+    "size_modifier": 2
+   }
+  },
+  {
+   "name": "up_pose_finger",
+   "space": "Nick088/Real-ESRGAN_Pytorch",
+   "ref": "pose_finger",
+   "params": {
+    "size_modifier": 2
+   }
+  },
+  {
+   "name": "up_pose_wide",
+   "space": "Nick088/Real-ESRGAN_Pytorch",
+   "ref": "pose_wide",
+   "params": {
+    "size_modifier": 2
+   }
+  },
+  {
+   "name": "up_pose_heart",
+   "space": "Nick088/Real-ESRGAN_Pytorch",
+   "ref": "pose_heart",
+   "params": {
+    "size_modifier": 2
+   }
+  },
+  {
+   "name": "up_pose_point",
+   "space": "Nick088/Real-ESRGAN_Pytorch",
+   "ref": "pose_point",
+   "params": {
+    "size_modifier": 2
+   }
+  },
+  {
+   "name": "up_pose_think",
+   "space": "Nick088/Real-ESRGAN_Pytorch",
+   "ref": "pose_think",
+   "params": {
+    "size_modifier": 2
+   }
+  },
+  {
+   "name": "up_pose_wave",
+   "space": "Nick088/Real-ESRGAN_Pytorch",
+   "ref": "pose_wave",
+   "params": {
+    "size_modifier": 2
+   }
+  }
+ ]
+}
