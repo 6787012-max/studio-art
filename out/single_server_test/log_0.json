@@ -1,0 +1,13 @@
+[
+ {
+  "name": "single_test",
+  "ok": true,
+  "tries": [],
+  "model": "flux-schnell",
+  "size": [
+   512,
+   512
+  ],
+  "seconds": 2.0
+ }
+]
