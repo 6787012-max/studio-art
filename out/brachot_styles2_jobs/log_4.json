@@ -1,0 +1,24 @@
+[
+ {
+  "name": "a4_parchment_wood_rods",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1024,
+   1440
+  ],
+  "seconds": 54.5
+ },
+ {
+  "name": "rollup_jerusalem_gate",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1808
+  ],
+  "seconds": 31.3
+ }
+]
