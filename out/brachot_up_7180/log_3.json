@@ -1,0 +1,12 @@
+[
+ {
+  "name": "a4_marble_gold_minimal",
+  "ok": false,
+  "tries": [
+   {
+    "model": "space",
+    "error": "AppError: No GPU was available after 60s. <a style=\"white-space: nowrap;text-underline-offset: 2px;color: var(--body-text-color)\" href=\"https://huggingface.co/join\">Create a free account</a> to get a higher priority in ZeroGPU queues."
+   }
+  ]
+ }
+]
