@@ -1,0 +1,24 @@
+[
+ {
+  "name": "a4_vineyard_sunset",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1024,
+   1440
+  ],
+  "seconds": 46.4
+ },
+ {
+  "name": "rollup_burgundy_goblet",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1808
+  ],
+  "seconds": 67.5
+ }
+]
