@@ -1,0 +1,6 @@
+{"jobs": [
+ {"name": "fixA_1", "model": "kontext", "ref": "bgA", "seed": 3,
+  "prompt": "Remove the small cross-shaped finial at the very top of the golden frame crest and replace it with a simple round polished golden ball finial. Keep everything else in the image exactly the same: same frame, same curtains, same wallpaper, same violins, same roses, same composition and colors."},
+ {"name": "fixA_2", "model": "kontext", "ref": "bgA", "seed": 9,
+  "prompt": "Delete the cross ornament on top of the gold frame. The top of the crest should end with a rounded golden acorn-shaped knob instead. Do not change anything else in the image."}
+]}
