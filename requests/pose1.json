@@ -1,0 +1,60 @@
+{
+ "jobs": [
+  {
+   "name": "pose_neutral",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 120,
+   "prompt": "Keep this exact same man: same face, same beard, same round glasses, same black hat, same long black coat and white shirt, same Pixar 3D style. Medium shot from the waist up, he faces the viewer, centered, plain pure white background, nothing else. He stands calmly with a warm friendly smile, mouth closed, both hands relaxed down at his sides (hands out of view)."
+  },
+  {
+   "name": "pose_explain",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 121,
+   "prompt": "Keep this exact same man: same face, same beard, same round glasses, same black hat, same long black coat and white shirt, same Pixar 3D style. Medium shot from the waist up, he faces the viewer, centered, plain pure white background, nothing else. He explains something warmly: his right hand is raised in front of his chest with the open palm facing up, mouth closed with a gentle smile."
+  },
+  {
+   "name": "pose_finger",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 122,
+   "prompt": "Keep this exact same man: same face, same beard, same round glasses, same black hat, same long black coat and white shirt, same Pixar 3D style. Medium shot from the waist up, he faces the viewer, centered, plain pure white background, nothing else. He raises his right index finger up next to his face as if saying 'listen, one moment', mouth closed, eyebrows slightly raised."
+  },
+  {
+   "name": "pose_wide",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 123,
+   "prompt": "Keep this exact same man: same face, same beard, same round glasses, same black hat, same long black coat and white shirt, same Pixar 3D style. Medium shot from the waist up, he faces the viewer, centered, plain pure white background, nothing else. He spreads both arms wide open to the sides with open palms, as if saying 'oh my, look at this', mouth closed, expressive face."
+  },
+  {
+   "name": "pose_heart",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 124,
+   "prompt": "Keep this exact same man: same face, same beard, same round glasses, same black hat, same long black coat and white shirt, same Pixar 3D style. Medium shot from the waist up, he faces the viewer, centered, plain pure white background, nothing else. He places his right hand flat on his heart, warm sincere expression, mouth closed with a soft smile."
+  },
+  {
+   "name": "pose_point",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 125,
+   "prompt": "Keep this exact same man: same face, same beard, same round glasses, same black hat, same long black coat and white shirt, same Pixar 3D style. Medium shot from the waist up, he faces the viewer, centered, plain pure white background, nothing else. He points his right index finger straight at the viewer, encouraging confident expression, mouth closed."
+  },
+  {
+   "name": "pose_think",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 126,
+   "prompt": "Keep this exact same man: same face, same beard, same round glasses, same black hat, same long black coat and white shirt, same Pixar 3D style. Medium shot from the waist up, he faces the viewer, centered, plain pure white background, nothing else. He holds his chin with his right hand, thoughtful expression looking slightly up, mouth closed."
+  },
+  {
+   "name": "pose_wave",
+   "space": "black-forest-labs/FLUX.1-Kontext-Dev",
+   "ref": "base",
+   "seed": 127,
+   "prompt": "Keep this exact same man: same face, same beard, same round glasses, same black hat, same long black coat and white shirt, same Pixar 3D style. Medium shot from the waist up, he faces the viewer, centered, plain pure white background, nothing else. He waves hello with his right hand raised high, palm facing the viewer, big friendly smile, mouth closed."
+  }
+ ]
+}
