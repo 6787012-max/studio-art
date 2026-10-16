@@ -1,0 +1,24 @@
+[
+ {
+  "name": "a4_royal_purple",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1024,
+   1440
+  ],
+  "seconds": 58.9
+ },
+ {
+  "name": "rollup_papercut_vines",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1808
+  ],
+  "seconds": 40.2
+ }
+]
