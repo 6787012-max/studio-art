@@ -1,0 +1,24 @@
+[
+ {
+  "name": "a4_flower_chuppah",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1024,
+   1440
+  ],
+  "seconds": 28.9
+ },
+ {
+  "name": "rollup_navy_art_deco",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1808
+  ],
+  "seconds": 26.1
+ }
+]
