@@ -1,0 +1,24 @@
+[
+ {
+  "name": "pose_neutral",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": [
+   896,
+   1152
+  ],
+  "seconds": 32.4
+ },
+ {
+  "name": "pose_heart",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": [
+   896,
+   1152
+  ],
+  "seconds": 29.5
+ }
+]
