@@ -1,0 +1,24 @@
+[
+ {
+  "name": "a4_navy_gold_arch",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1024,
+   1440
+  ],
+  "seconds": 32.6
+ },
+ {
+  "name": "a4_emerald_gold",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1024,
+   1440
+  ],
+  "seconds": 27.7
+ }
+]
