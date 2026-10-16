@@ -1,0 +1,24 @@
+[
+ {
+  "name": "a4_burgundy_gold",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1024,
+   1440
+  ],
+  "seconds": 33.0
+ },
+ {
+  "name": "a4_wood_vines",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1024,
+   1440
+  ],
+  "seconds": 28.3
+ }
+]
