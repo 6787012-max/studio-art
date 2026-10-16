@@ -1,0 +1,1 @@
+{"cmd": "python tools/cut_one.py up_apose.png out apose"}
