@@ -1,0 +1,1 @@
+{"jobs": [{"name": "a4_navy_gold_arch", "space": "finegrain/finegrain-image-enhancer", "ref": "a4_navy_gold_arch", "prompt": "ornate gold baroque frame, velvet curtains, violins, roses, marble, highly detailed, sharp, photorealistic", "params": {"upscale_factor": 4, "negative_prompt": "blurry, text, letters, watermark, low quality, cross"}}]}
