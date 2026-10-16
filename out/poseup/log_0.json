@@ -1,0 +1,24 @@
+[
+ {
+  "name": "up_pose_neutral",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": [
+   1792,
+   2304
+  ],
+  "seconds": 7.6
+ },
+ {
+  "name": "up_pose_heart",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": [
+   1792,
+   2304
+  ],
+  "seconds": 4.2
+ }
+]
