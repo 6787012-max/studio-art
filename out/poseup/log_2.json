@@ -1,0 +1,24 @@
+[
+ {
+  "name": "up_pose_finger",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": [
+   1792,
+   2304
+  ],
+  "seconds": 7.6
+ },
+ {
+  "name": "up_pose_think",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": [
+   1792,
+   2304
+  ],
+  "seconds": 2.9
+ }
+]
