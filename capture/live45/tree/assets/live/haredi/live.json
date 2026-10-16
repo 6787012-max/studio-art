@@ -1,0 +1,88 @@
+{
+ "size": [
+  1792,
+  2304
+ ],
+ "poses": [
+  "pose_explain",
+  "pose_finger",
+  "pose_heart",
+  "pose_neutral",
+  "pose_point",
+  "pose_think",
+  "pose_wave",
+  "pose_wide"
+ ],
+ "patches": {
+  "mouth_rest": {
+   "img": "mouth_rest.png",
+   "origin": [
+    761,
+    639
+   ]
+  },
+  "mouth_ah": {
+   "img": "mouth_ah.png",
+   "origin": [
+    761,
+    639
+   ]
+  },
+  "mouth_ee": {
+   "img": "mouth_ee.png",
+   "origin": [
+    761,
+    639
+   ]
+  },
+  "mouth_oh": {
+   "img": "mouth_oh.png",
+   "origin": [
+    761,
+    639
+   ]
+  },
+  "mouth_mm": {
+   "img": "mouth_mm.png",
+   "origin": [
+    761,
+    639
+   ]
+  },
+  "eyes_closed": {
+   "img": "eyes_closed.png",
+   "origin": [
+    604,
+    469
+   ]
+  }
+ },
+ "head_top": [
+  876.9047793855923,
+  99.8278264144837
+ ],
+ "chin": [
+  871.3998668470997,
+  905.1702651406689
+ ],
+ "neck": [
+  872.0604563517188,
+  808.5291724935266
+ ],
+ "face": [
+  899.1935180737967,
+  679.25725171435
+ ],
+ "mouth": [
+  898.6348713939644,
+  760.9845954961925
+ ],
+ "eyes": [
+  894.979765116733,
+  597.4972862285757
+ ],
+ "head_w": 944.9572034047341,
+ "feet_y": 2238.0,
+ "body_top": 128.0,
+ "center_x": 877.0
+}
