@@ -1,0 +1,24 @@
+[
+ {
+  "name": "a4_watercolor_peony",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1024,
+   1440
+  ],
+  "seconds": 43.0
+ },
+ {
+  "name": "a4_sapphire_pearls",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1024,
+   1440
+  ],
+  "seconds": 45.2
+ }
+]
