@@ -1,0 +1,24 @@
+[
+ {
+  "name": "a4_jerusalem_stone",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1024,
+   1440
+  ],
+  "seconds": 40.1
+ },
+ {
+  "name": "a4_emerald_books",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1024,
+   1440
+  ],
+  "seconds": 42.4
+ }
+]
