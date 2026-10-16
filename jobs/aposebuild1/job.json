@@ -1,0 +1,1 @@
+{"cmd": "python tools/apose_build.py apose.png heads hands out"}
