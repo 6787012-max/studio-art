@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>בדיקת במה תלת-ממדית</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import { film, world, person, cloud, rain, map3d, path, orbit, label, THREE, prog, ease, CITIES } from '../../lib/stage3d.js';
+const RAV = { coat: '#1d1d24', beard: '#3a2a20', beardLen: .6, hat: 'hat', skin: '#efcfb0', glasses: true };
+film({
+  title: 'בדיקה', kicker: 'סרטון 1',
+  shots: [
+    { dur: 8, caps: ['סוף הקיץ: האדמה סדוקה, והנחל יבש.', 'ואז מופיע במערב ענן אפור קטן.'], build() {
+      const Wd = world({ ground: 'dry', skyTop: 0xf3d9a4, skyBottom: 0xfbeed2, fogColor: 0xf5e3c0, fogNear: 30, fogFar: 160, sun: 2.3 });
+      const cl = Wd.add(cloud({ seed: 3, size: 2.2, color: 0x9aa3ad, pos: [-40, 9, -10] }));
+      Wd.on(t => { cl.position.x = -40 + t * 4.4; });
+      rain(Wd, { x0: -6, x1: 6, z0: -14, z1: -6, top: 8, count: 400, amount: t => prog(t, 5.5, 7.5), offset: t => [-40 + t * 4.4 + 40 - 4, 0] });
+      for (let i = 0; i < 9; i++) Wd.add(new THREE.Mesh(new THREE.DodecahedronGeometry(.4 + (i % 3) * .3), new THREE.MeshLambertMaterial({ color: 0xb08a5a }))).position.set(-8 + i * 2.3, .2, -4 - (i % 4) * 2);
+      return Object.assign(Wd, { cam: path([[0, [6, 1.2, 10], [-4, 2, -10], 50], [8, [-2, 2.6, 6], [-10, 4, -12], 45]]) });
+    } },
+    { dur: 10, caps: ['האם בכל ארץ ישראל יורד אותו גשם?', 'בצפת שבגליל יורדים בשנה 700 מילימטרים.'], build() {
+      const Wd = world({ ground: 'stone', skyTop: 0x9cc3e8, skyBottom: 0xf1e8d8, fogFar: 260 });
+      const M = map3d({ scale: .5, exag: 9 }); M.group.position.set(0, .35, 0); Wd.add(M.group);
+      const zf = M.at(...CITIES['צפת'], .35); label(Wd, 'צפת', { pos: [zf.x, zf.y + 1.1, zf.z], height: .45 });
+      const ar = M.at(...CITIES['ירושלים'], .35); label(Wd, 'ירושלים', { pos: [ar.x, ar.y + 1.1, ar.z], height: .45 });
+      person(Wd, RAV, t => ({ pos: [zf.x - 1.6, 0, zf.z + 1.5 + t * .35], facing: 200 * Math.PI / 180, perform: .9, talk: .5 + .5 * Math.sin(t * 9), gesture: t > 5 ? 'point' : null, walk: t * 5, stride: t < 5 ? .8 : 0 }));
+      return Object.assign(Wd, { cam: orbit([zf.x - 1, 1.2, zf.z + 3], 7.5, 2.6, 60, 170, 0, 10, 45) });
+    } },
+  ],
+});
+</script>
+</html>
