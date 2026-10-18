@@ -351,7 +351,7 @@ function shotHills() {
     if (y > -3 && d < -40) { c.copy(cG1).lerp(cG2, fbm(x * .06, z * .06)); if (fbm(x * .03 + 7, z * .03) > .64) c.lerp(cBr, .5); return; }
     if (Math.abs(d) < 9 && y < -42) { c.copy(cZor).lerp(cFl, sm(clamp((Math.abs(d) - 3) / 6, 0, 1))); return; }
     if (y < -42) { c.copy(cFl); return; }
-    c.copy(cRock).lerp(cRk2, .5 + .5 * Math.sin(y * .55 + fbm(x * .05, z * .05) * 2)); if (d > 0) { c.lerp(cEast, .4); c.lerp(cG2, sm(clamp((y + 30) / 25, 0, 1)) * (.35 + .5 * fbm(x * .03, z * .03))); } else c.lerp(cG2, .25 * fbm(x * .2, z * .2)); };
+    c.copy(cRock).lerp(cRk2, fbm(x * .045, z * .045)); if (d > 0) { c.lerp(cEast, .4); c.lerp(cG2, sm(clamp((y + 30) / 25, 0, 1)) * (.35 + .5 * fbm(x * .03, z * .03))); } else c.lerp(cG2, .25 * fbm(x * .2, z * .2)); };
   Wd.add(terrain(-220, 440, -260, 260, 264, 208, hF, cF));
 
   // הירדן בתחתית הבקעה
