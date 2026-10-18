@@ -1,0 +1,18 @@
+{
+ "jobs": [
+  {
+   "name": "rav_hat_a",
+   "w": 832,
+   "h": 1216,
+   "seed": 5,
+   "prompt": "full body character design sheet, front view, A-pose with arms slightly away from the body, a friendly Orthodox Jewish rabbi with a full dark beard, side curls (payot), round glasses, black fedora hat with a wide brim, white shirt, long black frock coat, black trousers, black shoes, flat vector illustration style, clean simple shapes, flat colors with one soft shadow tone, crisp dark outlines, plain white background, whole body visible, centered"
+  },
+  {
+   "name": "boy_kippa_a",
+   "w": 832,
+   "h": 1216,
+   "seed": 8,
+   "prompt": "full body character design sheet, front view, A-pose with arms slightly away from the body, a cheerful 11 year old Orthodox Jewish boy with side curls (payot), short dark hair, black kippah, white shirt, black trousers, black shoes, flat vector illustration style, clean simple shapes, flat colors with one soft shadow tone, crisp dark outlines, children's book illustration, plain white background, whole body visible, centered"
+  }
+ ]
+}
