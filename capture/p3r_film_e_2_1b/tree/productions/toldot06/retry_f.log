@@ -1,0 +1,3 @@
+sub 2/2 t0=101.2 d=33.8 -> rc=1 packed 29 files 
+sub 1/2 t0=67.5 d=33.8 -> rc=1 packed 29 files run 39153986815 run finished: exit=0  minutes=0.0 
+FAILED {1: 1, 0: 1}

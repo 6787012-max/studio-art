@@ -1,0 +1,5 @@
+part 1/4 t0=0.0 d=59.5 -> rc=0
+part 2/4 t0=59.5 d=59.5 -> rc=0
+part 3/4 t0=119.0 d=59.5 -> rc=0
+part 4/4 t0=178.5 d=59.5 -> rc=0
+joined film_b: 238.0s (expected 238.0)
