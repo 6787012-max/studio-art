@@ -1,0 +1,877 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>ארץ שעיניה לשמים</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import { film, world, person, cloud, rain, label, THREE, prog, ease, clamp, lerp, rng, D, box, cyl, toon, ink, canvasTex, seq } from '../../lib/stage3d.js';
+
+// =====================================================================================
+// סרטון 5 — "ארץ שעיניה לשמים" (film_e)
+// =====================================================================================
+const V3 = (x, y, z) => new THREE.Vector3(x, y, z), V2 = (x, y) => new THREE.Vector2(x, y), C = c => new THREE.Color(c);
+const sm = ease.sm;
+const RAV = { coat: '#1d1d24', beard: '#3a2a20', beardLen: .6, hat: 'hat', skin: '#efcfb0', glasses: true };
+const BOY = { coat: '#2b3a5a', hat: 'kippa', hatColor: '#101014', beardLen: 0, skin: '#f0d2b4', pants: '#1b1d24' };
+const MAN2 = { coat: '#2a2a33', beard: '#8a7a6a', beardLen: .75, hat: 'hat', skin: '#e9c9a8' };
+const MAN3 = { coat: '#23232c', beard: '#2a1d14', beardLen: .45, hat: 'hat', skin: '#f0d0b0' };
+const talk = (t, k) => (k === undefined ? 1 : k) * (.5 + .5 * Math.sin(t * 9));
+
+// ---------- רעש ----------
+function hash2(x, z) { const s = Math.sin(x * 127.1 + z * 311.7) * 43758.5453; return s - Math.floor(s); }
+function vnoise(x, z) { const xi = Math.floor(x), zi = Math.floor(z), xf = x - xi, zf = z - zi, u = xf * xf * (3 - 2 * xf), v = zf * zf * (3 - 2 * zf);
+  return lerp(lerp(hash2(xi, zi), hash2(xi + 1, zi), u), lerp(hash2(xi, zi + 1), hash2(xi + 1, zi + 1), u), v); }
+function fbm(x, z) { return vnoise(x, z) * .55 + vnoise(x * 2.07 + 13.1, z * 2.07 + 7.3) * .3 + vnoise(x * 4.3 + 3.7, z * 4.3 + 19.1) * .15; }
+
+// ---------- מצלמה: מסלול רציף (בלי עצירה בכל נקודה) ----------
+function fly(keys) {
+  const P = new THREE.CatmullRomCurve3(keys.map(k => V3(...k[1])), false, 'centripetal'), L = new THREE.CatmullRomCurve3(keys.map(k => V3(...k[2])), false, 'centripetal');
+  const T = keys.map(k => k[0]), n = keys.length - 1, F = T.map((_, i) => i / n), dl = [], m = [];
+  for (let i = 0; i < n; i++) dl.push((F[i + 1] - F[i]) / (T[i + 1] - T[i]));
+  m[0] = 0; m[n] = 0; for (let i = 1; i < n; i++) m[i] = 2 / (1 / dl[i - 1] + 1 / dl[i]);
+  const fovs = keys.map(k => k[3] === undefined ? 45 : k[3]);
+  return t => {
+    let i = 0; while (i < n - 1 && t > T[i + 1]) i++;
+    const h = T[i + 1] - T[i], u = clamp((t - T[i]) / h, 0, 1), u2 = u * u, u3 = u2 * u;
+    const f = clamp((2 * u3 - 3 * u2 + 1) * F[i] + (u3 - 2 * u2 + u) * h * m[i] + (-2 * u3 + 3 * u2) * F[i + 1] + (u3 - u2) * h * m[i + 1], 0, 1);
+    const s = f * n, j = Math.min(n - 1, Math.floor(s)), v = s - j;
+    return { pos: P.getPoint(f).toArray(), look: L.getPoint(f).toArray(), fov: lerp(fovs[j], fovs[j + 1], sm(v)) };
+  };
+}
+const blend = (A, B, k) => t => { const w = k(t); if (w <= 0) return A(t); if (w >= 1) return B(t); const a = A(t), b = B(t);
+  return { pos: a.pos.map((v, i) => lerp(v, b.pos[i], w)), look: a.look.map((v, i) => lerp(v, b.look[i], w)), fov: lerp(a.fov || 45, b.fov || 45, w) }; };
+
+// ---------- עזרי עולם ----------
+function skyFollow(Wd) { Wd.on((t, cam) => Wd.sky.position.copy(cam.position)); }
+function sunFollow(Wd, dir, dist) {
+  const d = V3(0, 0, 0);
+  Wd.on((t, cam) => { cam.getWorldDirection(d); let k = d.y < -.08 ? cam.position.y / -d.y : 60; k = Math.min(Math.max(k, 10), 110);
+    const tx = cam.position.x + d.x * k, tz = cam.position.z + d.z * k; Wd.sun.target.position.set(tx, 0, tz); Wd.sun.position.set(tx + dir.x * dist, dir.y * dist, tz + dir.z * dist); });
+}
+function terrain(x0, x1, z0, z1, nx, nz, hF, cF) {
+  const g = new THREE.PlaneGeometry(x1 - x0, z1 - z0, nx, nz); g.rotateX(-Math.PI / 2); g.translate((x0 + x1) / 2, 0, (z0 + z1) / 2);
+  const p = g.attributes.position, cols = new Float32Array(p.count * 3), c = new THREE.Color();
+  for (let i = 0; i < p.count; i++) { const x = p.getX(i), z = p.getZ(i), y = hF(x, z); p.setY(i, y); cF(x, z, y, c); cols[i * 3] = c.r; cols[i * 3 + 1] = c.g; cols[i * 3 + 2] = c.b; }
+  g.setAttribute('color', new THREE.BufferAttribute(cols, 3)); g.computeVertexNormals();
+  const m = new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true })); m.receiveShadow = true; return m;
+}
+function strip(L, R, vScale, uW) {
+  const pos = [], uv = [], idx = []; let acc = 0; uW = uW === undefined ? 1 : uW;
+  for (let i = 0; i < L.length; i++) {
+    if (i > 0) acc += Math.hypot((L[i].x + R[i].x - L[i - 1].x - R[i - 1].x) / 2, (L[i].y + R[i].y - L[i - 1].y - R[i - 1].y) / 2, (L[i].z + R[i].z - L[i - 1].z - R[i - 1].z) / 2);
+    pos.push(L[i].x, L[i].y, L[i].z, R[i].x, R[i].y, R[i].z); uv.push(0, acc * vScale, uW, acc * vScale);
+    if (i > 0) { const a = (i - 1) * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+  }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.computeVertexNormals(); return g;
+}
+function lineStrip(pts, w, y, vScale) {
+  const L = [], R = [];
+  for (let i = 0; i < pts.length; i++) { const p = pts[i], q = pts[Math.min(i + 1, pts.length - 1)], o = pts[Math.max(i - 1, 0)]; let tx = q[0] - o[0], tz = q[1] - o[1]; const l = Math.hypot(tx, tz) || 1; tx /= l; tz /= l;
+    const yy = typeof y === 'function' ? y(p[0], p[1]) : y; L.push(V3(p[0] + tz * w / 2, yy, p[1] - tx * w / 2)); R.push(V3(p[0] - tz * w / 2, yy, p[1] + tx * w / 2)); }
+  return strip(L, R, vScale || 1);
+}
+function boxGeo(w, h, d, unit) {
+  const g = new THREE.BoxGeometry(w, h, d), uv = g.attributes.uv, dims = [[d, h], [d, h], [w, d], [w, d], [w, h], [w, h]];
+  for (let f = 0; f < 6; f++) for (let k = 0; k < 4; k++) { const i = f * 4 + k; uv.setXY(i, uv.getX(i) * dims[f][0] / unit, uv.getY(i) * dims[f][1] / unit); }
+  return g;
+}
+// איחוד הרבה חלקים סטטיים לרשת אחת (מהיר בהרבה)
+function mergeParts(parts, withUv) {
+  let nv = 0, ni = 0; for (const [g] of parts) { nv += g.attributes.position.count; ni += g.index ? g.index.count : g.attributes.position.count; }
+  const pos = new Float32Array(nv * 3), nor = new Float32Array(nv * 3), col = new Float32Array(nv * 3), uvs = withUv ? new Float32Array(nv * 2) : null, idx = new Uint32Array(ni);
+  let ov = 0, oi = 0; const v = new THREE.Vector3(), nm = new THREE.Matrix3();
+  for (const [g, M, c] of parts) {
+    const p = g.attributes.position, n = g.attributes.normal, u = g.attributes.uv; nm.getNormalMatrix(M);
+    for (let i = 0; i < p.count; i++) { const o = (ov + i) * 3; v.fromBufferAttribute(p, i).applyMatrix4(M); pos[o] = v.x; pos[o + 1] = v.y; pos[o + 2] = v.z;
+      v.fromBufferAttribute(n, i).applyMatrix3(nm).normalize(); nor[o] = v.x; nor[o + 1] = v.y; nor[o + 2] = v.z; col[o] = c.r; col[o + 1] = c.g; col[o + 2] = c.b;
+      if (withUv) { uvs[(ov + i) * 2] = u ? u.getX(i) : 0; uvs[(ov + i) * 2 + 1] = u ? u.getY(i) : 0; } }
+    if (g.index) for (let i = 0; i < g.index.count; i++) idx[oi + i] = g.index.getX(i) + ov; else for (let i = 0; i < p.count; i++) idx[oi + i] = ov + i;
+    ov += p.count; oi += g.index ? g.index.count : p.count;
+  }
+  const G = new THREE.BufferGeometry(); G.setAttribute('position', new THREE.BufferAttribute(pos, 3)); G.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); G.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  if (withUv) G.setAttribute('uv', new THREE.BufferAttribute(uvs, 2)); G.setIndex(new THREE.BufferAttribute(idx, 1)); G.computeBoundingSphere(); return G;
+}
+function hb(B, O, w, h, d, x, y, z, color, unit, ry) {
+  const M = new THREE.Matrix4().makeRotationY(ry || 0).setPosition(x, y, z);
+  B.push([unit ? boxGeo(w, h, d, unit) : new THREE.BoxGeometry(w, h, d), M, C(color)]);
+  if (O) O.push([new THREE.BoxGeometry(w + .09, h + .09, d + .09), M, C(0)]);
+}
+function addBatch(Wd, B, O, o) {
+  o = o || {}; let m = null;
+  if (B.length) { m = new THREE.Mesh(mergeParts(B, !!o.uv), o.mat || toon(0xffffff, { vertexColors: true })); m.castShadow = o.cast !== false; m.receiveShadow = true; if (o.inkW) ink(m, o.inkW, o.inkColor); Wd.add(m); }
+  if (O && O.length) Wd.add(new THREE.Mesh(mergeParts(O), new THREE.MeshBasicMaterial({ color: o.inkColor || 0x15100c, side: THREE.BackSide })));
+  return m;
+}
+function sprite(tex, size, o) {
+  o = o || {}; const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, fog: false, transparent: true, depthWrite: false, depthTest: o.depthTest !== false, blending: o.add ? THREE.AdditiveBlending : THREE.NormalBlending, opacity: o.opacity === undefined ? 1 : o.opacity }));
+  sp.scale.set(size, size, 1); if (o.pos) sp.position.set(...o.pos); sp.renderOrder = o.ro === undefined ? 3 : o.ro; return sp;
+}
+const SPH = new THREE.SphereGeometry(1, 20, 14);
+function puffCloud(o) {
+  o = o || {}; const r = rng(o.seed || 1), g = new THREE.Group(), s = o.size || 5, n = o.puffs || 9, mat = o.mat || toon(o.color || 0xf6f7f9);
+  const put = (x, y, z, rr) => { const b = new THREE.Mesh(SPH, mat); b.scale.set(rr, rr * .82, rr); b.position.set(x, y, z); b.castShadow = !!o.cast; ink(b, .035, o.inkColor || 0x8a93a3); g.add(b); };
+  for (let i = 0; i < n; i++) { const u = i / (n - 1) - .5, rr = s * (.5 + r() * .3) * (1 - Math.abs(u) * .7); put(u * s * 3 + (r() - .5) * s * .4, rr * .3, (r() - .5) * s * .8, rr); }
+  for (let i = 0; i < Math.ceil(n / 3); i++) { const u = (r() - .5) * .9; put(u * s * 2.2, s * (.55 + r() * .3), (r() - .5) * s * .5, s * (.5 + r() * .25) * (1 - Math.abs(u) * .6)); }
+  g.userData.mat = mat; if (o.pos) g.position.set(...o.pos); return g;
+}
+function lerpSky(Wd, A, B, k) {
+  const u = Wd.sky.material.uniforms; u.top.value.copy(A.top).lerp(B.top, k); u.bot.value.copy(A.bot).lerp(B.bot, k);
+  Wd.scene.fog.color.copy(A.fog).lerp(B.fog, k); Wd.sun.intensity = lerp(A.sun, B.sun, k); Wd.hemi.intensity = lerp(A.hemi, B.hemi, k);
+  if (A.sunC) Wd.sun.color.copy(A.sunC).lerp(B.sunC, k); if (A.hemiC) Wd.hemi.color.copy(A.hemiC).lerp(B.hemiC, k);
+}
+
+// ---------- טקסטורות ----------
+const glowTex = (c0, c1) => canvasTex(128, 128, (g, w, h) => { const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, c0); r.addColorStop(1, c1); g.fillStyle = r; g.fillRect(0, 0, w, h); });
+const sunTex = () => canvasTex(256, 256, (g, w, h) => { const r = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+  r.addColorStop(0, 'rgba(255,255,246,1)'); r.addColorStop(.16, 'rgba(255,252,226,1)'); r.addColorStop(.2, 'rgba(255,236,170,.75)'); r.addColorStop(.45, 'rgba(255,220,140,.22)'); r.addColorStop(1, 'rgba(255,210,120,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); });
+const moonTex = () => canvasTex(256, 256, (g, w, h) => { const r = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+  r.addColorStop(0, 'rgba(255,250,225,1)'); r.addColorStop(.15, 'rgba(250,244,215,1)'); r.addColorStop(.18, 'rgba(220,226,255,.4)'); r.addColorStop(.5, 'rgba(170,190,255,.1)'); r.addColorStop(1, 'rgba(150,170,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h);
+  g.fillStyle = 'rgba(200,190,160,.35)'; for (const [x, y, s] of [[118, 120, 7], [138, 134, 5], [124, 141, 4]]) { g.beginPath(); g.arc(x, y, s, 0, 7); g.fill(); } });
+function waterTex(base, hi, seed) { const r = rng(seed || 3); return canvasTex(128, 256, (g, w, h) => { g.fillStyle = base; g.fillRect(0, 0, w, h); g.lineCap = 'round';
+  for (let i = 0; i < 34; i++) { const x = r() * w, y = r() * h, l = 14 + r() * 40; g.strokeStyle = hi; g.globalAlpha = .18 + r() * .42; g.lineWidth = 2 + r() * 4; g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + (r() - .5) * 10, y + l / 2, x + (r() - .5) * 6, y + l); g.stroke(); }
+  g.globalAlpha = 1; }, [1, 1]); }
+const rowsTex = () => canvasTex(64, 64, (g, w, h) => { g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); g.fillStyle = '#dcdcdc'; for (let y = 0; y < h; y += 8) g.fillRect(0, y, w, 3); }, [1, 1]);
+const furrowTex = () => { const r = rng(4); return canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#fff'; g.fillRect(0, 0, w, h); g.fillStyle = '#c9c4bc'; for (let x = 0; x < w; x += 16) g.fillRect(x, 0, 6, h);
+  g.fillStyle = 'rgba(90,70,40,.25)'; for (let k = 0; k < 120; k++) g.fillRect(r() * w, r() * h, 2, 2); }, [1, 1]); };
+function stoneTex(seed, cols, mortar) { const r = rng(seed || 1); cols = cols || ['#eadcc0', '#e2d1b1', '#efe2c8', '#dccaa6']; return canvasTex(256, 256, (g, w, h) => {
+  g.fillStyle = mortar || '#c4b190'; g.fillRect(0, 0, w, h);
+  for (let row = 0; row < 4; row++) { let x = -r() * 60; const y = row * 64; while (x < w) { const bw = 70 + r() * 60; g.fillStyle = cols[Math.floor(r() * cols.length)]; g.beginPath(); g.roundRect(x + 2, y + 2, bw - 4, 60, 5); g.fill();
+    g.globalAlpha = .16; g.fillStyle = '#8a7656'; for (let k = 0; k < 7; k++) { g.beginPath(); g.arc(x + r() * bw, y + r() * 60, 1 + r() * 2.5, 0, 7); g.fill(); } g.globalAlpha = 1; x += bw; } } }, [1, 1]); }
+function terraceWallTex() { const r = rng(8); return canvasTex(256, 64, (g, w, h) => { g.fillStyle = '#7c6a4c'; g.fillRect(0, 0, w, h);
+  const cols = ['#c8b591', '#bba985', '#d4c3a0', '#b19f7b', '#c2ae88'];
+  for (let row = 0; row < 2; row++) { let x = -r() * 30; while (x < w) { const bw = 22 + r() * 26, y = 7 + row * 28; g.fillStyle = cols[Math.floor(r() * cols.length)]; g.beginPath(); g.roundRect(x + 1.5, y + 1.5, bw - 3, 25, 7); g.fill(); x += bw; } }
+  g.fillStyle = '#5d5038'; g.fillRect(0, 0, w, 6); g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(0, h - 6, w, 6); }, [1, 1]); }
+function terraceTopTex() { const r = rng(9); return canvasTex(256, 256, (g, w, h) => { g.fillStyle = '#fff'; g.fillRect(0, 0, w, h);
+  g.fillStyle = 'rgba(70,100,40,.22)'; for (let y = 4; y < h; y += 16) g.fillRect(0, y, w, 6);
+  for (let k = 0; k < 400; k++) { g.fillStyle = r() < .5 ? 'rgba(60,90,30,.25)' : 'rgba(255,255,220,.3)'; g.beginPath(); g.arc(r() * w, r() * h, 1 + r() * 3, 0, 7); g.fill(); } }, [1, 1]); }
+function rockTex() { const r = rng(17); return canvasTex(512, 512, (g, w, h) => {
+  const bands = ['#d7bf93', '#cdb387', '#dcc69c', '#c4a77b', '#d2b98d', '#c9ad80']; const soil = h * .075; g.fillStyle = '#c9ad80'; g.fillRect(0, 0, w, h);
+  let y = soil, i = 0;
+  while (y < h + 10) { const bh = 30 + r() * 50, ph = r() * 6; g.fillStyle = bands[i++ % bands.length]; g.beginPath(); g.moveTo(0, y + Math.sin(ph) * 4); for (let x = 0; x <= w; x += 32) g.lineTo(x, y + Math.sin(x / w * Math.PI * 2 * 2 + ph) * 4); g.lineTo(w, h + 20); g.lineTo(0, h + 20); g.fill();
+    g.strokeStyle = 'rgba(110,85,55,.35)'; g.lineWidth = 2; g.beginPath(); g.moveTo(0, y + Math.sin(ph) * 4); for (let x = 0; x <= w; x += 32) g.lineTo(x, y + Math.sin(x / w * Math.PI * 2 * 2 + ph) * 4); g.stroke(); y += bh; }
+  for (let k = 0; k < 160; k++) { g.fillStyle = r() < .5 ? 'rgba(120,95,65,.35)' : 'rgba(240,225,195,.45)'; g.beginPath(); g.ellipse(r() * w, soil + r() * (h - soil), 2 + r() * 5, 1.5 + r() * 3, r() * 3, 0, 7); g.fill(); }
+  g.strokeStyle = 'rgba(95,72,48,.4)'; g.lineWidth = 1.5; for (let k = 0; k < 10; k++) { let x = r() * w, yy = soil + r() * (h - soil); g.beginPath(); g.moveTo(x, yy); for (let s = 0; s < 4; s++) { x += (r() - .5) * 30; yy += 10 + r() * 20; g.lineTo(x, yy); } g.stroke(); }
+  g.fillStyle = '#8b6a45'; g.fillRect(0, 0, w, soil); g.fillStyle = '#7a5c3a'; for (let k = 0; k < 60; k++) g.fillRect(r() * w, r() * soil, 4, 3);
+  g.fillStyle = '#6f8f45'; for (let x = 0; x < w; x += 5) g.fillRect(x, 0, 3, 3 + r() * 7);
+}, [1, 1]); }
+const noiseTex = (seed, a) => { const r = rng(seed); return canvasTex(256, 256, (g, w, h) => { g.fillStyle = '#fff'; g.fillRect(0, 0, w, h);
+  for (let k = 0; k < 500; k++) { g.fillStyle = r() < .6 ? `rgba(110,90,60,${a || .18})` : 'rgba(255,255,255,.4)'; g.beginPath(); g.ellipse(r() * w, r() * h, 2 + r() * 8, 1 + r() * 5, r() * 3, 0, 7); g.fill(); } }, [1, 1]); };
+function pavingTex() { const r = rng(23); return canvasTex(256, 256, (g, w, h) => { g.fillStyle = '#b9a98c'; g.fillRect(0, 0, w, h);
+  const cols = ['#e4d8c0', '#dccdb1', '#e9dfca', '#d5c6a8'];
+  for (let y = 0; y < h; y += 42) { let x = -r() * 40; while (x < w) { const bw = 36 + r() * 46; g.fillStyle = cols[Math.floor(r() * 4)]; g.beginPath(); g.roundRect(x + 2, y + 2, bw - 4, 38, 6); g.fill(); x += bw; } } }, [1, 1]); }
+function planksTex() { const r = rng(31); return canvasTex(256, 256, (g, w, h) => { const cols = ['#a7754a', '#9c6c43', '#b07d50', '#94653e'];
+  for (let y = 0; y < h; y += 32) { let x = -r() * 120; while (x < w) { const bw = 120 + r() * 140; g.fillStyle = cols[Math.floor(r() * 4)]; g.fillRect(x, y, bw, 32); g.fillStyle = 'rgba(60,35,15,.5)'; g.fillRect(x, y, 2, 32); x += bw; }
+    g.fillStyle = 'rgba(60,35,15,.55)'; g.fillRect(0, y, w, 2); } }, [1, 1]); }
+function booksTex(seed, rowsN) { const r = rng(seed); return canvasTex(512, 512, (g, w, h) => {
+  g.fillStyle = '#5b391f'; g.fillRect(0, 0, w, h); const rows = rowsN || 6, rh = (h - 16) / rows;
+  const pal = ['#7a1f1f', '#1f3b6b', '#2f5a2f', '#5a3a1f', '#6b1f4a', '#22222c', '#8a6a2a', '#3c2a5a', '#9a3a1a'];
+  for (let i = 0; i < rows; i++) { const y0 = 8 + i * rh; g.fillStyle = '#2e1a0e'; g.fillRect(10, y0, w - 20, rh - 10); let x = 12;
+    while (x < w - 16) { const bw = 9 + r() * 15, bh = (rh - 14) * (.72 + r() * .26); if (x + bw > w - 12) break; const c = pal[Math.floor(r() * pal.length)];
+      g.fillStyle = c; g.fillRect(x, y0 + rh - 10 - bh, bw - 1.5, bh); g.fillStyle = '#d9b45a'; g.fillRect(x + 1, y0 + rh - 10 - bh + bh * .12, bw - 3.5, 2.2); g.fillRect(x + 1, y0 + rh - 10 - bh * .2, bw - 3.5, 2.2);
+      g.fillStyle = 'rgba(255,255,255,.12)'; g.fillRect(x + 1, y0 + rh - 10 - bh, 2, bh); x += bw; }
+    g.fillStyle = '#7a4d2a'; g.fillRect(0, y0 + rh - 10, w, 10); }
+  g.strokeStyle = '#3a2412'; g.lineWidth = 10; g.strokeRect(5, 5, w - 10, h - 10); }, [1, 1]); }
+
+// =====================================================================================
+// שוט 1 — מצרים מן האוויר: הנילוס
+// =====================================================================================
+function shotNile() {
+  const Wd = world({ skyTop: 0x5ea6e8, skyBottom: 0xfaedd0, fogColor: 0xf3e5c6, fogNear: 170, fogFar: 900, sun: 2.0, sunColor: 0xfff2d8, hemi: 1.2, hemiGround: 0xb59a6c, shadowExt: 70, skyR: 1500 });
+  const RX = z => 10 * Math.sin(z * .012) + 6 * Math.sin(z * .031 + 1.3), RW = z => 6 + 1.4 * Math.sin(z * .021 + .5), Zc = -430;
+  skyFollow(Wd); sunFollow(Wd, V3(-.35, 1, -.5).normalize(), 160);
+  const hF = (x, z) => {
+    const d = Math.abs(x - RX(z));
+    let h = sm(clamp((d - 36) / 14, 0, 1)) * (6 + 3 * fbm(x * .03, z * .03));
+    h += sm(clamp((d - 48) / 34, 0, 1)) * (5 * Math.pow(Math.abs(Math.sin(x * .05 + z * .013 + 2.4 * fbm(x * .012, z * .012))), 1.6) + 7 * fbm(x * .011 + 5, z * .011));
+    const ms = sm(clamp((-z - 600) / 200, 0, 1)); h += ms * (25 + 70 * fbm(x * .009 + 3, z * .009)) * sm(clamp((d - 18) / 50, 0, 1));
+    return h;
+  };
+  const cS1 = C(0xe9cb92), cS2 = C(0xd4af73), cS3 = C(0xf3dcaa), cFloor = C(0x8d8a4e), cMtn = C(0x55904a), cMtnR = C(0x9c8a66), tmp = new THREE.Color();
+  const cF = (x, z, y, c) => { const d = Math.abs(x - RX(z)); c.copy(cS1).lerp(cS2, fbm(x * .05, z * .05)); if (fbm(x * .02 + 9, z * .02) > .62) c.lerp(cS3, .6);
+    c.lerp(cFloor, 1 - sm(clamp((d - 33) / 6, 0, 1)));
+    const ms = sm(clamp((-z - 620) / 160, 0, 1)) * sm(clamp((y - 8) / 30, 0, 1)); tmp.copy(cMtnR).lerp(cMtn, fbm(x * .02, z * .02)); c.lerp(tmp, ms); };
+  Wd.add(terrain(-240, 240, -980, 180, 150, 370, hF, cF));
+
+  // שדות לאורך הנהר (טלאים ירוקים)
+  const fp = [], fc = [], fu = [], fr = rng(21), pal = [0x5f9d3c, 0x74ae49, 0x88bd55, 0x67a342, 0x9cc35a, 0xc4bf68, 0x528f37].map(C);
+  const pushQuad = (P, c, uw, vh) => { const [a, b, cc, d] = P; for (const [p, u, v] of [[a, 0, 0], [b, uw, 0], [cc, uw, vh], [a, 0, 0], [cc, uw, vh], [d, 0, vh]]) { fp.push(p[0], .12, p[1]); fc.push(c.r, c.g, c.b); fu.push(u, v); } };
+  for (let z = 176; z > -640; z -= 8) for (const sd of [-1, 1]) {
+    const za = z - .25, zb = z - 7.75; if (sd > 0 && za > Zc - 27 && zb < Zc + 27) continue;
+    const a = RW(z) + 2.2, bands = [a, a + 6 + fr() * 3, a + 13 + fr() * 3, 31.5];
+    for (let k = 0; k < 3; k++) { const d0 = bands[k] + .3, d1 = bands[k + 1] - .3, c = pal[Math.floor(fr() * pal.length)];
+      pushQuad([[d0, za], [d1, za], [d1, zb], [d0, zb]].map(([d, zz]) => [RX(zz) + sd * d, zz]), c, (d1 - d0) / 1.6, (za - zb) / 1.6); }
+  }
+  const fg = new THREE.BufferGeometry(); fg.setAttribute('position', new THREE.Float32BufferAttribute(fp, 3)); fg.setAttribute('color', new THREE.Float32BufferAttribute(fc, 3)); fg.setAttribute('uv', new THREE.Float32BufferAttribute(fu, 2)); fg.computeVertexNormals();
+  const fields = new THREE.Mesh(fg, new THREE.MeshLambertMaterial({ vertexColors: true, map: rowsTex(), side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4 })); fields.receiveShadow = true; Wd.add(fields);
+
+  // הנהר + גדות
+  const rL = [], rR = [], bL1 = [], bL2 = [], bR1 = [], bR2 = [];
+  for (let z = 180; z >= -980; z -= 4) { const x = RX(z), w = RW(z); rL.push(V3(x - w, .32, z)); rR.push(V3(x + w, .32, z)); bL1.push(V3(x - w - 2, .2, z)); bL2.push(V3(x - w + .3, .2, z)); bR1.push(V3(x + w - .3, .2, z)); bR2.push(V3(x + w + 2, .2, z)); }
+  const rTex = waterTex('#3b8ed2', '#a9d8f7', 5);
+  const river = new THREE.Mesh(strip(rL, rR, 1 / 18), new THREE.MeshLambertMaterial({ map: rTex, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -8 })); river.receiveShadow = true; Wd.add(river);
+  const bankMat = new THREE.MeshLambertMaterial({ color: 0x4f7d35, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1.5, polygonOffsetUnits: -6 });
+  Wd.add(new THREE.Mesh(strip(bL1, bL2, .1), bankMat)); Wd.add(new THREE.Mesh(strip(bR1, bR2, .1), bankMat));
+  Wd.on(t => { rTex.offset.y = t * .1; });
+
+  // דקלים (רשת אחת)
+  const PB = [], leafGeo = new THREE.SphereGeometry(1, 10, 6); leafGeo.scale(.42, .1, 1.9); leafGeo.translate(0, 0, 1.75);
+  const leafCols = [0x4c8a34, 0x63a142, 0x3f7a2c].map(C), dateGeo = new THREE.SphereGeometry(.3, 8, 6);
+  function palmAt(x, z, s, seed) {
+    const r = rng(seed), h = (5.5 + r() * 3) * s, lean = (r() - .5) * .3, yaw = r() * 6.28;
+    const base = new THREE.Matrix4().makeRotationY(yaw).setPosition(x, 0, z).multiply(new THREE.Matrix4().makeRotationZ(lean));
+    PB.push([new THREE.CylinderGeometry(.17 * s, .27 * s, h, 7), base.clone().multiply(new THREE.Matrix4().makeTranslation(0, h / 2, 0)), C(0x8b6a45)]);
+    const top = base.clone().multiply(new THREE.Matrix4().makeTranslation(0, h, 0)), n = 7 + Math.floor(r() * 3), e = new THREE.Euler(), q = new THREE.Quaternion();
+    for (let k = 0; k < n; k++) { e.set(.25 + r() * .5, k / n * Math.PI * 2 + r() * .4, 0, 'YXZ'); q.setFromEuler(e); const sc = s * (.9 + r() * .25);
+      PB.push([leafGeo, top.clone().multiply(new THREE.Matrix4().compose(V3(0, 0, 0), q, V3(sc, sc, sc))), leafCols[k % 3]]); }
+    PB.push([dateGeo, top.clone().multiply(new THREE.Matrix4().makeTranslation(.18 * s, -.35 * s, 0)), C(0xc0702a)]);
+  }
+  const pr = rng(77);
+  for (let z = 150; z > -640; z -= 10 + pr() * 9) {
+    const sd = pr() < .5 ? -1 : 1; if (sd > 0 && Math.abs(z - Zc) < 32) continue;
+    const d = pr() < .55 ? RW(z) + 1.8 + pr() * 1.2 : 30 + pr() * 4, n = 1 + (pr() < .4 ? 1 : 0);
+    for (let k = 0; k < n; k++) { const zz = z + (pr() - .5) * 6, dd = d + (pr() - .5) * 2.5; palmAt(RX(zz) + sd * dd, zz, .9 + pr() * .35, Math.floor(pr() * 1e6)); }
+  }
+  for (const [d, dz, s] of [[33, -7, 1.1], [31.6, 13, 1], [34.5, 21, .95], [RW(Zc) + 2, 26, 1.05], [RW(Zc) + 2.4, -27, 1]]) palmAt(RX(Zc + dz) + d, Zc + dz, s, Math.floor(d * 1000 + dz));
+  addBatch(Wd, PB, null, { inkW: .045 });
+
+  // כפרים קטנים בשולי העמק + פירמידות
+  const VB = [], VO = [], vr = rng(5);
+  for (const [zv, sd] of [[95, 1], [10, -1], [-60, 1], [-150, -1], [-245, 1], [-305, -1], [-385, -1], [-540, 1], [-600, -1], [Zc + 18, 1]]) {
+    const n = zv === Zc + 18 ? 2 : 3 + Math.floor(vr() * 4);
+    for (let k = 0; k < n; k++) { const zz = zv + (vr() - .5) * (n * 4), d = 33 + vr() * 4, w = 3 + vr() * 2.5, h = 2.4 + vr() * 1.6, dd = 3 + vr() * 2.5, x = RX(zz) + sd * d;
+      hb(VB, VO, w, h, dd, x, h / 2, zz, vr() < .5 ? 0xd9bd8f : 0xcfae7d); hb(VB, null, .8, 1.5, .1, x + (vr() - .5) * (w - 1.2), .75, zz + dd / 2 + .03, 0x5c4025); }
+  }
+  addBatch(Wd, VB, VO, { inkColor: 0x3a2a1a });
+  for (const [zp, s] of [[-78, 1], [-112, .78], [-138, .5]]) { const xp = RX(zp) - 66 - s * 8, hh = 30 * s, rr = 33 * s;
+    const py = new THREE.Mesh(new THREE.ConeGeometry(rr, hh, 4, 1), toon(0xdcb978, { flatShading: true })); py.rotation.y = Math.PI / 4 + .25; py.position.set(xp, hF(xp, zp) - 2.5 + hh / 2, zp); py.castShadow = py.receiveShadow = true; ink(py, .12 * s); Wd.add(py); }
+
+  // סירות מפרש על הנהר
+  const boats = [];
+  for (const [z0, off, sp] of [[40, -2, 1.6], [-75, 2.5, 1.3], [-210, -1.5, 1.8], [-330, 2, 1.4], [-482, -2.6, 1.5]]) {
+    const b = new THREE.Group();
+    b.add(box(4.4, .7, 1.4, 0x7a5232, { pos: [0, .35, 0], inkW: .04 })); b.add(cyl(.06, .08, 4.6, 0x5a3a22, { pos: [.4, 2.6, 0] }));
+    const sail = new THREE.Mesh(new THREE.ShapeGeometry(new THREE.Shape([V2(-1.7, .9), V2(.4, 5.1), V2(2.0, 1.0)])), toon(0xf7f1e2, { side: THREE.DoubleSide })); sail.position.z = .06; sail.castShadow = true; b.add(sail);
+    Wd.add(b); boats.push([b, z0, off, sp]);
+  }
+  Wd.on(t => { for (const [b, z0, off, sp] of boats) { const z = z0 + t * sp, dx = (RX(z + 1) - RX(z - 1)) / 2; b.position.set(RX(z) + off, .32, z); b.rotation.y = Math.atan2(dx, 1) + Math.PI / 2; } });
+
+  // ענני הרים רחוקים בדרום (משם בא המים)
+  const farCl = [];
+  for (const [dx, y, z, s, sd] of [[-70, 105, -800, 18, 3], [40, 118, -840, 22, 8], [120, 98, -790, 16, 13], [-150, 112, -860, 20, 19], [-10, 128, -880, 17, 23]]) farCl.push([Wd.add(cloud({ seed: sd, size: s, color: 0xeef1f5, pos: [RX(z) + dx, y, z], puffs: 8, cast: false })), y]);
+  Wd.on(t => { const k = sm(prog(t, 22, 27)); for (const [c, y] of farCl) { c.position.y = y - 90 * (1 - k); c.visible = k > 0; } });
+
+  // אזור התעלות
+  const toX = (d, z) => RX(z) + d, cdA = RW(Zc) - .6, cdB = 31;
+  const bedMat = new THREE.MeshLambertMaterial({ color: 0x8a6a42, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -8 });
+  const cwTex = waterTex('#3f95d8', '#c4e6fb', 9), canals = [];
+  function canal(pts, w, t0, t1) {
+    const bed = new THREE.Mesh(lineStrip(pts, w + .8, .2), bedMat); bed.receiveShadow = true; Wd.add(bed);
+    const tex = cwTex.clone(); tex.needsUpdate = true; const g = lineStrip(pts, w, .3, 1 / 2.2);
+    Wd.add(new THREE.Mesh(g, new THREE.MeshLambertMaterial({ map: tex, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -3, polygonOffsetUnits: -12 })));
+    canals.push({ g, tex, nseg: pts.length - 1, t0, t1 });
+  }
+  const mainPts = []; for (let d = cdA; d <= cdB + .01; d += .5) mainPts.push([toX(d, Zc), Zc]);
+  const tM0 = 32.4, tM1 = 35.4, tAt = d => lerp(tM0, tM1, (d - cdA) / (cdB - cdA));
+  canal(mainPts, 1.3, tM0, tM1);
+  // תעלות-משנה רק לצד אחד בכל נקודה (צומת T, בלי צלב)
+  const SIDES = [{ sgn: 1, br: [13, 25], bands: [[RW(Zc) + 2.2, 12.4, 13], [13.6, 24.4, 13], [25.6, 31, 25]] }, { sgn: -1, br: [19, 29], bands: [[RW(Zc) + 2.2, 18.4, 19], [19.6, 28.4, 19]] }];
+  for (const S of SIDES) for (const db of S.br) { const pts = []; for (let k = 0; k <= 44; k++) { const z = Zc + S.sgn * k * .5; pts.push([toX(db, z), z]); } canal(pts, .95, tAt(db), tAt(db) + 2.8); }
+  Wd.on(t => { for (const c of canals) { const f = prog(t, c.t0, c.t1); c.g.setDrawRange(0, Math.floor(c.nseg * f) * 6); c.tex.offset.y = -t * .9; } });
+  const plots = [], furrow = furrowTex(), sproutGeo = new THREE.ConeGeometry(.13, .55, 5); sproutGeo.translate(0, .275, 0); const sproutMat = toon(0x58a83a);
+  for (const S of SIDES) for (const [d0, d1, feed] of S.bands) for (const [z0, z1] of [[.9, 10.6], [11.6, 21.6]]) { const sgn = S.sgn;
+    const L = [], R = [], za = Zc + sgn * z0, zb = Zc + sgn * z1;
+    for (let k = 0; k <= 6; k++) { const z = lerp(za, zb, k / 6); L.push(V3(toX(d0, z), .14, z)); R.push(V3(toX(d1, z), .14, z)); }
+    const mat = new THREE.MeshLambertMaterial({ map: furrow, color: 0xb8925d, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4 });
+    const pm = new THREE.Mesh(strip(L, R, 1 / 1.5, (d1 - d0) / 1.5), mat); pm.receiveShadow = true; Wd.add(pm);
+    const rows = [], sp = rng(Math.floor(d0 * 100 + z0 * 7 + sgn * 3 + 50));
+    for (let dd = d0 + .5; dd < d1 - .3; dd += .9) for (let k = 0; k < 9; k++) { const z = lerp(za, zb, (k + .5) / 9) + (sp() - .5) * .3; rows.push([toX(dd, z), z]); }
+    const im = new THREE.InstancedMesh(sproutGeo, sproutMat, rows.length), M = new THREE.Matrix4();
+    rows.forEach(([x, z], i) => { M.makeTranslation(x, 0, z); im.setMatrixAt(i, M); }); im.position.y = .14; im.castShadow = true; Wd.add(im);
+    plots.push({ mat, im, tReach: tAt(feed) + 2.8 * (z0 / 22) + .3 });
+  }
+  const dry = C(0xb8925d), wet = C(0x6aa845);
+  Wd.on(t => { for (const p of plots) { p.mat.color.copy(dry).lerp(wet, prog(t, p.tReach, p.tReach + 2.5)); const gk = prog(t, p.tReach + .8, p.tReach + 5); p.im.visible = gk > .01; p.im.scale.y = Math.max(.01, gk); } });
+
+  label(Wd, 'הנילוס', { pos: [RX(-30), 13, -30], height: 5.5, bg: 'rgba(16,52,96,.82)' });
+  label(Wd, 'הנילוס', { pos: [RX(-265), 15, -265], height: 6.5, bg: 'rgba(16,52,96,.82)' });
+
+  // שמש חמה
+  const sunDir = V3(-.24, .4, -1).normalize(), sunSp = Wd.add(sprite(sunTex(), 170, { ro: -5 }));
+  Wd.on((t, cam) => sunSp.position.copy(cam.position).addScaledVector(sunDir, 900));
+
+  const sv = V3(-.24, .3, -1).normalize(), kS = [RX(-30) + 6, 30, -22];
+  const cam = fly([
+    [0, [RX(110) + 34, 96, 130], [RX(-35) - 6, 0, -35], 50],
+    [7.5, [RX(70) + 26, 76, 78], [RX(-50) - 6, 0, -50], 50],
+    [13.4, [RX(15) + 15, 52, 22], [RX(-80) - 4, 5, -80], 50],
+    [17.4, kS, [kS[0] + sv.x * 200, kS[1] + sv.y * 200, kS[2] + sv.z * 200], 54],
+    [22, [RX(-95) + 16, 17, -90], [RX(-122) + 3, 0, -122], 50],
+    [26.6, [RX(-225) + 6, 32, -212], [RX(-330), 4, -330], 52],
+    [30.2, [RX(-350) + 3, 42, -340], [RX(-620), 32, -740], 48],
+    [34.2, [RX(-392) + 32, 17, -397], [RX(Zc) + 14, 0, Zc - 2], 50],
+    [39.4, [RX(Zc + 14) + 31, 9.5, Zc + 15], [RX(Zc) + 15, 0, Zc - 1], 48],
+    [49, [RX(Zc + 12) + 7, 8, Zc + 23], [RX(Zc) + 16, 0, Zc - 3], 46],
+  ]);
+  return Object.assign(Wd, { cam });
+}
+
+// =====================================================================================
+// שוט 2 — הרי ארץ ישראל, טרסות, והירדן העמוק
+// =====================================================================================
+function terraceHill(Wd, o, mats) {
+  const g = new THREE.Group(), r = rng(o.seed), ph = [r() * 6, r() * 6, r() * 6, r() * 6];
+  const rad = (k, a) => (o.R - k * o.dR) * (1 + .09 * Math.sin(2 * a + ph[0]) + .06 * Math.sin(3 * a + ph[1]) + .035 * Math.sin(5 * a + ph[2]) + .02 * Math.sin(7 * a + ph[3]));
+  for (let k = 0; k < o.n; k++) {
+    const pts = []; for (let i = 0; i < 72; i++) { const a = i / 72 * Math.PI * 2, rr = rad(k, a); pts.push(V2(Math.cos(a) * rr, Math.sin(a) * rr)); }
+    const base = k === 0 ? 4 : 0, geo = new THREE.ExtrudeGeometry(new THREE.Shape(pts), { depth: o.step + base, bevelEnabled: false, curveSegments: 1, steps: 1 });
+    geo.rotateX(-Math.PI / 2); geo.translate(0, k * o.step - base, 0);
+    const m = new THREE.Mesh(geo, [mats.top, mats.wall]); m.receiveShadow = true; m.castShadow = true; g.add(m);
+  }
+  g.position.set(o.x, 0, o.z); Wd.add(g);
+  // מיקום על משטח הטרסה k (בין הקיר של k+1 לקצה של k), בזווית a; שימו לב: z בעולם = -y של הצורה
+  const at = (k, a, f) => { const r0 = rad(k + 1, a), r1 = rad(k, a), rr = lerp(r0, r1, f === undefined ? .5 : f); return [o.x + Math.cos(a) * rr, (k + 1) * o.step, o.z - Math.sin(a) * rr]; };
+  return { group: g, rad, at, top: o.n * o.step, o };
+}
+function shotHills() {
+  const Wd = world({ skyTop: 0x6aa6e2, skyBottom: 0xeaf0ee, fogColor: 0xe3ebec, fogNear: 110, fogFar: 600, sun: 1.9, sunPos: [15, 80, 55], hemi: 1.2, shadowExt: 48, skyR: 1200 });
+  skyFollow(Wd);
+  const VX = z => 88 + 7 * Math.sin(z * .025 + .6) + 4 * Math.sin(z * .061);
+  const hF = (x, z) => {
+    const d = x - VX(z), pl = 2.2 * fbm(x * .035, z * .035) - 1.1, fl = -46 + (Math.abs(d) < 5 ? 0 : 1.2 * fbm(x * .1, z * .1));
+    if (d < 0) { const k = clamp((d + 50) / 34, 0, 1), kk = sm(Math.pow(k, .8)); return lerp(pl, fl, kk) + 16 * fbm(x * .08, z * .08) * kk * (1 - kk); }
+    const k = sm(clamp((d - 12) / 40, 0, 1)), east = -15 + 30 * sm(clamp((d - 30) / 170, 0, 1)) + 16 * fbm(x * .014 + 4, z * .014);
+    return lerp(fl, east, k) + 16 * fbm(x * .08, z * .08) * k * (1 - k);
+  };
+  const cG1 = C(0x8db35d), cG2 = C(0x7aa34f), cBr = C(0xb3a272), cRock = C(0xb09572), cRk2 = C(0x9b8160), cZor = C(0x4f8a3a), cFl = C(0xc9b382), cEast = C(0xa89a6c);
+  const cF = (x, z, y, c) => { const d = x - VX(z);
+    if (y > -3 && d < -40) { c.copy(cG1).lerp(cG2, fbm(x * .06, z * .06)); if (fbm(x * .03 + 7, z * .03) > .64) c.lerp(cBr, .5); return; }
+    if (Math.abs(d) < 9 && y < -42) { c.copy(cZor).lerp(cFl, sm(clamp((Math.abs(d) - 3) / 6, 0, 1))); return; }
+    if (y < -42) { c.copy(cFl); return; }
+    c.copy(cRock).lerp(cRk2, .5 + .5 * Math.sin(y * .55 + fbm(x * .05, z * .05) * 2)); if (d > 0) { c.lerp(cEast, .4); c.lerp(cG2, sm(clamp((y + 30) / 25, 0, 1)) * (.35 + .5 * fbm(x * .03, z * .03))); } else c.lerp(cG2, .25 * fbm(x * .2, z * .2)); };
+  Wd.add(terrain(-220, 440, -260, 260, 264, 208, hF, cF));
+
+  // הירדן בתחתית הבקעה
+  const jL = [], jR = []; for (let z = 240; z >= -240; z -= 3) { const x = VX(z); jL.push(V3(x - 1.4, -45.6, z)); jR.push(V3(x + 1.4, -45.6, z)); }
+  const jTex = waterTex('#3a8fd6', '#b4defa', 7);
+  Wd.add(new THREE.Mesh(strip(jL, jR, 1 / 8), new THREE.MeshLambertMaterial({ map: jTex, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -8 })));
+  Wd.on(t => { jTex.offset.y = -t * .25; });
+  const jLabel = label(Wd, 'הירדן', { pos: [VX(4), -39.5, 4], height: 3.2, bg: 'rgba(16,52,96,.82)' });
+
+  // גבעות טרסות
+  const wallT = terraceWallTex(); wallT.repeat.set(1 / 3, 1 / 1.6); wallT.offset.set(0, .6 / 1.6);
+  const topT = terraceTopTex(); topT.repeat.set(1 / 6, 1 / 6);
+  const mats = { top: new THREE.MeshLambertMaterial({ map: topT, color: 0x9cbc62 }), wall: new THREE.MeshLambertMaterial({ map: wallT }) };
+  const mk = (x, z, R, n, seed) => terraceHill(Wd, { x, z, R, n, step: 1.6, dR: (R - R * .27) / (n - 1), seed }, mats);
+  const H1 = mk(0, 0, 28, 9, 3);
+  const others = [mk(-62, -42, 34, 10, 5), mk(-40, 62, 26, 8, 7), mk(4, -78, 24, 7, 9), mk(-112, 12, 36, 11, 11), mk(-20, 122, 30, 9, 13), mk(-95, -110, 30, 9, 15)];
+  // עצי זית על הטרסות
+  const OB = [], olr = rng(41);
+  const olive = (x, y, z, s) => { OB.push([new THREE.CylinderGeometry(.12 * s, .2 * s, 1.5 * s, 6), new THREE.Matrix4().makeTranslation(x, y + .75 * s, z), C(0x6b5238)]);
+    for (let k = 0; k < 3; k++) OB.push([new THREE.SphereGeometry((.75 + olr() * .35) * s, 10, 8), new THREE.Matrix4().makeTranslation(x + (olr() - .5) * s, y + (1.7 + olr() * .5) * s, z + (olr() - .5) * s), C(olr() < .5 ? 0x7f9b5a : 0x6f8d4e)]); };
+  for (const h of [H1, ...others]) for (let k = 0; k < h.o.n - 1; k++) for (let j = 0; j < 3; j++) {
+    const a = olr() * Math.PI * 2; if (h === H1 && (Math.cos(a) > .2 || k > 5)) continue; const p = h.at(k, a, .55); olive(p[0], p[1], p[2], .8 + olr() * .3); }
+  for (let i = 0; i < 26; i++) { const x = -150 + olr() * 180, z = -180 + olr() * 360; if (Math.hypot(x, z) < 40) continue; olive(x, hF(x, z) - .1, z, .9 + olr() * .3); }
+  addBatch(Wd, OB, null, { inkW: .05 });
+  // נבטים שצומחים על הטרסות של הגבעה הראשית
+  const sproutGeo = new THREE.ConeGeometry(.09, .55, 5); sproutGeo.translate(0, .275, 0); const sproutMat = toon(0x5aa83c), sprouts = [];
+  for (let k = 0; k < H1.o.n - 1; k++) {
+    const pts = []; for (const f of [.3, .7]) { const r0 = (H1.rad(k + 1, 0) + H1.rad(k, 0)) / 2; const n = Math.floor(2 * Math.PI * r0 / .9); for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; const p = H1.at(k, a, f); pts.push(p); } }
+    const im = new THREE.InstancedMesh(sproutGeo, sproutMat, pts.length), M = new THREE.Matrix4(); pts.forEach((p, i) => { M.makeTranslation(p[0], 0, p[2]); im.setMatrixAt(i, M); });
+    im.position.y = (k + 1) * 1.6 + .01; Wd.add(im); sprouts.push(im);
+  }
+  const growK = t => sm(prog(t, 21.5, 28));
+  const topDry = C(0xb0bd6c), topWet = C(0x6fb046);
+  Wd.on(t => { const g = growK(t); for (const im of sprouts) { im.visible = g > .01; im.scale.y = Math.max(.01, g); } mats.top.color.copy(topDry).lerp(topWet, sm(prog(t, 20.5, 27.5))); });
+
+  // עננים מסביב לפתח מעל הגבעה (המצלמה עוברת ביניהם)
+  const cloudMats = new Set();
+  for (const [x, y, z, s, sd] of [[-21, 40, -6, 6, 2], [19, 42, -15, 6, 4], [3, 45, -32, 7, 6], [15, 39, 21, 5.5, 8], [-17, 43, 23, 6, 10], [38, 46, 6, 5, 12], [70, 56, 40, 8, 14], [-95, 56, 0, 7, 16], [-50, 50, -48, 7, 18]]) {
+    const c = puffCloud({ seed: sd, size: s * .95, pos: [x, y, z], puffs: 8 }); Wd.add(c); cloudMats.add(c.userData.mat); }
+  // חץ עומק: מגובה השדות אל הנהר
+  const arrow = new THREE.Group(), aM = new THREE.MeshBasicMaterial({ color: 0xffc23a }); arrow.position.set(VX(-10) - 3.5, 0, -10); Wd.add(arrow);
+  const shG = new THREE.CylinderGeometry(.75, .75, 1, 12); shG.translate(0, -.5, 0); const shaft = new THREE.Mesh(shG, aM); ink(shaft, .12); arrow.add(shaft);
+  const head = new THREE.Mesh(new THREE.ConeGeometry(2.4, 5, 16), aM); head.rotation.x = Math.PI; ink(head, .12); arrow.add(head);
+  const dashes = []; for (let i = 0; i < 19; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(1.5, .6, .6), aM); m.position.set(-47 + i * 2.5, 0, 0); arrow.add(m); dashes.push(m); }
+  Wd.on(t => { const k = sm(prog(t, 15.2, 18.6)), vis = k > 0 && t < 21.4; arrow.visible = vis; const L = 45 * k; shaft.scale.y = Math.max(.01, L - 4.5); head.position.y = -Math.max(2.5, L - 2.5);
+    dashes.forEach((m, i) => m.visible = vis && i / 19 < sm(prog(t, 14.2, 15.6))); });
+  rain(Wd, { x0: -40, x1: 40, z0: -40, z1: 40, top: 36, bottom: 0, count: 2600, speed: 17, color: 0x9fb7d8, opacity: .8, seed: 7, amount: t => sm(prog(t, 19.8, 21.6)) * (1 - sm(prog(t, 36.6, 38.6))) });
+  rain(Wd, { x0: 14, x1: 48, z0: 8, z1: 46, top: 16, bottom: 0, count: 1500, speed: 8.5, color: 0xd2ddf4, opacity: .7, seed: 9, amount: t => sm(prog(t, 48.6, 50.4)) });
+
+  // הבית הקטן (לילה)
+  const hx = 30, hz = 26, stT = stoneTex(12); const stM = toon(0xffffff, { map: stT });
+  const house = new THREE.Group(); house.position.set(hx, 0, hz); house.rotation.y = .5; Wd.add(house);
+  const hm = (g, m, o) => { const x = new THREE.Mesh(g, m); x.position.set(...o.pos); x.castShadow = x.receiveShadow = true; if (o.ink !== false) ink(x, .035, 0x2a2016, true); house.add(x); return x; };
+  hm(boxGeo(4.6, 3.0, 4.0, 2), stM, { pos: [0, 1.5, 0] }); hm(boxGeo(5.0, .3, 4.4, 2), toon(0xd8c9aa), { pos: [0, 3.15, 0] });
+  hm(new THREE.BoxGeometry(.95, 1.9, .1), toon(0x5a3a22), { pos: [-1.1, .95, 2.02] });
+  const winM = new THREE.MeshBasicMaterial({ color: 0x3a3229 });
+  hm(new THREE.BoxGeometry(.85, .85, .08), winM, { pos: [.9, 1.75, 2.02] }); hm(new THREE.BoxGeometry(.08, .85, .85), winM, { pos: [2.32, 1.75, 0] });
+  const wGlow = sprite(glowTex('rgba(255,205,110,.9)', 'rgba(255,170,60,0)'), 3.4, { add: true, opacity: 0 }); wGlow.position.set(.9, 1.75, 2.3); house.add(wGlow);
+  const wGlow2 = sprite(glowTex('rgba(255,205,110,.9)', 'rgba(255,170,60,0)'), 3.0, { add: true, opacity: 0 }); wGlow2.position.set(2.6, 1.75, 0); house.add(wGlow2);
+  const bush = (r, c, p) => { const m = new THREE.Mesh(new THREE.SphereGeometry(r, 12, 9), toon(c)); m.position.set(...p); m.castShadow = true; ink(m, .03); house.add(m); };
+  for (let i = 0; i < 4; i++) bush(.42 + (i % 2) * .12, 0x5f8f3e, [-2.9 - i * .8, .38, 1.6 + (i % 2) * .5]);
+  house.add(cyl(.12, .16, 1.4, 0x6b5238, { pos: [3.4, .7, 1.4] })); bush(1.0, 0x7f9b5a, [3.4, 2.0, 1.4]);
+
+  // לילה: ירח וכוכבים
+  const moon = Wd.add(sprite(moonTex(), 80, { ro: -5, opacity: 0 })), moonDir = V3(-.35, .2, -1).normalize();
+  const sg = new THREE.BufferGeometry(), sp = [], srn = rng(55); for (let i = 0; i < 380; i++) { const a = srn() * Math.PI * 2, y = .12 + srn() * .88, r = Math.sqrt(1 - y * y); sp.push(Math.cos(a) * r * 900, y * 900, Math.sin(a) * r * 900); }
+  sg.setAttribute('position', new THREE.Float32BufferAttribute(sp, 3)); const stars = new THREE.Points(sg, new THREE.PointsMaterial({ color: 0xffffff, size: 2.4, sizeAttenuation: false, transparent: true, opacity: 0, fog: false, depthWrite: false })); Wd.add(stars);
+  const DAY = { top: C(0x6aa6e2), bot: C(0xeaf0ee), fog: C(0xe3ebec), sun: 1.9, hemi: 1.2, sunC: C(0xfff1dc), hemiC: C(0xffffff) };
+  const RAINY = { top: C(0x8ea3bd), bot: C(0xd9e0e4), fog: C(0xd5dde2), sun: 1.1, hemi: 1.15, sunC: C(0xf0f2f6), hemiC: C(0xf2f4f8) };
+  const NIGHT = { top: C(0x17244e), bot: C(0x41588e), fog: C(0x34446f), sun: .75, hemi: .72, sunC: C(0xa9bdf0), hemiC: C(0x9aa8d8) };
+  const cWhite = C(0xf6f7f9), cGray = C(0xb4bcc8), cNight = C(0x56628a), wDark = C(0x3a3229), wLit = C(0xffcf72);
+  const night = t => sm(prog(t, 47.2, 49.6));
+  Wd.on((t, cam) => {
+    const rk = sm(prog(t, 19.2, 21.2)) * (1 - sm(prog(t, 37.2, 39.4))), nk = night(t);
+    lerpSky(Wd, DAY, RAINY, rk);
+    if (nk > 0) { const u = Wd.sky.material.uniforms; u.top.value.lerp(NIGHT.top, nk); u.bot.value.lerp(NIGHT.bot, nk); Wd.scene.fog.color.lerp(NIGHT.fog, nk); Wd.sun.intensity = lerp(Wd.sun.intensity, NIGHT.sun, nk); Wd.hemi.intensity = lerp(Wd.hemi.intensity, NIGHT.hemi, nk); Wd.sun.color.lerp(NIGHT.sunC, nk); Wd.hemi.color.lerp(NIGHT.hemiC, nk);
+      Wd.scene.fog.near = lerp(90, 40, nk); Wd.scene.fog.far = lerp(520, 260, nk); } else { Wd.scene.fog.near = 90; Wd.scene.fog.far = 520; }
+    for (const m of cloudMats) m.color.copy(cWhite).lerp(cGray, rk).lerp(cNight, nk);
+    winM.color.copy(wDark).lerp(wLit, nk); wGlow.material.opacity = nk * .95; wGlow2.material.opacity = nk * .8;
+    moon.material.opacity = nk; moon.position.copy(cam.position).addScaledVector(moonDir, 600); stars.material.opacity = nk * .9; stars.position.copy(cam.position);
+    jLabel.visible = t > 10.8 && t < 30;
+  });
+
+  // הרב על ראש הגבעה
+  const T1 = H1.top, RP = [-.6, T1, .8];
+  person(Wd, RAV, t => {
+    if (t > 48.6) return { hidden: true };
+    const s = { pos: RP, groundY: T1, facing: 1.3 };
+    if (t < 10.2) return Object.assign(s, { perform: .85, talk: talk(t), facing: 1.0 });
+    if (t < 19.6) return Object.assign(s, { gesture: 'pointA', facing: 1.57, talk: talk(t, .6) });
+    if (t < 29) return Object.assign(s, { gesture: 'offer', lookY: -.6, smile: .6, facing: .9 });
+    if (t < 38.4) return Object.assign(s, { perform: .7, talk: talk(t, .5), facing: .9 });
+    return Object.assign(s, { gesture: 'up', lookY: -1, brow: 1, smile: .35, facing: .7 });
+  });
+
+  const orb = []; const OC = [RP[0], T1 + 1.35, RP[2]];
+  for (let i = 0; i <= 6; i++) { const a = (25 + i * 22) * D, t = 40.8 + i; orb.push([t, [OC[0] + Math.sin(a) * 5.4, T1 + .5 + i * .05, OC[2] + Math.cos(a) * 5.4], [OC[0], T1 + 1.15, OC[2]], 46]); }
+  const cam = fly([
+    [0, [-72, 44, 62], [8, 6, -4], 50],
+    [9.6, [-34, 31, 44], [26, 2, 4], 50],
+    [12.6, [18, 25, 12], [62, -8, 6], 52],
+    [15.6, [62, -10, 24], [92, -44, 12], 54],
+    [17.8, [88, -38, 40], [94, -45, 14], 50],
+    [20.6, [98, -4, 96], [86, -30, -6], 52],
+    [24.6, [50, 16, 46], [4, 8, 2], 50],
+    [28.6, [18, 13.5, 20], [0, 10, 0], 48],
+    [31.6, [9, 21, 12], [-2, 40, -10], 54],
+    [34.4, [1, 38.5, 4], [-20, 41, -6], 56],
+    [37.4, [-6, 58, 13], [0, 14, -2], 54],
+    ...orb,
+    [48.6, [6, 20, 14], [30, 2, 26], 50],
+    [52.6, [14, 8.5, 46], [30, 2.2, 26], 48],
+    [56.8, [42, 4.4, 41], [30, 2.1, 26], 46],
+  ]);
+  return Object.assign(Wd, { cam });
+}
+
+// =====================================================================================
+// שוט 3 — בור מים בחתך: חציבה, טיח, גשם, דלי, העיר, התלמיד
+// =====================================================================================
+const XC = 1.6, NECK = .45, YN = -1.0, YB = -5.4, RMAX = 2.6;
+function bellR(y) { if (y >= YN) return NECK; const u = clamp((YN - y) / (YN - YB), 0, 1);
+  return NECK + (RMAX - NECK) * Math.pow(Math.sin(Math.PI / 2 * Math.min(1, u / .85)), .75) * (u > .93 ? Math.sqrt(1 - Math.pow((u - .93) / .07, 2) * .35) : 1); }
+function profile(yEnd) { const P = [], n = Math.max(2, Math.ceil(-yEnd / .1)); for (let i = 0; i <= n; i++) { const y = lerp(0, yEnd, i / n); P.push([bellR(y), y]); }
+  const rb = bellR(yEnd); for (let i = 1; i <= 4; i++) P.push([rb * (1 - i / 4), yEnd]); return P; }
+function shotCistern() {
+  const Wd = world({ skyTop: 0x7db7ea, skyBottom: 0xf6e8cc, fogColor: 0xf0e4cd, fogNear: 70, fogFar: 300, sun: 2.1, sunPos: [-22, 42, 34], hemi: 1.2, shadowExt: 36 });
+  skyFollow(Wd);
+  const rockT = rockTex(); rockT.repeat.set(1 / 9, 1 / 7.5); rockT.offset.set(0, 1);
+  const rockMat = new THREE.MeshLambertMaterial({ map: rockT, side: THREE.DoubleSide });
+  // פני החתך (עם השקע של הבור, לפי התקדמות החציבה)
+  function faceShape(prof) {
+    const s = new THREE.Shape(); s.moveTo(-45, -7.5); s.lineTo(45, -7.5); s.lineTo(45, 0);
+    if (prof) { for (const [r, y] of prof) s.lineTo(XC + r, y); for (let i = prof.length - 2; i >= 0; i--) s.lineTo(XC - prof[i][0], prof[i][1]); }
+    s.lineTo(-45, 0); s.lineTo(-45, -7.5); return s;
+  }
+  const DS = 40, faceCache = {}, shellCache = {}, digY = st => lerp(-.3, YB, st / DS);
+  const faceGeo = st => faceCache[st] || (faceCache[st] = new THREE.ShapeGeometry(faceShape(st < 0 ? null : profile(digY(st)))));
+  const shellGeo = st => { if (shellCache[st]) return shellCache[st]; const g = new THREE.LatheGeometry(profile(digY(st)).map(p => V2(p[0], p[1])), 36, Math.PI / 2, Math.PI);
+    g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 3), 3)); return shellCache[st] = g; };
+  const face = new THREE.Mesh(faceGeo(-1), rockMat); face.receiveShadow = true; Wd.add(face);
+  const shellT = noiseTex(29, .07); shellT.repeat.set(2, 1.5);
+  const shell = new THREE.Mesh(shellGeo(DS), new THREE.MeshLambertMaterial({ map: shellT, vertexColors: true, side: THREE.DoubleSide })); shell.position.x = XC; shell.receiveShadow = true; Wd.add(shell);
+  // שאר גוש הסלע: צדדים ותחתית
+  const side = (w, h, pos, ry) => { const g = new THREE.PlaneGeometry(w, h); const uv = g.attributes.uv; for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * w / 9, uv.getY(i) * h / 7.5); const m = new THREE.Mesh(g, rockMat); m.position.set(...pos); m.rotation.y = ry || 0; Wd.add(m); return m; };
+  side(70, 7.5, [-45, -3.75, -35], Math.PI / 2); side(70, 7.5, [45, -3.75, -35], -Math.PI / 2); side(90, 7.5, [0, -3.75, -70], 0);
+  side(30, 7.5, [-45, -3.75, 15], Math.PI / 2); side(30, 7.5, [45, -3.75, 15], -Math.PI / 2); side(90, 7.5, [0, -3.75, 30], Math.PI);
+  const bot = new THREE.Mesh(new THREE.PlaneGeometry(90, 70), new THREE.MeshLambertMaterial({ color: 0x9c8462 })); bot.rotation.x = -Math.PI / 2; bot.position.set(0, -7.48, -35); Wd.add(bot);
+  const dirtT = noiseTex(37, .25); dirtT.repeat.set(12, 4);
+  const floor = new THREE.Mesh(new THREE.PlaneGeometry(90, 30), new THREE.MeshLambertMaterial({ map: dirtT, color: 0xcdb28a })); floor.rotation.x = -Math.PI / 2; floor.position.set(0, -7.5, 15); floor.receiveShadow = true; Wd.add(floor);
+  // הקרקע שמסביב (עם חור לעיר ולחפירה)
+  const og = new THREE.Shape([V2(-320, -320), V2(320, -320), V2(320, 320), V2(-320, 320)]); og.holes.push(new THREE.Path([V2(-45, -30), V2(45, -30), V2(45, 70), V2(-45, 70)]));
+  const ogT = noiseTex(43, .22); ogT.repeat.set(1 / 6, 1 / 6);
+  const outer = new THREE.Mesh(new THREE.ShapeGeometry(og), new THREE.MeshLambertMaterial({ map: ogT, color: 0xc9b07a })); outer.rotation.x = -Math.PI / 2; outer.receiveShadow = true; Wd.add(outer);
+  // קרקע העיר (חצר מרוצפת) עם הפתח של הבור — נעשית שקופה במבט "רנטגן"
+  const gs = new THREE.Shape(); gs.moveTo(-45, 0); gs.lineTo(XC - NECK, 0); for (let i = 1; i < 16; i++) { const a = Math.PI - i / 16 * Math.PI; gs.lineTo(XC + Math.cos(a) * NECK, Math.sin(a) * NECK); }
+  gs.lineTo(XC + NECK, 0); gs.lineTo(45, 0); gs.lineTo(45, 70); gs.lineTo(-45, 70); gs.lineTo(-45, 0);
+  const pavT = pavingTex(); pavT.repeat.set(1 / 3, 1 / 3);
+  const gMat = new THREE.MeshLambertMaterial({ map: pavT, transparent: true, opacity: 1, side: THREE.DoubleSide });
+  const ground = new THREE.Mesh(new THREE.ShapeGeometry(gs), gMat); ground.rotation.x = -Math.PI / 2; ground.receiveShadow = true; ground.renderOrder = -1; Wd.add(ground);
+
+  // בתי העיר + בורות קטנים מתחת לכל חצר
+  const stT = stoneTex(3); const SB = [], DB = [], OB = [], LB = [], hr = rng(33), spots = [];
+  function jhouse(x, zF, w, d, h, detail) {
+    const cz = zF - d / 2, tint = [0xffffff, 0xf4efe6, 0xfff6ea, 0xeee6da][Math.floor(hr() * 4)], ph = .5, pt = .22;
+    hb(SB, OB, w, h, d, x, h / 2, cz, tint, 2);
+    hb(SB, null, w, ph, pt, x, h + ph / 2, zF - pt / 2, tint, 2); hb(SB, null, w, ph, pt, x, h + ph / 2, zF - d + pt / 2, tint, 2);
+    hb(SB, null, pt, ph, d - 2 * pt, x - w / 2 + pt / 2, h + ph / 2, cz, tint, 2); hb(SB, null, pt, ph, d - 2 * pt, x + w / 2 - pt / 2, h + ph / 2, cz, tint, 2);
+    OB.push([new THREE.BoxGeometry(w + .09, ph + .09, d + .09), new THREE.Matrix4().makeTranslation(x, h + ph / 2, cz), C(0)]);
+    if (detail) { hb(DB, OB, .95, 1.95, .1, x + (hr() - .5) * (w - 2.2), .975, zF + .05, 0x5a3b22);
+      const nw = w > 6 ? 2 : 1; for (let k = 0; k < nw; k++) hb(DB, null, .72, .9, .08, x + (nw === 2 ? (k ? 1 : -1) * w * .26 : w * .2), h > 4.6 ? h - 1.4 : 2.4, zF + .045, 0x3b2d22); }
+    spots.push([x + (hr() - .5) * (w - 3), cz]);
+  }
+  const rowsZ = [-4.6, -15.2, -25.8, -36.4, -47, -57.6];
+  rowsZ.forEach((zF, ri) => {
+    const place = (x0, x1, dir) => { let x = x0; while (dir > 0 ? x < x1 : x > x1) { const w = 5.5 + hr() * 2.5, d = 5.6 + hr() * 1.2, h = 3.4 + hr() * 2.6 * (hr() < .35 ? 1.6 : 1);
+      if ((dir > 0 && x + w > x1) || (dir < 0 && x - w < x1)) break; const cx = x + dir * w / 2;
+      if (ri > 0 && hr() < .1) { x += dir * (w + 1); continue; } jhouse(cx, zF, w, d, h, ri < 3); x += dir * (w + .6 + hr() * 1.6); } };
+    if (ri === 0) { place(-4.6, -44, -1); place(4.6, 44, 1); } else place(-43, 43, 1);
+  });
+  const cityM = [toon(0xffffff, { vertexColors: true, map: stT, transparent: true }), toon(0xffffff, { vertexColors: true, transparent: true }), new THREE.MeshBasicMaterial({ color: 0x2a2016, side: THREE.BackSide, transparent: true })];
+  addBatch(Wd, SB, null, { uv: true, mat: cityM[0] }); addBatch(Wd, DB, null, { mat: cityM[1] }); addBatch(Wd, OB, null, { cast: false, mat: cityM[2] });
+  const smallBell = new THREE.LatheGeometry(profile(YB).map(p => V2(p[0] * .66, p[1] * .62)), 24);
+  const sbMat = new THREE.MeshBasicMaterial({ color: 0x4aa8f2 });
+  for (const [x, z] of spots) { const m = new THREE.Mesh(smallBell, sbMat); m.position.set(x, 0, z); Wd.add(m); }
+  // החומה העתיקה מאחור
+  const WB = [], WO = [];
+  hb(WB, WO, 90, 7, 2.4, 0, 3.5, -68, 0xe0cfa8, 2); for (let x = -44; x <= 44; x += 2.2) hb(WB, null, 1.1, .9, 2.4, x, 7.45, -68, 0xe0cfa8, 2);
+  for (const x of [-30, 0, 30]) hb(WB, WO, 6, 10, 5, x, 5, -68, 0xd8c69f, 2);
+  addBatch(Wd, WB, WO, { uv: true, mat: toon(0xffffff, { vertexColors: true, map: stT }) });
+  const TB = []; const tr = rng(61);
+  for (let i = 0; i < 30; i++) { const x = (tr() - .5) * 400, z = -80 - tr() * 160; TB.push([new THREE.SphereGeometry(1.4 + tr(), 10, 8), new THREE.Matrix4().makeTranslation(x, 1.6, z), C(0x7f9b5a)]); }
+  for (let i = 0; i < 16; i++) { const x = (tr() < .5 ? -1 : 1) * (60 + tr() * 150), z = -40 + tr() * 120; TB.push([new THREE.SphereGeometry(1.4 + tr(), 10, 8), new THREE.Matrix4().makeTranslation(x, 1.6, z), C(0x7f9b5a)]); }
+  addBatch(Wd, TB, null, { inkW: .06 });
+
+  // הבית הראשי
+  const stM = toon(0xffffff, { map: stT }), parts = [];
+  const add = (g, m, pos, o) => { const x = new THREE.Mesh(g, m); x.position.set(...pos); x.castShadow = x.receiveShadow = true; if (!o || o.ink !== false) ink(x, (o && o.w) || .04, 0x2a2016, true); Wd.add(x); return x; };
+  add(boxGeo(7.2, 4.0, 6.4, 2), stM, [0, 2, -7.8]);
+  for (const [w, d, x, z] of [[7.2, .22, 0, -4.71], [7.2, .22, 0, -10.89], [.22, 6, -3.49, -7.8], [.22, 6, 3.49, -7.8]]) add(boxGeo(w, .5, d, 2), stM, [x, 4.25, z], { ink: false });
+  add(new THREE.BoxGeometry(1.0, 2.0, .1), toon(0x5a3b22), [-2.4, 1.0, -4.55]);
+  add(new THREE.BoxGeometry(1.8, .1, 1.0), toon(0x7a5232), [-2.4, 2.45, -4.15]);
+  add(new THREE.BoxGeometry(.8, .9, .08), toon(0x3b2d22), [2.0, 2.5, -4.56]);
+  add(new THREE.BoxGeometry(.24, .18, .75), toon(0xb8a684), [-.6, 3.9, -4.3]);
+  add(new THREE.CylinderGeometry(.32, .26, .55, 16), toon(0xb5643c), [4.5, .28, -2.2]); add(new THREE.SphereGeometry(.55, 10, 8), toon(0x5f9a3e), [4.5, .95, -2.2]);
+  add(new THREE.CylinderGeometry(.3, .24, .5, 16), toon(0xb5643c), [-3.2, .25, -1.6]); add(new THREE.SphereGeometry(.5, 10, 8), toon(0x6aa646), [-3.2, .85, -1.6]);
+
+  // מכסה הבור (חצי אבן עגולה בחתך) — זז הצידה בחורף
+  const lid = new THREE.Group(); Wd.add(lid);
+  const lidM = toon(0xa79f92); const lc = new THREE.Mesh(new THREE.CylinderGeometry(.62, .62, .24, 32, 1, false, Math.PI / 2, Math.PI), lidM); lc.castShadow = true; ink(lc, .02); lid.add(lc);
+  const lf = new THREE.Mesh(new THREE.PlaneGeometry(1.24, .24), lidM); lf.position.z = .001; lid.add(lf);
+  // תעלה מן הגג אל הבור + מפל מן המרזב
+  const chPts = new THREE.CatmullRomCurve3([V3(-.6, 0, -3.95), V3(-.55, 0, -3.0), V3(-.1, 0, -2.0), V3(.6, 0, -1.2), V3(1.15, 0, -.62), V3(XC - .28, 0, -.36)]).getPoints(40).map(p => [p.x, p.z]);
+  Wd.add(new THREE.Mesh(lineStrip(chPts, .4, .02), new THREE.MeshLambertMaterial({ color: 0x8f8170, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -4 })));
+  const chTex = waterTex('#4a9be0', '#d4efff', 13); const chG = lineStrip(chPts, .26, .035, 1 / .8);
+  Wd.add(new THREE.Mesh(chG, new THREE.MeshLambertMaterial({ map: chTex, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -8 })));
+  const waterM = new THREE.MeshLambertMaterial({ color: 0x55a8ea, transparent: true, opacity: .85, emissive: 0x0d3050 });
+  const colG = new THREE.CylinderGeometry(1, 1, 1, 10, 1, true); colG.translate(0, -.5, 0);
+  const roofFall = new THREE.Mesh(colG, waterM); roofFall.position.set(-.6, 3.85, -3.93); roofFall.scale.set(.06, 3.83, .06); Wd.add(roofFall);
+  const inFall = new THREE.Mesh(colG, waterM); inFall.position.set(XC - .2, .02, -.28); Wd.add(inFall);
+  const splash = new THREE.Mesh(new THREE.TorusGeometry(.16, .03, 6, 20), new THREE.MeshBasicMaterial({ color: 0xdff3ff, transparent: true })); splash.rotation.x = -Math.PI / 2; Wd.add(splash);
+  // רצועת הטיח בחתך
+  function profRibbon(P, sgn, w, z) { const pos = [], idx = [], pts = P.map(([r, y]) => [XC + sgn * r, y]);
+    for (let i = 0; i < pts.length; i++) { const a = pts[Math.max(0, i - 1)], b = pts[Math.min(pts.length - 1, i + 1)]; let tx = b[0] - a[0], ty = b[1] - a[1]; const l = Math.hypot(tx, ty) || 1; tx /= l; ty /= l;
+      const nx = sgn > 0 ? ty : -ty, ny = sgn > 0 ? -tx : tx; pos.push(pts[i][0], pts[i][1], z, pts[i][0] + nx * w, pts[i][1] + ny * w, z);
+      if (i > 0) { const k = (i - 1) * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); } }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.userData.n = pts.length - 1; return g; }
+  const band = sgn => { const g = profRibbon(profile(YB), sgn, .14, .006), m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ color: 0xf6eedd, side: THREE.DoubleSide })); m.userData.n = g.userData.n; Wd.add(m); return m; };
+  const bands = [band(1), band(-1)];
+  const edgeCache = {}, edgeGeo = (st, s) => edgeCache[st + '_' + s] || (edgeCache[st + '_' + s] = profRibbon(profile(digY(st)), s, .06, .009));
+  const edgeMat = new THREE.MeshBasicMaterial({ color: 0x4a3420, side: THREE.DoubleSide });
+  const edges = [1, -1].map(s => { const m = new THREE.Mesh(edgeGeo(DS, s), edgeMat); m.userData.s = s; Wd.add(m); return m; });
+  // מים בבור: חתך קדמי + פני מים
+  const watCache = {};
+  const watGeo = L => { const k = Math.round(L * 50); if (watCache[k]) return watCache[k]; L = k / 50; const P = profile(YB), pts = [[XC + bellR(L), L]];
+    for (const [r, y] of P) if (y < L) pts.push([XC + r, y]); for (let i = P.length - 1; i >= 0; i--) { const [r, y] = P[i]; if (y < L && r > 0) pts.push([XC - r, y]); } pts.push([XC - bellR(L), L]);
+    return watCache[k] = new THREE.ShapeGeometry(new THREE.Shape(pts.map(p => V2(p[0], p[1])))); };
+  const watFront = new THREE.Mesh(watGeo(-3), new THREE.MeshLambertMaterial({ color: 0x3f93dc, transparent: true, opacity: .9, emissive: 0x0b2a48, side: THREE.DoubleSide })); watFront.position.z = .003; watFront.renderOrder = 1; Wd.add(watFront);
+  const sg = new THREE.CircleGeometry(1, 40, 0, Math.PI); sg.rotateX(-Math.PI / 2);
+  const watTop = new THREE.Mesh(sg, new THREE.MeshLambertMaterial({ color: 0x7cc2f2, transparent: true, opacity: .92, emissive: 0x123a5c, side: THREE.DoubleSide })); watTop.position.x = XC; Wd.add(watTop);
+  // שבבי סלע ואבק בזמן החציבה
+  const chipGeo = new THREE.DodecahedronGeometry(.07), chipMat = toon(0xb89c74), chips = [];
+  for (let i = 0; i < 16; i++) { const m = new THREE.Mesh(chipGeo, chipMat); Wd.add(m); chips.push(m); }
+  const dust = Wd.add(sprite(glowTex('rgba(232,214,180,.85)', 'rgba(232,214,180,0)'), 2.4, { opacity: 0 }));
+  // הדלי והחבל
+  const bucket = new THREE.Group(); Wd.add(bucket);
+  const bk = new THREE.Mesh(new THREE.CylinderGeometry(.2, .16, .34, 18, 1, true), toon(0x7a5232, { side: THREE.DoubleSide })); bk.position.y = .17; ink(bk, .015); bucket.add(bk);
+  const bkb = new THREE.Mesh(new THREE.CircleGeometry(.16, 18), toon(0x5a3a22)); bkb.rotation.x = -Math.PI / 2; bkb.position.y = .01; bucket.add(bkb);
+  const bkw = new THREE.Mesh(new THREE.CircleGeometry(.19, 18), new THREE.MeshLambertMaterial({ color: 0x5fb0ee, emissive: 0x123a5c })); bkw.rotation.x = -Math.PI / 2; bkw.position.y = .28; bucket.add(bkw);
+  const hdl = new THREE.Mesh(new THREE.TorusGeometry(.19, .012, 6, 18, Math.PI), toon(0x333333)); hdl.position.y = .34; bucket.add(hdl);
+  const ropeG = new THREE.CylinderGeometry(.016, .016, 1, 6); ropeG.translate(0, .5, 0); const rope = new THREE.Mesh(ropeG, toon(0xc9a86a)); Wd.add(rope);
+  // עמדת לימוד לתלמיד (בסוף)
+  const sht = new THREE.Group(); sht.position.set(XC - 2.25, 0, -.75); sht.rotation.y = -Math.PI / 2 + .35; Wd.add(sht);
+  sht.add(box(.12, .95, .12, 0x6e4227, { pos: [0, .47, 0] })); sht.add(box(.5, .05, .5, 0x6e4227, { pos: [0, .02, 0] }));
+  const shTop = box(.6, .04, .46, 0x7a4a2a, { pos: [0, 1.0, 0], rot: [-.45, 0, 0] }); sht.add(shTop);
+  const pgT = canvasTex(256, 192, (g, w, h) => { g.fillStyle = '#f7efdc'; g.fillRect(0, 0, w, h); g.fillStyle = '#a89c86'; for (let s = 0; s < 2; s++) for (let y = 22; y < h - 14; y += 14) g.fillRect(s * w / 2 + 14, y, w / 2 - 28, 5); g.fillStyle = '#6b5a44'; g.fillRect(w / 2 - 2, 0, 4, h); });
+  const page = new THREE.Mesh(new THREE.PlaneGeometry(.56, .4), new THREE.MeshLambertMaterial({ map: pgT })); page.rotation.x = -Math.PI / 2 - .45; page.position.set(0, 1.035, 0); sht.add(page);
+  const glowSp = Wd.add(sprite(glowTex('rgba(255,236,170,.85)', 'rgba(120,190,255,0)'), 8, { add: true, opacity: 0, pos: [XC, -3.3, -.6] }));
+  const sparkG = new THREE.BufferGeometry(), spk = [], skr = rng(71); for (let i = 0; i < 40; i++) spk.push(skr(), skr(), skr());
+  sparkG.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(120), 3));
+  const sparks = new THREE.Points(sparkG, new THREE.PointsMaterial({ color: 0xfff1b8, size: 7, sizeAttenuation: false, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false })); sparks.frustumCulled = false; Wd.add(sparks);
+  // ענני חורף + גשם
+  const wcl = []; for (const [x, y, z, s, sd] of [[-14, 19, -14, 5, 31], [6, 22, -20, 6, 33], [20, 20, -10, 5, 35], [-28, 23, -30, 6.5, 37], [30, 24, -34, 6, 39]]) { const c = cloud({ seed: sd, size: s, color: 0xc3cad4, pos: [x, y, z], puffs: 7 }); Wd.add(c); wcl.push([c, x]); }
+  const wint = t => sm(prog(t, 28.2, 29.8)) * (1 - sm(prog(t, 37.4, 39.2)));
+  rain(Wd, { x0: -26, x1: 26, z0: -40, z1: -.3, top: 16, bottom: 0, count: 2600, speed: 16, color: 0xa4bcd8, opacity: .8, seed: 11, amount: wint });
+  const SUM = { top: C(0x7db7ea), bot: C(0xf6e8cc), fog: C(0xf0e4cd), sun: 2.1, hemi: 1.2 }, WIN = { top: C(0x8a9ab0), bot: C(0xd6dce1), fog: C(0xd3d9de), sun: 1.0, hemi: 1.1 };
+  const sunDir = V3(-.38, .3, -.87).normalize(), sunSp = Wd.add(sprite(sunTex(), 70, { ro: -5 }));
+
+  // ---- לוח זמנים ----
+  const dig = t => sm(prog(t, 11, 17.6)), plaster = t => sm(prog(t, 20.6, 26.8));
+  const level = t => lerp(YB - .02, -2.5, sm(prog(t, 31.4, 37.6))) - .14 * sm(prog(t, 42.8, 43.6));
+  const xray = t => sm(prog(t, 48.4, 50.2)) * (1 - sm(prog(t, 56.2, 57.8))), glow = t => sm(prog(t, 58.6, 61.2));
+  const bucketY = t => { if (t < 39.6) return .32; if (t < 42.6) return lerp(.32, level(t) - .1, sm(prog(t, 39.6, 42.6))); if (t < 43.4) return level(t) - .16; return lerp(level(t) - .16, .3, sm(prog(t, 43.4, 46.6))); };
+  const cRk = C(0xc8ad84), cPl = C(0xf5ecda), cWt = C(0x5aa6e0), cGl = C(0xfff0c0), tc = new THREE.Color();
+  const BX = XC + .2, BZ = -.3;
+  Wd.on((t, cam) => {
+    const wk = wint(t); lerpSky(Wd, SUM, WIN, wk); sunSp.material.opacity = 1 - wk; sunSp.position.copy(cam.position).addScaledVector(sunDir, 420);
+    for (const [c, x] of wcl) { c.position.x = x - 70 * (1 - sm(prog(t, 27.6, 30))) + 70 * sm(prog(t, 37.4, 40)); c.visible = t > 27.4 && t < 40.2; }
+    // חציבה
+    const dk = dig(t), st = dk <= 0 ? -1 : Math.max(1, Math.round(dk * DS)); face.geometry = faceGeo(st); shell.visible = st > 0; if (st > 0) shell.geometry = shellGeo(st);
+    for (const e of edges) { e.visible = st > 0; if (st > 0) e.geometry = edgeGeo(st, e.userData.s); }
+    const yd = st > 0 ? digY(st) : 0, act = t > 11 && t < 17.8;
+    chips.forEach((m, i) => { const per = 1.1, u = ((t - 11 + i * .37) % per) / per, h1 = hash2(i, 3), h2 = hash2(i, 7), h3 = hash2(i, 11); const tau = u * .9;
+      const r0 = bellR(Math.min(yd + .2, -.1)) * .8; m.visible = act && u < .85; m.position.set(XC + (h1 - .5) * 2 * r0 + (h1 - .5) * 1.4 * tau, yd + .15 + (2.2 + h2) * tau - 4.9 * tau * tau, -.5 - h3 * .8 + .5 * tau); m.rotation.set(t * 5 + i, t * 3, 0); m.scale.setScalar(.7 + h2); });
+    dust.visible = act; dust.material.opacity = .55 * (.6 + .4 * Math.sin(t * 7)); dust.position.set(XC, yd + .5, -.7);
+    // טיח, מים, זוהר
+    const pk = plaster(t), plY = pk > 0 ? lerp(.1, YB - .2, pk) : 2, L = level(t), hasW = L > YB + .03, gk = glow(t);
+    if (shell.visible) { const g = shell.geometry, p = g.attributes.position, c = g.attributes.color;
+      for (let i = 0; i < p.count; i++) { const y = p.getY(i); tc.copy(cRk).lerp(cPl, clamp((y - plY) / .15, 0, 1)); if (hasW && y < L) tc.lerp(cWt, .55); if (gk > 0) tc.lerp(cGl, gk * .45); c.setXYZ(i, tc.r, tc.g, tc.b); } c.needsUpdate = true; }
+    for (const b of bands) { b.visible = pk > 0; b.geometry.setDrawRange(0, Math.floor(b.userData.n * pk) * 6); b.material.color.set(gk > 0 ? 0xfff6dc : 0xf6eedd); }
+    watFront.visible = watTop.visible = hasW; if (hasW) { watFront.geometry = watGeo(L); const r = bellR(L); watTop.position.y = L; watTop.scale.set(r, 1, r); }
+    watFront.material.emissive.setRGB(.04 + gk * .35, .16 + gk * .35, .28 + gk * .25); watTop.material.emissive.setRGB(.07 + gk * .4, .22 + gk * .4, .36 + gk * .25);
+    // זרימה: מרזב, תעלה, מפל לתוך הבור
+    const fl = prog(t, 30.2, 30.8) * (1 - prog(t, 37.4, 38)); roofFall.visible = fl > 0; roofFall.scale.y = 3.83 * Math.min(1, prog(t, 30.2, 30.8));
+    const cf = prog(t, 30.6, 32.0); chG.setDrawRange(0, Math.floor(40 * cf) * 6); chTex.offset.y = -t * 1.2;
+    inFall.visible = t > 31.6 && t < 38; inFall.scale.set(.05, Math.max(.01, -L - .02), .05); splash.visible = inFall.visible && hasW; splash.position.set(XC - .2, L + .01, -.28); splash.scale.setScalar(1 + .5 * ((t * 3) % 1)); splash.material.opacity = 1 - (t * 3) % 1;
+    // מכסה
+    const lo = sm(prog(t, 28.8, 30)); lid.position.set(XC + lo * 1.3, .12, -lo * .5); lid.visible = t < 56.5;
+    // דלי
+    const by = bucketY(t); bucket.visible = t > 38.8 && t < 56.5; bucket.position.set(BX, by, BZ); bkw.visible = t > 43 && t < 56.5;
+    rope.visible = bucket.visible; rope.position.set(BX, by + .34, BZ); rope.scale.y = Math.max(.05, 1.02 - (by + .34));
+    // רנטגן
+    const xk = xray(t); gMat.opacity = 1 - .75 * xk; gMat.depthWrite = xk < .5; cityM[0].opacity = cityM[1].opacity = 1 - .55 * xk; cityM[2].opacity = 1 - xk; cityM[2].visible = xk < .98; for (const m of cityM) m.depthWrite = xk < .3;
+    // זוהר בסוף
+    sht.visible = t > 55.5; glowSp.material.opacity = .6 * gk; sparks.material.opacity = gk;
+    const sa = sparkG.attributes.position; for (let i = 0; i < 40; i++) { const u = (spk[i * 3] + t * .12) % 1, y = lerp(YB + .3, -1.2, u), r = bellR(y) * .8 * spk[i * 3 + 1]; const a = Math.PI + spk[i * 3 + 2] * Math.PI;
+      sa.setXYZ(i, XC + Math.cos(a) * r, y, Math.sin(a) * r * .9 - .05); } sa.needsUpdate = true;
+  });
+
+  // הרב
+  person(Wd, RAV, t => {
+    if (t > 56) return { hidden: true };
+    const ph = t * 5.5, pullA = s => ({ a: 14, b: -18 + 8 * Math.sin(ph + s), f: 52 + 22 * Math.sin(ph + s), f2: 70 + 15 * Math.sin(ph + s), hand: 'fist' });
+    if (t < 10.2) return { pos: [-2.2, 0, -1.4], facing: .35, perform: .8, talk: talk(t), brow: .3 };
+    if (t < 19.6) return { pos: [-2.2, 0, -1.4], facing: .5, gesture: 'point', talk: talk(t, .5) };
+    if (t < 28.4) return { pos: [-2.2, 0, -1.4], facing: .4, gesture: 'explain', talk: talk(t, .7), smile: .3 };
+    if (t < 29.6) { const k = sm(prog(t, 28.4, 29.6)); return { pos: [lerp(-2.2, -2.4, k), 0, lerp(-1.4, -3.95, k)], facing: Math.PI, walk: t * 6, stride: .8 }; }
+    if (t < 37.6) return { pos: [-2.4, 0, -3.95], facing: .9, gesture: t < 33 ? 'pointFwd' : 'point', smile: .4 };
+    if (t < 39.2) { const k = sm(prog(t, 37.6, 39.2)); return { pos: [lerp(-2.4, XC + .62, k), 0, lerp(-3.95, -.32, k)], facing: Math.atan2(XC + .62 + 2.4, -.32 + 3.95), walk: t * 6, stride: .8 }; }
+    if (t < 46.8) { const pulling = t > 39.6; return { pos: [XC + .62, 0, -.32], facing: -Math.PI / 2, armA: pulling ? pullA(0) : null, armB: pulling ? pullA(Math.PI) : null, gesture: pulling ? null : 'offer', bow: pulling ? .28 : .1, smile: t > 46 ? .8 : 0 }; }
+    return { pos: [XC + .62, 0, -.32], facing: -.4, gesture: 'thumb', smile: .9 };
+  });
+  // התלמיד
+  person(Wd, BOY, t => t < 55.5 ? { hidden: true } : { pos: [XC - 1.55, 0, -.55], facing: -Math.PI / 2 + .45, perform: .5, gesture: Math.floor(t / 2.2) % 2 ? 'finger' : 'explain', talk: talk(t, .8), nod: .25 * Math.sin(t * 3.2), smile: .4, lookY: .2 }, { scale: .72 });
+
+  const cam = fly([
+    [0, [15, 8.5, 24], [-2, 5.5, -14], 50],
+    [5, [11, 4, 16], [-.5, 2, -6], 48],
+    [9.8, [6.8, 1.2, 12.5], [1, -1.6, -3], 48],
+    [14.5, [4.4, -1.6, 9.4], [XC, -2.9, -1], 46],
+    [19.4, [3.4, -2.4, 7.9], [XC, -3.1, -1], 46],
+    [24, [6.2, -1.7, 6.6], [XC, -3.2, -1.3], 46],
+    [28.6, [-1.6, -.9, 7.2], [XC - .2, -3.0, -1.1], 46],
+    [31.4, [-3.6, 4.8, 7.4], [-.4, 1.6, -4.2], 48],
+    [33.4, [XC - .6, 2.6, 2.2], [XC - .2, 0, -.6], 50],
+    [35.4, [XC + .2, -1.2, 2.5], [XC - .1, -2.8, -.9], 56],
+    [38.2, [XC + .3, -3.5, 3.0], [XC, -3.3, -1.2], 54],
+    [40.8, [XC + .4, -2.2, 4.8], [XC + .1, -1.8, -1], 50],
+    [46.8, [XC + 1.4, -.9, 11.2], [XC + .3, -1.5, -.8], 46],
+    [51.4, [10, 40, 12], [0, -3, -20], 50],
+    [56.8, [-20, 42, 4], [2, -3, -22], 50],
+    [61.4, [-4, 6, 13], [XC - 1, -1.2, -1], 48],
+    [65.8, [XC - 1.0, -.2, 6.4], [XC - 1.0, -1.25, -.6], 46],
+  ]);
+  return Object.assign(Wd, { cam });
+}
+
+// =====================================================================================
+// שוט 4 — בית המדרש: הזכרת גשמים ושאלת גשמים
+// =====================================================================================
+function archPts(cx, y0, w, h, n) { n = n || 12; const r = w / 2, yc = y0 + h - r, pts = [V2(cx - r, y0), V2(cx + r, y0)]; for (let i = 0; i <= n; i++) { const a = i / n * Math.PI; pts.push(V2(cx + Math.cos(a) * r, yc + Math.sin(a) * r)); } return pts; }
+function shotShul() {
+  const Wd = world({ skyTop: 0x74aee6, skyBottom: 0xeef1ea, fogColor: 0xe4ebe6, fogNear: 70, fogFar: 460, sun: 1.75, sunPos: [30, 26, 8], hemi: 1.35, hemiSky: 0xfff4e2, hemiGround: 0x8a7458, shadowExt: 18, skyR: 900 });
+  skyFollow(Wd);
+  // נוף בחוץ
+  const hF = (x, z) => { const k = sm(clamp((x - 40) / 110, 0, 1)); let h = k * (6 + 14 * fbm(x * .015, z * .015)); h += 20 * Math.exp(-(Math.pow(x - 195, 2) + Math.pow(z - 4, 2)) / 2600); h += sm(clamp((-x - 70) / 90, 0, 1)) * 22 * fbm(x * .02, z * .02); h += sm(clamp((Math.abs(z) - 60) / 80, 0, 1)) * 12 * fbm(x * .02 + 3, z * .02); return h; };
+  const gA = C(0x8fb35e), gB = C(0x7aa24f), gF = C(0xc9b76f), gD = C(0xb59e70);
+  Wd.add(terrain(-180, 360, -260, 260, 135, 130, hF, (x, z, y, c) => { c.copy(gA).lerp(gB, fbm(x * .05, z * .05)); const f = fbm(x * .025 + 11, z * .025); if (f > .6) c.lerp(gF, .7); else if (f < .3) c.lerp(gD, .35); }));
+  const roadZ = x => -4 * Math.exp(-(x - 9.25) / 14) + 2 * Math.sin((x - 9.25) * .03);
+  const rp = []; for (let x = 9.25; x < 240; x += 2) rp.push([x, roadZ(x)]);
+  Wd.add(new THREE.Mesh(lineStrip(rp, 2.6, (x, z) => hF(x, z) + .14, 1 / 4), new THREE.MeshLambertMaterial({ map: noiseTex(51, .3), color: 0xd2b380, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -8 })));
+  const VB = [], VO = [], vr = rng(9);
+  for (let i = 0; i < 14; i++) { const x = 176 + vr() * 38, z = -20 + vr() * 40, w = 4 + vr() * 3, d = 4 + vr() * 3, h = 3 + vr() * 3; hb(VB, VO, w, h, d, x, hF(x, z) - .5 + h / 2, z, vr() < .5 ? 0xf3ead6 : 0xe8dcc2, 0, vr() * .5); }
+  for (let x = 22; x < 170; x += 11 + vr() * 6) for (const s of [-1, 1]) { if (vr() < .35) continue; const z = roadZ(x) + s * (4 + vr() * 3), y = hF(x, z);
+    VB.push([new THREE.CylinderGeometry(.15, .22, 1.6, 6), new THREE.Matrix4().makeTranslation(x, y + .8, z), C(0x6b5238)]);
+    for (let k = 0; k < 3; k++) VB.push([new THREE.SphereGeometry(.85 + vr() * .4, 10, 8), new THREE.Matrix4().makeTranslation(x + (vr() - .5), y + 1.9 + vr() * .5, z + (vr() - .5)), C(vr() < .5 ? 0x7f9b5a : 0x6f8d4e)]); }
+  addBatch(Wd, VB, VO, {});
+  const cloudMats = new Set(), cls = [];
+  for (const [x, y, z, s, sd] of [[46, 26, -18, 6, 3], [70, 30, 14, 7, 5], [100, 34, -30, 8, 7], [130, 36, 26, 8, 9], [36, 28, 30, 6, 11], [20, 30, -36, 6, 13], [-10, 32, 20, 7, 15], [160, 40, -5, 9, 17]]) {
+    const c = cloud({ seed: sd, size: s, color: 0xe9edf2, pos: [x, y, z], puffs: 7 }); Wd.add(c); cls.push([c, x]); c.traverse(o => { if (o.material && o.material.isMeshToonMaterial) cloudMats.add(o.material); }); }
+  rain(Wd, { x0: 9.6, x1: 36, z0: -14, z1: 14, top: 10, bottom: 0, count: 2200, speed: 13, color: 0xaec2dc, opacity: .85, seed: 13, amount: t => sm(prog(t, 56.6, 58.4)) });
+  rain(Wd, { x0: 36, x1: 90, z0: -30, z1: 30, top: 22, bottom: 0, count: 1500, speed: 15, color: 0xb6c6dc, opacity: .6, seed: 15, amount: t => sm(prog(t, 57, 59)) });
+
+  // הבניין
+  const wallTx = stoneTex(4, ['#efe4cc', '#e8dbbf', '#f3e9d4', '#e3d4b6'], '#cdbb98'); wallTx.repeat.set(.5, .5);
+  const wallMats = [toon(0xffffff, { map: wallTx }), toon(0xe2d3b5)];
+  const wallMesh = (shape, pos, ry) => { const m = new THREE.Mesh(new THREE.ExtrudeGeometry(shape, { depth: .5, bevelEnabled: false, curveSegments: 12 }), wallMats); m.position.set(...pos); m.rotation.y = ry || 0; m.receiveShadow = true; Wd.add(m); return m; };
+  const rect = (x0, x1, h) => new THREE.Shape([V2(x0, 0), V2(x1, 0), V2(x1, h), V2(x0, h)]);
+  const east = new THREE.Shape(); east.moveTo(-5.75, 0); east.lineTo(3.2, 0); east.lineTo(3.2, 2.1); for (let i = 0; i <= 12; i++) { const a = Math.PI - i / 12 * Math.PI; east.lineTo(4 + Math.cos(a) * .8, 2.1 + Math.sin(a) * .8); }
+  east.lineTo(4.8, 0); east.lineTo(5.75, 0); east.lineTo(5.75, 6.5); east.lineTo(-5.75, 6.5); east.lineTo(-5.75, 0);
+  for (const xs of [0, -4]) east.holes.push(new THREE.Path(archPts(xs, 1.0, 1.7, 3.4)));
+  wallMesh(east, [8.75, 0, 0], Math.PI / 2);
+  const south = rect(-9.25, 9.25, 6.5); for (const xs of [-4.5, 4.5]) south.holes.push(new THREE.Path(archPts(xs, 1.0, 1.7, 3.4)));
+  wallMesh(south, [0, 0, 5.75]); wallMesh(rect(-9.25, 9.25, 6.5), [0, 0, -6.25]); wallMesh(rect(-5.75, 5.75, 6.5), [-9.25, 0, 0], Math.PI / 2);
+  const door = box(1.55, 2.85, .08, 0x5a3820, { pos: [9.05, 1.42, -4] }); door.rotation.y = Math.PI / 2; Wd.add(door);
+  const roof = new THREE.Mesh(boxGeo(18.5, .35, 12.5, 2), toon(0xd9c9a8)); roof.position.set(0, 6.675, 0); roof.receiveShadow = true; Wd.add(roof);
+  for (const [w, d, x, z] of [[18.5, .25, 0, 6.12], [18.5, .25, 0, -6.12], [.25, 12.5, 9.12, 0], [.25, 12.5, -9.12, 0]]) { const p = new THREE.Mesh(boxGeo(w, .55, d, 2), wallMats[0]); p.position.set(x, 7.12, z); Wd.add(p); }
+  const fl = new THREE.Mesh(boxGeo(17.5, .1, 11.5, 2.2), toon(0xffffff, { map: planksTex() })); fl.position.set(0, .05, 0); fl.receiveShadow = true; Wd.add(fl);
+  const woodD = 0x5e3a20, woodM = toon(0x7a4a2a), IB = [], IO = [], BB = [];
+  for (let x = -7.7; x <= 7.8; x += 2.2) hb(BB, null, .28, .3, 11.5, x, 6.35, 0, 0x6a4326);
+  addBatch(Wd, BB, null, { cast: false });
+  hb(IB, null, 17.4, 1.05, .06, 0, .55, -5.72, 0x6b4426); hb(IB, null, .06, 1.05, 11.4, -8.72, .55, 0, 0x6b4426);
+  for (const [a, b] of [[-8.7, -5.4], [-3.6, 3.6], [5.4, 8.7]]) hb(IB, null, b - a, .95, .06, (a + b) / 2, .5, 5.72, 0x6b4426);
+  // שולחנות וספסלים
+  for (const zc of [-2.7, 2.7]) { hb(IB, IO, 6.8, .08, 1.1, 3.2, .78, zc, 0x8a5a34); for (const dx of [-3.1, 3.1]) for (const dz of [-.42, .42]) hb(IB, null, .08, .74, .08, 3.2 + dx, .37, zc + dz, woodD);
+    for (const s of [-1, 1]) { hb(IB, IO, 6.8, .06, .38, 3.2, .46, zc + s * .88, 0x7a4a2a); for (const dx of [-3.1, 0, 3.1]) hb(IB, null, .07, .44, .3, 3.2 + dx, .22, zc + s * .88, woodD); }
+    const br = rng(Math.floor(zc * 10 + 40)); for (let i = 0; i < 7; i++) { const x = .6 + i * .9 + br() * .3, c = [0x7a1f1f, 0x1f3b6b, 0x2f5a2f, 0x22222c][Math.floor(br() * 4)]; hb(IB, null, .32, .07, .24, x, .855, zc + (br() - .5) * .5, c, 0, br());
+      if (br() < .5) hb(IB, null, .5, .015, .34, x + .3, .83, zc + (br() - .5) * .4, 0xf4ecd8, 0, br() * .5); } }
+  // ספרי קודש על המדפים
+  for (const [x, s] of [[-5.6, 1], [0, 2], [5.6, 3]]) { const m = new THREE.Mesh(new THREE.BoxGeometry(4.6, 4.4, .5), [woodM, woodM, woodM, woodM, toon(0xffffff, { map: booksTex(s) }), woodM]); m.position.set(x, 2.2, -5.5); m.castShadow = m.receiveShadow = true; ink(m, .03, 0x2a1a10, true); Wd.add(m); }
+  { const m = new THREE.Mesh(new THREE.BoxGeometry(4.2, 3.6, .45), [woodM, woodM, woodM, woodM, woodM, toon(0xffffff, { map: booksTex(4, 5) })]); m.position.set(0, 1.8, 5.5); m.castShadow = true; ink(m, .03, 0x2a1a10, true); Wd.add(m); }
+  // עמוד ושטענדרים
+  hb(IB, IO, .95, 1.08, .75, -7.2, .54, 0, 0x5e3720);
+  for (const zc of [-1.55, 1.55]) { hb(IB, IO, .12, 1.0, .12, -5.0, .5, zc, woodD); hb(IB, null, .5, .05, .5, -5.0, .025, zc, woodD); }
+  addBatch(Wd, IB, IO, { inkColor: 0x2a1a10 });
+  for (const zc of [-1.55, 1.55]) { const b = box(.42, .04, .55, 0x7a4a2a, { pos: [-5.0, 1.03, zc], rot: [0, 0, -.42] }); Wd.add(b); const pg = new THREE.Mesh(new THREE.PlaneGeometry(.5, .36), toon(0xf4ecd8)); pg.position.set(-4.99, 1.06, zc); pg.lookAt(-4.99 + Math.sin(.42), 1.06 + Math.cos(.42), zc); Wd.add(pg); }
+  // הסידור הגדול
+  const sid = new THREE.Group(); sid.position.set(-7.18, 1.13, 0); sid.rotation.z = -.32; Wd.add(sid);
+  sid.add(box(1.0, .06, .85, 0x6e4227, {})); sid.add(box(.66, .05, .9, 0x6b1f22, { pos: [0, .05, 0] }));
+  const pgC = document.createElement('canvas'); pgC.width = 1024; pgC.height = 700; const pgT = new THREE.CanvasTexture(pgC); pgT.colorSpace = THREE.SRGBColorSpace; pgT.anisotropy = 4;
+  let pgState = -2; const drawPages = hi => { if (hi === pgState) return; pgState = hi; const g = pgC.getContext('2d'), w = 1024, h = 700;
+    g.fillStyle = '#f8f1df'; g.fillRect(0, 0, w, h); const gr = g.createLinearGradient(w / 2 - 60, 0, w / 2 + 60, 0); gr.addColorStop(0, 'rgba(120,90,50,0)'); gr.addColorStop(.5, 'rgba(120,90,50,.45)'); gr.addColorStop(1, 'rgba(120,90,50,0)'); g.fillStyle = gr; g.fillRect(w / 2 - 60, 0, 120, h);
+    for (const s of [0, 1]) { const x0 = s * w / 2 + 40, x1 = x0 + w / 2 - 80; g.strokeStyle = '#b08a40'; g.lineWidth = 6; g.strokeRect(x0 - 10, 30, x1 - x0 + 20, h - 60);
+      g.fillStyle = '#7a5a2a'; g.fillRect(x0 + 60, 60, x1 - x0 - 120, 26);
+      for (let i = 0; i < 13; i++) { const y = 120 + i * 40, isHi = (s === 1 && i === hi); if (isHi) { g.fillStyle = '#ffd166'; g.beginPath(); g.roundRect(x0 - 4, y - 8, x1 - x0 + 8, 34, 8); g.fill(); }
+        g.fillStyle = isHi ? '#5a3a10' : '#8a8274'; let x = x1; const r = rng(i * 13 + s * 7 + 1); while (x > x0 + 20) { const ww = 30 + r() * 70; g.fillRect(x - ww, y, ww - 12, isHi ? 18 : 14); x -= ww; } } }
+    pgT.needsUpdate = true; };
+  drawPages(-1);
+  const pages = new THREE.Mesh(new THREE.PlaneGeometry(.92, .62), new THREE.MeshLambertMaterial({ map: pgT })); pages.quaternion.setFromRotationMatrix(new THREE.Matrix4().makeBasis(V3(0, 0, -1), V3(-1, 0, 0), V3(0, 1, 0))); pages.position.y = .082; sid.add(pages);
+  // לוח השנה על הקיר
+  const calC = document.createElement('canvas'); calC.width = 2048; calC.height = 256; const calT = new THREE.CanvasTexture(calC); calT.colorSpace = THREE.SRGBColorSpace; calT.anisotropy = 8;
+  const DAYS = ['כ״ב', 'כ״ג', 'כ״ד', 'כ״ה', 'כ״ו', 'כ״ז', 'כ״ח', 'כ״ט', 'ל׳', 'א׳', 'ב׳', 'ג׳', 'ד׳', 'ה׳', 'ו׳', 'ז׳'], CW = 125, cellX = i => 2048 - 24 - (i + 1) * CW;
+  let calState = ''; const drawCal = (n, endHi) => { const key = n + '|' + endHi; if (key === calState) return; calState = key; const g = calC.getContext('2d');
+    g.fillStyle = '#f6eedb'; g.fillRect(0, 0, 2048, 256); g.direction = 'rtl'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    g.fillStyle = '#7a4d2a'; g.fillRect(cellX(15), 10, 7 * CW, 60); g.fillStyle = '#5a6f3a'; g.fillRect(cellX(8), 10, 9 * CW, 60);
+    g.fillStyle = '#fff'; g.font = '700 44px Assistant, sans-serif'; g.fillText('תשרי', cellX(8) + 9 * CW / 2, 42); g.fillText('מרחשוון', cellX(15) + 7 * CW / 2, 42);
+    for (let i = 0; i < 16; i++) { const x = cellX(i); g.fillStyle = i === 0 ? '#ffd166' : (i === 15 && endHi) ? '#9fd3f5' : '#fffaf0'; g.fillRect(x + 4, 78, CW - 8, 168); g.strokeStyle = '#b8a07a'; g.lineWidth = 3; g.strokeRect(x + 4, 78, CW - 8, 168);
+      g.fillStyle = '#3a2a1a'; g.font = '700 46px Assistant, sans-serif'; g.fillText(DAYS[i], x + CW / 2, 118);
+      if (i >= 1 && i <= n) { g.strokeStyle = '#2f8a3a'; g.lineWidth = 12; g.lineCap = 'round'; g.lineJoin = 'round'; g.beginPath(); g.moveTo(x + 32, 196); g.lineTo(x + 54, 220); g.lineTo(x + 94, 162); g.stroke(); } }
+    g.strokeStyle = '#3a2412'; g.lineWidth = 3; g.beginPath(); g.moveTo(cellX(8), 10); g.lineTo(cellX(8), 246); g.stroke(); calT.needsUpdate = true; };
+  drawCal(0, false);
+  const calW = 8.8, calM = new THREE.Mesh(new THREE.PlaneGeometry(calW, 1.1), new THREE.MeshLambertMaterial({ map: calT })); calM.position.set(-8.68, 3.15, 0); calM.rotation.y = Math.PI / 2; Wd.add(calM);
+  Wd.add(box(.08, 1.3, 9.0, 0x5a3820, { pos: [-8.73, 3.15, 0] }));
+  const cellZ = i => -((cellX(i) + CW / 2) / 2048 - .5) * calW;
+  const lbS = label(Wd, 'שמיני עצרת', { pos: [-8.45, 4.0, cellZ(0)], height: .3, bg: 'rgba(120,80,10,.88)' }), lbM = label(Wd, 'ז׳ במרחשוון', { pos: [-8.45, 4.0, cellZ(15)], height: .3, bg: 'rgba(16,70,120,.88)' });
+  const lbQ = label(Wd, '?', { pos: [-7.3, 2.15, -1.5], height: .7, color: '#ffd166', bg: 'rgba(20,16,30,.7)' });
+  const lb1 = label(Wd, 'משיב הרוח ומוריד הגשם', { pos: [-7.0, 1.98, 0], height: .27, bg: 'rgba(110,70,10,.9)' }), lb2 = label(Wd, 'ותן טל ומטר לברכה', { pos: [-7.0, 1.98, 0], height: .27, bg: 'rgba(16,70,120,.9)' });
+  // מנורות
+  const lampGlow = glowTex('rgba(255,226,160,.9)', 'rgba(255,200,120,0)'), lamps = [];
+  for (const [x, z] of [[-3.2, -2.6], [-3.2, 2.6], [3.2, -2.6], [3.2, 2.6]]) { Wd.add(new THREE.Mesh(new THREE.SphereGeometry(.2, 14, 10), new THREE.MeshBasicMaterial({ color: 0xffe6a8 }))).position.set(x, 4.4, z);
+    Wd.add(cyl(.012, .012, 1.9, 0x333333, { pos: [x, 5.55, z], ink: false })); lamps.push(Wd.add(sprite(lampGlow, 1.6, { add: true, opacity: .45, pos: [x, 4.4, z] }))); }
+  // קרני אור מן החלונות המזרחיים
+  const sD = V3(30, 26, 8).normalize(), beams = [];
+  for (const zc of [0, 4]) { const W = [[8.75, 1.0, zc - .85], [8.75, 1.0, zc + .85], [8.75, 4.2, zc + .85], [8.75, 4.2, zc - .85]], F = W.map(p => [p[0] - sD.x * p[1] / sD.y, .12, p[2] - sD.z * p[1] / sD.y]);
+    const pos = [], col = [], push = (p, c) => { pos.push(...p); col.push(c, c * .85, c * .6); };
+    for (let i = 0; i < 4; i++) { const a = W[i], b = W[(i + 1) % 4], c = F[(i + 1) % 4], d = F[i]; push(a, .5); push(b, .5); push(c, .08); push(a, .5); push(c, .08); push(d, .08); }
+    for (const [a, b, c] of [[F[0], F[1], F[2]], [F[0], F[2], F[3]]]) { push(a, .55); push(b, .55); push(c, .55); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3));
+    const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: .3, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false })); m.renderOrder = 4; Wd.add(m); beams.push(m); }
+
+  // דמויות
+  const pray = t => ({ gesture: 'pray', nod: .3 * Math.sin(t * 3.1), bow: .1 + .08 * Math.sin(t * 3.1) });
+  const atWin = t => t > 50;
+  person(Wd, RAV, t => {
+    if (atWin(t)) return { pos: [7.95, 0, 0], facing: Math.PI / 2, gesture: t > 58 ? 'heart' : 'explain', smile: sm(prog(t, 57.5, 59.5)), lookY: -.3, brow: .5, talk: t < 58 ? 0 : talk(t, .3) };
+    const s = { pos: [-6.35, 0, 0], facing: -Math.PI / 2 };
+    if (t < 10.2) return Object.assign(s, { gesture: 'think', brow: .7, facing: -Math.PI / 2 + .5 });
+    if (t < 19.6) return Object.assign(s, pray(t));
+    if (t < 29) { const k = sm(prog(t, 19.8, 21.2)); return Object.assign(s, { facing: lerp(-Math.PI / 2, Math.PI / 2, k), perform: k > .9 ? .85 : 0, talk: k > .9 ? talk(t) : 0, smile: .3 }); }
+    if (t < 38.4) return Object.assign(s, { facing: Math.PI / 2, gesture: 'count', talk: talk(t, .7) });
+    return Object.assign(s, pray(t + .5), { facing: lerp(Math.PI / 2, -Math.PI / 2, sm(prog(t, 38.4, 39.6))) });
+  });
+  for (const [L, z, ph] of [[MAN2, -1.55, 1.3], [MAN3, 1.55, 2.6]]) person(Wd, L, t => {
+    if (atWin(t)) return { pos: [7.6, 0, z > 0 ? .68 : -.68], facing: Math.PI / 2, gesture: z > 0 ? 'offer' : 'bless', smile: sm(prog(t, 57.8, 59.8)), lookY: -.2 };
+    const s = { pos: [-4.3, 0, z], facing: -Math.PI / 2 };
+    if (t < 10.2) return Object.assign(s, { talk: talk(t + ph, .3), nod: .15 * Math.sin(t * 2 + ph) });
+    if (t < 29) return Object.assign(s, pray(t + ph));
+    if (t < 38.4) return Object.assign(s, { gesture: 'think', facing: -Math.PI / 2 + (z > 0 ? -.6 : .6) });
+    return Object.assign(s, pray(t + ph));
+  });
+  // עולי הרגל בדרך הביתה (עם צרור על הגב)
+  const xw = t => 13 + (t - 46) * 1.25;
+  const sack = (g, info) => { const sn = info.sin, k = clamp((Math.abs(sn) - .25) / .35, 0, 1); if (k <= 0) return; g.save(); g.globalAlpha *= k; const bx = -sn * 36;
+    g.strokeStyle = '#4a3420'; g.lineWidth = 3; g.beginPath(); g.moveTo(bx * .6, -46); g.lineTo(sn * 12, -28); g.stroke();
+    g.fillStyle = '#c9a46a'; g.lineWidth = 1.8; g.beginPath(); g.ellipse(bx, -30, 20, 25, sn * .25, 0, 7); g.fill(); g.stroke();
+    g.fillStyle = '#a8844c'; g.beginPath(); g.ellipse(bx + sn * 4, -56, 8, 6, 0, 0, 7); g.fill(); g.stroke(); g.restore(); };
+  for (const [L, dx, dz, ph] of [[{ coat: '#4a3b2c', beard: '#5a4030', beardLen: .65, hat: 'hat', skin: '#e8c6a2' }, 0, -.35, 0], [{ coat: '#2f3445', beard: '#2a1d14', beardLen: .5, hat: 'hat', skin: '#f0cfae' }, -1.5, .45, 1.7], [{ coat: '#3d3a30', beard: '#9a8a78', beardLen: .8, hat: 'hat', skin: '#e6c4a0' }, -3.0, -.2, 3.1]])
+    person(Wd, L, t => { if (t < 45.5) return { hidden: true }; const x = xw(t) + dx, z = roadZ(x) + dz, dzdx = roadZ(x + .5) - roadZ(x - .5); return { pos: [x, hF(x, z), z], groundY: hF(x, z), facing: Math.atan2(1, dzdx), walk: t * 5.2 + ph, stride: .85, onHead: sack, talk: dx === 0 ? talk(t, .4) : 0 }; });
+
+  // שינויי אור לפי הזמן
+  const SUN = { top: C(0x74aee6), bot: C(0xeef1ea), fog: C(0xe4ebe6), sun: 1.75, hemi: 1.35 }, GRAY = { top: C(0x8b9cb2), bot: C(0xd8dee2), fog: C(0xd4dadf), sun: 1.15, hemi: 1.3 };
+  const cW = C(0xe9edf2), cG = C(0xa9b2c0);
+  Wd.on(t => {
+    const ck = sm(prog(t, 40, 47)), rk = sm(prog(t, 56, 58.5)); lerpSky(Wd, SUN, GRAY, Math.max(ck * .5, rk));
+    for (const m of cloudMats) m.color.copy(cW).lerp(cG, Math.max(ck * .6, rk)); for (const [c, x] of cls) c.position.x = x - 14 * sm(prog(t, 38, 58));
+    const sk = sm(prog(t, 19.8, 22.5)) * (1 - sm(prog(t, 28, 30))); beams.forEach(b => b.material.opacity = .18 + .5 * sk - .12 * rk); lamps.forEach(l => l.material.opacity = .45 + .35 * sk + .3 * rk);
+    Wd.hemi.color.setRGB(1, lerp(.96, .9, sk), lerp(.89, .78, sk));
+    drawPages(t > 10.4 && t < 29 ? 3 : (t > 38.6 && t < 47.6 ? 8 : -1));
+    drawCal(Math.floor(clamp((t - 32.3) / .27 + 1, 0, 15)), t > 36.3);
+    const vis = (sp, a, b) => { const k = clamp((t - a) / .5, 0, 1) * clamp((b - t) / .5, 0, 1); sp.visible = k > 0; sp.material.opacity = k; };
+    vis(lbQ, 1.2, 10); vis(lb1, 11.2, 28.6); vis(lb2, 39.6, 47.4); vis(lbS, 29.4, 38.4); vis(lbM, 36.3, 38.4);
+  });
+
+  // מצלמה
+  const OCX = -5.4, ORX = 3.0, ORZ = 4.3, OLK = [-5.6, 1.35, 0];
+  const orbit2 = t => { const u = ease.io(clamp((t - 10.2) / 9.4, 0, 1)), a = lerp(40, 340, u) * D, s = Math.sin(a); return { pos: [OCX + Math.sin(a) * ORX, 2.75 + .6 * Math.max(0, -s), Math.cos(a) * ORZ], look: OLK, fov: 52 }; };
+  const e2 = orbit2(19.6);
+  const A = fly([
+    [0, [6.5, 3.4, 4.8], [-6, 2.2, -.5], 52], [5, [1.5, 2.9, 3.6], [-7, 2.3, -.4], 50], [10.2, orbit2(10.2).pos, OLK, 50],
+  ]);
+  const B = fly([
+    [19.6, e2.pos, OLK, 50], [24.5, [5.4, 2.3, -3.2], [-5.5, 1.6, .4], 52], [29, [4.6, 2.0, -1.6], [-5.5, 1.5, .2], 52],
+    [31, [-1.2, 3.05, .2], [-8.7, 3.1, 0], 56], [32.4, [-4.9, 3.05, -2.9], [-8.7, 3.12, -3.4], 46], [36.2, [-4.9, 3.05, 2.9], [-8.7, 3.12, 3.4], 46], [38.4, [-1.4, 3.0, .6], [-8.7, 3.1, 0], 56],
+    [41.6, [-3.2, 1.55, 2.9], [-6.4, 1.65, 0], 48], [44.6, [2.5, 2.4, 1.6], [9, 2.8, 0], 50], [47.8, [6.9, 2.6, .2], [13, 2.8, 0], 50], [49.6, [9.0, 2.6, 0], [16, 2.2, 1], 52], [51.6, [12.8, 2.3, 3.2], [16.5, 1.2, -1.2], 50],
+  ]);
+  const track = t => { const x = xw(t); return { pos: [x + .6, 1.7, roadZ(x) + 5.8], look: [x - .9, 1.15, roadZ(x - .9)], fov: 46 }; };
+  const back = fly([[57.2, [26, 1.7, 6], [24.5, 1.15, .5], 46], [60.2, [21, 4.2, 7.5], [10, 2.5, 0], 48], [65.8, [13.6, 2.6, .5], [8.2, 2.25, 0], 44]]);
+  const cam = seq([0, A], [10.2, orbit2], [19.6, blend(B, track, t => sm(prog(t, 50.8, 53.2)))], [56, blend(track, back, t => sm(prog(t, 57.2, 60)))]);
+  return Object.assign(Wd, { cam });
+}
+
+film({
+  title: 'ארץ שעיניה לשמים', kicker: 'סרטון 5',
+  recap: ['מצרים שותה מן הנהר, ארץ ישראל מן השמים', 'שומרים כל טיפה: בור מים', 'ולכן מתפללים על הגשם מדי שנה'],
+  shots: [
+    { dur: 49, capAt: [4.4, 13.4, 22.4, 31.4, 40.4], caps: ['האם כל ארץ שותה באותה דרך?', 'במצרים כמעט אין גשם, ובכל זאת השדות ירוקים.', 'נהר ענקי, הנילוס, מביא לה מים מארצות רחוקות.', 'שם מוליכים את המים מן הנהר אל השדה.', 'התורה קוראת לזה: "והשקית ברגלך כגן הירק".'], build: shotNile },
+    { dur: 57, capAt: [.8, 10.2, 19.6, 29, 38.4, 47.8], caps: ['ובארץ ישראל? אין בה נהר ענקי כמו הנילוס.', 'הירדן קטן, והוא זורם עמוק בבקעה, נמוך מן השדות.', 'לכן כל מה שגדל בארץ תלוי במה שיורד מלמעלה.', 'כך כתוב בתורה: "למטר השמים תשתה מים".', 'מי ששותה מן הגשם נושא עיניו לשמים בכל שנה.', 'רש״י מבאר: אתה ישן על מיטתך, והקדוש ברוך הוא משקה.'], build: shotHills },
+    { dur: 66, capAt: [.8, 10.2, 19.6, 29, 38.4, 47.8, 57.2], caps: ['איך שתו אבותינו בקיץ, בלי גשם ובלי ברז?', 'הם חצבו בסלע בור גדול: בור מים.', 'את הקירות טייחו, כדי שהמים לא יברחו.', 'בחורף זרם הגשם מן הגג, בתעלה קטנה, אל הבור.', 'וכל הקיץ שתו ממנו מים קרירים ונקיים.', 'בירושלים העתיקה היה בור כזה כמעט מתחת לכל בית.', 'מכאן המשל לתלמיד שזוכר הכול: "בור סוד שאינו מאבד טפה".'], build: shotCistern },
+    { dur: 66, capAt: [.8, 10.2, 19.6, 29, 38.4, 47.8, 57.2], caps: ['ואיך הגשם נכנס אל התפילה שלנו?', 'בשמיני עצרת מתחילים לומר: "משיב הרוח ומוריד הגשם".', 'זה שבח לקדוש ברוך הוא, ושמו הזכרת גשמים.', 'חמישה עשר יום אחר כך, בז׳ במרחשוון, מבקשים גשם ממש.', 'אומרים "ותן טל ומטר לברכה", וזו שאלת גשמים.', 'למה מחכים? שעולי הרגל יגיעו הביתה לפני הגשם.', 'וכשהגשם יורד, מודים על כל טיפה וטיפה.'], build: shotShul },
+  ],
+});
+</script>
+</html>
