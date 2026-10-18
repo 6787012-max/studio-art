@@ -1,0 +1,1 @@
+{"cmd": "for f in rav_hat_a boy_kippa_a rav_kippa_a; do python3 img3d_job.py $f.png trellis-community/TRELLIS >> out/log.txt 2>&1; done; grep -E 'saved|ERR|ok=' out/log.txt"}
