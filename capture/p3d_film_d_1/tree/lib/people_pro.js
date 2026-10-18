@@ -270,8 +270,10 @@ function drawHead(g,o,C){
     g.restore();}
   g.restore();
   // אוזניים מלפני הפנים (בפרופיל — האוזן הקרובה על צד הראש)
-  for(const sd of[-1,1]){const e=V(sd*26.2,-1);if(e.d>3){g.lineWidth=LW*1.4;g.strokeStyle=ink;ear(sd);g.stroke();g.fillStyle=shade(skin,-.08);ear(sd);g.fill();
-    g.strokeStyle=shade(skin,-.4);g.lineWidth=1.1;g.beginPath();g.moveTo(e.X+1.6*Math.sign(e.X||1),-84);g.bezierCurveTo(e.X-1.5,-84,e.X-2,-77,e.X+.5,-74);g.stroke();}
+  for(const sd of[-1,1]){const e=V(sd*26.2,-1);if(e.d>3){const fw=Math.sign(sh)||1,rx=3.4+1.8*Math.abs(sh);   // אוזן על צד הראש: צורת שעועית, כהה מהלחי, עם קפל פנימי
+    const ep=()=>{g.beginPath();g.moveTo(e.X,-86);g.bezierCurveTo(e.X-fw*rx*1.25,-86,e.X-fw*rx*1.2,-72.5,e.X-fw*.2,-72);g.bezierCurveTo(e.X+fw*rx*.7,-72.5,e.X+fw*rx*.35,-79,e.X+fw*rx*.6,-82);g.quadraticCurveTo(e.X+fw*rx*.5,-86,e.X,-86);g.closePath();};
+    ep();g.fillStyle=shade(skin,-.14);g.fill();g.strokeStyle=ink;g.lineWidth=LW*.9;g.stroke();
+    g.strokeStyle=shade(skin,-.42);g.lineWidth=1.2;g.beginPath();g.moveTo(e.X-fw*rx*.15,-83.5);g.bezierCurveTo(e.X-fw*rx*.8,-82.5,e.X-fw*rx*.75,-76,e.X-fw*rx*.1,-75);g.stroke();}
     else if(!back){g.strokeStyle=shade(skin,-.38);g.lineWidth=1.1;g.beginPath();const ex=e.X;g.moveTo(ex+sd*1.6*ch,-84);g.bezierCurveTo(ex-sd*1.6*ch,-84.5,ex-sd*1.9*ch,-77,ex+sd*.6*ch,-74);g.stroke();}}
   // שיער על הראש (כשאין כובע מלא)
   if(C.hat!=='hat'&&!back){const hx=-sh*7;const hp=()=>{g.beginPath();g.moveTo(hx-27.6,-80);g.bezierCurveTo(hx-29,-104,hx-17,-110.5,hx,-110.5);
@@ -393,7 +395,7 @@ function person(g,o){
   g.translate(0,70);g.rotate(bow*.42);g.translate(0,-70);
   g.translate(0,-br*.5);
   const pA=armPose(o,'A',C),pB=armPose(o,'B',C),GA=armView(pA,-1,C),GB=armView(pB,1,C);
-  const behind=G=>G.depth<-6&&G.wz<DC;
+  const behind=G=>G.depth<-21&&G.wz<DC;   // רק כשהגוף באמת מסובב (מעל ~35°) הזרוע הרחוקה עוברת אל מאחורי הגוף
   const head=G=>G.W[1]<-25&&Math.abs(G.W[0])<34&&G.wz>-5;   // יד מול הפנים — אחרי הראש
   if(behind(GA))drawArm(g,pA,GA,C,false);if(behind(GB))drawArm(g,pB,GB,C,false);
   drawCoat(g,C);
