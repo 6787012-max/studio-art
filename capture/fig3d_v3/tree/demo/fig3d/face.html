@@ -1,0 +1,34 @@
+<!doctype html>
+<html><meta charset="utf-8"><title>פנים בתקריב</title>
+<style>html,body{margin:0;background:#ddd}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+// בדיקת פנים בתקריב: שורה עליונה — הרב מלפנים, 35°, פרופיל, ילד; שורה תחתונה — דיבור+חיוך, גבות למעלה, ילד בזווית, כל הגוף.
+import * as THREE from 'three';
+import { figure, POSES } from '../../lib/figure3d.js';
+import { illus } from '../../lib/illus3d.js';
+const W = 1920, H = 1080, PW = 480, PH = 540;
+const r = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), antialias: false, preserveDrawingBuffer: true }); r.setSize(W, H, false);
+const I = illus(THREE, r, PW, PH);
+const sc = new THREE.Scene(); sc.background = new THREE.Color(0xf3ead7);
+sc.add(new THREE.HemisphereLight(0xffffff, 0xcdbb9e, 1.5)); const d = new THREE.DirectionalLight(0xfff3e2, 2.4); d.position.set(-2, 4, 3); sc.add(d);
+const floor = new THREE.Mesh(new THREE.CircleGeometry(3, 48), new THREE.MeshToonMaterial({ color: 0xe6d8bb })); floor.rotation.x = -Math.PI / 2; sc.add(floor);
+const rav = figure(THREE, {}), boy = figure(THREE, { kind: 'boy' });
+const all = [rav, boy]; all.forEach(f => sc.add(f.group));
+const cam = new THREE.PerspectiveCamera(26, PW / PH, .05, 60);
+function shot(f, angle, i, row, face, full, p) {
+  all.forEach(x => x.group.visible = x === f); f.pose(p || {}); f.face(face || {});
+  const hy = f === boy ? 1.33 : 1.64, a = angle * Math.PI / 180;
+  if (full) { const R = 5.2; cam.position.set(Math.sin(a) * R, .95, Math.cos(a) * R); cam.lookAt(0, .92, 0); }
+  else { const R = f === boy ? .95 : 1.1; cam.position.set(Math.sin(a) * R, hy + .03, Math.cos(a) * R); cam.lookAt(0, hy, 0); }
+  I.render(sc, cam, [i * PW, row ? 0 : PH, PW, PH]);
+}
+window.__seek = t => {
+  r.setScissorTest(false); r.setViewport(0, 0, W, H); r.clear();
+  shot(rav, 0, 0, 0, { smile: .5 }); shot(rav, 35, 1, 0, { smile: .5 }); shot(rav, 90, 2, 0, {}); shot(boy, 0, 3, 0, { smile: .8 });
+  shot(rav, 15, 0, 1, { mouth: .6, smile: .6, brow: .4 }); shot(rav, -25, 1, 1, { brow: 1, look: -.6, mouth: .25 }); shot(boy, 40, 2, 1, { smile: 1, mouth: .5 }); shot(rav, 20, 3, 1, { smile: .5 }, true, POSES.explain);
+};
+window.__seek(0); window.__ready = true;
+</script>
+</html>

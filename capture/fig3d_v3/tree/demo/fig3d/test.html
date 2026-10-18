@@ -1,0 +1,33 @@
+<!doctype html>
+<html><meta charset="utf-8"><title>דמות תלת-ממד בקוד</title>
+<style>html,body{margin:0;background:#ddd}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+// t=0: הרב מארבע זוויות · t=1: תנועות (הסבר, הצבעה, נפנוף, הליכה) · t=2: ילד ורב עם כובע ומעיל ארוך
+import * as THREE from 'three';
+import { figure, POSES, walkPose, mixPose } from '../../lib/figure3d.js';
+import { illus } from '../../lib/illus3d.js';
+const W = 1920, H = 1080, PW = 480;
+const r = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), antialias: false, preserveDrawingBuffer: true }); r.setSize(W, H, false);
+const I = illus(THREE, r, PW, H);
+const sc = new THREE.Scene(); sc.background = new THREE.Color(0xf3ead7);
+sc.add(new THREE.HemisphereLight(0xffffff, 0xcdbb9e, 1.5)); const d = new THREE.DirectionalLight(0xfff3e2, 2.4); d.position.set(-2, 4, 3); sc.add(d);
+const floor = new THREE.Mesh(new THREE.CircleGeometry(3, 48), new THREE.MeshToonMaterial({ color: 0xe6d8bb })); floor.rotation.x = -Math.PI / 2; sc.add(floor);
+const rav = figure(THREE, {}), boy = figure(THREE, { kind: 'boy' }), rav2 = figure(THREE, { hat: 'hat', coatLength: .4 });
+const all = [rav, boy, rav2]; all.forEach(f => sc.add(f.group));
+const cam = new THREE.PerspectiveCamera(26, PW / H, .05, 60);
+function shot(f, angle, p, i, face) {
+  all.forEach(x => x.group.visible = x === f); f.pose(p || {}); f.face(face || {});
+  const a = angle * Math.PI / 180, R = 5.2 * f.height / 1.85; cam.position.set(Math.sin(a) * R, f.height * .55, Math.cos(a) * R); cam.lookAt(0, f.height * .5, 0);
+  I.render(sc, cam, [i * PW, 0, PW, H]);
+}
+const SHEETS = [
+  () => { [0, 40, 100, 180].forEach((a, i) => shot(rav, a, {}, i, { smile: .5 })); },
+  () => { shot(rav, 15, POSES.explain, 0, { mouth: .6, brow: .5 }); shot(rav, 25, POSES.point, 1, { smile: .3 }); shot(rav, -10, POSES.wave, 2, { mouth: .8, smile: 1 }); shot(rav, 70, walkPose(1.2, 1), 3, {}); },
+  () => { shot(boy, 0, {}, 0, { smile: 1, mouth: .5 }); shot(boy, 35, POSES.wave, 1, { smile: 1 }); shot(rav2, 0, {}, 2, { smile: .4 }); shot(rav2, 140, {}, 3, {}); },
+];
+window.__seek = t => { r.setScissorTest(false); r.setViewport(0, 0, W, H); r.clear(); SHEETS[Math.min(2, Math.floor((t || 0) + 1e-6))](); };
+window.__seek(0); window.__ready = true;
+</script>
+</html>
