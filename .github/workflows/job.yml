@@ -15,6 +15,8 @@ jobs:
         with: { python-version: '3.11' }
       - run: pip install -q "rembg[cpu]" opencv-python-headless pillow numpy
       - run: python3 job_runner.py "${{ inputs.job }}"
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
       - name: push results
         run: |
           git config user.name studio-bot
