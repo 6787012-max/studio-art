@@ -1,0 +1,26 @@
+<!doctype html>
+<html><meta charset="utf-8"><title>GLB view</title>
+<style>html,body{margin:0;background:#ddd}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js", "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+// מציג מודל GLB מארבע זוויות (t = מספר הזווית 0..3) — לבדיקת מודלים שנוצרו מתמונה
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+const file = new URLSearchParams(location.search).get('f') || '../../assets/3d/rav_raw/trellis-community__TRELLIS_0.glb';
+const cv = document.getElementById('c'), r = new THREE.WebGLRenderer({ canvas: cv, antialias: true, preserveDrawingBuffer: true });
+r.setSize(1920, 1080, false); r.outputColorSpace = THREE.SRGBColorSpace;
+const sc = new THREE.Scene(); sc.background = new THREE.Color(0xe9e2d4);
+sc.add(new THREE.HemisphereLight(0xffffff, 0x9a8a70, 2.2)); const d = new THREE.DirectionalLight(0xffffff, 1.6); d.position.set(2, 4, 3); sc.add(d);
+const cams = [0, 1, 2, 3].map(() => new THREE.PerspectiveCamera(30, 480 / 1080, .01, 100));
+new GLTFLoader().load(file, g => {
+  const m = g.scene; const b = new THREE.Box3().setFromObject(m), s = new THREE.Vector3(), c = new THREE.Vector3(); b.getSize(s); b.getCenter(c);
+  m.position.sub(c); sc.add(m); const h = Math.max(s.x, s.y, s.z);
+  window.__seek = () => { r.setScissorTest(true);
+    [0, 50, 130, 180].forEach((a, i) => { const cam = cams[i], R = h * 2.1, A = a * Math.PI / 180; cam.position.set(Math.sin(A) * R, h * .08, Math.cos(A) * R); cam.lookAt(0, 0, 0);
+      r.setViewport(i * 480, 0, 480, 1080); r.setScissor(i * 480, 0, 480, 1080); r.render(sc, cam); }); };
+  window.__seek(0); window.__ready = true;
+  document.title = 'size ' + s.toArray().map(v => v.toFixed(2)).join(' ');
+}, undefined, e => console.error('load failed', e));
+</script>
+</html>

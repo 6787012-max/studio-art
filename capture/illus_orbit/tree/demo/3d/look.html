@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>מבחן מראה תלת-ממדי</title>
+<style>html,body{margin:0;background:#000;overflow:hidden}canvas{display:block}</style>
+<script type="importmap">
+{ "imports": { "three": "../../node_modules/three/build/three.module.js", "three/addons/": "../../node_modules/three/examples/jsm/" } }
+</script>
+<script type="module">
+// מבחן מראה: הדמות התלת-ממדית בחדר לימוד, מצולמת על המעבד בלבד.
+// שכבות קולנוע: צל מגע (GTAO), עומק שדה (Bokeh), זוהר עדין (Bloom).
+import * as THREE from 'three';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { GTAOPass } from 'three/addons/postprocessing/GTAOPass.js';
+import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { buildCharacter } from '../../lib/char3d.js';
+import { buildRoom } from '../../lib/room3d.js';
+
+const W = innerWidth, H = innerHeight, Q = new URLSearchParams(location.search);
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1); renderer.setSize(W, H);
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.05;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+document.body.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.background = new THREE.Color('#2a1d14');
+scene.fog = new THREE.Fog('#4a3422', 6, 15);
+const pm = new THREE.PMREMGenerator(renderer);
+scene.environment = pm.fromScene(new RoomEnvironment(), .04).texture; scene.environmentIntensity = .35;
+
+buildRoom(scene);
+const ch = buildCharacter(); scene.add(ch.root);
+ch.root.rotation.y = .3;
+
+// תנוחת נפנוף
+const A = ch.arms.A, B = ch.arms.B;
+A.sh.rotation.set(-.25, 0, -1.2); A.el.rotation.set(0, 0, -1.75); A.wr.rotation.set(0, Math.PI, .15);
+A.hand.userData.setPose('open');
+B.sh.rotation.set(0, 0, .1); B.el.rotation.set(-.3, 0, 0);
+ch.legs.A.hip.rotation.z = -.04; ch.legs.B.hip.rotation.z = .04;
+ch.head.rotation.set(.05, -.14, -.07);
+ch.spine.rotation.z = .02;
+ch.setFace({ smile: 1, open: .5, browUp: .5, lookX: -.2, lookY: .05 });
+ch.deformCoat(0, 0);
+
+// תאורה: חלון חם משמאל-מקדימה, אור אחורי קר שמפריד את המעיל השחור מהרקע, מילוי רך
+scene.add(new THREE.HemisphereLight('#fff2df', '#5a3a22', .55));
+const key = new THREE.DirectionalLight('#ffdcb0', 3.3); key.position.set(-2.6, 3.6, 2.6); key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048); key.shadow.radius = 6; key.shadow.bias = -.0004; key.shadow.normalBias = .02;
+Object.assign(key.shadow.camera, { left: -3, right: 3, top: 3, bottom: -1, near: .5, far: 12 }); scene.add(key);
+const rim = new THREE.DirectionalLight('#b3c8ff', 3.2); rim.position.set(2.2, 2.4, -2.6); scene.add(rim);
+const rim2 = new THREE.DirectionalLight('#ffd2a0', 1.6); rim2.position.set(-2.5, 2.0, -2.2); scene.add(rim2);
+const fill = new THREE.DirectionalLight('#ffd6b0', .55); fill.position.set(1.5, 1.2, 3); scene.add(fill);
+
+const cam = new THREE.PerspectiveCamera(26, W / H, .1, 50);
+cam.position.set(.5, 1.32, 3.9); cam.lookAt(-.05, 1.02, 0);
+
+const fx = Q.get('fx') !== '0';
+const composer = new EffectComposer(renderer);
+composer.addPass(new RenderPass(scene, cam));
+if (fx) {
+  const ao = new GTAOPass(scene, cam, W, H); ao.blendIntensity = .9; ao.updateGtaoMaterial({ radius: .35, distanceExponent: 1.5, thickness: 1, scale: 1 }); composer.addPass(ao);
+  composer.addPass(new BokehPass(scene, cam, { focus: cam.position.distanceTo(new THREE.Vector3(0, 1.05, 0)), aperture: .0045, maxblur: .0075 }));
+  composer.addPass(new UnrealBloomPass(new THREE.Vector2(W, H), .22, .6, .92));
+}
+composer.addPass(new OutputPass());
+
+window.__seek = () => composer.render();
+window.__seek(0); window.__ready = true;
+</script>
+</html>

@@ -1,0 +1,46 @@
+<!doctype html>
+<html><meta charset="utf-8"><title>3D illustration</title>
+<style>html,body{margin:0;background:#ddd}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js", "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+// תלת-ממד בסגנון איור: צביעה בשני גוונים, צבעים "שטוחים" (החלקת רעש), וקו דיו אחיד שמזוהה בתמונה עצמה
+// מתוך קפיצות בעומק ובכיוון המשטח — כמו קו עט סביב כל צורה. ארבע זוויות זו לצד זו (t מסובב את כולן).
+import * as THREE from 'three';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+const P = new URLSearchParams(location.search), file = P.get('f') || '../../assets/3d/illus/rav_hat_a__trellis-community__TRELLIS_0.glb';
+const W = 1920, H = 1080, PW = 480;
+const r = new THREE.WebGLRenderer({ canvas: document.getElementById('c'), antialias: false, preserveDrawingBuffer: true });
+r.setSize(W, H, false); r.autoClear = false;
+const mk = () => { const t = new THREE.WebGLRenderTarget(PW * 2, H * 2); t.depthTexture = new THREE.DepthTexture(PW * 2, H * 2); return t; };
+const rtC = mk(), rtN = new THREE.WebGLRenderTarget(PW * 2, H * 2);
+const gd = new Uint8Array([150, 150, 150, 255, 255, 255, 255, 255]); const grad = new THREE.DataTexture(gd, 2, 1, THREE.RGBAFormat); grad.minFilter = grad.magFilter = THREE.NearestFilter; grad.needsUpdate = true;
+const comp = new THREE.ShaderMaterial({ uniforms: { col: { value: rtC.texture }, dep: { value: rtC.depthTexture }, nor: { value: rtN.texture }, res: { value: new THREE.Vector2(PW * 2, H * 2) }, bg: { value: new THREE.Color(0xf6eedc) } },
+  vertexShader: 'varying vec2 vUv; void main(){ vUv=uv; gl_Position=vec4(position.xy,0.,1.); }',
+  fragmentShader: `uniform sampler2D col; uniform sampler2D dep; uniform sampler2D nor; uniform vec2 res; uniform vec3 bg; varying vec2 vUv;
+  float ld(vec2 u){ float z=texture2D(dep,u).x; float n=.05, f=60.; return (2.*n)/(f+n-(z*2.-1.)*(f-n)); }
+  void main(){ vec2 px=1./res; float d0=ld(vUv); vec3 n0=texture2D(nor,vUv).rgb;
+    float e=0.; for(int i=-1;i<=1;i++) for(int j=-1;j<=1;j++){ if(i==0&&j==0) continue; vec2 o=vec2(i,j)*px*2.;
+      e=max(e, step(.012*d0+.0006, abs(ld(vUv+o)-d0))); e=max(e, smoothstep(.35,.6, distance(texture2D(nor,vUv+o).rgb,n0))); }
+    // צבעים שטוחים: ממוצע אזורי קטן (מוחק רעש של הטקסטורה) ואז צמצום גוונים עדין
+    vec3 c=vec3(0.); for(int i=-2;i<=2;i++) for(int j=-2;j<=2;j++) c+=texture2D(col,vUv+vec2(i,j)*px).rgb; c/=25.;
+    c=pow(c,vec3(1./2.2)); c=floor(c*9.+.5)/9.;
+    float bgm=step(.9999,texture2D(dep,vUv).x); c=mix(c,bg,bgm);
+    gl_FragColor=vec4(mix(c,vec3(.10,.07,.05),e*(1.-bgm*.0)),1.); }` });
+const qs = new THREE.Scene(), qc = new THREE.OrthographicCamera(-1, 1, 1, -1, 0, 1); qs.add(new THREE.Mesh(new THREE.PlaneGeometry(2, 2), comp));
+const sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight(0xffffff, 0xd8c8b0, 1.6)); const dl = new THREE.DirectionalLight(0xfff4e6, 2.6); dl.position.set(-2, 3, 3); sc.add(dl);
+const nmat = new THREE.MeshNormalMaterial();
+new GLTFLoader().load(file, g => {
+  const L = []; g.scene.traverse(o => { if (o.isMesh) L.push(o); });
+  for (const o of L) { if (!o.geometry.attributes.normal) o.geometry.computeVertexNormals(); o.material = new THREE.MeshToonMaterial({ map: o.material.map, gradientMap: grad }); }
+  const m = g.scene, b = new THREE.Box3().setFromObject(m), s = new THREE.Vector3(), c = new THREE.Vector3(); b.getSize(s); b.getCenter(c); m.position.sub(c); sc.add(m);
+  const cam = new THREE.PerspectiveCamera(30, PW / H, .05, 60), h = s.y;
+  window.__seek = t => { r.clear();
+    [0, 40, 100, 180].forEach((a0, i) => { const a = (a0 + (t || 0) * 40) * Math.PI / 180, R = h * 2.2; cam.position.set(Math.sin(a) * R, h * .08, Math.cos(a) * R); cam.lookAt(0, 0, 0);
+      r.setScissorTest(false); r.setRenderTarget(rtC); r.setViewport(0, 0, PW * 2, H * 2); r.setClearColor(0xffffff, 1); r.clear(); sc.overrideMaterial = null; r.render(sc, cam);
+      r.setRenderTarget(rtN); r.clear(); sc.overrideMaterial = nmat; r.render(sc, cam); sc.overrideMaterial = null;
+      r.setRenderTarget(null); r.setScissorTest(true); r.setViewport(i * PW, 0, PW, H); r.setScissor(i * PW, 0, PW, H); r.render(qs, qc); }); };
+  window.__seek(0); window.__ready = true;
+}, undefined, e => console.error('load failed', e));
+</script>
+</html>
