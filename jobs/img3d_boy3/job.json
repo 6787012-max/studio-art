@@ -1,0 +1,1 @@
+{"cmd": "python3 img3d_job.py boy_kippa_a.png trellis-community/TRELLIS > out/log_boy3.txt 2>&1"}
