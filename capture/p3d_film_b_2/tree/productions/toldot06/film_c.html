@@ -301,6 +301,7 @@ function shotC2() {
   const cam = fly([
     [0, [-2.5, 9.5, -19], [-.3, 0, -2], 45],
     [5.0, [-2.6, 8.0, -17], [-.3, .2, -3], 45],
+    [7.6, [-7.6, 5.2, -8.4], [.4, 1.6, -6.4], 45],
     [9.8, [-4.5, 2.4, -.9], [1.75, 2.6, -8.6], 45],
     [15.0, [-4.1, 2.5, -1.5], [1.75, 2.6, -8.6], 45],
     [18.6, [-5.6, 2.9, 2.0], [.4, 1.9, -3.8], 45],
@@ -531,9 +532,9 @@ function shotC4() {
   for (let i = 0; i < on; i++) oc.set([.12, .16, .3, sm(clamp((ov.xs[i] - 4.4) / 1.4, 0, 1))], i * 4);
   ov.geo.setAttribute('color', new THREE.BufferAttribute(oc, 4));
   const ovM = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0, depthWrite: false }); const ovMesh = new THREE.Mesh(ov.geo, ovM); ovMesh.renderOrder = 2; Wd.add(ovMesh);
-  const LS = label(Wd, 'צל גשם', { pos: [11.5, SL + 1.6, .6], height: 1.15, bg: 'rgba(40,52,84,.94)' });
+  const LS = label(Wd, 'צל גשם', { pos: [11.0, SL + 2.4, 1.2], height: 1.15, bg: 'rgba(40,52,84,.94)', depthTest: false });
   // הרב: מתבונן מן הצד המזרחי, נכנס לצל של הקיר, ומשם מראה את ההר
-  const RK = spline([0, 27.8, 30.6], [[20.6, 6.6], [20.6, 6.6], [MX + .45, MZ + 1.0]]);
+  const RK = spline([0, 27.6, 29.3, 30.8], [[20.6, 6.6], [20.6, 6.6], [22.4, 12.6], [MX + .45, MZ + 1.0]]);
   const ravP = t => { const [x, z] = RK(t), d = Math.hypot(x - MX, z - MZ); return [x, PY * sm(clamp((4.5 - d) / .45, 0, 1)), z]; };
   let CAM = null;
   person(Wd, RAV, t => {
@@ -550,7 +551,7 @@ function shotC4() {
     A1.set(x, y + .15 * Math.sin(t * .9), dark.clone().lerp(white, cr), lerp(1, .38, sm(P(t, 10, 19))), fade);
     A1.R.material.opacity = .85 * (1 - P(t, 9.6, 12.2)); A1.R.visible = t < 12.2;
     // ענן ב: מגיע מן הים ויורד על המערב
-    const xb = bx(t); B1.set(xb, cloudY(xb) + .15 * Math.sin(t * .8 + 1), grey.clone().lerp(dark, sm(P(t, 24, 29))), 1, 1);
+    const xb = bx(t); B1.set(xb, cloudY(xb) + .15 * Math.sin(t * .8 + 1) + 1.7 * sm(P(t, 33, 42)), grey.clone().lerp(dark, sm(P(t, 24, 29))), 1.12, 1);
     B1.c.visible = t > 17; B1.R.material.opacity = .85 * P(t, 27.5, 29.5); B1.R.visible = t > 27.5;
     S.main.mix(sm(P(t, 10.5, 17)));
     Q.position.set(10, SL + 3.4 + .2 * Math.sin(t * 1.4), .5); faceCam(Q, cam); Q.rotation.z = .08 * Math.sin(t * 1.8); popO(Q, P(t, 1.0, 2.0) * (1 - P(t, 10.2, 11)), 2.6);
@@ -565,14 +566,14 @@ function shotC4() {
   const cam = fly([
     [0, [5.5, SL + 5.8, 25], [5.5, SL + 5.6, 0], 45],
     [9.5, [6.4, SL + 7.0, 23], [6.0, SL + 4.8, 0], 45],
-    [16.5, [10.5, SL + 10.5, 21.5], [9.0, SL + 3.4, -1], 45],
+    [16.5, [10.5, SL + 10.5, 21.5], [9.0, SL + 5.4, -1], 45],
     [23, [17.5, SL + 3.4, 23], [11, SL + 7.5, -4], 45],
     [28.0, [24.5, SL + 1.0, 25.5], [21, 3.5, 8], 45],
     [31.2, [MX + .6, 4.2, MZ + 12.2], [MX, 2.3, MZ - .5], 45],
     [37.0, [MX - 2.5, 5.6, MZ + 14.5], [MX - 4.5, 3.0, MZ - 2], 45],
     [41.5, [23, SL + 2.2, 10.5], [6, SL + 3.0, 0], 45],
     [47.5, [22, SL + 3.4, 10.5], [4.5, SL + 4.0, 0], 45],
-    [57, [20.5, SL + 9.0, 13.5], [1.5, SL + 5.2, 0], 45],
+    [57, [20.5, SL + 9.0, 13.5], [3.0, SL + 4.4, 0], 45],
   ]);
   CAM = cam;
   return Object.assign(Wd, { cam });
@@ -623,7 +624,7 @@ function shotC6() {
     return { b, grp, w, f, stem, qm, nm, gl, a0: 10.6 + i * .55, f0 };
   });
   // הרב עומד על רחבת האבן, ליד הצד המזרחי של המפה (כמו מורה ליד לוח)
-  const RV = [5.4, 5.6];
+  const RV = [6.2, 7.0];
   let CAM = null;
   person(Wd, RAV, t => {
     const p = [RV[0], .16, RV[1]], st = { pos: p, groundY: .16, talk: talk(t) }, cp = CAM(t).pos;

@@ -395,7 +395,7 @@ function person(g,o){
   g.translate(0,70);g.rotate(bow*.42);g.translate(0,-70);
   g.translate(0,-br*.5);
   const pA=armPose(o,'A',C),pB=armPose(o,'B',C),GA=armView(pA,-1,C),GB=armView(pB,1,C);
-  const behind=G=>G.depth<-6&&G.wz<DC;
+  const behind=G=>G.depth<-21&&G.wz<DC;   // רק כשהגוף באמת מסובב (מעל ~35°) הזרוע הרחוקה עוברת אל מאחורי הגוף
   const head=G=>G.W[1]<-25&&Math.abs(G.W[0])<34&&G.wz>-5;   // יד מול הפנים — אחרי הראש
   if(behind(GA))drawArm(g,pA,GA,C,false);if(behind(GB))drawArm(g,pB,GB,C,false);
   drawCoat(g,C);
