@@ -241,7 +241,9 @@ export const CITIES = { 'צפת': [35.496, 32.965], 'הר מירון': [35.40, 3
 export function path(keys) {   // keys: [[t, [x,y,z], [lx,ly,lz], fov?], ...] — מעבר רך (ספליין) בין נקודות
   const P = new THREE.CatmullRomCurve3(keys.map(k => new THREE.Vector3(...k[1])), false, 'centripetal'), L = new THREE.CatmullRomCurve3(keys.map(k => new THREE.Vector3(...k[2])), false, 'centripetal');
   const T = keys.map(k => k[0]), n = keys.length - 1;
-  return t => { let i = 0; while (i < n - 1 && t > T[i + 1]) i++; const u = ease.io(clamp((t - T[i]) / (T[i + 1] - T[i]), 0, 1)), f = (i + u) / n;
+  // תנועה רציפה: מאיצים רק בהתחלה ומאטים רק בסוף (לא עוצרים בכל נקודה); שתי נקודות זהות ברצף = עמידה במקום
+  return t => { let i = 0; while (i < n - 1 && t > T[i + 1]) i++; const l = clamp((t - T[i]) / (T[i + 1] - T[i]), 0, 1);
+    const m = 1 - l, u = n === 1 ? ease.io(l) : i === 0 ? l * l * (2 - l) : i === n - 1 ? 1 - m * m * (2 - m) : l, f = (i + u) / n;
     const fov = keys[i][3] !== undefined ? lerp(keys[i][3], keys[i + 1][3] !== undefined ? keys[i + 1][3] : keys[i][3], u) : undefined;
     return { pos: P.getPoint(f).toArray(), look: L.getPoint(f).toArray(), fov }; };
 }
