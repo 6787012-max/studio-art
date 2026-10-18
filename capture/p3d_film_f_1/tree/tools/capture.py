@@ -48,7 +48,7 @@ with sync_playwright() as p:
         cmd = ['ffmpeg', '-hide_banner', '-nostats', '-loglevel', 'error', '-y', '-f', 'image2pipe', '-framerate', str(a.fps), '-c:v', 'mjpeg', '-i', '-']
         if a.audio:
             cmd += ['-i', a.audio, '-c:a', 'aac', '-b:a', '160k', '-shortest']
-        cmd += ['-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '18', '-preset', 'medium', '-movflags', '+faststart', a.out]
+        cmd += ['-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '18', '-preset', 'medium', '-g', str(a.fps * 2), '-profile:v', 'high', '-level', '4.1', '-movflags', '+faststart', a.out]   # תמונת מפתח כל 2 שניות: ניגון חלק ב-PowerPoint
         ff = subprocess.Popen(cmd, stdin=subprocess.PIPE, creationflags=NOWIN)
         t0, n = time.time(), int(round(a.dur * a.fps))
         for i in range(n):

@@ -4,6 +4,7 @@
 // שימוש: import {film} from './stage3d.js'; film({W,H,title,kicker,recap,shots:[{dur,caps,build(S)}]})
 // build(S) מחזיר {scene, cam(t)->{pos,look,fov}, update(t)}.  הכול דטרמיניסטי לפי הזמן (window.__seek).
 import * as THREE from 'three';
+import { figure, POSES, walkPose, mixPose } from './figure3d.js';
 
 const D = Math.PI / 180, clamp = (v, a, b) => Math.max(a, Math.min(b, v)), lerp = (a, b, t) => a + (b - a) * t;
 export const ease = { io: t => t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2, out: t => 1 - Math.pow(1 - t, 3), in: t => t * t * t, sm: t => t * t * (3 - 2 * t) };
@@ -90,7 +91,60 @@ export function world(o) {
 
 // ---------------- דמויות על שלט שפונה למצלמה ----------------
 const U_W = 320, U_TOP = -158, U_BOT = 178, M_PER_U = 1.75 / 307;   // גובה דמות 1.75 מטר
-export function person(Wd, look, fn, o) {
+// ---------------- דמויות תלת-ממד בקוד (figure3d) — ברירת המחדל מ-18/10/2026 ----------------
+// אותו ממשק כמו הדמויות המצוירות: look קבוע + fn(t) -> {pos, facing, gesture, perform, talk, walk, sit, look, smile, brow, seed, scale, hidden}
+export function person(Wd, look, fn, o) { return (window.__PEOPLE2D || (o && o.flat)) ? person2d(Wd, look, fn, o) : person3d(Wd, look, fn, o); }
+let N3D = 0;
+function look3d(look) {   // look של הדמויות המצוירות -> אפשרויות figure3d (תמיד כיפה, לפי יוסף: "בלי כובע")
+  const kid = look.kind === 'boy' || look.kid, bl = look.beardLen ?? .6;
+  const o = { depth: true, hat: look.hat === 'none' ? 'none' : 'kippa', glasses: !!look.glasses, skin: look.skin, coatColor: look.coat, pantsColor: look.pants, lite: N3D > 2 };
+  if (kid) o.kind = 'boy';
+  else if (!bl) Object.assign(o, { beard: false, vest: false, headScale: 1.22, faceLong: 1.08 });
+  else Object.assign(o, { beardColor: look.beard || '#3a2618', beardLength: clamp(.6 + bl * .5, .5, 1.2) });
+  for (const k of Object.keys(o)) if (o[k] === undefined) delete o[k];
+  return o;
+}
+const PERF3 = ['explain', 'rest', 'finger', 'explainA', 'offer', 'heart', 'shrug', 'point', 'count', 'explain', 'think', 'wide', 'rest', 'hips'];
+function pose3d(st, t) {
+  const sd = st.seed ?? .37;
+  let p = st.sit ? POSES.sit : {};
+  if (st.walk !== undefined && st.walk !== null && st.walk !== false) p = walkPose(st.walk, 1);
+  let gp = null;
+  if (st.gesture && POSES[st.gesture]) gp = POSES[st.gesture];
+  else if (st.perform > 0) {   // מחליף תנועות לבד (כמו בדמויות המצוירות)
+    const per = 2.5 + sd * 1.1, tt = t + sd * 13, k = Math.floor(tt / per), u = tt / per - k, N = PERF3.length, j = Math.floor(sd * N);
+    const g0 = POSES[PERF3[(k - 1 + j + N * 99) % N]] || {}, g1 = POSES[PERF3[(k + j + N * 99) % N]] || {};
+    gp = mixPose({}, mixPose(g0, g1, ease.sm(clamp(u / .22, 0, 1))), clamp(st.perform, 0, 1));
+  }
+  if (gp) { p = Object.assign({}, p); for (const k of Object.keys(gp)) if (!/^(thigh|shin|foot)/.test(k) && k !== 'y') p[k] = gp[k]; }
+  return p;
+}
+function person3d(Wd, look, fn, o) {
+  o = o || {}; let F = null; const turn = new THREE.Group();   // הדמות נבנית רק כשהשוט שלה מתרנדר בפעם הראשונה (טעינה מהירה)
+  const build = () => { F = figure(THREE, look3d(look)); N3D++; turn.add(F.group); F.group.traverse(m => { if (m.isMesh) m.castShadow = true; }); P.figure = F; };
+  const sh = new THREE.Mesh(new THREE.CircleGeometry(.42 * (o.scale || 1), 32), new THREE.MeshBasicMaterial({ map: blobTex(), transparent: true, depthWrite: false, opacity: .45 }));
+  sh.rotation.x = -Math.PI / 2; sh.renderOrder = 1;
+  const g = new THREE.Group(); g.add(turn); g.add(sh); Wd.add(g);
+  const P = { group: g, figure: null, shadow: sh, pos: [0, 0, 0], facing: 0 };
+  const stAt = tt => Object.assign({}, look, fn ? fn(tt) : {});
+  Wd.on((t, cam) => {
+    const st = stAt(t);
+    if (st.hidden) { g.visible = false; return; } g.visible = true; if (!F) build();
+    const pos = st.pos || [0, 0, 0]; g.position.set(pos[0], pos[1] || 0, pos[2]);
+    g.scale.setScalar((o.scale || 1) * (st.scale || 1) * .95); turn.rotation.y = st.facing || 0;
+    sh.position.set(0, .012 - (pos[1] || 0) + (st.groundY || 0), 0); sh.visible = st.shadow !== false;
+    // תנוחה = ממוצע של 0.3 השניות האחרונות -> מעברים רכים בין תנועות, ועדיין דטרמיניסטי לפי הזמן
+    let acc = pose3d(st, t); for (let k = 1; k <= 3; k++) { const tk = t - k * .1; acc = mixPose(acc, pose3d(stAt(tk), tk), 1 / (k + 1)); }
+    const sd = st.seed ?? .37;
+    acc.chest = (acc.chest || [0, 0, 0]).map((v, i) => v + (i === 0 ? .018 * Math.sin(t * 1.7 + sd * 9) + (st.gesture === 'pray' ? .07 + .07 * Math.sin(t * 5 + sd * 7) : 0) : 0));
+    acc.head = (acc.head || [0, 0, 0]).map((v, i) => v + (i === 1 ? (st.look || 0) * .25 + .06 * Math.sin(t * .6 + sd * 5) : 0));
+    F.pose(acc);
+    const talk = clamp(st.talk || 0, 0, 1);
+    F.face({ blink: ((t + sd * 7) % (3.1 + sd)) < .13 ? 1 : 0, mouth: Math.round(talk * 8) / 8, smile: st.smile ?? .35, brow: Math.round(((st.brow || 0) + talk * .25) * 8) / 8, look: Math.round(clamp(st.look || 0, -1, 1) * 6) / 10 });
+  });
+  return P;
+}
+function person2d(Wd, look, fn, o) {
   o = o || {};
   const res = o.res || 2.6, cw = Math.round(U_W * res), chh = Math.round((U_BOT - U_TOP) * res);
   const cv = document.createElement('canvas'); cv.width = cw; cv.height = chh; const cx = cv.getContext('2d');
@@ -241,7 +295,9 @@ export const CITIES = { 'צפת': [35.496, 32.965], 'הר מירון': [35.40, 3
 export function path(keys) {   // keys: [[t, [x,y,z], [lx,ly,lz], fov?], ...] — מעבר רך (ספליין) בין נקודות
   const P = new THREE.CatmullRomCurve3(keys.map(k => new THREE.Vector3(...k[1])), false, 'centripetal'), L = new THREE.CatmullRomCurve3(keys.map(k => new THREE.Vector3(...k[2])), false, 'centripetal');
   const T = keys.map(k => k[0]), n = keys.length - 1;
-  return t => { let i = 0; while (i < n - 1 && t > T[i + 1]) i++; const u = ease.io(clamp((t - T[i]) / (T[i + 1] - T[i]), 0, 1)), f = (i + u) / n;
+  // תנועה רציפה: מאיצים רק בהתחלה ומאטים רק בסוף (לא עוצרים בכל נקודה); שתי נקודות זהות ברצף = עמידה במקום
+  return t => { let i = 0; while (i < n - 1 && t > T[i + 1]) i++; const l = clamp((t - T[i]) / (T[i + 1] - T[i]), 0, 1);
+    const m = 1 - l, u = n === 1 ? ease.io(l) : i === 0 ? l * l * (2 - l) : i === n - 1 ? 1 - m * m * (2 - m) : l, f = (i + u) / n;
     const fov = keys[i][3] !== undefined ? lerp(keys[i][3], keys[i + 1][3] !== undefined ? keys[i + 1][3] : keys[i][3], u) : undefined;
     return { pos: P.getPoint(f).toArray(), look: L.getPoint(f).toArray(), fov }; };
 }

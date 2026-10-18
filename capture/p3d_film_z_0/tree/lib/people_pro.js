@@ -243,7 +243,11 @@ function drawBeard(g,C){
 function drawHead(g,o,C){
   const skin=C.skin,beard=C.beard,bl=C.bl,ch=C.hc,sh=C.hs,ink=shade(skin,-.55);
   const V=(x,z)=>{const r=Math.hypot(x,z)||1;return{X:x*ch+z*sh,d:-x*sh+z*ch,f:(z/r)*ch-(x/r)*sh};};
-  const face=()=>{g.beginPath();g.ellipse(0,-78,27,30,0,0,TAU);};
+  // צורת ראש מפוסלת: רקות, עצמות לחיים, לסת וסנטר (לא אליפסה) — הסנטר זז לכיוון שהפנים פונות אליו
+  const face=()=>{const jx=6*sh;g.beginPath();g.moveTo(0,-108.5);
+    g.bezierCurveTo(16,-108.5,27.6,-98.5,27.6,-83);g.bezierCurveTo(27.6,-71,24.5+jx*.3,-62,17.5+jx*.6,-55);
+    g.bezierCurveTo(12.5+jx,-49.6,4.5+jx,-48,jx,-48);g.bezierCurveTo(-4.5+jx,-48,-12.5+jx,-49.6,-17.5+jx*.6,-55);
+    g.bezierCurveTo(-24.5+jx*.3,-62,-27.6,-71,-27.6,-83);g.bezierCurveTo(-27.6,-98.5,-16,-108.5,0,-108.5);g.closePath();};
   const ear=sd=>{const e=V(sd*26.2,-1),rx=4.3+2.6*Math.abs(sh);g.beginPath();g.ellipse(e.X,-79,rx,7,sd*.12*ch,0,TAU);return e;};
   const back=ch<-.12;
   if(bl>0&&ch<0)drawBeard(g,C);               // גב: הזקן מאחורי הראש, רק השוליים מציצים
@@ -254,6 +258,9 @@ function drawHead(g,o,C){
   g.fillStyle=hg;face();g.fill();
   g.save();face();g.clip();
   if(C.hat==='hat'){const s2=g.createLinearGradient(0,-102,0,-89);s2.addColorStop(0,'rgba(40,20,10,.42)');s2.addColorStop(1,'rgba(40,20,10,0)');g.fillStyle=s2;g.fillRect(-30,-110,60,22);}
+  { const sg=g.createLinearGradient(-28,0,28,0);sg.addColorStop(0,'rgba(0,0,0,0)');sg.addColorStop(.6,'rgba(0,0,0,0)');sg.addColorStop(1,'rgba(150,70,40,.16)');   // צד מוצל חם (אור משמאל)
+    g.fillStyle=sg;g.fillRect(-30,-110,60,64);
+    const jg=g.createLinearGradient(0,-58,0,-48);jg.addColorStop(0,'rgba(0,0,0,0)');jg.addColorStop(1,'rgba(150,70,40,.14)');g.fillStyle=jg;g.fillRect(-30,-58,60,11); }
   if(!back)for(const sd of[-1,1]){const e=V(sd*14.5,22);if(e.f<.1)continue;const cg=g.createRadialGradient(e.X,-68.5,0,e.X,-68.5,8);
     cg.addColorStop(0,'rgba(232,112,100,'+(.32*e.f)+')');cg.addColorStop(1,'rgba(232,112,100,0)');g.fillStyle=cg;g.fillRect(e.X-9,-78,18,18);}
   // שיער בחצי האחורי של הראש: האזור שבין קו המתאר לבין "קו האמצע" (מאחורי האוזן), עד העורף
@@ -277,8 +284,8 @@ function drawHead(g,o,C){
     else if(!back){g.strokeStyle=shade(skin,-.38);g.lineWidth=1.1;g.beginPath();const ex=e.X;g.moveTo(ex+sd*1.6*ch,-84);g.bezierCurveTo(ex-sd*1.6*ch,-84.5,ex-sd*1.9*ch,-77,ex+sd*.6*ch,-74);g.stroke();}}
   // שיער על הראש (כשאין כובע מלא)
   if(C.hat!=='hat'&&!back){const hx=-sh*7;const hp=()=>{g.beginPath();g.moveTo(hx-27.6,-80);g.bezierCurveTo(hx-29,-104,hx-17,-110.5,hx,-110.5);
-      g.bezierCurveTo(hx+17,-110.5,hx+29,-104,hx+27.6,-80);g.quadraticCurveTo(hx+24,-90,hx+19*ch+8*sh,-95);
-      g.quadraticCurveTo(hx+8*ch+12*sh,-100.5,hx+12*sh,-99);g.quadraticCurveTo(hx-8*ch+12*sh,-100.5,hx-19*ch+8*sh,-95);g.quadraticCurveTo(hx-24,-90,hx-27.6,-80);g.closePath();};
+      g.bezierCurveTo(hx+17,-110.5,hx+29,-104,hx+27.6,-80);g.quadraticCurveTo(hx+24,-86,hx+19*ch+8*sh,-90);
+      g.quadraticCurveTo(hx+9*ch+12*sh,-95.5,hx+12*sh,-93.5);g.quadraticCurveTo(hx-7*ch+12*sh,-96,hx-19*ch+8*sh,-90.5);g.quadraticCurveTo(hx-24,-86,hx-27.6,-80);g.closePath();};
     g.save();face();g.clip();hp();const hh=g.createLinearGradient(0,-111,0,-85);hh.addColorStop(0,shade(beard,.12));hh.addColorStop(1,shade(beard,-.15));g.fillStyle=hh;g.fill();
     g.strokeStyle=shade(beard,.3);g.lineWidth=.8;g.globalAlpha=C.a*.5;g.beginPath();for(let i=0;i<9;i++){const x0=hx-20+i*5;g.moveTo(x0,-108);g.quadraticCurveTo(x0+3,-103,x0+1.5,-97);}g.stroke();g.globalAlpha=C.a;
     g.restore();g.beginPath();g.ellipse(0,-78,27,30,0,Math.PI*1.05,Math.PI*1.95);g.strokeStyle=shade(beard,-.6);g.lineWidth=LW;g.stroke();}
@@ -288,22 +295,28 @@ function drawHead(g,o,C){
     const close=clamp(Math.max(C.blink,C.sad>.6?1:C.sad*.32),0,1);
     if(o.eyeGlow){g.save();g.fillStyle=o.eyeGlow;g.shadowColor=o.eyeGlow;g.shadowBlur=7*C.px;
       for(const sd of[-1,1]){const e=V(sd*10.8,24.5);if(e.f<.15)continue;g.beginPath();g.ellipse(e.X,-82,6.2*e.f,3.4,sd*.35,0,TAU);g.fill();}g.restore();}
-    else for(const sd of[-1,1]){const e=V(sd*10.8,24.5);if(e.f<.18)continue;const fw=Math.pow(e.f,.8),ex=e.X,ey=-82,rx=5.7*fw,ry=5.4;
-      g.save();g.beginPath();g.ellipse(ex,ey,rx,ry,0,0,TAU);g.fillStyle='#fbf8f3';g.fill();g.clip();
-      const ix=ex+lk*fw,iy=ey+lky+.3;
-      g.fillStyle=o.eyes||'#5b3a20';g.beginPath();g.ellipse(ix,iy,3.6*fw,3.6,0,0,TAU);g.fill();
-      g.fillStyle='rgba(0,0,0,.25)';g.beginPath();g.ellipse(ix,iy,3.6*fw,3.6,0,Math.PI*1.05,TAU*.98);g.fill();
-      g.fillStyle='#120a06';g.beginPath();g.ellipse(ix,iy,1.75*fw,1.75,0,0,TAU);g.fill();
-      g.fillStyle='#fff';g.beginPath();g.ellipse(ix-1.2*fw,iy-1.4,1.15*fw,1.15,0,0,TAU);g.fill();g.beginPath();g.ellipse(ix+1.3*fw,iy+1.1,.5,.5,0,0,TAU);g.fill();
-      const s2=g.createLinearGradient(0,ey-ry,0,ey);s2.addColorStop(0,'rgba(90,50,30,.35)');s2.addColorStop(1,'rgba(90,50,30,0)');g.fillStyle=s2;g.fillRect(ex-rx,ey-ry,rx*2,ry);
-      const edge=u=>ey+ry*(2*close-1)*Math.sqrt(Math.max(0,1-u*u));
-      g.beginPath();g.moveTo(ex-rx-1,ey-ry-1);g.lineTo(ex+rx+1,ey-ry-1);for(let i=8;i>=-8;i--){const u=i/8;g.lineTo(ex+u*rx,edge(u));}g.closePath();g.fillStyle=shade(skin,-.06);g.fill();
+    // עין בצורת שקד: עפעף עליון מקומר ועבה, תחתון שטוח; פינה פנימית נמוכה, חיצונית מורמת מעט; קשתית גדולה שהעפעף מכסה חלק ממנה
+    else for(const sd of[-1,1]){const e=V(sd*10.6,24.5);if(e.f<.18)continue;const fw=Math.pow(e.f,.8),ex=e.X,ey=-80.6,rx=6.1*fw,ry=4.1;
+      const ic=[ex-sd*rx,ey+.5],oc=[ex+sd*rx,ey-.6],up=ey-ry*2.05,lo=ey+ry*1.3,cx=ex+sd*rx*.12;
+      const lidY=lerp(up,lo,close*.98),eye=()=>{g.beginPath();g.moveTo(ic[0],ic[1]);g.quadraticCurveTo(cx,up,oc[0],oc[1]);g.quadraticCurveTo(ex-sd*rx*.05,lo,ic[0],ic[1]);g.closePath();};
+      g.save();eye();g.fillStyle='#fbf7f1';g.fill();g.clip();
+      const ix=ex+lk*fw,iy=ey+lky-.1;
+      const ig=g.createRadialGradient(ix,iy+1,.5,ix,iy,3.5);ig.addColorStop(0,shade(o.eyes||'#6b4526',.25));ig.addColorStop(1,shade(o.eyes||'#6b4526',-.35));
+      g.fillStyle=ig;g.beginPath();g.ellipse(ix,iy,3.45*fw,3.45,0,0,TAU);g.fill();
+      g.fillStyle='#120a06';g.beginPath();g.ellipse(ix,iy,1.6*fw,1.6,0,0,TAU);g.fill();
+      g.fillStyle='#fff';g.beginPath();g.ellipse(ix-1.1*fw,iy-1.3,.95*fw,.95,0,0,TAU);g.fill();g.globalAlpha*=.7;g.beginPath();g.ellipse(ix+1.2*fw,iy+1.1,.45,.45,0,0,TAU);g.fill();g.globalAlpha=C.a;
+      const s2=g.createLinearGradient(0,ey-ry*1.2,0,ey+1);s2.addColorStop(0,'rgba(90,50,30,.42)');s2.addColorStop(1,'rgba(90,50,30,0)');g.fillStyle=s2;g.fillRect(ex-rx-1,ey-ry*1.6,rx*2+2,ry*1.6);
+      g.beginPath();g.moveTo(ic[0]-sd,up-3);g.lineTo(oc[0]+sd,up-3);g.lineTo(oc[0],oc[1]);g.quadraticCurveTo(cx,lidY,ic[0],ic[1]);g.closePath();g.fillStyle=shade(skin,-.07);g.fill();
       g.restore();
-      g.strokeStyle='#24140c';g.lineWidth=1.55;g.beginPath();for(let i=-8;i<=8;i++){const u=i/8,px=ex+u*(rx+.4),py=edge(u)-.2;i===-8?g.moveTo(px,py):g.lineTo(px,py);}g.stroke();
-      if(close<.85){g.strokeStyle=rgba('#7a4a35',.45);g.lineWidth=.8;g.beginPath();g.ellipse(ex,ey,rx,ry,0,Math.PI*.15,Math.PI*.85);g.stroke();}
-      const raise=(o.brow||0)*3.2+C.up*1.2+C.smile*.7,ang=o.angry||0;
-      const ix2=ex-sd*6.4*fw,ox=ex+sd*6.9*fw,iy2=ey-9.6-raise-C.sad*4+ang*4,oy=ey-9.4-raise+C.sad*1.4-ang*.8;
-      g.fillStyle=shade(beard,-.12);g.beginPath();g.moveTo(ix2,iy2-1.7);g.quadraticCurveTo(ex,Math.min(iy2,oy)-3.2,ox,oy-.4);g.quadraticCurveTo(ex,Math.min(iy2,oy)-.6,ix2,iy2+1.6);g.closePath();g.fill();}
+      // קו העפעף העליון: עבה באמצע, עם משיכה קטנה בפינה החיצונית; קפל עפעף דק מעליו; עפעף תחתון עדין
+      g.strokeStyle='#2a170c';g.lineWidth=1.55;g.beginPath();g.moveTo(ic[0],ic[1]);g.quadraticCurveTo(cx,lidY,oc[0],oc[1]);g.stroke();
+      if(close<.6){g.strokeStyle=shade(skin,-.3);g.lineWidth=.9;g.beginPath();g.moveTo(ic[0]+sd*1.2,ic[1]-2.6);g.quadraticCurveTo(cx,up-2.2,oc[0]-sd*.6,oc[1]-2.2);g.stroke();
+        g.strokeStyle=rgba('#8a5a45',.4);g.lineWidth=.8;g.beginPath();g.moveTo(ic[0]+sd*.8,ic[1]+.4);g.quadraticCurveTo(ex-sd*rx*.05,lo-.2,oc[0]-sd*.8,oc[1]+.6);g.stroke();}
+      // גבה: עבה בפנים, מתחדדת החוצה, קשת קלה
+      const raise=(o.brow||0)*3+C.up*1.1+C.smile*.6,ang=o.angry||0;
+      const bi=[ex-sd*5.4*fw,ey-8.4-raise-C.sad*3.6+ang*3.4],bo=[ex+sd*7*fw,ey-8.8-raise+C.sad*1.2-ang*.6],pk=[ex+sd*2.2*fw,Math.min(bi[1],bo[1])-2.6];
+      g.fillStyle=shade(beard,-.15);g.beginPath();g.moveTo(bi[0],bi[1]+1.5);g.quadraticCurveTo(bi[0],bi[1]-1.7,pk[0],pk[1]-.6);g.quadraticCurveTo(bo[0]-sd*1.6*fw,pk[1]-.2,bo[0],bo[1]);
+      g.quadraticCurveTo(bo[0]-sd*2*fw,pk[1]+1.6,pk[0],pk[1]+1.9);g.quadraticCurveTo(bi[0]+sd*1.5*fw,bi[1]+.8,bi[0],bi[1]+1.5);g.closePath();g.fill();}
     if(bl>0&&ch>=0)drawBeard(g,C);
     // פה
     const mV=V(0,25.5),mx=mV.X,my=-57,talk=clamp(o.talk||0,0,1),ms=o.mouth||(talk>.05?'A':'M'),mf=Math.max(.3,ch);
@@ -314,7 +327,8 @@ function drawHead(g,o,C){
       g.fillStyle='#c4544c';g.beginPath();g.ellipse(mx,my+mh*1.05,mw*.62,mh*.42,0,0,TAU);g.fill();g.restore();
       mp();g.strokeStyle='#2a0e0a';g.lineWidth=1.2;g.stroke();
       g.strokeStyle=rgba('#d07a6a',.55);g.lineWidth=1.1;g.beginPath();g.moveTo(mx-mw*.55,my+mh*1.02+1.1);g.quadraticCurveTo(mx,my+mh*1.1+1.9,mx+mw*.55,my+mh*1.02+1.1);g.stroke();}
-    else{g.strokeStyle=bl>0?'#2a120c':'#7a3a2c';g.lineWidth=1.7;g.beginPath();const mc=(C.smile-C.sad)*4.6;g.moveTo(mx-6.5*mf,my-mc*.25);g.quadraticCurveTo(mx,my+mc,mx+6.5*mf,my-mc*.25);g.stroke();}}
+    else{const mc=(C.smile+.25-C.sad)*4.2,w=(bl>0?6.5:5.4)*mf;g.strokeStyle=bl>0?'#2a120c':'#8a4234';g.lineWidth=bl>0?1.7:1.45;g.beginPath();g.moveTo(mx-w,my-mc*.25);g.quadraticCurveTo(mx,my+mc,mx+w,my-mc*.25);g.stroke();
+      if(bl<=0){g.strokeStyle=rgba('#c9786a',.45);g.lineWidth=1.3;g.beginPath();g.moveTo(mx-w*.45,my+2.3+mc*.4);g.quadraticCurveTo(mx,my+3.4+mc*.5,mx+w*.45,my+2.3+mc*.4);g.stroke();}}}
     // שפם
     if(bl>0&&ch>.05){g.save();g.translate(V(0,26).X,0);g.scale(Math.max(.25,ch),1);
       const mus=sd=>{g.moveTo(sd*.5,-66.2);g.bezierCurveTo(sd*6,-67.6,sd*12.5,-63,sd*14,-57.2);g.quadraticCurveTo(sd*11,-59.4,sd*9.6,-58.6);g.quadraticCurveTo(sd*7.5,-61.4,sd*5.4,-60.2);g.quadraticCurveTo(sd*3,-62.4,0,-61.4);};
@@ -323,26 +337,32 @@ function drawHead(g,o,C){
       g.strokeStyle=shade(beard,.34);g.lineWidth=.7;g.globalAlpha=C.a*.6;g.beginPath();for(const sd of[-1,1])for(const k of[0,1]){g.moveTo(sd*(2+k*3),-65.4+k*.6);g.quadraticCurveTo(sd*(7+k*2),-64.5,sd*(10+k*2),-60.5+k*.8);}g.stroke();g.globalAlpha=C.a;
       g.restore();}
     // אף — בפרופיל בולט מעבר לקו הפנים
-    if(ch>-.2){const nx=V(0,27.5).X;g.beginPath();g.ellipse(nx,-71.4,4.9,4.1,0,0,TAU);
-      const ng=g.createRadialGradient(nx-1.6,-73.2,.4,nx,-71.4,5.5);ng.addColorStop(0,shade(skin,.22));ng.addColorStop(1,shade(skin,-.12));g.fillStyle=ng;g.fill();
-      g.strokeStyle=shade(skin,-.45);g.lineWidth=1.15;g.beginPath();g.ellipse(nx,-71.4,4.9,4.1,0,Math.PI*.12,Math.PI*.88);g.stroke();
-      if(Math.abs(sh)>.55){g.beginPath();g.ellipse(nx,-71.4,4.9,4.1,0,sh>0?-Math.PI*.5:Math.PI*.5,sh>0?Math.PI*.12:Math.PI*.88,sh<0);g.stroke();}
-      g.fillStyle=rgba('#5a2a1a',.3);for(const sd of[-1,1]){const e=V(sd*2.1,27);if(e.f<.2)continue;g.beginPath();g.ellipse(e.X,-68.6,1.2*e.f,.7,0,0,TAU);g.fill();}}
+    // אף מעוצב: צל לאורך צד הגשר, קצה רך עם ברק, כנפי נחיריים וקו תחתון — בלי עיגול מוקף (לא "אף של ליצן")
+    if(ch>-.2){const nx=V(0,27.5).X,ny=-70,fs=Math.sign(sh)||1,side=Math.abs(sh);
+      if(side>.45){g.beginPath();g.moveTo(nx-fs*3.5,-80);g.quadraticCurveTo(nx+fs*1.5,-75,nx+fs*4.2,-70.2);g.quadraticCurveTo(nx+fs*4.8,-67.2,nx+fs*1.2,-67);g.lineTo(nx-fs*2.5,-67.5);g.closePath();
+        g.fillStyle=skin;g.fill();g.strokeStyle=shade(skin,-.45);g.lineWidth=1.15;g.beginPath();g.moveTo(nx-fs*1.5,-79);g.quadraticCurveTo(nx+fs*1.5,-75,nx+fs*4.2,-70.2);g.quadraticCurveTo(nx+fs*4.8,-67.2,nx+fs*1.2,-67);g.stroke();}
+      g.strokeStyle=rgba(shade(skin,-.32),.55);g.lineWidth=1.8;g.beginPath();g.moveTo(nx+1.4-fs*side*2,-79.5);g.quadraticCurveTo(nx+2.4-fs*side*1.5,-74.5,nx+2.6-fs*side,-71);g.stroke();
+      const ng=g.createRadialGradient(nx-.8,-71.6,.3,nx,-70.4,4.4);ng.addColorStop(0,shade(skin,.16));ng.addColorStop(1,rgba(shade(skin,-.1),0));g.fillStyle=ng;g.beginPath();g.ellipse(nx,-70.4,4.2,3.4,0,0,TAU);g.fill();
+      g.fillStyle=rgba('#ffffff',.5);g.beginPath();g.ellipse(nx-1,-71.8,1,.75,0,0,TAU);g.fill();
+      g.strokeStyle=shade(skin,-.42);g.lineWidth=1.25;g.beginPath();
+      for(const sd of[-1,1]){const e=V(sd*3.3,26);if(e.f<.15)continue;g.moveTo(e.X,-70.6);g.quadraticCurveTo(e.X+sd*.9*e.f,-68.4,e.X-sd*.9*e.f,-67.6);}
+      g.moveTo(nx-1.6,-67.4);g.quadraticCurveTo(nx,-66.6,nx+1.6,-67.4);g.stroke();}
     // משקפיים
-    if(o.glasses){g.strokeStyle='#1a1614';g.lineWidth=1.25;const L=[];for(const sd of[-1,1])L.push([sd,V(sd*10.8,25.5)]);
-      for(const[sd,e]of L){if(e.f<.12)continue;g.strokeStyle='#1a1614';g.beginPath();g.ellipse(e.X,-81.5,7.4*Math.pow(e.f,.8),7.4,0,0,TAU);g.stroke();
-        g.strokeStyle=rgba('#ffffff',.35);g.beginPath();g.ellipse(e.X,-81.5,5.6*Math.pow(e.f,.8),5.6,0,Math.PI*1.1,Math.PI*1.45);g.stroke();
-        const er=V(sd*26,0);if(er.d>-4){g.strokeStyle='#1a1614';g.beginPath();g.moveTo(e.X+sd*7.2*ch,-82.5);g.lineTo(er.X,-84);g.stroke();}}
-      if(ch>.3){g.strokeStyle='#1a1614';g.beginPath();g.moveTo(L[0][1].X+7.2*ch,-82);g.quadraticCurveTo(V(0,27).X,-84.5,L[1][1].X-7.2*ch,-82);g.stroke();}}
+    if(o.glasses){g.lineWidth=.95;const L=[];for(const sd of[-1,1])L.push([sd,V(sd*10.6,26)]);
+      for(const[sd,e]of L){if(e.f<.12)continue;const w=Math.pow(e.f,.8);g.fillStyle=rgba('#cfe6ff',.08);g.beginPath();g.ellipse(e.X,-80.4,7*w,6.6,0,0,TAU);g.fill();
+        g.strokeStyle='#2a2420';g.stroke();
+        g.strokeStyle=rgba('#ffffff',.4);g.lineWidth=.8;g.beginPath();g.ellipse(e.X,-80.4,5.4*w,5,0,Math.PI*1.12,Math.PI*1.42);g.stroke();g.lineWidth=.95;
+        const er=V(sd*26,0);if(er.d>-4){g.strokeStyle='#2a2420';g.beginPath();g.moveTo(e.X+sd*6.8*w*ch,-81.2);g.lineTo(er.X,-83.4);g.stroke();}}
+      if(ch>.3){g.strokeStyle='#2a2420';g.beginPath();g.moveTo(L[0][1].X+6.8*ch,-80.8);g.quadraticCurveTo(V(0,27).X,-83,L[1][1].X-6.8*ch,-80.8);g.stroke();}}
     if(C.tear>0){const tx=V(-11,24).X;g.globalAlpha=C.a*C.tear;g.fillStyle='#a8dcff';g.strokeStyle='#5aa0d0';g.lineWidth=.8;g.beginPath();g.moveTo(tx,-75);g.quadraticCurveTo(tx+5.5,-65,tx,-61);
       g.quadraticCurveTo(tx-5.5,-65,tx,-75);g.fill();g.stroke();g.fillStyle='#fff';g.beginPath();g.ellipse(tx-1.4,-65,1.2,1.2,0,0,TAU);g.fill();g.globalAlpha=C.a;}
   }
   // פאות מסולסלות: הקרובה מלפנים, הרחוקה מאחור
   if(o.peyot!==false){for(const sd of[-1,1]){const e=V(sd*24.6,6),bx=e.X,dir=Math.sign(bx)||sd;let pv=null;
     if(e.d<-14&&!back)continue;
-    for(let i=0;i<=40;i++){const u=i/40,th=u*TAU*2.6,r=1.9*(1-u*.25),px=bx+dir*(Math.cos(th)*r+u*1.6),py=-91+u*(21+bl*5)+Math.sin(th)*r*.5;
-      if(pv){g.lineWidth=2.5+LW*1.2;g.strokeStyle=shade(beard,-.6);g.beginPath();g.moveTo(pv[0],pv[1]);g.lineTo(px,py);g.stroke();
-        g.lineWidth=2.5;g.strokeStyle=Math.sin(th)>0?shade(beard,.16):shade(beard,-.1);g.stroke();}pv=[px,py];}}}
+    for(let i=0;i<=40;i++){const u=i/40,th=u*TAU*2.6,r=(bl>0?1.8:1.4)*(1-u*.25),px=bx+dir*(Math.cos(th)*r+u*1.6),py=-90+u*(bl>0?21+bl*5:15)+Math.sin(th)*r*.5;
+      if(pv){g.lineWidth=(bl>0?2.1:1.7)+LW*1.0;g.strokeStyle=shade(beard,-.6);g.beginPath();g.moveTo(pv[0],pv[1]);g.lineTo(px,py);g.stroke();
+        g.lineWidth=bl>0?2.1:1.7;g.strokeStyle=Math.sin(th)>0?shade(beard,.16):shade(beard,-.1);g.stroke();}pv=[px,py];}}}
 }
 function drawHat(g,C){
   const hc=C.hatColor,ink='#000',ch=C.hc,sh=C.hs;
@@ -404,7 +424,7 @@ function person(g,o){
   g.save();
   const nod=(o.nod||0)+(pf?pf*.04*Math.sin(t*2.3+seed*5):0);
   g.translate(0,-48-br*.3);g.rotate(C.sad*.14+bow*.2+(o.tilt||0)+(live?.015*Math.sin(t*.9+seed*4):0));g.translate(0,48+nod*14);
-  g.fillStyle=shade(C.skin,-.2);g.fillRect(-9,-54,18,16);
+  {const ng=g.createLinearGradient(-8,0,8,0);ng.addColorStop(0,shade(C.skin,-.08));ng.addColorStop(1,shade(C.skin,-.25));g.fillStyle=ng;g.fillRect(-7.5,-54,15,17);}
   drawHead(g,o,C);drawHat(g,C);
   if(o.onHead)o.onHead(g,{yaw:hyaw/D,cos:C.hc,sin:C.hs});
   g.restore();
