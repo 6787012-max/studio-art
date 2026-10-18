@@ -1,0 +1,24 @@
+[
+ {
+  "name": "rav_kippa_a",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   832,
+   1216
+  ],
+  "seconds": 24.5
+ },
+ {
+  "name": "rav_kippa_b",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   832,
+   1216
+  ],
+  "seconds": 21.4
+ }
+]
