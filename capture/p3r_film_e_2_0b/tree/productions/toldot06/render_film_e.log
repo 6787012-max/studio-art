@@ -1,0 +1,5 @@
+part 1/4 t0=0.0 d=61.8 -> rc=0
+part 2/4 t0=61.8 d=61.8 -> rc=0
+part 4/4 t0=185.2 d=61.8 -> rc=0
+part 3/4 t0=123.5 d=61.8 -> rc=1
+FAILED part 2 (1, 'packed 26 files\nrun 39153932351\nrun finished: exit=1  minutes=35.4\n\n')
