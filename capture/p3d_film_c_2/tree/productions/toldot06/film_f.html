@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>מסע של טיפת גשם</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+// סרטון 6: מסע של טיפת גשם — המצלמה טסה עם טיפה אחת: מן הים (אדים) אל הענן, אל ההר (גשם), אל תוך האדמה, אל המעיין ואל הכנרת.
+// עולם אחד משותף (ים במערב, מישור החוף, רכס הרים, עמק הכנרת וגבעות סביבה) לשוטים 1, 2, 4; שוט 3 = חתך של ההר כמו עוגה.
+import { film, world, person, cloud, label, THREE, prog, ease, clamp, lerp, rng, toon, mesh, canvasTex, D } from '../../lib/stage3d.js';
+
+const RAV = { coat: '#1d1d24', beard: '#3a2a20', beardLen: .6, hat: 'hat', skin: '#efcfb0', glasses: true };
+const ss = (a, b, x) => { const k = clamp((x - a) / (b - a), 0, 1); return k * k * (3 - 2 * k); };
+const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+const SUN_DIR = new THREE.Vector3(.62, .36, .70).normalize();
+
+// ---------------- רעש דטרמיניסטי ----------------
+function h2(i, j) { const s = Math.sin(i * 127.1 + j * 311.7) * 43758.5453; return s - Math.floor(s); }
+function vn(x, z) { const i = Math.floor(x), j = Math.floor(z), fx = x - i, fz = z - j, u = fx * fx * (3 - 2 * fx), v = fz * fz * (3 - 2 * fz);
+  return lerp(lerp(h2(i, j), h2(i + 1, j), u), lerp(h2(i, j + 1), h2(i + 1, j + 1), u), v) * 2 - 1; }
+function fbm(x, z) { let s = 0, a = .5, f = 1; for (let k = 0; k < 4; k++) { s += a * vn(x * f, z * f); f *= 2.03; a *= .5; } return s; }
+
+// אינטרפולציה מונוטונית (בלי קפיצות ובלי עצירות מיותרות) — לפרופיל ההר ולמסלולי מצלמה
+function mono(xs, ys) {
+  const n = xs.length, d = [], m = new Array(n);
+  for (let i = 0; i < n - 1; i++) d.push((ys[i + 1] - ys[i]) / (xs[i + 1] - xs[i]));
+  m[0] = d[0]; m[n - 1] = d[n - 2];
+  for (let i = 1; i < n - 1; i++) m[i] = d[i - 1] * d[i] <= 0 ? 0 : (d[i - 1] + d[i]) / 2;
+  for (let i = 0; i < n - 1; i++) { if (d[i] === 0) { m[i] = m[i + 1] = 0; continue; } const a = m[i] / d[i], b = m[i + 1] / d[i], s = a * a + b * b; if (s > 9) { const q = 3 / Math.sqrt(s); m[i] = q * a * d[i]; m[i + 1] = q * b * d[i]; } }
+  return x => { if (x <= xs[0]) return ys[0]; if (x >= xs[n - 1]) return ys[n - 1]; let i = 0; while (x > xs[i + 1]) i++;
+    const h = xs[i + 1] - xs[i], t = (x - xs[i]) / h, t2 = t * t, t3 = t2 * t;
+    return (2 * t3 - 3 * t2 + 1) * ys[i] + (t3 - 2 * t2 + t) * h * m[i] + (-2 * t3 + 3 * t2) * ys[i + 1] + (t3 - t2) * h * m[i + 1]; };
+}
+// מסלול מצלמה: [t, pos, look, fov, roll]
+function fly(keys) {
+  const T = keys.map(k => k[0]), ch = [];
+  for (let c = 0; c < 3; c++) ch.push(mono(T, keys.map(k => k[1][c])));
+  for (let c = 0; c < 3; c++) ch.push(mono(T, keys.map(k => k[2][c])));
+  const fv = mono(T, keys.map(k => k[3] || 45)), rl = mono(T, keys.map(k => k[4] || 0));
+  return t => ({ pos: [ch[0](t), ch[1](t), ch[2](t)], look: [ch[3](t), ch[4](t), ch[5](t)], fov: fv(t), roll: rl(t) });
+}
+function mixCam(fa, fb, t0, t1) { return t => { if (t <= t0) return fa(t); if (t >= t1) return fb(t); const u = ease.io((t - t0) / (t1 - t0)), a = fa(t), b = fb(t);
+  return { pos: a.pos.map((v, i) => lerp(v, b.pos[i], u)), look: a.look.map((v, i) => lerp(v, b.look[i], u)), fov: lerp(a.fov || 45, b.fov || 45, u), roll: lerp(a.roll || 0, b.roll || 0, u) }; }; }
+
+// ---------------- קו מתאר: חומר עם מפתח-תוכנית משלו (ראה הדוח: באג במנוע) ----------------
+function olMat(color, w) {
+  const m = new THREE.MeshBasicMaterial({ color, side: THREE.BackSide });
+  m.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n transformed += normalize(normal) * ' + w.toFixed(4) + ';'); };
+  m.customProgramCacheKey = () => 'olw' + w.toFixed(4); return m;
+}
+function fixInk(obj, w) { const k = 'ink' + w.toFixed(4); obj.traverse(o => { if (o.isMesh && o.material && o.material.side === THREE.BackSide && Object.prototype.hasOwnProperty.call(o.material, 'onBeforeCompile')) o.material.customProgramCacheKey = () => k; }); return obj; }
+
+// ---------------- טקסטורות ----------------
+const TX = {}; const tx = (n, f) => TX[n] || (TX[n] = f());
+const glowTex = () => tx('glow', () => canvasTex(128, 128, (g, w, h) => { const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.22, 'rgba(255,255,255,.6)'); r.addColorStop(.55, 'rgba(255,255,255,.16)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }));
+const sunTex = () => tx('sun', () => canvasTex(256, 256, (g, w, h) => { const r = g.createRadialGradient(128, 128, 0, 128, 128, 128); r.addColorStop(0, 'rgba(255,255,250,1)'); r.addColorStop(.34, 'rgba(255,251,228,1)'); r.addColorStop(.4, 'rgba(255,238,175,.8)'); r.addColorStop(.7, 'rgba(255,222,140,.2)'); r.addColorStop(1, 'rgba(255,215,130,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }));
+const raysTex = () => tx('rays', () => canvasTex(512, 512, (g) => { g.translate(256, 256); const R = rng(77);
+  for (let i = 0; i < 20; i++) { const a = i / 20 * Math.PI * 2 + R() * .12, wd = .035 + R() * .04, L = 150 + R() * 100; const gr = g.createLinearGradient(0, 0, Math.cos(a) * L, Math.sin(a) * L); gr.addColorStop(0, 'rgba(255,240,190,.6)'); gr.addColorStop(1, 'rgba(255,240,190,0)'); g.fillStyle = gr; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(a - wd) * L, Math.sin(a - wd) * L); g.lineTo(Math.cos(a + wd) * L, Math.sin(a + wd) * L); g.closePath(); g.fill(); } }));
+const wispTex = () => tx('wisp', () => canvasTex(128, 128, (g) => { g.filter = 'blur(7px)'; g.strokeStyle = 'rgba(255,255,255,.85)'; g.lineCap = 'round'; g.lineWidth = 17; g.beginPath(); g.moveTo(64, 116); g.bezierCurveTo(34, 92, 96, 64, 64, 40); g.bezierCurveTo(44, 24, 72, 14, 62, 8); g.stroke(); g.filter = 'none'; }));
+const streakTex = () => tx('streak', () => canvasTex(64, 64, (g) => { const gr = g.createLinearGradient(0, 3, 0, 61); gr.addColorStop(0, 'rgba(225,238,255,0)'); gr.addColorStop(1, 'rgba(235,245,255,1)'); g.strokeStyle = gr; g.lineWidth = 3.2; g.lineCap = 'round'; g.beginPath(); g.moveTo(32, 3); g.lineTo(32, 60); g.stroke(); }));
+const starTex = () => tx('star', () => canvasTex(64, 64, (g) => { const r = g.createRadialGradient(32, 32, 0, 32, 32, 32); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.14, 'rgba(255,255,240,.85)'); r.addColorStop(.45, 'rgba(255,250,220,.12)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 64);
+  const l = g.createLinearGradient(0, 0, 64, 0); g.strokeStyle = 'rgba(255,255,255,.75)'; g.lineWidth = 2; g.beginPath(); g.moveTo(32, 8); g.lineTo(32, 56); g.moveTo(8, 32); g.lineTo(56, 32); g.stroke(); }));
+const dotTex = () => tx('dot', () => canvasTex(64, 64, (g) => { const r = g.createRadialGradient(32, 32, 0, 32, 32, 32); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.35, 'rgba(255,255,255,.95)'); r.addColorStop(.5, 'rgba(255,255,255,.35)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, 64, 64); }));
+const flowTex = () => tx('flow', () => canvasTex(64, 256, (g, w, h) => { g.fillStyle = '#3f93dc'; g.fillRect(0, 0, w, h); const R = rng(5);
+  for (let i = 0; i < 30; i++) { const x = 8 + R() * 48, y = R() * h, L = 16 + R() * 40, a = .3 + R() * .45, lw = 2 + R() * 3.5; for (const oy of [0, -h]) { g.strokeStyle = `rgba(215,238,255,${a})`; g.lineWidth = lw; g.lineCap = 'round'; g.beginPath(); g.moveTo(x, y + oy); g.lineTo(x + (R() - .5) * 3, y + oy + L); g.stroke(); } }
+  g.fillStyle = 'rgba(255,255,255,.28)'; g.fillRect(0, 0, 5, h); g.fillRect(w - 5, 0, 5, h); }, [1, 1]));
+const windTex = () => tx('wind', () => canvasTex(256, 16, (g, w, h) => { const gr = g.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, 'rgba(255,255,255,0)'); gr.addColorStop(.35, 'rgba(255,255,255,.9)'); gr.addColorStop(.8, 'rgba(255,255,255,1)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.fillRect(0, 3, w, h - 6); }));
+
+// ---------------- טיפה (צורת דמעה) ----------------
+let DROPG = null;
+function dropGeo() { if (DROPG) return DROPG; const P = [];
+  for (let i = 0; i <= 10; i++) { const a = -Math.PI / 2 + i / 10 * Math.PI / 2; P.push(new THREE.Vector2(Math.max(1e-3, Math.cos(a)), Math.sin(a))); }
+  for (let j = 1; j <= 14; j++) { const y = 1.7 * j / 14; P.push(new THREE.Vector2(Math.max(1e-3, Math.pow(Math.cos(Math.PI / 2 * y / 1.7), 1.5)), y)); }
+  DROPG = new THREE.LatheGeometry(P, 28); return DROPG; }
+function heroDrop(Wd, sc, glow) {
+  const g = new THREE.Group();
+  const m = new THREE.Mesh(dropGeo(), new THREE.MeshPhongMaterial({ color: 0x3e9cff, emissive: 0x0b2f66, specular: 0xffffff, shininess: 110 }));
+  m.add(new THREE.Mesh(dropGeo(), olMat(0x123a6e, .09))); m.scale.setScalar(sc); g.add(m);
+  const hl = new THREE.Mesh(new THREE.SphereGeometry(.17, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffffff })); hl.position.set(-.42 * sc, .28 * sc, .82 * sc); hl.scale.set(sc, 1.6 * sc, .4 * sc); g.add(hl);
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), color: 0x8fd0ff, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, fog: false, opacity: .85 }));
+  halo.scale.setScalar(sc * (glow || 6)); g.add(halo); Wd.add(g);
+  return { g, m, halo };
+}
+
+// ---------------- נקודות (חלקיקים) ----------------
+function ptsObj(Wd, n, map, size, o) {
+  o = o || {}; const pos = new Float32Array(n * 3), col = new Float32Array(n * (o.alpha ? 4 : 3));
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.BufferAttribute(col, o.alpha ? 4 : 3));
+  const mat = new THREE.PointsMaterial({ map, size, vertexColors: true, transparent: true, depthWrite: false, sizeAttenuation: true, fog: o.fog !== false, blending: o.add ? THREE.AdditiveBlending : THREE.NormalBlending, depthTest: o.depthTest !== false });
+  const p = new THREE.Points(geo, mat); p.frustumCulled = false; if (o.order) p.renderOrder = o.order; Wd.add(p);
+  return { p, geo, pos, col, mat, upd() { geo.attributes.position.needsUpdate = true; geo.attributes.color.needsUpdate = true; } };
+}
+// אדים: פסים לבנים חלשים שעולים מן המים ומתכנסים אל הענן
+function wisps(Wd, o) {
+  const R = rng(o.seed || 3), P = [];
+  for (let i = 0; i < o.count; i++) { const a = R() * 6.283, r = Math.sqrt(R()) * o.radius; P.push({ x: o.cx + Math.cos(a) * r, z: o.cz + Math.sin(a) * r, ph: R(), v: o.speed * (.8 + R() * .45), w: R() * 6.28 }); }
+  const S = ptsObj(Wd, o.count, wispTex(), o.size, { alpha: true });
+  Wd.on((t, cam) => { const A = o.amount ? o.amount(t) : 1;
+    for (let i = 0; i < o.count; i++) { const p = P[i]; let y, a;
+      if (o.loop) { const age = (t * p.v / o.top + p.ph) % 1; y = age * o.top; a = ss(0, .12, age) * (1 - ss(.72, 1, age)); }
+      else { const age = t - (o.birth0 + p.ph * o.span); y = age * p.v; a = age < 0 ? 0 : ss(0, 1.6, age) * (1 - ss(o.top - 6, o.top, y)); }
+      const k = o.converge ? Math.pow(ss(0, o.top, y), 1.3) * o.converge : 0;
+      const x = lerp(p.x, o.cx, k) + Math.sin(t * .9 + p.w) * 1.2 * (1 - k), z = lerp(p.z, o.cz, k) + Math.cos(t * .7 + p.w) * 1.2 * (1 - k);
+      const dc = Math.hypot(x - cam.position.x, y - cam.position.y, z - cam.position.z);
+      a *= ss(o.near || 4, (o.near || 4) * 2.2, dc) * o.alpha * A;
+      S.pos.set([x, Math.max(y, 0) + (o.y0 || 0), z], i * 3); S.col.set([1, 1, 1, a], i * 4); }
+    S.upd(); });
+  return S;
+}
+// נצנוצים על המים (בכיוון ההשתקפות של השמש)
+function glints(Wd, o) {
+  const R = rng(o.seed || 21), P = [];
+  for (let i = 0; i < o.n; i++) P.push({ x: lerp(o.x0, o.x1, R()), z: lerp(o.z0, o.z1, R()), f: 1.5 + R() * 3, ph: R() * 6.28, j: R() * 2 - 1 });
+  const S = ptsObj(Wd, o.n, starTex(), o.size, { add: true, fog: false });
+  P.forEach((p, i) => S.pos.set([p.x, o.y, p.z], i * 3)); S.upd();
+  Wd.on((t, cam) => { const g = o.gain(t), c = cam.position;
+    for (let i = 0; i < o.n; i++) { const p = P[i]; const dx = p.x - c.x, dy = o.y - c.y, dz = p.z - c.z, L = Math.hypot(dx, dy, dz) || 1;
+      const al = (dx * SUN_DIR.x - dy * SUN_DIR.y + dz * SUN_DIR.z) / L + p.j * .07;
+      const tw = Math.pow(Math.max(0, Math.sin(t * p.f + p.ph)), 3);
+      const b = (ss(o.lobe || .86, 1, al) * 1.1 + (o.base || .12)) * tw * g * ss(o.far || 400, (o.far || 400) * .6, L) * ss(4, 11, L);
+      S.col.set([b, b * .97, b * .86], i * 3); }
+    S.geo.attributes.color.needsUpdate = true; });
+}
+// גשם: פסים נופלים (חלקיקים עם טקסטורת פס), מרכז נע
+function rainPts(Wd, o) {
+  const R = rng(o.seed || 9), B = []; for (let i = 0; i < o.count; i++) B.push([R() * 2 - 1, R() * 2 - 1, R()]);
+  const S = ptsObj(Wd, o.count, streakTex(), o.size, { alpha: false });
+  for (let i = 0; i < o.count; i++) S.col.set([.82, .9, 1], i * 3);
+  S.mat.opacity = o.opacity || .85; S.mat.alphaTest = .02;
+  Wd.on(t => { const a = o.amount(t); S.p.visible = a > .01; if (!S.p.visible) return; const c = o.center(t), top = o.top(t), H0 = o.h, sc = o.scale ? o.scale(t) : 1;
+    for (let i = 0; i < o.count; i++) { const b = B[i]; const fr = (b[2] + t * o.speed / H0) % 1; const vis = i < o.count * a;
+      S.pos.set([c[0] + b[0] * o.w * sc, vis ? top - fr * H0 : -9999, c[1] + b[1] * o.d * sc], i * 3); }
+    S.geo.attributes.position.needsUpdate = true; });
+  return S;
+}
+// ענן נפוח (כמו ענן הספרייה, אבל בלי דיסקת הבסיס השטוחה, ועם הארה עצמית קלה כדי שיישאר לבן)
+function puffCloud(o) {
+  const r = rng(o.seed || 1), g = new THREE.Group(), s = o.size || 3, n = o.puffs || 7, col = new THREE.Color(o.color || 0xf7f8fa);
+  const mat = toon(col.clone()); mat.emissive = col.clone().multiplyScalar(o.glow === undefined ? .24 : o.glow); const ol = olMat(o.inkColor || 0x6f7a88, s * .025);
+  const add = (x, y, z, rr, sy) => { const geo = new THREE.SphereGeometry(rr, 22, 15), b = new THREE.Mesh(geo, mat); b.scale.y = sy || 1; b.position.set(x, y, z); b.castShadow = o.cast !== false; b.add(new THREE.Mesh(geo, ol)); g.add(b); };
+  for (let i = 0; i < n; i++) add((i - (n - 1) / 2) * s * .55 + (r() - .5) * s * .3, (r() - .2) * s * .35, (r() - .5) * s * .5, s * (.45 + r() * .4));
+  for (let i = 0; i < n - 1; i++) add((i - (n - 2) / 2) * s * .55, -s * .2, (r() - .5) * s * .3, s * .5, .62);
+  if (o.pos) g.position.set(...o.pos); g.userData.mat = mat; return g;
+}
+// ענן גדול מכמה עננים נפוחים; מחזיר את החומרים (לשינוי צבע) ואת הנפיחות (לצמיחה)
+function bigCloud(spec, seed0) {
+  const g = new THREE.Group(), mats = [], kids = [];
+  spec.forEach((s, i) => { const c = puffCloud({ seed: seed0 + i * 7, size: s.size, puffs: s.puffs, color: s.color || 0xf7f8fa, pos: s.pos }); mats.push(c.userData.mat);
+    c.children.forEach(k => kids.push({ k, p: k.position.clone().add(c.position) })); g.add(c); });
+  return { g, mats, kids, color(c) { this.mats.forEach(m => { m.color.copy(c); m.emissive.copy(c).multiplyScalar(.24); }); } };
+}
+const BIG = [{ size: 4.2, puffs: 9, pos: [0, 0, 0] }, { size: 3.4, puffs: 6, pos: [1.2, 3.4, -1.2] }, { size: 3.6, puffs: 7, pos: [-2, 1.2, -4.6] }, { size: 3.0, puffs: 5, pos: [2.4, -.4, 3.6] }];
+const SMALL = [{ size: 2.6, puffs: 8, pos: [0, 0, 0] }, { size: 2.0, puffs: 5, pos: [.6, 2.2, -.6] }, { size: 2.2, puffs: 6, pos: [-1, .8, -2.6] }];
+
+// ================= העולם הגדול: ים, חוף, הרים, כנרת =================
+const LAKE = { x: 222, z: 2, ax: 21, az: 36, y: 1.6 };
+const coastX = z => 3 * Math.sin(z * .021) + 2.2 * Math.sin(z * .057 + 1);
+function lakeM(x, z) { const w = 1 + .28 * clamp(-(z - LAKE.z) / LAKE.az, -1, 1); const dx = (x - LAKE.x) / (LAKE.ax * w), dz = (z - LAKE.z) / LAKE.az; return dx * dx + dz * dz; }
+function ridgeH(z) { return 37 + 12 * Math.exp(-Math.pow((z + 45) / 75, 2)) - 9 * ss(30, 300, z) - 6 * ss(-200, -420, z) + 2.5 * Math.sin(z * .045 + .5); }
+function H0(x, z) {
+  const u = x - coastX(z);
+  if (u < 0) return Math.max(-7, -.45 + u * .06);
+  let h = .35 + .1 * Math.min(u, 5) + 3.2 * ss(5, 60, u);
+  h += ridgeH(z) * Math.exp(-Math.pow((x - 128) / (x < 128 ? 40 : 33), 2));
+  h += 24 * ss(252, 300, x) * (1 + .12 * Math.sin(z * .031));
+  const dl = Math.sqrt(lakeM(x, z));
+  h += 8 * Math.exp(-Math.pow((dl - 1.7) / .42, 2)) * ss(0, 12, u);
+  const cz = ss(0, 8, u); h += fbm(x * .033, z * .033) * (1.0 + .13 * h) * cz + .5 * fbm(x * .11 + 7, z * .11 - 3) * cz;
+  if (dl < 1.32) { const tgt = Math.max(LAKE.y - 4.5, LAKE.y + (dl - 1) * 9); h = dl < 1 ? tgt : lerp(tgt, Math.max(h, LAKE.y + .4), ss(1, 1.32, dl)); }
+  return h;
+}
+// נחלים (מן המקור אל השפך)
+const STREAMS = [
+  { w: 2.2, to: 'sea', pts: [[124, -6], [110, -2], [96, 4], [82, 1], [66, 6], [48, 3], [30, 8], [14, 6], [-4, 7]] },
+  { w: 2.0, to: 'sea', pts: [[118, 52], [100, 58], [80, 54], [58, 62], [34, 58], [12, 62], [-4, 62]] },
+  { w: 2.0, to: 'sea', pts: [[122, -62], [104, -70], [86, -66], [62, -74], [36, -70], [14, -76], [-4, -74]] },
+  { w: 3.0, to: 'lake', pts: [[226, -250], [219, -185], [224, -130], [219, -85], [222, -52], [220, -33]] },
+  { w: 2.0, to: 'lake', pts: [[148, -60], [166, -50], [182, -40], [196, -28], [205, -21]] },
+  { w: 2.0, to: 'lake', pts: [[300, -84], [276, -66], [256, -48], [240, -36], [232, -29]] },
+  { w: 2.8, from: 'lake', pts: [[224, 37], [228, 80], [223, 130], [227, 190], [225, 260]] },
+];
+let LANDD = null;
+function prepStreams() {
+  return STREAMS.map(s => {
+    const curve = new THREE.CatmullRomCurve3(s.pts.map(p => V3(p[0], 0, p[1])), false, 'centripetal');
+    const n = Math.max(8, Math.round(curve.getLength() / 2.5)), pts = curve.getSpacedPoints(n).map(v => [v.x, v.z]);
+    const bed = []; let prev = s.from === 'lake' ? LAKE.y - .27 : 1e9;
+    for (let i = 0; i < pts.length; i++) { let b = (s.from === 'lake' && i === 0) ? prev : Math.min(prev - .03, H0(pts[i][0], pts[i][1]) - 1.1);
+      if (s.to === 'sea') b = Math.max(b, -.35); if (s.to === 'lake') b = Math.max(b, LAKE.y - .12); if (s.from === 'lake') b = Math.max(b, -3); prev = b; bed.push(b); }
+    let bx0 = 1e9, bx1 = -1e9, bz0 = 1e9, bz1 = -1e9; for (const p of pts) { bx0 = Math.min(bx0, p[0]); bx1 = Math.max(bx1, p[0]); bz0 = Math.min(bz0, p[1]); bz1 = Math.max(bz1, p[1]); }
+    return { w: s.w, pts, bed, bbox: [bx0 - 12, bx1 + 12, bz0 - 12, bz1 + 12], s };
+  });
+}
+function streamDist(st, x, z) { let best = 1e18, bb = 0; const P = st.pts;
+  for (let i = 0; i < P.length - 1; i++) { const ax = P[i][0], az = P[i][1], dx = P[i + 1][0] - ax, dz = P[i + 1][1] - az, L2 = dx * dx + dz * dz || 1;
+    const u = clamp(((x - ax) * dx + (z - az) * dz) / L2, 0, 1), ex = ax + dx * u - x, ez = az + dz * u - z, d2 = ex * ex + ez * ez; if (d2 < best) { best = d2; bb = lerp(st.bed[i], st.bed[i + 1], u); } }
+  return [Math.sqrt(best), bb]; }
+function Hc(x, z) { let h = H0(x, z); const SS = LANDD ? LANDD.streams : null; if (!SS) return h;
+  for (const st of SS) { if (x < st.bbox[0] || x > st.bbox[1] || z < st.bbox[2] || z > st.bbox[3]) continue; const [d, bb] = streamDist(st, x, z); const f = 1 - ss(st.w * .9, st.w * 3.2, d); if (f > 0) h = Math.min(h, lerp(h, bb, f)); }
+  return h; }
+function nearStream(x, z) { let m = 1e9; for (const st of LANDD.streams) { if (x < st.bbox[0] || x > st.bbox[1] || z < st.bbox[2] || z > st.bbox[3]) continue; m = Math.min(m, streamDist(st, x, z)[0]); } return m; }
+const C3 = hex => { const c = new THREE.Color(hex); return [c.r, c.g, c.b]; };
+const PAL = { sand: C3(0xecdba6), f1: C3(0x9cc35e), f2: C3(0x86b350), f3: C3(0xcfc77e), f4: C3(0xb0cf6c), forest: C3(0x5f9444), forest2: C3(0x4f8239), rock: C3(0xbcae90), rock2: C3(0xa39478), basalt: C3(0xb0a676), shore: C3(0xe2d6a2) };
+const mix3 = (a, b, k) => [lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k)];
+function landColor(x, z, h, ny) {
+  const u = x - coastX(z), fx = Math.floor((x * .8 + z * .25) / 15), fz = Math.floor((z * .8 - x * .25) / 11), hh = h2(fx, fz);
+  let c = hh < .3 ? PAL.f1 : hh < .55 ? PAL.f2 : hh < .78 ? PAL.f4 : PAL.f3;
+  const n = fbm(x * .05 + 3, z * .05);
+  c = mix3(c, h2(fx + 3, fz) < .5 ? PAL.forest : PAL.forest2, clamp(ss(6, 15, h) * .8 + ss(-.2, .3, n) * ss(5, 12, h) * .2, 0, 1));
+  c = mix3(c, PAL.rock, ss(46, 60, h + n * 7) * .5);
+  c = mix3(c, PAL.rock2, ss(.78, .55, ny) * .45);
+  c = mix3(c, PAL.basalt, ss(255, 292, x) * .55);
+  c = mix3(c, PAL.sand, ss(4.5, 1.2, u));
+  const dl = Math.sqrt(lakeM(x, z)); c = mix3(c, PAL.shore, ss(1.16, 1.0, dl) * .85);
+  const v = 1 + n * .09; return c.map(q => q * v);
+}
+function axis(segs) { const a = []; for (const [x0, x1, st] of segs) for (let x = x0; x < x1 - 1e-6; x += st) a.push(x); a.push(segs[segs.length - 1][1]); return a; }
+function ribbonGeo(pts, ys, hw0, taper) {
+  const n = pts.length, P = new Float32Array(n * 6), UV = new Float32Array(n * 4), I = []; let s = 0;
+  for (let i = 0; i < n; i++) { const a = pts[Math.max(0, i - 1)], b = pts[Math.min(n - 1, i + 1)]; let tx = b[0] - a[0], tz = b[1] - a[1]; const L = Math.hypot(tx, tz) || 1; tx /= L; tz /= L;
+    if (i > 0) s += Math.hypot(pts[i][0] - pts[i - 1][0], pts[i][1] - pts[i - 1][1]);
+    const hw = hw0 * (taper ? lerp(.3, 1, ss(0, taper, s)) : 1), nx = -tz, nz = tx;
+    P.set([pts[i][0] + nx * hw, ys[i], pts[i][1] + nz * hw, pts[i][0] - nx * hw, ys[i], pts[i][1] - nz * hw], i * 6); UV.set([0, s / 7, 1, s / 7], i * 4);
+    if (i < n - 1) { const q = i * 2; I.push(q, q + 1, q + 2, q + 1, q + 3, q + 2); } }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(P, 3)); g.setAttribute('uv', new THREE.BufferAttribute(UV, 2)); g.setIndex(I); g.computeVertexNormals(); return g;
+}
+const LANDING = { x: 128.5, z: 5 };
+function landData() {
+  if (LANDD) return LANDD;
+  LANDD = { streams: null }; LANDD.streams = prepStreams();
+  const LX = axis([[-40, -10, 3], [-10, 300, 2], [300, 640, 8]]), LZ = axis([[-760, -220, 8], [-220, 200, 2.2], [200, 560, 8]]);
+  const nx = LX.length, nz = LZ.length, pos = new Float32Array(nx * nz * 3), idx = [];
+  for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) { const x = LX[i], z = LZ[j], k = (j * nx + i) * 3; pos[k] = x; pos[k + 1] = Hc(x, z); pos[k + 2] = z; }
+  for (let j = 0; j < nz - 1; j++) for (let i = 0; i < nx - 1; i++) { const a = j * nx + i, b = a + 1, c = a + nx, d = c + 1; idx.push(a, c, b, b, c, d); }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeVertexNormals();
+  const nrm = geo.attributes.normal.array, col = new Float32Array(nx * nz * 3);
+  for (let v = 0; v < nx * nz; v++) col.set(landColor(pos[v * 3], pos[v * 3 + 2], pos[v * 3 + 1], nrm[v * 3 + 1]), v * 3);
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  LANDD.geo = geo; LANDD.mat = new THREE.MeshLambertMaterial({ vertexColors: true });
+  // נחלים
+  LANDD.flowMat = new THREE.MeshBasicMaterial({ map: flowTex(), side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 });
+  LANDD.ribbons = LANDD.streams.map(st => ribbonGeo(st.pts, st.bed.map(b => b + .3), st.w * .62, st.s.from ? 0 : 14));
+  // עצים
+  const R = rng(4242), T = [];
+  for (let k = 0; k < 14000 && T.length < 1900; k++) { const x = lerp(25, 300, R()), z = lerp(-210, 190, R()), h = Hc(x, z);
+    if (h < 5.5 || h > 62) continue; const n = fbm(x * .05 + 3, z * .05); if (n < -.1 && h < 26) continue; if (lakeM(x, z) < 1.7) continue;
+    if (Math.hypot(x - LANDING.x, z - LANDING.z) < 9) continue; if (nearStream(x, z) < 6.5) continue; T.push([x, h, z, .75 + R() * .6]); }
+  const O = []; for (let k = 0; k < 9000 && O.length < 700; k++) { const x = lerp(10, 90, R()), z = lerp(-200, 190, R()); const fx = Math.floor((x * .8 + z * .25) / 15), fz = Math.floor((z * .8 - x * .25) / 11);
+    if (h2(fx + 11, fz + 5) > .2) continue; const h = Hc(x, z); if (h < 1.2 || h > 9 || nearStream(x, z) < 5) continue; O.push([x, h, z, .7 + R() * .3]); }
+  LANDD.trees = T; LANDD.orch = O;
+  // כפרים (בתים לבנים קטנים)
+  const VC = [[40, -32], [72, 92], [96, -112], [176, 44], [198, 22], [300, -22], [24, 120], [150, -140]], VH = [];
+  for (const [cx, cz] of VC) for (let i = 0; i < 14; i++) { const x = cx + (R() - .5) * 16, z = cz + (R() - .5) * 14; if (nearStream(x, z) < 4 || lakeM(x, z) < 1.25) continue; VH.push([x, Hc(x, z), z, R() * 3.14, .8 + R() * .5]); }
+  LANDD.houses = VH;
+  // קצף לאורך החוף
+  const fp = [], fy = []; for (let z = -620; z <= 620; z += 4) { fp.push([coastX(z) - .6, z]); fy.push(.16); }
+  LANDD.foam = ribbonGeo(fp, fy, .8, 0);
+  return LANDD;
+}
+let SEAD = null;
+const wave = (x, z, t) => .2 * Math.sin(x * .5 + z * .18 - t * 1.5) + .12 * Math.sin(x * .21 - z * .57 - t * 1.05 + 1.3) + .07 * Math.sin(x * 1.25 + z * .85 - t * 2.3);
+function seaData() {
+  if (SEAD) return SEAD;
+  const SX = axis([[-1100, -280, 24], [-280, -110, 1.25], [-110, 12, 3]]), SZ = axis([[-760, -130, 24], [-130, -55, 3], [-55, 55, 1.25], [55, 130, 3], [130, 760, 24]]);
+  const nx = SX.length, nz = SZ.length, pos = new Float32Array(nx * nz * 3), col = new Float32Array(nx * nz * 3), idx = [], anim = [], amp = [];
+  const c1 = new THREE.Color(0x4cc0d2), c2 = new THREE.Color(0x2f7cc4), c3 = new THREE.Color(0x2a69b0);
+  for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) { const x = SX[i], z = SZ[j], v = j * nx + i; pos.set([x, 0, z], v * 3);
+    const u = x - coastX(z), k1 = ss(-3, -40, u), k2 = ss(-120, -500, u); const c = c1.clone().lerp(c2, k1).lerp(c3, k2); col.set([c.r, c.g, c.b], v * 3);
+    const m = ss(-300, -280, x) * (1 - ss(115, 130, Math.abs(z))); if (m > 0) { anim.push(v); amp.push(m); } }
+  for (let j = 0; j < nz - 1; j++) for (let i = 0; i < nx - 1; i++) { const a = j * nx + i, b = a + 1, c = a + nx, d = c + 1; idx.push(a, c, b, b, c, d); }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); geo.setIndex(idx); geo.computeVertexNormals();
+  SEAD = { geo, pos, anim: Int32Array.from(anim), amp: Float32Array.from(amp), mat: new THREE.MeshPhongMaterial({ vertexColors: true, flatShading: true, shininess: 110, specular: 0x9cc0d4 }) };
+  return SEAD;
+}
+function seaWaves(t) { const S = seaData(), p = S.pos; for (let q = 0; q < S.anim.length; q++) { const v = S.anim[q] * 3; p[v + 1] = wave(p[v], p[v + 2], t) * S.amp[q]; } S.geo.attributes.position.needsUpdate = true; }
+
+// שמש: דיסק, הילה וקרניים — תמיד "באינסוף" (נעה עם המצלמה)
+function sunRig(Wd, glowF) {
+  const mk = (map, o) => { const s = new THREE.Sprite(new THREE.SpriteMaterial(Object.assign({ map, fog: false, depthWrite: false, transparent: true }, o))); Wd.add(s); return s; };
+  const glow = mk(glowTex(), { color: 0xffdf9a, blending: THREE.AdditiveBlending, opacity: .45 }), rays = mk(raysTex(), { blending: THREE.AdditiveBlending, opacity: .25 }), disc = mk(sunTex(), {});
+  Wd.on((t, cam) => { const p = cam.position.clone().addScaledVector(SUN_DIR, 1400), g = glowF ? glowF(t) : 0;
+    for (const s of [glow, rays, disc]) s.position.copy(p);
+    disc.scale.setScalar(190 * (1 + .06 * g * Math.sin(t * 3))); glow.scale.setScalar(620 * (1 + .35 * g)); glow.material.opacity = .42 + .4 * g;
+    rays.scale.setScalar(950 * (1 + .2 * g)); rays.material.rotation = t * .06; rays.material.opacity = .14 + .42 * g; });
+}
+// הרכבת עולם ההרים והים לשוט
+function landWorld(o) {
+  o = o || {};
+  const Wd = world({ skyTop: o.skyTop || 0x5ea6e8, skyBottom: o.skyBottom || 0xe6f0f5, fogColor: o.fogColor || 0xdde9f0, fogNear: o.fogNear || 200, fogFar: o.fogFar || 1200,
+    sun: o.sun || 1.45, hemi: o.hemi || 1.0, sunPos: [0, 100, 0], shadowExt: o.shadowExt || 40, skyR: 1500 });
+  Wd.hemi.groundColor.set(0x9aa3ad);
+  const LD = landData(), SD = seaData();
+  const land = new THREE.Mesh(LD.geo, LD.mat); land.receiveShadow = true; Wd.add(land);
+  const sea = new THREE.Mesh(SD.geo, SD.mat); sea.receiveShadow = true; Wd.add(sea);
+  for (const g of LD.ribbons) Wd.add(new THREE.Mesh(g, LD.flowMat));
+  const foamMat = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .6, depthWrite: false }); Wd.add(new THREE.Mesh(LD.foam, foamMat));
+  // עצים: חרוטים (יער) וכדורים (מטעים), עם קו מתאר
+  const inst = (geo, mat, list, f, ol) => { const im = new THREE.InstancedMesh(geo, mat, list.length), M = new THREE.Matrix4(), Q = new THREE.Quaternion(), Sv = new THREE.Vector3(), Pv = new THREE.Vector3(), cc = new THREE.Color();
+    list.forEach((e, i) => { f(e, Pv, Sv); M.compose(Pv, Q, Sv); im.setMatrixAt(i, M); if (o.noColor !== true) { cc.setHSL(.27 + h2(i, 3) * .06, .45, .3 + h2(i, 7) * .1); } });
+    im.castShadow = false; im.receiveShadow = true; Wd.add(im);
+    if (ol) { const om = new THREE.InstancedMesh(geo, olMat(0x1d2a16, ol), list.length); om.instanceMatrix = im.instanceMatrix; Wd.add(om); } return im; };
+  const tg = new THREE.ConeGeometry(.95, 2.7, 8); tg.translate(0, 1.15, 0);
+  const trees = inst(tg, toon(0xffffff), LD.trees,(e, P, S) => { P.set(e[0], e[1] - .1, e[2]); S.setScalar(e[3]); }, .07);
+  LD.trees.forEach((e, i) => trees.setColorAt(i, new THREE.Color().setHSL(.28 + h2(i, 3) * .05, .42, .32 + h2(i, 7) * .1)));
+  const og = new THREE.SphereGeometry(.85, 10, 7); og.translate(0, .8, 0);
+  const orch = inst(og, toon(0x6f9c46), LD.orch, (e, P, S) => { P.set(e[0], e[1] - .05, e[2]); S.setScalar(e[3]); }, .06);
+  const hg = new THREE.BoxGeometry(1.7, 1.15, 1.4); hg.translate(0, .45, 0);
+  const houses = new THREE.InstancedMesh(hg, toon(0xf3ead6), LD.houses.length); { const M = new THREE.Matrix4(), Q = new THREE.Quaternion(), E = new THREE.Euler();
+    LD.houses.forEach((e, i) => { Q.setFromEuler(E.set(0, e[3], 0)); M.compose(V3(e[0], e[1], e[2]), Q, V3(e[4], e[4], e[4])); houses.setMatrixAt(i, M); }); } Wd.add(houses);
+  // עננים ברקע
+  const BG = [[-300, 78, -120, 7, 7], [-230, 82, 210, 8, 8], [60, 80, -170, 6.5, 7], [200, 90, 110, 7.5, 8], [320, 82, -80, 7, 7], [-200, 74, 125, 6, 6], [150, 95, -260, 8, 8], [-120, 88, -260, 7, 7], [420, 85, 60, 8, 8], [-420, 80, 40, 7, 7], [-120, 90, 300, 8, 7]];
+  const bgc = BG.map((b, i) => { const c = puffCloud({ seed: 40 + i, size: b[3], puffs: b[4], color: 0xfbfcfd, cast: false, glow: .3 }); c.position.set(b[0], b[1], b[2]); Wd.add(c); return c; });
+  sunRig(Wd, o.sunGlow);
+  const sh = o.shadowAt || (() => [0, 0, 0]);
+  Wd.on((t, cam) => {
+    Wd.sky.position.copy(cam.position); seaWaves(t); flowTex().offset.y = -t * .5; foamMat.opacity = .45 + .2 * Math.sin(t * 1.3);
+    bgc.forEach((c, i) => { c.position.x = BG[i][0] + t * 1.3; });
+    const s = sh(t); Wd.sun.target.position.set(s[0], s[1], s[2]); Wd.sun.position.set(s[0] + SUN_DIR.x * 120, s[1] + SUN_DIR.y * 120, s[2] + SUN_DIR.z * 120);
+  });
+  return { Wd };
+}
+const keepAbove = (f, m) => t => { const c = f(t); const g = Hc(c.pos[0], c.pos[2]); if (c.pos[1] < g + m) c.pos = [c.pos[0], g + m, c.pos[2]]; if (c.pos[1] < .9) c.pos = [c.pos[0], .9, c.pos[2]]; return c; };
+
+// ================= שוט 1: הים, השמש, האדים, הענן =================
+function shot1() {
+  const C = [-150, 0, 0];
+  const L = landWorld({ fogNear: 170, fogFar: 1300, shadowAt: () => [C[0], 34, C[2]], shadowExt: 22, sunGlow: t => ss(10.6, 13.5, t) * (1 - ss(19.5, 22.5, t)) });
+  const Wd = L.Wd;
+  glints(Wd, { n: 1100, x0: -250, x1: -100, z0: -48, z1: 48, y: .46, size: 1.05, seed: 21, gain: t => .75 + 1.25 * ss(10.6, 13.5, t) * (1 - ss(19.5, 23, t)), lobe: .84, base: .1, far: 260 });
+  // הטיפה שלנו: אור קטן על המים, שעולה כאד
+  const orbY = t => { const k = prog(t, 20.5, 31); return .5 + wave(C[0], C[2], t) * (1 - k) + 33 * ease.io(k); };
+  const orb = new THREE.Group(); Wd.add(orb);
+  const core = new THREE.Mesh(new THREE.SphereGeometry(.2, 16, 12), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true })); orb.add(core);
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), color: 0x9ed6ff, transparent: true, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending, fog: false })); orb.add(halo);
+  const halo2 = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), color: 0xffffff, transparent: true, depthWrite: false, depthTest: false, fog: false, opacity: .5 })); orb.add(halo2);
+  Wd.on(t => { const y = orbY(t), vis = 1 - ss(31.2, 32.6, t); orb.position.set(C[0] + Math.sin(t * .8) * .4 * ss(20.5, 23, t), y, C[2] + Math.cos(t * .6) * .4 * ss(20.5, 23, t));
+    const pulse = 1 + .12 * Math.sin(t * 4.2), up = ss(20, 24, t); halo.scale.setScalar((2.6 + 1.6 * up) * pulse * ss(2, 5, t)); halo.material.opacity = .95 * vis;
+    halo2.scale.setScalar(1.1 + 1.4 * up); halo2.material.opacity = (.45 + .2 * up) * vis * ss(2, 5, t); core.material.opacity = vis * (1 - .55 * up); core.scale.setScalar(1 - .3 * up); });
+  wisps(Wd, { cx: C[0], cz: C[2], radius: 17, top: 33, count: 300, birth0: 19.4, span: 12, speed: 3.7, size: 3.1, alpha: .42, converge: .55, seed: 11, near: 5, amount: t => 1 - ss(33.5, 36.5, t) });
+  // הענן הנוצר
+  const HC = bigCloud(SMALL, 31); HC.g.position.set(C[0], 34.5, C[2]); Wd.add(HC.g);
+  const kids = HC.kids.slice().sort((a, b) => a.p.length() - b.p.length());
+  Wd.on(t => { kids.forEach((e, i) => { const t0 = 30.6 + i / kids.length * 5.6, u = clamp((t - t0) / 1.5, 0, 1); const s = u <= 0 ? 0 : 1 + 2.2 * Math.pow(u - 1, 3) + 1.2 * Math.pow(u - 1, 2); e.k.visible = u > 0; e.k.scale.setScalar(Math.max(.001, s)); });
+    HC.g.scale.setScalar(.78 + .22 * ss(31, 39.5, t)); HC.g.rotation.y = t * .03; });
+  // טיפות זעירות שמתעבות לענן
+  const DR = rng(17), dP = []; for (let i = 0; i < 260; i++) dP.push([DR() * 2 - 1, DR() * 2 - 1, DR() * 2 - 1, DR() * 6.28]);
+  const dS = ptsObj(Wd, 260, dotTex(), .24, { alpha: true });
+  Wd.on(t => { const a = ss(29.6, 31, t) * (1 - ss(33.5, 35.5, t)), sh = 1 - .4 * ss(31, 35, t);
+    dP.forEach((d, i) => { const ang = d[3] + t * .5; dS.pos.set([C[0] + (d[0] * Math.cos(ang) - d[2] * Math.sin(ang)) * 6 * sh, 35 + d[1] * 2.6 * sh, C[2] + (d[0] * Math.sin(ang) + d[2] * Math.cos(ang)) * 3.6 * sh], i * 3); dS.col.set([.75, .88, 1, a * .9], i * 4); }); dS.upd(); });
+  // מצלמה
+  const camA = t => { const x = -235 + 6.9 * t, y = 1.75 + .18 * Math.sin(t * .9), z = 2.5 * Math.cos(t * .25); return { pos: [x, y, z], look: [x + 50, 1.0, z * .6], fov: 50, roll: .03 * Math.sin(t * .55) }; };
+  const aK = mono([9, 20, 31, 40], [-88, -138.5, -300, -452]), rK = mono([9, 20, 31, 40], [16.5, 20, 22.5, 27]);
+  const yK = mono([9, 20, 21, 25, 28, 31, 35, 40], [1.7, 1.4, 1.6, 8.5, 21, 30.5, 37.5, 41]);
+  const lyK = mono([9, 20, 21, 25, 28, 31, 40], [.6, .9, 1.2, 10.5, 25, 33, 34.6]);
+  const sXZ = [SUN_DIR.x, SUN_DIR.z].map(v => v / Math.hypot(SUN_DIR.x, SUN_DIR.z));
+  const camB = t => { const a = aK(t) * D, r = rK(t), pos = [C[0] + Math.sin(a) * r, yK(t), C[2] + Math.cos(a) * r];
+    const lc = [C[0], lyK(t), C[2]], ls = [pos[0] + sXZ[0] * 30, pos[1] + 4.4, pos[2] + sXZ[1] * 30], w = ss(11, 14.5, t) * (1 - ss(18.5, 21.5, t));
+    return { pos, look: lc.map((v, i) => lerp(v, ls[i], w)), fov: lerp(50, 52, ss(30, 38, t)) }; };
+  return Object.assign(Wd, { cam: mixCam(camA, camB, 8.5, 11) });
+}
+
+// ================= שוט 2: הרוח דוחפת את הענן אל ההר, וגשם =================
+function shot2() {
+  const dt = .05, XS = [-80]; for (let t = dt; t <= 30.001; t += dt) { const tm = t - dt / 2; XS.push(XS[XS.length - 1] + (10.4 * (1 - ss(14, 22.5, tm)) + .7) * dt); }
+  const cx = t => { const f = clamp(t / dt, 0, XS.length - 1.001), i = Math.floor(f); return lerp(XS[i], XS[i + 1], f - i); };
+  const cy = t => 34 + 36 * ss(55, 122, cx(t)), csc = t => 1 + .32 * ss(4, 20, t);
+  const CL = t => [cx(t), cy(t), 0];
+  const L = landWorld({ fogNear: 230, fogFar: 1150, skyTop: 0x66a6e0, skyBottom: 0xe3ecf1, shadowAt: t => [cx(t), Hc(cx(t), 0), 0], shadowExt: 42 });
+  const Wd = L.Wd;
+  const HC = bigCloud(BIG, 61); Wd.add(HC.g); 
+  const cA = new THREE.Color(0xffffff), cB = new THREE.Color(0xccd2da), cC = new THREE.Color(0x9ba5b2), cc = new THREE.Color();
+  Wd.on(t => { const c = CL(t); HC.g.position.set(c[0], c[1], c[2]); HC.g.scale.setScalar(csc(t)); HC.g.rotation.y = Math.sin(t * .2) * .05;
+    cc.copy(cA).lerp(cB, ss(9, 18.5, t)).lerp(cC, ss(17.5, 22, t)); HC.color(cc); });
+  // קווי רוח
+  const WR = rng(23), wg = new THREE.PlaneGeometry(9, .2, 24, 1); { const p = wg.attributes.position; for (let i = 0; i < p.count; i++) { const x = p.getX(i); p.setY(i, p.getY(i) + .5 * Math.sin(x * .7)); } }
+  const winds = []; for (let i = 0; i < 34; i++) { const m = new THREE.Mesh(wg, new THREE.MeshBasicMaterial({ map: windTex(), transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false, color: 0xffffff }));
+    m.userData = { ph: WR(), y: (WR() - .4) * 22, z: (WR() - .5) * 26, s: .7 + WR() * .7 }; m.scale.setScalar(m.userData.s); Wd.add(m); winds.push(m); }
+  Wd.on(t => { const c = CL(t), A = ss(.2, 1.5, t) * (1 - ss(17.5, 20.5, t));
+    winds.forEach(m => { const u = m.userData, f = (t * 16 / 84 + u.ph) % 1, rel = -42 + f * 84; m.position.set(c[0] + rel, c[1] + u.y, c[2] + u.z); m.material.opacity = .75 * Math.sin(Math.PI * f) * A; m.visible = A > .01; }); });
+  // גשם
+  rainPts(Wd, { count: 3000, w: 10.5, d: 5.2, h: 32, speed: 30, size: 1.45, opacity: .9, seed: 19, amount: t => ss(19.3, 21.6, t), center: t => [cx(t), 0], top: t => cy(t) - 3.2 * csc(t), scale: csc });
+  // הטיפה שלנו נופלת מן הענן
+  const yg = Hc(LANDING.x, LANDING.z), y0 = cy(22.8) - 2.6;
+  const hero = heroDrop(Wd, .42, 7);
+  const hy = t => { const u = prog(t, 22.8, 28.3); return lerp(y0, yg + .5, u * u * .35 + u * .65); };
+  Wd.on(t => { const v = t > 22.6 && t < 28.36; hero.g.visible = v; const y = hy(t); hero.g.position.set(LANDING.x, y, LANDING.z); });
+  const flash = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), color: 0x9fd6ff, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); Wd.add(flash);
+  Wd.on(t => { const u = prog(t, 28.3, 29.4); flash.visible = u > 0 && u < 1; flash.position.set(LANDING.x, yg + .4, LANDING.z); flash.scale.setScalar(2.4 + 1.5 * u); flash.material.opacity = .9 * (1 - u); });
+  // נתז
+  const ring = new THREE.Mesh(new THREE.RingGeometry(.8, 1, 40), new THREE.MeshBasicMaterial({ color: 0xdff0ff, transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+  { const e = .5, nx = -(Hc(LANDING.x + e, LANDING.z) - Hc(LANDING.x - e, LANDING.z)) / (2 * e), nz = -(Hc(LANDING.x, LANDING.z + e) - Hc(LANDING.x, LANDING.z - e)) / (2 * e); ring.quaternion.setFromUnitVectors(V3(0, 0, 1), V3(nx, 1, nz).normalize()); } Wd.add(ring);
+  const spl = []; for (let i = 0; i < 9; i++) { const b = new THREE.Mesh(new THREE.SphereGeometry(.09, 8, 6), new THREE.MeshBasicMaterial({ color: 0xbfe2ff })); Wd.add(b); spl.push(b); }
+  Wd.on(t => { const u = prog(t, 28.3, 29.6); ring.visible = u > 0 && u < 1; ring.position.set(LANDING.x, yg + .2, LANDING.z); ring.scale.setScalar(.2 + 1.6 * ease.out(u)); ring.material.opacity = .9 * (1 - u);
+    spl.forEach((b, i) => { const a = i / 9 * 6.283, s = u * 1.3; b.visible = u > 0 && u < .8; b.position.set(LANDING.x + Math.cos(a) * s * .9, yg + .2 + 2.2 * s - 3.4 * s * s, LANDING.z + Math.sin(a) * s * .9); }); });
+  // מצלמה: רוכבת ליד הענן, אחר כך יורדת מתחתיו אל הגשם ועוקבת אחרי הטיפה
+  const rideOff = fly([[0, [-17, 5, 37], [12, -3, 0], 50], [10, [-5, 3, 32], [15, -6, 0], 50], [19.5, [5, 1.5, 33], [17, -9, 0], 50]]);
+  const ride = t => { const c = CL(t), o = rideOff(t); return { pos: o.pos.map((v, i) => v + c[i]), look: o.look.map((v, i) => v + c[i]), fov: o.fov }; };
+  const r18 = ride(18.2), r195 = ride(19.5), d0 = [LANDING.x, y0, LANDING.z];
+  const dive = fly([[18.2, r18.pos, r18.look, 50], [19.5, r195.pos, r195.look, 50], [21.8, [cx(21.8) + 15, Hc(cx(21.8) + 15, 17) + 7.5, 17], [cx(21.8) - 4, cy(21.8) - 13, 0], 52], [23.4, [d0[0] + 3.4, d0[1] + .5, d0[2] + 6.6], [d0[0], d0[1] - .6, d0[2]], 52]]);
+  const track = t => { const u = prog(t, 22.8, 28.3), y = hy(Math.min(t, 28.3)), k = ss(28.3, 30, t);
+    return { pos: [LANDING.x + 3.4 - .9 * u - .5 * k, y + .5 + .7 * u + .2 * k, LANDING.z + 6.6 - 1.6 * u - .9 * k], look: [LANDING.x, y - .6 - .5 * u, LANDING.z], fov: 52 - 4 * k }; };
+  const cam = mixCam(mixCam(ride, dive, 18.2, 19.5), track, 23.0, 24.2);
+  return Object.assign(Wd, { cam: keepAbove(cam, 1.4) });
+}
+
+// ================= שוט 3: ההר בחתך — נחל, מי תהום, מעיין =================
+const X0 = -56, X1 = 36, YB = -12, YT = 30, DEP = 46;
+const SP = mono([-56, -48, -44.5, -42, -38, -32, -26, -20, -14.2, -13.2, -11.5, -8, -3, 2, 6, 10, 15, 22, 30, 36],
+  [-2.6, -2.3, -1.0, .25, .7, 1.6, 3.0, 4.15, 4.45, 6.2, 8.6, 12.4, 17.8, 22.8, 25.6, 26.4, 25.0, 20.8, 16.4, 14.6]);
+const soilT = x => (x < -40 ? 1.2 : 1.5) - 1.15 * Math.exp(-Math.pow((x + 12.8) / 1.8, 2));
+const impL = x => 4.55 + .085 * (x + 13.6);
+const limeTop = x => SP(x) - soilT(x);
+const clayTop = x => Math.min(impL(x), limeTop(x));
+const clayBot = x => clayTop(x) - 3.2;
+const AQ0 = -13.6;
+const aqTop = (x, f) => Math.max(clayTop(x), Math.min(clayTop(x) + f * (.7 + 2.6 * ss(AQ0, -3, x)), limeTop(x) - .3));
+const SPRING = [-14.0, 4.8, -1.0], POOL = [-15.9, 0, -2.0];
+const CRACKS = (() => { const R = rng(808), out = [];
+  for (const x0 of [-7.5, -2, 4, 9.5, 15, 21, 27, 32.5]) { const top = limeTop(x0), bot = clayTop(x0) + .15, pts = [[x0, top]]; let x = x0, y = top;
+    while (y - 1.1 > bot) { y -= .8 + R() * .7; x = clamp(x + (R() - .5) * 1.1, x0 - .9, x0 + .9); pts.push([x, y]); } pts.push([x + (R() - .5) * .4, bot]); out.push({ x0, pts }); }
+  return out; })();
+function faceTex() {
+  const k = 44.5, W = Math.round((X1 - X0) * k), Hh = Math.round((YT - YB) * k), PX = x => (x - X0) * k, PY = y => (YT - y) * k, R = rng(99);
+  const T = (w, h, f) => { const c = document.createElement('canvas'); c.width = w; c.height = h; f(c.getContext('2d'), w, h); return c; };
+  const wrap = (w, h, f) => { for (const ox of [-w, 0, w]) for (const oy of [-h, 0, h]) f(ox, oy); };
+  const rock = T(256, 256, (g, w, h) => { g.fillStyle = '#8b8781'; g.fillRect(0, 0, w, h); for (let i = 0; i < 20; i++) { const x = R() * w, y = R() * h, rx = 16 + R() * 24, ry = 11 + R() * 15, c = ['#9d9892', '#a7a29b', '#928d87'][i % 3]; wrap(w, h, (ox, oy) => { g.beginPath(); g.ellipse(x + ox, y + oy, rx, ry, 0, 0, 7); g.fillStyle = c; g.fill(); g.strokeStyle = '#5d5853'; g.lineWidth = 2.5; g.stroke(); }); } });
+  const clay = T(256, 128, (g, w, h) => { g.fillStyle = '#a66d48'; g.fillRect(0, 0, w, h); for (let y = 6, r = 0; y < h; y += 11, r++) { g.strokeStyle = r % 2 ? 'rgba(128,78,48,.75)' : 'rgba(198,142,100,.6)'; g.lineWidth = 2.4; g.beginPath(); for (let x = 0; x <= w; x += 8) { const yy = y + 2.2 * Math.sin(x / w * Math.PI * 4 + r); x ? g.lineTo(x, yy) : g.moveTo(x, yy); } g.stroke(); } });
+  const lime = T(512, 256, (g, w, h) => { g.fillStyle = '#bba77c'; g.fillRect(0, 0, w, h); const rowH = 64;
+    for (let r = 0; r < h / rowH; r++) { let x = -R() * 80; while (x < w) { const bw = 90 + R() * 90, c = ['#e2d2a9', '#dccaa0', '#e8dab6', '#d6c295'][Math.floor(R() * 4)];
+      for (const ox of [0, w, -w]) { g.beginPath(); g.roundRect(x + ox + 3, r * rowH + 3, bw - 6, rowH - 6, 12); g.fillStyle = c; g.fill(); g.strokeStyle = '#9b8560'; g.lineWidth = 2.5; g.stroke(); } x += bw; } }
+    for (let i = 0; i < 140; i++) { g.fillStyle = 'rgba(120,100,70,.35)'; g.beginPath(); g.arc(R() * w, R() * h, 1.5 + R() * 2, 0, 7); g.fill(); } });
+  const soil = T(256, 256, (g, w, h) => { g.fillStyle = '#8a5b37'; g.fillRect(0, 0, w, h); for (let i = 0; i < 520; i++) { g.fillStyle = R() < .5 ? 'rgba(104,64,36,.6)' : 'rgba(172,122,82,.45)'; g.beginPath(); g.arc(R() * w, R() * h, 1 + R() * 2.5, 0, 7); g.fill(); }
+    for (let i = 0; i < 14; i++) { const x = R() * w, y = R() * h, r = 4 + R() * 7, a = R() * 3; wrap(w, h, (ox, oy) => { g.fillStyle = '#b39c80'; g.strokeStyle = '#5a4030'; g.lineWidth = 2; g.beginPath(); g.ellipse(x + ox, y + oy, r, r * .75, a, 0, 7); g.fill(); g.stroke(); }); } });
+  const sand = T(128, 128, (g, w, h) => { g.fillStyle = '#e4cb90'; g.fillRect(0, 0, w, h); for (let i = 0; i < 260; i++) { g.fillStyle = R() < .5 ? 'rgba(190,160,100,.6)' : 'rgba(250,236,200,.6)'; g.beginPath(); g.arc(R() * w, R() * h, .8 + R() * 1.6, 0, 7); g.fill(); } });
+  return canvasTex(W, Hh, g => {
+    const pat = c => g.createPattern(c, 'repeat');
+    const band = (xa, xb, top, bot) => { g.beginPath(); g.moveTo(PX(xa), PY(top(xa))); for (let x = xa; x <= xb + 1e-6; x += .2) g.lineTo(PX(x), PY(top(x))); g.lineTo(PX(xb), PY(top(xb))); for (let x = xb; x >= xa - 1e-6; x -= .2) g.lineTo(PX(x), PY(bot(x))); g.lineTo(PX(xa), PY(bot(xa))); g.closePath(); };
+    const line = (xa, xb, f, col, lw) => { g.beginPath(); for (let x = xa; x <= xb + 1e-6; x += .2) { const X = PX(x), Y = PY(f(x)); x === xa ? g.moveTo(X, Y) : g.lineTo(X, Y); } g.strokeStyle = col; g.lineWidth = lw; g.lineJoin = 'round'; g.stroke(); };
+    g.fillStyle = pat(rock); g.fillRect(0, 0, W, Hh);
+    g.fillStyle = pat(clay); band(X0, X1, clayTop, clayBot); g.fill();
+    g.fillStyle = pat(lime); band(AQ0, X1, x => Math.max(limeTop(x), clayTop(x)), clayTop); g.fill();
+    g.fillStyle = pat(soil); band(-40, X1, SP, limeTop); g.fill();
+    g.fillStyle = pat(sand); band(X0, -40, SP, limeTop); g.fill();
+    g.fillStyle = '#6aa843'; band(-40, X1, SP, x => SP(x) - .34); g.fill();
+    g.strokeStyle = 'rgba(50,100,30,.8)'; g.lineWidth = 3; for (let x = -39.6; x < X1; x += .28) { const y = SP(x) - .34; g.beginPath(); g.moveTo(PX(x), PY(y) - 2); g.lineTo(PX(x + .08), PY(y - .22 - h2(x * 10, 1) * .25)); g.stroke(); }
+    line(X0, X1, clayBot, 'rgba(55,38,26,.75)', 3.5); line(X0, X1, clayTop, '#3a2818', 4.5); line(AQ0, X1, limeTop, '#4a3420', 3.5); line(X0, X1, SP, '#2a1c10', 6);
+    for (const c of CRACKS) { g.beginPath(); c.pts.forEach((p, i) => i ? g.lineTo(PX(p[0]), PY(p[1])) : g.moveTo(PX(p[0]), PY(p[1]))); g.lineJoin = 'round'; g.lineCap = 'round';
+      g.strokeStyle = 'rgba(245,232,200,.8)'; g.lineWidth = 11; g.stroke(); g.strokeStyle = '#3d2c1c'; g.lineWidth = 7; g.stroke(); }
+    g.globalCompositeOperation = 'source-atop'; const gr = g.createLinearGradient(0, 0, 0, Hh); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(.55, 'rgba(10,5,0,.06)'); gr.addColorStop(1, 'rgba(20,10,0,.28)'); g.fillStyle = gr; g.fillRect(0, 0, W, Hh); g.globalCompositeOperation = 'source-over';
+    g.strokeStyle = '#2a1c10'; g.lineWidth = 8; g.strokeRect(4, 4, W - 8, Hh - 8);
+  });
+}
+const surfY = (x, z) => SP(x) + (x > -39 ? Math.max(0, fbm(x * .22 + 4, z * .22)) * .55 * ss(0, -3, z) : 0) + .015;
+function shot3() {
+  const Wd = world({ skyTop: 0x66aee9, skyBottom: 0xeef6f9, fogColor: 0xe4eef3, fogNear: 80, fogFar: 300, sun: 1.45, hemi: 1.1, sunPos: [-28, 50, 42], shadowExt: 50 });
+  Wd.sun.target.position.set(-10, 0, -14); Wd.sun.position.set(-38, 50, 28);
+  Wd.on((t, cam) => Wd.sky.position.copy(cam.position));
+  // גוש ההר: חזית חתוכה עם השכבות
+  const shp = new THREE.Shape(); shp.moveTo(X0, YB); for (let x = X0; x <= X1 + 1e-6; x += .25) shp.lineTo(x, SP(x)); shp.lineTo(X1, YB); shp.closePath();
+  const ft = faceTex(); ft.repeat.set(1 / (X1 - X0), 1 / (YT - YB)); ft.offset.set(-X0 / (X1 - X0), -YB / (YT - YB));
+  const block = new THREE.Mesh(new THREE.ExtrudeGeometry(shp, { depth: DEP, bevelEnabled: false, curveSegments: 1 }), [new THREE.MeshBasicMaterial({ map: ft }), toon(0x7b5b3d)]);
+  block.position.z = -DEP; block.receiveShadow = true; Wd.add(block);
+  // הים בקצה המערבי
+  const wsh = new THREE.Shape(); wsh.moveTo(X0, 0); for (let x = X0; x <= -42.4; x += .25) wsh.lineTo(x, Math.min(SP(x), 0) - .01); wsh.lineTo(-42.4, 0); wsh.closePath();
+  const water = new THREE.Mesh(new THREE.ExtrudeGeometry(wsh, { depth: DEP, bevelEnabled: false, curveSegments: 1 }), new THREE.MeshPhongMaterial({ color: 0x3c97d6, transparent: true, opacity: .8, shininess: 80, specular: 0x88aacc }));
+  water.position.z = -DEP; Wd.add(water);
+  // פני השטח: דשא, חוף, סלע במדרגה של המעיין
+  const SX = axis([[X0, X1, .35]]), SZ = axis([[-DEP, 0, .7]]), nx = SX.length, nz = SZ.length, sp = new Float32Array(nx * nz * 3), sc = new Float32Array(nx * nz * 3), si = [];
+  const G1 = C3(0x7ab24c), G2 = C3(0x68a344), G3 = C3(0x93c25c), SA = C3(0xead39a), SB = C3(0xd6bd85), RK = C3(0xbcae8e);
+  for (let j = 0; j < nz; j++) for (let i = 0; i < nx; i++) { const x = SX[i], z = SZ[j], v = j * nx + i; sp.set([x, surfY(x, z), z], v * 3);
+    const n = fbm(x * .12, z * .12); let c = mix3(mix3(G1, G2, ss(-.2, .3, n)), G3, ss(.2, .5, fbm(x * .3 + 9, z * .3)) * .6);
+    const sl = Math.abs(SP(x + .2) - SP(x - .2)) / .4; c = mix3(c, RK, ss(1.0, 1.4, sl)); c = mix3(c, SA, ss(-37.5, -39.5, x)); c = mix3(c, SB, ss(-42, -43.5, x)); sc.set(c, v * 3); }
+  for (let j = 0; j < nz - 1; j++) for (let i = 0; i < nx - 1; i++) { const a = j * nx + i, b = a + 1, c = a + nx, d = c + 1; si.push(a, c, b, b, c, d); }
+  const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(sp, 3)); sg.setAttribute('color', new THREE.BufferAttribute(sc, 3)); sg.setIndex(si); sg.computeVertexNormals();
+  const top = new THREE.Mesh(sg, new THREE.MeshLambertMaterial({ vertexColors: true })); top.receiveShadow = true; Wd.add(top);
+  // עצים וסלעים על ההר
+  const tree = (x, z, s) => { const g = new THREE.Group(), y = surfY(x, z); g.add(mesh(new THREE.CylinderGeometry(.12, .16, .9, 8), toon(0x6b4a2e), { pos: [0, .45, 0] }));
+    g.add(mesh(new THREE.ConeGeometry(.75, 1.7, 9), toon(0x4f8f3c), { pos: [0, 1.5, 0] })); g.add(mesh(new THREE.ConeGeometry(.55, 1.3, 9), toon(0x5c9d44), { pos: [0, 2.3, 0] }));
+    g.position.set(x, y - .05, z); g.scale.setScalar(s); fixInk(g, .02); Wd.add(g); };
+  [[-30, -26, 1.3], [-27, -36, 1.5], [-6, -31, 1.6], [1, -39, 1.7], [12, -29, 1.6], [19, -37, 1.8], [26, -22, 1.4], [31, -35, 1.6], [-34, -40, 1.4], [7, -21, 1.3], [16, -18, 1.2], [-9, -20, 1.3], [24, -42, 1.7], [-17, -24, 1.2]].forEach(e => tree(...e));
+  const rk = (x, z, r, c) => { const m = mesh(new THREE.DodecahedronGeometry(r, 0), toon(c || 0xa49a88), { pos: [x, surfY(x, z) + r * .35, z], rot: [h2(x, z) * 3, h2(z, x) * 3, 0] }); fixInk(m, .02); Wd.add(m); return m; };
+  [[-14.3, -.45, .32], [-14.1, -1.95, .45], [-13.6, -.6, .26], [-13.5, -1.7, .3], [-14.4, -2.6, .38], [-28, -18, .7], [4, -33, .8], [20, -26, .6], [-3, -24, .5]].forEach(e => rk(...e));
+  // נחל (ואדי) מן הפסגה מערבה אל הים, ופלגים קטנים אליו
+  const stream = (pts, hw, taper) => { const cv = new THREE.CatmullRomCurve3(pts.map(p => V3(p[0], 0, p[1])), false, 'centripetal'), n = Math.round(cv.getLength() / .3), P = cv.getSpacedPoints(n).map(v => [v.x, v.z]);
+    const g = ribbonGeo(P, P.map(p => surfY(p[0], p[1]) + .1), hw, taper); const m = new THREE.Mesh(g, new THREE.MeshBasicMaterial({ map: flowTex(), side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -4 })); Wd.add(m); return { m, n: P.length - 1 }; };
+  const wadi = stream([[9, -18], [3, -15.5], [-3, -13.6], [-9, -12.3], [-15, -12.9], [-22, -11.6], [-30, -12.6], [-37, -11.4], [-44, -11.8]], .62, 6);
+  const rills = [stream([[12, -27], [8, -22], [4, -17.6]], .2, 2), stream([[16, -9], [11, -11.5], [6, -15]], .2, 2), stream([[-4, -24], [-6, -18], [-8, -12.8]], .2, 2), stream([[-22, -22], [-23, -16], [-24, -12]], .18, 2)];
+  const brook = stream([[-17.5, -2.3], [-18.7, -3.8], [-20.4, -6.3], [-22.3, -9.3], [-23.6, -11.6]], .3, 1.5);
+  const reveal = (s, k) => s.m.geometry.setDrawRange(0, Math.floor(clamp(k, 0, 1) * s.n) * 6);
+  // ענן וגשם בהתחלה
+  const cl = puffCloud({ seed: 7, size: 4.2, puffs: 8, color: 0xb9c1cb, pos: [-13, 32, -20] }), cl2 = puffCloud({ seed: 9, size: 3.8, puffs: 7, color: 0xb9c1cb, pos: [11, 33, -25] }); Wd.add(cl); Wd.add(cl2);
+  const clM = [cl.userData.mat, cl2.userData.mat];
+  rainPts(Wd, { count: 2200, w: 25, d: 15, h: 34, speed: 26, size: 1.25, opacity: .9, seed: 33, amount: t => 1 - ss(8.5, 12.5, t), center: () => [-2, -22], top: () => 30 });
+  // מי תהום: שכבה כחולה שמתמלאת (רשת דינמית לפני החזית)
+  const AX = axis([[AQ0, X1, .25]]), na = AX.length, ap = new Float32Array(na * 6), ai = [];
+  for (let i = 0; i < na - 1; i++) { const q = i * 2; ai.push(q, q + 1, q + 2, q + 1, q + 3, q + 2); }
+  const ag = new THREE.BufferGeometry(); ag.setAttribute('position', new THREE.BufferAttribute(ap, 3)); ag.setIndex(ai);
+  const aq = new THREE.Mesh(ag, new THREE.MeshBasicMaterial({ color: 0x2a86e6, transparent: true, opacity: .72, depthWrite: false, side: THREE.DoubleSide })); aq.renderOrder = 3; Wd.add(aq);
+  const lp = new Float32Array(na * 6), lg = new THREE.BufferGeometry(); lg.setAttribute('position', new THREE.BufferAttribute(lp, 3)); lg.setIndex(ai);
+  const aqLine = new THREE.Mesh(lg, new THREE.MeshBasicMaterial({ color: 0xc8ecff, side: THREE.DoubleSide })); aqLine.renderOrder = 4; Wd.add(aqLine);
+  const fill = t => .12 + .88 * ss(12.5, 21, t);
+  Wd.on(t => { const f = fill(t); for (let i = 0; i < na; i++) { const x = AX[i], b = clayTop(x), tp = aqTop(x, f); ap.set([x, tp, .04, x, b, .04], i * 6); lp.set([x, tp + .05, .05, x, tp - .07, .05], i * 6); }
+    ag.attributes.position.needsUpdate = true; lg.attributes.position.needsUpdate = true; ag.computeBoundingSphere(); lg.computeBoundingSphere(); });
+  const lab = label(Wd, 'מי תהום', { pos: [10.5, 10, 1.0], height: 1.0, bg: 'rgba(255,255,255,.93)', color: '#123f7a' }); lab.material.opacity = 0; lab.renderOrder = 9;
+  Wd.on(t => { lab.material.opacity = ss(16.8, 17.8, t) * (1 - ss(20.6, 21.3, t)); lab.visible = lab.material.opacity > .01; lab.position.set(8.4, (clayTop(8.4) + aqTop(8.4, fill(t))) / 2 + .3, 1.0); });
+  // זרם המים בתוך השכבה אל המעיין
+  const dashes = []; for (let i = 0; i < 30; i++) { const m = new THREE.Mesh(new THREE.CircleGeometry(.5, 16), new THREE.MeshBasicMaterial({ color: 0xd4efff, transparent: true, depthWrite: false })); m.scale.set(1, .16, 1); m.renderOrder = 5; Wd.add(m); dashes.push({ m, ph: i / 30, yk: .3 + h2(i, 2) * .4 }); }
+  Wd.on(t => { const A = ss(20.5, 22.5, t);
+    dashes.forEach(d => { const L = X1 - AQ0, x = X1 - ((t * 1.6 / L + d.ph) % 1) * L, b = clayTop(x), tp = aqTop(x, fill(t)); d.m.position.set(x, lerp(b, tp, d.yk), .08);
+      d.m.material.opacity = .85 * A * ss(AQ0, AQ0 + 1.5, x) * ss(X1, X1 - 2, x); d.m.visible = A > .01 && tp - b > .15; }); });
+  // טיפות שמחלחלות: מן הפנים דרך האדמה, לאורך הסדקים, אל מי התהום
+  const paths = CRACKS.map(c => { const P = [[c.x0 + .35, SP(c.x0 + .35) - .05], [c.x0 + .1, limeTop(c.x0) + .4], ...c.pts]; const cum = [0]; for (let i = 1; i < P.length; i++) cum.push(cum[i - 1] + Math.hypot(P[i][0] - P[i - 1][0], P[i][1] - P[i - 1][1])); return { P, cum, L: cum[cum.length - 1] }; });
+  const along = (pa, s) => { s = clamp(s, 0, pa.L); let i = 1; while (i < pa.cum.length - 1 && pa.cum[i] < s) i++; const u = (s - pa.cum[i - 1]) / ((pa.cum[i] - pa.cum[i - 1]) || 1); return [lerp(pa.P[i - 1][0], pa.P[i][0], u), lerp(pa.P[i - 1][1], pa.P[i][1], u)]; };
+  const dropMat = new THREE.MeshPhongMaterial({ color: 0x3b97ff, emissive: 0x0d3a77, specular: 0xffffff, shininess: 90 }), dOl = olMat(0x0e2c55, .12);
+  const drops = []; for (let i = 0; i < 64; i++) { const m = new THREE.Mesh(dropGeo(), dropMat); m.add(new THREE.Mesh(dropGeo(), dOl)); m.scale.setScalar(.2); m.renderOrder = 6; Wd.add(m); drops.push({ m, c: i % CRACKS.length, ph: h2(i, 5), v: 1.5 + h2(i, 9) * .6 }); }
+  Wd.on(t => { const A = ss(10.6, 11.6, t) * (1 - ss(22.5, 24, t)), f = fill(t);
+    drops.forEach(d => { if (d.c === 2 && d.ph < .3) { d.m.visible = false; return; } const pa = paths[d.c], cyc = pa.L + 3, s = ((t - 10.6) * d.v + d.ph * cyc) % cyc, p = along(pa, s);
+      const vis = A > .01 && s < pa.L && p[1] > aqTop(p[0], f) + .1 && t > 10.6; d.m.visible = vis; if (!vis) return; d.m.position.set(p[0], p[1] + .15, .25); d.m.scale.setScalar(.2 * Math.min(A, ss(0, .5, s))); }); });
+  // הטיפה שלנו
+  const hero = heroDrop(Wd, .3, 8); hero.g.renderOrder = 7;
+  const hp = paths[2]; const hS = mono([12.0, 14.0, 19.0], [0, Math.hypot(hp.P[1][0] - hp.P[0][0], hp.P[1][1] - hp.P[0][1]), hp.L]);
+  const aqMid = (x, f) => (clayTop(x) + aqTop(x, f)) / 2;
+  const hxW = mono([21.2, 25.6], [hp.P[hp.P.length - 1][0], AQ0 + .2]);
+  const heroPos = t => {
+    if (t < 12) { const u = prog(t, 10.6, 12); return [hp.P[0][0], lerp(33, hp.P[0][1] + .3, u * u), .3]; }
+    if (t < 19) { const p = along(hp, hS(t)); return [p[0], p[1] + .15, .3]; }
+    const e = hp.P[hp.P.length - 1];
+    if (t < 21.2) { const u = ease.sm(prog(t, 19, 20.8)); return [e[0], lerp(e[1] + .15, aqMid(e[0], fill(t)), u), .3]; }
+    if (t < 25.6) { const x = hxW(t); return [x, aqMid(x, fill(t)), .3]; }
+    if (t < 26.6) { const u = prog(t, 25.6, 26.6), a = [AQ0 + .2, aqMid(AQ0 + .2, 1), .3]; return [lerp(a[0], SPRING[0], u), lerp(a[1], SPRING[1], u), lerp(a[2], SPRING[2], u)]; }
+    const u = ease.out(prog(t, 26.6, 27.6)); return [lerp(SPRING[0], POOL[0] + .3, u), lerp(SPRING[1], surfY(POOL[0], POOL[2]) + .5, u) + .35 * Math.sin(Math.PI * u) + (u >= 1 ? .06 * Math.sin(t * 3) : 0), lerp(SPRING[2], POOL[2], u)]; };
+  Wd.on(t => { const p = heroPos(t); hero.g.position.set(...p); hero.g.visible = t > 10.6; hero.halo.material.opacity = .9 * ss(10.6, 11.2, t); hero.m.rotation.z = t < 26.6 && t > 21.2 ? .5 * ss(21.2, 22, t) : 0; });
+  // המעיין: מפל קטן מן הסלע, בריכה, טבעות
+  const casc = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3([V3(SPRING[0], SPRING[1], SPRING[2]), V3(SPRING[0] - .4, SPRING[1] - .05, SPRING[2] - .05), V3(SPRING[0] - .85, SPRING[1] - .3, SPRING[2] - .1), V3(SPRING[0] - 1.15, surfY(SPRING[0] - 1.2, -2.6) + .1, SPRING[2] - .15)]), 16, .16, 8), new THREE.MeshBasicMaterial({ map: flowTex() }));
+  Wd.add(casc);
+  const hole = new THREE.Mesh(new THREE.CircleGeometry(.42, 20), new THREE.MeshBasicMaterial({ color: 0x2b2118 })); hole.position.set(SPRING[0] + .12, SPRING[1] + .05, SPRING[2]); hole.rotation.y = -Math.PI / 2 + .35; hole.scale.set(1, .75, 1); Wd.add(hole);
+  const py = surfY(POOL[0], POOL[2]) + .07;
+  const pool = new THREE.Mesh(new THREE.CircleGeometry(1.35, 36), new THREE.MeshPhongMaterial({ color: 0x48a8e6, shininess: 90, specular: 0xffffff, emissive: 0x0b2b4a })); pool.rotation.x = -Math.PI / 2; pool.position.set(POOL[0], py, POOL[2]); pool.scale.set(1.25, 1, 1); Wd.add(pool);
+  for (let i = 0; i < 11; i++) { const a = i / 11 * 6.283; rk(POOL[0] + Math.cos(a) * 1.75, POOL[2] + Math.sin(a) * 1.4, .2 + h2(i, 4) * .12, 0x9c9282); }
+  const rings = [0, 1, 2].map(i => { const r = new THREE.Mesh(new THREE.RingGeometry(.9, 1, 32), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, depthWrite: false })); r.rotation.x = -Math.PI / 2; Wd.add(r); return r; });
+  Wd.on(t => { const k = ss(22.5, 24.5, t); casc.visible = k > .02; casc.scale.setScalar(1); casc.material.opacity = 1;
+    pool.scale.set(1.25 * (.15 + .85 * ss(23, 26, t)), 1, .15 + .85 * ss(23, 26, t)); pool.visible = t > 22.8;
+    rings.forEach((r, i) => { const u = (t * .7 + i / 3) % 1; r.position.set(SPRING[0] - 1.25, py + .02, SPRING[2] - .15); r.scale.setScalar(.15 + u * .75); r.material.opacity = .7 * (1 - u) * k; r.visible = k > .02; });
+    reveal(brook, prog(t, 24, 27.5)); });
+  // הרב ליד המעיין
+  const rx = -19.7, rz = -1.0, ry = surfY(rx, rz) - .015;
+  person(Wd, RAV, t => ({ pos: [rx, ry, rz], groundY: ry, facing: .55, perform: t > 28.5 ? .6 : 0, gesture: t > 23.4 && t < 28.5 ? 'point' : (t >= 28.5 ? 'explain' : null),
+    talk: t > 23.6 ? .5 + .5 * Math.sin(t * 9) : 0, look: t > 23 && t < 28.5 ? .6 : 0, smile: .4 }));
+  Wd.on(t => { flowTex().offset.y = -t * .55; reveal(wadi, prog(t, 1.2, 7.6)); rills.forEach((r, i) => reveal(r, prog(t, .8 + i * .5, 4.5 + i * .5)));
+    const k = ss(9, 16, t); const c = new THREE.Color(0xb9c1cb).lerp(new THREE.Color(0xf4f6f8), k); clM.forEach(m => { m.color.copy(c); m.emissive.copy(c).multiplyScalar(.24); }); cl.position.x = -13 - t * .4; cl2.position.x = 11 - t * .4; });
+  // מצלמה
+  const f1 = fly([[0, [16, 33, 44], [-8, 13, -12], 50], [4.5, [-6, 22, 30], [-15, 5.5, -12], 50], [8.6, [-29, 11, 20], [-46, .5, -15], 50], [11.3, [6.6, 27.6, 9.6], [4.4, 24.2, 0], 48]]);
+  const hx = hp.P[0][0];
+  const trk = t => { const p = heroPos(Math.max(t, 12)), y = p[1]; return { pos: [hx + 2.3, y + 1.15, 8.6], look: [hx + .3, y - .35, 0], fov: 48 }; };
+  const trkW = t => { const p = heroPos(t); return { pos: [p[0] + 2.6, p[1] + 1.4, 9.2], look: [p[0] - 1.6, p[1] + .1, 0], fov: 48 }; };
+  const fEnd = fly([[24.6, trkW(24.6).pos, trkW(24.6).look, 48], [25.3, trkW(25.3).pos, trkW(25.3).look, 48], [28, [-23.6, 8.6, 9.8], [-16.4, 5.3, -2], 45], [32, [-20.4, 7.1, 7.6], [-16.4, 5.5, -2.2], 42]]);
+  const cam = mixCam(mixCam(mixCam(f1, trk, 10.9, 12.6), trkW, 20.4, 21.6), fEnd, 24.6, 25.3);
+  return Object.assign(Wd, { cam });
+}
+
+// ================= שוט 4: הכנרת, ואז כל המסע מלמעלה =================
+function shot4() {
+  const C4 = [-110, 0, 0];
+  const L = landWorld({ fogNear: 200, fogFar: 900, shadowAt: () => [130, 50, 0], shadowExt: 40 });
+  const Wd = L.Wd;
+  Wd.on((t) => { const k = ss(12, 23, t); Wd.scene.fog.near = lerp(200, 300, k); Wd.scene.fog.far = lerp(900, 1050, k); });
+  // הכנרת: מים עם גלים קטנים
+  const lg = new THREE.PlaneGeometry(64, 86, 64, 86); lg.rotateX(-Math.PI / 2); lg.translate(LAKE.x, LAKE.y, LAKE.z);
+  const lc = new Float32Array(lg.attributes.position.count * 3); for (let i = 0; i < lg.attributes.position.count; i++) { const x = lg.attributes.position.getX(i), z = lg.attributes.position.getZ(i), m = lakeM(x, z), c = new THREE.Color(0x45b6d4).lerp(new THREE.Color(0x2c7fc4), ss(.95, .2, m)); lc.set([c.r, c.g, c.b], i * 3); }
+  lg.setAttribute('color', new THREE.BufferAttribute(lc, 3));
+  const lake = new THREE.Mesh(lg, new THREE.MeshPhongMaterial({ vertexColors: true, flatShading: true, shininess: 35, specular: 0x4f7389 })); Wd.add(lake);
+  const lpos = lg.attributes.position;
+  Wd.on(t => { for (let i = 0; i < lpos.count; i++) { const x = lpos.getX(i), z = lpos.getZ(i); lpos.setY(i, LAKE.y + .06 * Math.sin(x * .9 + z * .4 - t * 1.6) + .045 * Math.sin(z * 1.1 - x * .3 - t * 1.2) + .035 * Math.sin(x * 1.7 + z * 1.3 + h2(Math.floor(x), Math.floor(z)) * 6 - t * 2.1)); } lpos.needsUpdate = true; });
+  glints(Wd, { n: 380, x0: LAKE.x - 20, x1: LAKE.x + 20, z0: -28, z1: 34, y: LAKE.y + .16, size: .75, seed: 44, gain: t => .8 * (1 - ss(13, 17, t)), lobe: .9, base: .2, far: 200 });
+  // הענן מעל ההר עם גשם, וענן חדש שנוצר מעל הים
+  const HC = bigCloud(BIG, 61); HC.g.position.set(131, 70, 0); HC.g.scale.setScalar(1.32); HC.color(new THREE.Color(0x7d8794)); Wd.add(HC.g);
+  rainPts(Wd, { count: 2400, w: 10.5, d: 5.2, h: 30, speed: 30, size: 1.6, opacity: .85, seed: 29, amount: () => 1, center: () => [131, 0], top: () => 70 - 3.2 * 1.32, scale: () => 1.32 });
+  const H2 = bigCloud(BIG, 81); H2.g.position.set(30, 52, -40); H2.color(new THREE.Color(0xdfe4ea)); Wd.add(H2.g);
+  const H3 = bigCloud(SMALL, 31); H3.g.position.set(C4[0], 34.5, C4[2]); Wd.add(H3.g);
+  Wd.on(t => { H2.g.position.x = 20 + t * 2.2; HC.g.rotation.y = Math.sin(t * .2) * .05; });
+  // תוויות
+  const labNear = label(Wd, 'הכנרת', { pos: [LAKE.x + 2, 9.5, 6], height: 4.4 });
+  const labLake = label(Wd, 'הכנרת', { pos: [LAKE.x + 4, 22, 14], height: 14 });
+  const labSea = label(Wd, 'הים התיכון', { pos: [-40, 12, 70], height: 14 });
+  Wd.on(t => { const a1 = ss(1.5, 3, t) * (1 - ss(13.5, 15.5, t)), a2 = ss(21.2, 22.4, t); labNear.material.opacity = a1; labNear.visible = a1 > .01; labLake.material.opacity = a2; labLake.visible = a2 > .01; labSea.material.opacity = a2; labSea.visible = a2 > .01; });
+  // מסלול המסע: נקודות זהב מן הים, דרך השמים, אל ההר ואל הכנרת
+  const gp = (x, z, l) => V3(x, Hc(x, z) + l, z);
+  const curve = new THREE.CatmullRomCurve3([V3(C4[0], .8, C4[2]), V3(C4[0] + 1, 16, 0), V3(C4[0] + 8, 33, 0), V3(-60, 42, 0), V3(10, 47, 0), V3(75, 56, 0), V3(118, 66, 2), V3(129, 60, 5), gp(130, 5, 9), gp(138, 1, 3), gp(160, -8, 2.5), gp(182, -14, 2.2), gp(198, -16, 2), V3(212, LAKE.y + 1.2, -12)], false, 'centripetal');
+  const NP = 170, CP = curve.getSpacedPoints(NP - 1), arc = ptsObj(Wd, NP, dotTex(), 3, { add: false, fog: false, depthTest: false, alpha: true, order: 9 });
+  CP.forEach((p, i) => arc.pos.set([p.x, p.y, p.z], i * 3)); arc.upd();
+  const head = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), color: 0xffe28a, transparent: true, depthTest: false, depthWrite: false, fog: false, blending: THREE.AdditiveBlending })); head.renderOrder = 10; Wd.add(head);
+  Wd.on((t, cam) => { const pr = ss(13, 21.5, t), dist = cam.position.distanceTo(V3(60, 20, 0));
+    arc.mat.size = dist * .022;
+    for (let i = 0; i < NP; i++) { const f = i / (NP - 1), on = clamp((pr - f) * 30, 0, 1), wv = .65 + .35 * Math.cos((f * 6 - t * 1.4) * Math.PI);
+      arc.col.set([1, .76 + .12 * wv, .2 + .2 * wv, on * (.8 + .2 * wv)], i * 4); }
+    arc.geo.attributes.color.needsUpdate = true;
+    const hp = curve.getPointAt(clamp(pr, 0, 1)); head.position.copy(hp); head.scale.setScalar(dist * .06); head.material.opacity = ss(13, 13.6, t) * (1 - ss(21.6, 22.6, t)); head.visible = head.material.opacity > .01; });
+  const cam = fly([[0, [209, 25, -90], [221, 1.5, -6], 50], [6, [189, 26, -54], [222, 1.5, 0], 50], [12, [172, 29, -12], [222, 2, 4], 50],
+    [15.5, [158, 46, 50], [192, 6, 0], 52], [19.5, [100, 80, 168], [112, 4, -8], 54], [24, [38, 101, 266], [40, 0, -12], 55]]);
+  return Object.assign(Wd, { cam: keepAbove(cam, 2.5) });
+}
+
+film({
+  title: 'מסע של טיפת גשם', kicker: 'סרטון 6',
+  recap: ['השמש מעלה אדים מן הים, והם נעשים עננים', 'על ההרים העננים מתקררים, ויורד גשם', 'המים זורמים בנחלים, מחלחלים לאדמה ויוצאים במעיינות'],
+  shots: [
+    { dur: 40, caps: ['בואו נצא למסע עם טיפת גשם אחת.', 'הכול מתחיל בים: השמש מחממת את המים.', 'המים עולים לשמים כאדים, שאי אפשר לראות.', 'למעלה קר: האדים מתקררים, ונעשים טיפות קטנטנות — ענן.'], build: shot1 },
+    { dur: 30, caps: ['רוח מן הים דוחפת את הענן מזרחה, אל הארץ.', 'הענן פוגש הר, עולה, ומתקרר עוד יותר.', 'הטיפות גדלות, נעשות כבדות — ונופלות: גשם!'], build: shot2 },
+    { dur: 32, caps: ['חלק מן המים זורמים בנחלים בחזרה אל הים.', 'חלק מחלחלים לתוך האדמה, ונאגרים בין הסלעים.', 'מן האדמה הם יוצאים במעיין, צלולים וקרים.'], build: shot3 },
+    { dur: 24, caps: ['וחלק נאספים בכנרת, האגם הגדול של ארץ ישראל.', 'וכך כל טיפה עוברת מסע שלם: מן הים, דרך השמים, אל האדמה.'], build: shot4 },
+  ],
+});
+</script>
+</html>

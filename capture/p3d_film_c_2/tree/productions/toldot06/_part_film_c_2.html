@@ -1,0 +1,683 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>מפת הגשם של ארץ ישראל</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script>window.__T0=138.0000;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import { film, world, person, cloud, rain, map3d, label, THREE, prog, ease, CITIES, clamp, lerp, rng, box, cyl, ball, toon, ink, mesh, canvasTex, groundTex, rainfall, D } from '../../lib/stage3d.js';
+
+// ======================================================================
+//  סרטון 3: מפת הגשם של ארץ ישראל
+// ======================================================================
+const RAV = { coat: '#1d1d24', beard: '#3a2a20', beardLen: .6, hat: 'hat', skin: '#efcfb0', glasses: true };
+const P = prog, sm = ease.sm;
+const backOut = u => 1 + 2.70158 * Math.pow(u - 1, 3) + 1.70158 * Math.pow(u - 1, 2);
+const talk = t => .5 + .5 * Math.sin(t * 9) * Math.sin(t * 2.3);
+const win = (t, a, b, f) => P(t, a, a + (f || .5)) * (1 - P(t, b - (f || .5), b));   // 0 -> 1 -> 0
+const face = (from, to) => Math.atan2(to[0] - from[0], to[2] - from[2]);
+// מגיש: פונה בעיקר למצלמה (רואים פנים), מסובב מעט לעבר המטרה, ומצביע ביד שבצד המטרה על המסך
+function present(p, target, camPos, gest) {
+  const fc = face(p, camPos), ft = face(p, target); let d = ft - fc; d = Math.atan2(Math.sin(d), Math.cos(d));
+  return { facing: fc + clamp(d, -1, 1) * .38, gesture: gest || (Math.sin(d) > 0 ? 'point' : 'pointA') };
+}
+// מפריד בין שתי תוויות שנופלות זו על זו במסך (מזיז כל אחת לצד שלה לאורך ציר הימין של המצלמה)
+function separate(cam, A, B, gap) {
+  const R = new THREE.Vector3(1, 0, 0).applyQuaternion(cam.quaternion), s = B[0].position.clone().sub(A[0].position).dot(R);
+  const wa = Math.max(...A.map(l => l.scale.x)), wb = Math.max(...B.map(l => l.scale.x)), need = (wa + wb) / 2 + (gap || .08);
+  if (Math.abs(s) >= need) return; const sh = (need - Math.abs(s)) / 2 * (s >= 0 ? 1 : -1);
+  for (const l of A) l.position.addScaledVector(R, -sh); for (const l of B) l.position.addScaledVector(R, sh);
+}
+// תווית מצפן: גדלה מרחוק ונעלמת כשהמצלמה מתקרבת אליה
+function compassL(sp, k, cam) { const d = cam.position.distanceTo(sp.position); popL(sp, k * clamp((d - 9) / 6, 0, 1), Math.max(1, d * .032 / 1.05)); }
+
+// ---------- מצלמה: מעבר רציף (מהירות רציפה בזמן, בלי עצירה בכל נקודה) ----------
+function spline(T, Pts) {
+  const n = T.length;
+  // שיפוע מונוטוני לכל רכיב (Fritsch-Carlson): בלי "חריגה" מעבר לנקודות, גם כשקטע מהיר פוגש קטע איטי
+  const Vv = Pts.map((p, i) => {
+    if (i === 0 || i === n - 1) return p.map(() => 0);
+    const d0 = T[i] - T[i - 1], d1 = T[i + 1] - T[i];
+    return p.map((x, k) => { const s0 = (x - Pts[i - 1][k]) / d0, s1 = (Pts[i + 1][k] - x) / d1; if (s0 * s1 <= 0) return 0;
+      const m = (Pts[i + 1][k] - Pts[i - 1][k]) / (d0 + d1); return Math.sign(m) * Math.min(Math.abs(m), 3 * Math.min(Math.abs(s0), Math.abs(s1))); });
+  });
+  return t => {
+    if (t <= T[0]) return Pts[0].slice(); if (t >= T[n - 1]) return Pts[n - 1].slice();
+    let i = 0; while (t > T[i + 1]) i++;
+    const h = T[i + 1] - T[i], u = (t - T[i]) / h, u2 = u * u, u3 = u2 * u;
+    const h00 = 2 * u3 - 3 * u2 + 1, h10 = u3 - 2 * u2 + u, h01 = -2 * u3 + 3 * u2, h11 = u3 - u2;
+    return Pts[i].map((x, k) => h00 * x + h10 * h * Vv[i][k] + h01 * Pts[i + 1][k] + h11 * h * Vv[i + 1][k]);
+  };
+}
+const spline1 = keys => { const s = spline(keys.map(k => k[0]), keys.map(k => [k[1]])); return t => s(t)[0]; };
+function fly(keys) {
+  const S = spline(keys.map(k => k[0]), keys.map(k => [...k[1], ...k[2], k[3] === undefined ? 45 : k[3], k[4] || 0]));
+  return t => { const v = S(t); return { pos: v.slice(0, 3), look: v.slice(3, 6), fov: v[6], roll: v[7] }; };
+}
+// הקפה במהירות קבועה (עם האצה רכה בהתחלה); משתלבת עם מעברים אחרים דרך blend
+function orb(c, r, h, a0, rate, t0, fov) {
+  return t => { const s = Math.max(0, t - t0), u = s < 2 ? s * s / 4 : s - 1, a = (a0 + rate * u) * D;
+    return { pos: [c[0] + Math.sin(a) * r, c[1] + h, c[2] + Math.cos(a) * r], look: c, fov: fov || 45, roll: 0 }; };
+}
+function blend(a, b, t0, t1) {
+  return t => { const k = sm(P(t, t0, t1)); if (k <= 0) return a(t); if (k >= 1) return b(t); const A = a(t), B = b(t), L = (x, y) => x.map((v, i) => lerp(v, y[i], k));
+    return { pos: L(A.pos, B.pos), look: L(A.look, B.look), fov: lerp(A.fov || 45, B.fov || 45, k), roll: lerp(A.roll || 0, B.roll || 0, k) }; };
+}
+
+// ---------- עזרים חזותיים ----------
+let GLOW = null;
+function glowTex() { if (GLOW) return GLOW; GLOW = canvasTex(128, 128, (g, w, h) => { const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.3, 'rgba(255,255,255,.5)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }); return GLOW; }
+function glow(color, size) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), color, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending, fog: false })); s.scale.set(size, size, 1); s.renderOrder = 4; return s; }
+// קו מתאר שעוביו קבוע בעולם גם כשהגוף נמתח (לעמודים שגדלים)
+function wInk(m, w, color) {
+  const o = new THREE.Mesh(m.geometry, new THREE.ShaderMaterial({ side: THREE.BackSide, uniforms: { c: { value: new THREE.Color(color || 0x15100c) } },
+    vertexShader: 'void main(){ vec4 wp = modelMatrix * vec4(position, 1.0); vec3 n = normalize(mat3(modelMatrix) * normal); wp.xyz += n * ' + w.toFixed(4) + '; gl_Position = projectionMatrix * viewMatrix * wp; }',
+    fragmentShader: 'uniform vec3 c; void main(){ gl_FragColor = vec4(c, 1.0); }' }));
+  o.raycast = () => {}; m.add(o); return m;
+}
+function popL(sp, k, m) {
+  if (!sp.userData.s0) sp.userData.s0 = sp.scale.clone();
+  sp.visible = k > .002; if (!sp.visible) return;
+  sp.scale.copy(sp.userData.s0).multiplyScalar((m || 1) * (.5 + .5 * backOut(clamp(k, 0, 1))));
+  sp.material.opacity = clamp(k * 2.5, 0, 1);
+}
+// תווית שנשארת קריאה מרחוק: גדלה עם המרחק (לא יורדת מגודל הבסיס)
+const grow = (cam, p, base, f) => Math.max(1, cam.position.distanceTo(p) * (f || .034) / base);
+function popO(o, k, s0) { o.visible = k > .002; if (o.visible) o.scale.setScalar((s0 || 1) * Math.max(.001, backOut(clamp(k, 0, 1)))); }
+// סימן שאלה תלת-ממדי (תמיד פונה למצלמה)
+function qmark(color) {
+  const g = new THREE.Group(), pts = [];
+  for (let a = 165; a >= -60; a -= 15) pts.push(new THREE.Vector3(Math.cos(a * D) * .3, .66 + Math.sin(a * D) * .3, 0));
+  pts.push(new THREE.Vector3(.05, .3, 0), new THREE.Vector3(0, .2, 0), new THREE.Vector3(0, .1, 0));
+  const curve = new THREE.CatmullRomCurve3(pts);
+  const tube = new THREE.Mesh(new THREE.TubeGeometry(curve, 90, .085, 16), toon(color)); tube.castShadow = true; ink(tube, .022); g.add(tube);
+  for (const u of [0, 1]) g.add(ball(.085, color, { pos: curve.getPoint(u).toArray(), inkW: .022 }));
+  g.add(ball(.105, color, { pos: [0, -.1, 0], inkW: .022 }));
+  const q = new THREE.Group(); q.add(g); g.position.y = -.4; return q;
+}
+function faceCam(o, cam) { o.rotation.y = Math.atan2(cam.position.x - o.position.x, cam.position.z - o.position.z); }
+// סיכה זוהרת
+function makePin(Wd, base, color) {
+  const g = new THREE.Group(); g.position.copy(base);
+  const inner = new THREE.Group(); g.add(inner);
+  inner.add(cyl(.028, .008, .6, '#eef0f4', { pos: [0, .3, 0], inkW: .01 }));
+  const head = ball(.14, color, { pos: [0, .66, 0], inkW: .016 }); head.material.emissive = new THREE.Color(color); head.material.emissiveIntensity = .45; inner.add(head);
+  const gl = glow(0xffd27a, 1.1); gl.position.set(0, .66, 0); inner.add(gl);
+  const ring = new THREE.Mesh(new THREE.RingGeometry(.22, .32, 48), new THREE.MeshBasicMaterial({ color: 0xffe9a0, transparent: true, depthWrite: false, side: THREE.DoubleSide }));
+  ring.rotation.x = -Math.PI / 2; ring.position.y = .03; g.add(ring);
+  Wd.add(g);
+  return { g, inner, ring, gl, set(t, k, fade) {
+    g.visible = k > .002 && fade > .002; if (!g.visible) return;
+    const drop = 1 - clamp(k, 0, 1); inner.position.y = 3 * drop * drop; inner.scale.setScalar(fade);
+    const ph = (t * .8) % 1; ring.scale.setScalar(1 + ph * 2.2); ring.material.opacity = (1 - ph) * .8 * fade * clamp(k * 2, 0, 1);
+    gl.material.opacity = (.65 + .35 * Math.sin(t * 5)) * fade; } };
+}
+// עמוד גשם (מילימטרים) שגדל
+function column(Wd, base, H, color, r) {
+  r = r || .17;
+  const g = new THREE.Group(); g.position.copy(base); Wd.add(g);
+  const body = new THREE.Mesh(new THREE.CylinderGeometry(r, r, 1, 40).translate(0, .5, 0), toon(color)); body.castShadow = body.receiveShadow = true; wInk(body, .02); g.add(body);
+  const cap = new THREE.Mesh(new THREE.CircleGeometry(r * .78, 40), new THREE.MeshBasicMaterial({ color: new THREE.Color(color).lerp(new THREE.Color(0xffffff), .5) }));
+  cap.rotation.x = -Math.PI / 2; g.add(cap);
+  const ring = new THREE.Mesh(new THREE.RingGeometry(r * 1.15, r * 1.7, 40), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .7, depthWrite: false, side: THREE.DoubleSide }));
+  ring.rotation.x = -Math.PI / 2; ring.position.y = .025; g.add(ring);
+  return { g, H, set(k) { g.visible = k > .001; const h = Math.max(.003, H * k); body.scale.y = h; cap.position.y = h + .004; ring.material.opacity = .75 * clamp(k * 4, 0, 1); } };
+}
+function tree(Wd, x, y, z, s, kind) {
+  const g = new THREE.Group(); g.position.set(x, y, z); g.scale.setScalar(s);
+  g.add(cyl(.12, .17, 1.3, '#7b5634', { pos: [0, .65, 0], inkW: .025 }));
+  if (kind === 1) g.add(mesh(new THREE.ConeGeometry(.75, 2.3, 18), toon('#4e8a45'), { pos: [0, 2.2, 0], inkW: .03 }));
+  else { g.add(ball(.82, '#5c9a47', { pos: [0, 1.85, 0], inkW: .03 })); g.add(ball(.55, '#6aab52', { pos: [.42, 1.6, .25], inkW: .03 })); }
+  Wd.add(g); return g;
+}
+
+// ---------- המפה הענקית על רחבת האבן ----------
+const MAP = map3d({ scale: .5, exag: 9 }), MAPY = .315;
+// צבעי המפה נכתבו כערכי sRGB אבל three קורא צבעי קודקוד כליניאריים -> המפה יצאה דהויה. ממירים פעם אחת.
+{ const c = MAP.geo.attributes.color; for (let i = 0; i < c.array.length; i++) c.array[i] = Math.pow(c.array[i], 2.2); c.needsUpdate = true; }
+// "המדרגות" בשולי היבשה חשפו את מכסה הבסיס החום; צובעים את המכסה בצבעי השפלה (ירוק בצפון, חול בדרום)
+{ const base = MAP.group.children[1], yv = y => clamp((11 - y) / 22, 0, 1);
+  const capTex = canvasTex(64, 512, (g, w, h) => { const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#a8bd73'); gr.addColorStop(yv(-.69), '#a8bd73'); gr.addColorStop(yv(-7.35), '#d4bd82'); gr.addColorStop(1, '#d6be84'); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
+  capTex.repeat.set(1 / 9, 1 / 22); capTex.offset.set(.5, .5); base.material = [new THREE.MeshLambertMaterial({ map: capTex }), base.material]; }
+const LAND = (window.GEO.land || window.GEO.israel)[0];
+// מכסה הבסיס (בגובה 0.01) הסתיר כל אדמה שמתחת לגובה פני הים: בקעת הירדן, הכנרת וים המלח נראו כפס שטוח.
+// מורידים את הבסיס מתחת לנקודה הנמוכה ביותר, ובונים "חצאית" שקירה העליון עוקב אחרי גובה הקרקע בשולי הארץ.
+{ const base = MAP.group.children[1]; base.position.y -= .2;
+  const pos = [], idx = [], topPts = [];
+  for (let i = 0; i < LAND.length; i++) { const [lo, la] = LAND[i], v = MAP.at(lo, la, .012); pos.push(v.x, -.365, v.z, v.x, v.y, v.z); topPts.push(v); }
+  for (let i = 0; i < LAND.length - 1; i++) { const a = 2 * i; idx.push(a, a + 2, a + 1, a + 1, a + 2, a + 3); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+  const skirt = new THREE.Mesh(g, toon(0xb59a72, { side: THREE.DoubleSide })); skirt.receiveShadow = true; MAP.group.add(skirt);
+  MAP.group.add(new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(topPts, true), topPts.length * 2, .012, 5, true), new THREE.MeshBasicMaterial({ color: 0x3a2a1a }))); }
+function inLand(x, z) { const [lo, la] = LL(x, z); let c = false; for (let i = 0, j = LAND.length - 1; i < LAND.length; j = i++) { const a = LAND[i], b = LAND[j]; if (((a[1] > la) !== (b[1] > la)) && (lo < (b[0] - a[0]) * (la - a[1]) / (b[1] - a[1]) + a[0])) c = !c; } return c; }
+const LL = (x, z) => [x / 4.7 + 35.075, 31.425 - z / 5.55];
+const hMap = (x, z) => MAP.at(...LL(x, z)).y + MAPY + .01;
+const atC = (n, lift) => { const v = MAP.at(...CITIES[n], lift || 0); v.y += MAPY + .01; return v; };
+let SEA = null;
+function seaShape() {
+  if (SEA) return SEA; const poly = (window.GEO.land || window.GEO.israel)[0], coast = [];
+  for (const p of poly) { if (coast.length && (p[1] < coast[coast.length - 1][1] - .02 || p[0] > 35.12)) break; coast.push(p); }
+  const sp = [[33.75, coast[0][1]], ...coast, [33.75, coast[coast.length - 1][1]]];
+  SEA = new THREE.Shape(sp.map(q => new THREE.Vector2(MAP.X(q[0]), -MAP.Z(q[1])))); return SEA;
+}
+function mapSet(Wd) {
+  const slab = new THREE.Mesh(new THREE.BoxGeometry(30, .15, 30), toon(0xffffff, { map: groundTex('stone', [5, 5]) }));
+  slab.position.set(-1, .075, 0); slab.receiveShadow = true; ink(slab, .05, 0x5b4a36, true); Wd.add(slab);
+  const sea = new THREE.Mesh(new THREE.ExtrudeGeometry(seaShape(), { depth: .148, bevelEnabled: false }), toon(0x3a78ad));
+  sea.rotation.x = -Math.PI / 2; sea.position.y = .15; Wd.add(sea);
+  const g = MAP.group.clone(true); g.position.y = MAPY; Wd.add(g);
+  const r = rng(11);
+  for (let i = 0; i < 22; i++) { const a = (i / 22) * 360 + (r() - .5) * 10; if (Math.abs(((a - 270 + 540) % 360) - 180) < 22) continue;
+    const rr = 20 + r() * 6; tree(Wd, -1 + Math.sin(a * D) * rr, 0, Math.cos(a * D) * rr, .9 + r() * .5, r() < .35 ? 1 : 0); }
+  return g;
+}
+const SKY_MAP = { ground: 'grass', skyTop: 0x86bdea, skyBottom: 0xf6ecd8, fogColor: 0xeee8da, fogNear: 70, fogFar: 300, sun: 1.9, sunPos: [-22, 50, 30], shadowExt: 28 };
+
+// ======================================================================
+//  שוט 1: צפת מול אילת
+// ======================================================================
+function shotC1() {
+  const Wd = world(SKY_MAP);
+  mapSet(Wd);
+  const zf = atC('צפת'), el = atC('אילת');
+  const Q = Wd.add(qmark('#ffc23a'));
+  const pin = makePin(Wd, zf, '#ff5a3c');
+  const colS = column(Wd, zf, 2.8, '#2f80d6', .2);
+  const lS = label(Wd, 'צפת', { pos: [zf.x + .55, zf.y + .75, zf.z + .45], height: .4 });
+  const nS = label(Wd, '700', { pos: [zf.x, zf.y + 3.2, zf.z], height: .5, bg: 'rgba(28,84,160,.94)' });
+  const Q2 = Wd.add(qmark('#ffc23a'));
+  const colE = column(Wd, el, .1, '#2f80d6', .2);
+  const lE = label(Wd, 'אילת', { pos: [el.x + .5, el.y + .16, el.z + .5], height: .18 });
+  const nE = label(Wd, '25', { pos: [el.x, el.y + .36, el.z], height: .22, bg: 'rgba(28,84,160,.94)' });
+  // מכונית צעצוע + המסלול שלה (כביש 40: צפת - ירושלים - באר שבע - מצפה רמון - אילת)
+  const WP = [[35.496, 32.965], [35.42, 32.86], [35.33, 32.70], [35.26, 32.45], [35.24, 32.2], [35.22, 31.95], [35.19, 31.74], [35.1, 31.53], [34.93, 31.34], [34.81, 31.22], [34.80, 30.95], [34.80, 30.62], [34.87, 30.27], [34.94, 29.97], [34.96, 29.74], [34.95, 29.6]];
+  const c0 = new THREE.CatmullRomCurve3(WP.map(([lo, la]) => new THREE.Vector3(MAP.X(lo), 0, MAP.Z(la))), false, 'centripetal');
+  const RP = c0.getSpacedPoints(260).map(p => new THREE.Vector3(p.x, hMap(p.x, p.z) + .035, p.z));
+  const route = new THREE.CatmullRomCurve3(RP);
+  const trail = new THREE.Mesh(new THREE.TubeGeometry(route, 520, .045, 8), new THREE.MeshBasicMaterial({ color: 0xff9f1c })); Wd.add(trail);
+  const trailN = trail.geometry.index.count;
+  const car = new THREE.Group(); const carIn = new THREE.Group(); car.add(carIn);
+  carIn.add(box(.56, .16, .3, '#e8403a', { pos: [0, .15, 0], inkW: .014 }));
+  carIn.add(box(.3, .15, .26, '#f5f1e6', { pos: [-.05, .3, 0], inkW: .014 }));
+  carIn.add(box(.31, .09, .27, '#3d5f8a', { pos: [-.05, .31, 0], ink: false }));
+  for (const [x, z] of [[.18, .15], [-.18, .15], [.18, -.15], [-.18, -.15]]) carIn.add(cyl(.075, .075, .06, '#24242a', { pos: [x, .075, z], rot: [Math.PI / 2, 0, 0], inkW: .01 }));
+  for (const z of [.09, -.09]) carIn.add(ball(.03, '#fff3a0', { pos: [.28, .16, z], ink: false }));
+  Wd.add(car);
+  const carP = t => ease.io(P(t, 40.2, 46.6));
+  // הרב: ליד צפת -> הולך דרומה על המפה -> יורד מן המפה אל רחבת האבן ליד אילת
+  const RK = spline([0, 21.8, 27.8, 28.8], [[zf.x - 1.3, zf.z - .05], [zf.x - 1.3, zf.z - .05], [-1.6, 6.0], [-3.0, 7.0]]);
+  const yRaw = (x, z) => inLand(x, z) ? hMap(x, z) : .16;
+  const rav = t => { const [x, z] = RK(t); let y = 0; for (let k = -2; k <= 2; k++) { const [a, b] = RK(t + k * .07); y += yRaw(a, b) / 5; } return [x, y, z]; };
+  let CAM = null;
+  person(Wd, RAV, t => {
+    const p = rav(t), st = { pos: p, groundY: p[1], talk: talk(t) }, q = rav(t + .05), sp = Math.hypot(q[0] - p[0], q[2] - p[2]) / .05, cp = CAM(t).pos;
+    if (sp > .12) return Object.assign(st, { facing: face(p, q), walk: t * 8.5, stride: clamp(sp / 1.6, 0, .95), talk: 0 });
+    if (t < 12.5) return Object.assign(st, { facing: face(p, cp), perform: .8, gesture: t > 5.5 && t < 11 ? 'shrug' : null });
+    if (t < 21.8) return Object.assign(st, present(p, [zf.x, 0, zf.z], cp, t > 14.5 ? null : 'explain'), { talk: t > 16 ? talk(t) : 0 });
+    if (t < 39.5) return Object.assign(st, present(p, [zf.x, 0, zf.z], cp, t > 35 ? 'shrug' : null));
+    return Object.assign(st, present(p, route.getPointAt(carP(t)).toArray(), cp, t > 43.5 ? 'wave' : 'explainA'), { talk: t > 43.5 ? 0 : talk(t) });
+  });
+  Wd.on((t, cam) => {
+    Q.position.set(-.6, 6.4 + .25 * Math.sin(t * 1.3), -1.8); faceCam(Q, cam); Q.rotation.z = .08 * Math.sin(t * 1.7);
+    popO(Q, P(t, 1.2, 2.2) * (1 - P(t, 11.2, 12.0)), 2.6);
+    pin.set(t, P(t, 12.6, 13.4), 1 - P(t, 15.2, 15.8));
+    colS.set(ease.out(P(t, 15.0, 18.0)));
+    popL(lS, P(t, 13.2, 13.8), grow(cam, lS.position, .4, .03));
+    const mN = grow(cam, nS.position, .5, .036); nS.position.y = zf.y + 2.8 + .12 + .25 * mN; popL(nS, P(t, 17.6, 18.2), mN);
+    Q2.position.set(el.x, el.y + 1.75 + .12 * Math.sin(t * 1.6), el.z); faceCam(Q2, cam); Q2.rotation.z = .08 * Math.sin(t * 1.9);
+    popO(Q2, P(t, 22.6, 23.4) * (1 - P(t, 29.0, 29.6)), 1.35);
+    popL(lE, P(t, 23.0, 23.6), grow(cam, lE.position, .18, .03)); colE.set(ease.out(P(t, 31.0, 32.0)));
+    const mE = grow(cam, nE.position, .22, .034); nE.position.y = el.y + .1 + .08 + .11 * mE; popL(nE, P(t, 31.6, 32.2), mE);
+    const cp = carP(t), pp = route.getPointAt(cp), tg = route.getTangentAt(Math.min(cp, .999));
+    car.position.copy(pp); car.rotation.y = Math.atan2(-tg.z, tg.x); popO(carIn, P(t, 39.4, 40.0), 1.25);
+    carIn.position.y = .015 * Math.abs(Math.sin(t * 30)) * (cp > 0 && cp < 1 ? 1 : 0);
+    const n = Math.floor(trailN * cp / 48) * 48; trail.geometry.setDrawRange(0, n); trail.visible = n > 0;
+  });
+  // מצלמה: הקפה של המפה -> צלילה לצפת -> מאחורי הרב בדרך דרומה -> נמוך באילת -> גבוה מעל המסלול
+  const O = orb([-.6, .4, -.6], 21, 10.5, 150, -25, 0, 45);
+  const o10 = O(10.0);
+  const dive = fly([
+    [10.0, o10.pos, o10.look, 45],
+    [14.4, [-4.6, 2.5, -.8], [zf.x - .2, 2.1, zf.z], 45],
+    [21.0, [-4.2, 2.45, -1.4], [zf.x - .1, 2.15, zf.z], 45],
+  ]);
+  const track = t => { const p = rav(Math.min(t, 28.8)); return { pos: [p[0] - 3.4, p[1] + 2.6 + 4.0 * sm(P(t, 26.8, 28.6)), p[2] - 3.2], look: [p[0] + .6, p[1] + .15, p[2] + 4.2], fov: 45 }; };
+  const low = t => { const u = P(t, 31, 39.5); return { pos: [el.x - 1.4 + u * .2, el.y + .5 + u * .05, el.z + 4.6 - u * .5], look: [zf.x - .6, zf.y + 1.3, zf.z], fov: 34 }; };
+  const carCam = t => { const z = route.getPointAt(carP(t)).z; return { pos: [-10.5, 8.6, z * .55 + 1.6], look: [.3, .2, z * .78 + .5], fov: 45 }; };
+  const fin = () => ({ pos: [-13.2, 11.8, 1.6], look: [.3, .2, 1.0], fov: 45 });
+  const t0 = track(28.6), l1 = low(31.4);
+  const swing = fly([[28.6, t0.pos, t0.look, 45], [30.0, [1.5, 5.0, 14.5], [.5, 2.4, -4.0], 40], [31.4, l1.pos, l1.look, 34]]);
+  const cam = blend(blend(blend(blend(blend(blend(O, dive, 10.0, 12.6), track, 22.0, 25.0), swing, 28.2, 28.9), low, 31.2, 31.6), carCam, 39.4, 41.6), fin, 45.2, 48);
+  CAM = cam;
+  return Object.assign(Wd, { cam });
+}
+
+// ======================================================================
+//  שוט 2: שישה עמודים מצפון לדרום
+// ======================================================================
+function shotC2() {
+  const Wd = world(SKY_MAP);
+  mapSet(Wd);
+  const DATA = [['הר מירון', 1000, '1,000', 10.2], ['צפת', 700, '700', 11.6], ['ירושלים', 540, '540', 19.6], ['בית שמש', 480, '480', 21.2], ['באר שבע', 200, '200', 29.0], ['אילת', 25, '25', 30.6]];
+  const COLS = DATA.map(([n, mm, txt, g0], i) => {
+    const b = atC(n), H = mm * .004, ours = n === 'בית שמש', col = ours ? '#f39a2b' : '#2f80d6';
+    const c = column(Wd, b, H, col, .17);
+    const ring = glow(ours ? 0xffb050 : 0x9fd0ff, .9); ring.position.set(b.x, b.y + .08, b.z); Wd.add(ring);
+    const nm = label(Wd, n, { pos: [b.x, b.y + 1, b.z], height: .34, depthTest: false });
+    const nb = label(Wd, txt, { pos: [b.x, b.y + 1, b.z], height: .44, bg: ours ? 'rgba(200,104,10,.95)' : 'rgba(28,84,160,.94)', depthTest: false });
+    return { b, c, ring, nm, nb, g0, appear: 3.0 + i * .7 };
+  });
+  // עננים מן הים (כתובית 6): יוצאים מעל הים שבמפה ונודדים מזרחה מעל הגליל
+  const CL = [[-4.6, 7.0, -9.4, .85, 3], [-6.0, 7.5, -7.4, .95, 8], [-5.4, 6.8, -11.0, .7, 13], [-7.0, 7.3, -5.4, .65, 21]].map(([x, y, z, s, seed]) => {
+    const c = Wd.add(cloud({ seed, size: s, color: 0xa9b1be, puffs: 7, pos: [x, y, z] })); return { c, x, y, z, s };
+  });
+  const cX = (c, t) => c.x + Math.max(0, t - 47.2) * .72;
+  CL.slice(0, 3).forEach((c, i) => rain(Wd, { x0: -1.3, x1: 1.3, z0: -.7, z1: .7, top: c.y - .4, bottom: .3, count: 380, speed: 8, seed: 7 + i, color: 0x4f78b5, opacity: .85,
+    amount: t => P(t, 50.5 + i * .8, 52.5 + i * .8), offset: t => [cX(c, t), c.z] }));
+  // הרב: ליד מירון וצפת -> ליד בית שמש -> בסוף עולה צפונה לחכות לעננים בגליל
+  const ravK = spline([0, 3.0, 9.4, 17.2, 20.8, 38.6, 46.4], [[-.8, -3.4], [-.8, -3.4], [.6, -8.6], [.6, -8.6], [-1.0, -2.3], [-1.0, -2.3], [.2, -6.6]]);
+  const ravP = t => { const [x, z] = ravK(t); return [x, hMap(x, z), z]; };
+  let CAM = null;
+  person(Wd, RAV, t => {
+    const p = ravP(t), st = { pos: p, groundY: p[1], talk: talk(t) }, d = ravP(t + .05), sp = Math.hypot(d[0] - p[0], d[2] - p[2]) / .05, cp = CAM(t).pos;
+    if (sp > .12) return Object.assign(st, { facing: face(p, d), walk: t * 8.5, stride: clamp(sp / 1.6, 0, .9), talk: 0 });
+    if (t < 9.5) return Object.assign(st, { facing: face(p, cp), perform: .8 });
+    if (t < 17.2) return Object.assign(st, present(p, [COLS[0].b.x, 0, COLS[0].b.z], cp, t > 11 && t < 14.2 ? 'up' : t < 11 ? 'explain' : null));
+    if (t < 38.6) return Object.assign(st, present(p, [COLS[3].b.x, 0, COLS[3].b.z], cp, t > 22 && t < 26.5 ? 'heart' : t < 22 ? 'explain' : null));
+    return Object.assign(st, present(p, [-8, 6, -9], cp, t > 50 ? 'pointA' : 'think'), { talk: t > 50 ? talk(t) : 0 });
+  });
+  Wd.on((t, cam) => {
+    for (const c of COLS) {
+      const k = ease.out(P(t, c.g0, c.g0 + 2.6)), top = c.b.y + c.c.H * k;
+      c.c.set(k); c.ring.material.opacity = P(t, c.appear, c.appear + .4) * (.55 + .3 * Math.sin(t * 4 + c.g0)); c.ring.visible = t > c.appear;
+      c.nb.position.set(c.b.x, top, c.b.z); const m = grow(cam, c.nb.position, .44, .03);
+      c.nb.position.y = top + .1 + .22 * m; c.nm.position.set(c.b.x, top + .16 + .44 * m + .17 * m, c.b.z);
+      popL(c.nb, P(t, c.g0 + 2.2, c.g0 + 2.8), m); popL(c.nm, Math.max(P(t, c.appear + .2, c.appear + .7) * (1 - P(t, 7.8, 8.4)), P(t, c.g0, c.g0 + .5)), m);
+    }
+    separate(cam, [COLS[0].nb, COLS[0].nm], [COLS[1].nb, COLS[1].nm]); separate(cam, [COLS[2].nb, COLS[2].nm], [COLS[3].nb, COLS[3].nm]);
+    for (const c of CL) { c.c.position.x = cX(c, t); c.c.visible = t > 47.2; c.c.position.y = c.y + .08 * Math.sin(t + c.z); popO(c.c, P(t, 47.2, 48.4)); }
+  });
+  const cam = fly([
+    [0, [-13.2, 11.8, 1.6], [.3, .2, 1.0], 45],
+    [3.6, [-4.5, 9.6, -18.5], [-.3, 0, -2], 45],
+    [5.4, [-2.6, 8.0, -17], [-.3, .2, -3], 45],
+    [7.6, [-7.6, 5.2, -8.4], [.4, 1.6, -6.4], 45],
+    [9.8, [-4.5, 2.4, -.9], [1.75, 2.6, -8.6], 45],
+    [15.0, [-4.1, 2.5, -1.5], [1.75, 2.6, -8.6], 45],
+    [18.6, [-5.6, 2.9, 2.0], [.4, 1.9, -3.8], 45],
+    [21.8, [-4.9, 2.8, 3.0], [.15, 1.9, -1.9], 45],
+    [27.6, [-4.5, 2.8, 2.5], [.1, 1.9, -1.9], 45],
+    [31.0, [-5.8, 2.7, 5.6], [-1.1, 1.0, 1.0], 45],
+    [35.2, [-3.7, 1.7, 13.9], [-.6, .7, 10.3], 45],
+    [39.6, [-12, 6.5, 9.5], [-.2, 1.8, .4], 45],
+    [43.5, [-16.5, 5.6, 4.0], [-.1, 2.0, .5], 45],
+    [47.4, [-16.3, 5.7, 3.6], [-.1, 2.0, .4], 45],
+    [51.5, [-11.5, 7.2, 1.8], [-1.2, 3.9, -7.4], 45],
+    [57, [-10.2, 7.4, .8], [-.6, 4.1, -8.0], 45],
+  ]);
+  CAM = cam;
+  return Object.assign(Wd, { cam });
+}
+
+// ======================================================================
+//  פרוסת הארץ ממערב למזרח (שוטים 3 ו-4)
+// ======================================================================
+const SL = 7, SD = 8, SX0 = -22, SX1 = 17;
+const PK = [[-22, -2.8], [-18, -2.2], [-14.5, -1.0], [-12.8, -.25], [-12, .2], [-10, .4], [-7, .6], [-4.5, 1.1], [-2.2, 2.4], [0, 4.3], [1.8, 6.1], [3, 6.95], [4, 7.15], [5, 6.7], [6.4, 4.6], [7.8, 1.6], [9.0, -1.5], [9.9, -2.85], [11.0, -3.15], [11.6, -3.6], [12.4, -4.4], [14.6, -4.5], [15.6, -3.4], [16.4, -2.1], [17, -1.7]];
+function prof0(x) {
+  const n = PK.length; if (x <= PK[0][0]) return PK[0][1]; if (x >= PK[n - 1][0]) return PK[n - 1][1];
+  let i = 0; while (x > PK[i + 1][0]) i++;
+  const m = j => (j <= 0 || j >= n - 1) ? 0 : (PK[j + 1][1] - PK[j - 1][1]) / (PK[j + 1][0] - PK[j - 1][0]);
+  const [x0, y0] = PK[i], [x1, y1] = PK[i + 1], h = x1 - x0, u = (x - x0) / h, u2 = u * u, u3 = u2 * u;
+  return (2 * u3 - 3 * u2 + 1) * y0 + (u3 - 2 * u2 + u) * h * m(i) + (-2 * u3 + 3 * u2) * y1 + (u3 - u2) * h * m(i + 1);
+}
+const prof = x => { const p = prof0(x), k = clamp((p + .2) / 1.2, 0, 1) * (x < 9 ? 1 : 0); return p + k * (.1 * Math.sin(x * 1.9) + .07 * Math.sin(x * 3.7 + 1.3)); };
+const ridge = (x, z, z0, z1) => .16 * Math.sin(z * 1.3 + x * .8) * Math.sin(Math.PI * clamp((z - z0) / (z1 - z0), 0, 1)) * clamp((prof0(x) - .3) / 1.5, 0, 1);
+const surfY = (x, z) => SL + prof(x) + ridge(x, z, -SD / 2, SD / 2);
+const softAbove = p => Math.log(1 + Math.exp(3 * p)) / 3;
+const cloudY = x => SL + 3.7 + softAbove(prof0(x));
+function crossing(level, a, b) { let lo = a, hi = b; const s = Math.sign(prof0(a) - level); for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (Math.sign(prof0(m) - level) === s) lo = m; else hi = m; } return (lo + hi) / 2; }
+const hexC = h => new THREE.Color(h);
+function stopsCol(stops, x) { for (let i = 1; i < stops.length; i++) if (x <= stops[i][0]) { const k = clamp((x - stops[i - 1][0]) / (stops[i][0] - stops[i - 1][0]), 0, 1); return hexC(stops[i - 1][1]).lerp(hexC(stops[i][1]), k); } return hexC(stops[stops.length - 1][1]); }
+const TOP_A = [[-22, '#d8c89c'], [-12.6, '#d8c89c'], [-12.1, '#ecd9a6'], [-11.3, '#a8c972'], [-4, '#98c166'], [0, '#82b55c'], [4.2, '#74ab52'], [5.4, '#9ea85e'], [7.4, '#c19c64'], [9.8, '#d5be8c'], [15.6, '#d5be8c'], [17, '#c39c68']];
+const TOP_B = [[-22, '#d8c89c'], [-12.6, '#d8c89c'], [-12.1, '#ecd9a6'], [-11.3, '#8fc862'], [-4, '#79bb52'], [0, '#5fa847'], [4.2, '#529e41'], [5.0, '#a99a58'], [6.3, '#d09c5c'], [9.8, '#dfc189'], [15.6, '#dcbd85'], [17, '#cf9f66']];
+function gridTop(z0, z1, NX, NZ, x0, x1, lift) {
+  const pos = [], idx = [], xs = [], zs = [];
+  for (let j = 0; j <= NZ; j++) for (let i = 0; i <= NX; i++) { const x = lerp(x0, x1, i / NX), z = lerp(z0, z1, j / NZ); pos.push(x, SL + prof(x) + ridge(x, z, z0, z1) + (lift || 0), z); xs.push(x); zs.push(z); }
+  for (let j = 0; j < NZ; j++) for (let i = 0; i < NX; i++) { const a = j * (NX + 1) + i, b = a + 1, c = a + NX + 1, d = c + 1; idx.push(a, c, b, b, c, d); }
+  const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); geo.setIndex(idx); geo.computeVertexNormals();
+  return { geo, xs, zs };
+}
+function layersTex(skin) {
+  const PX = 52, W = Math.round((SX1 - SX0) * PX), H = 16 * PX, toY = y => H - y * PX, r = rng(skin ? 91 : 77);
+  const bands = ['#e4cb92', '#c98f5c', '#efe1bb', '#ab937b', '#dbab6b', '#c2ab8c', '#a07d5f', '#dcc79c', '#b97c50', '#cbb692'];
+  const tex = canvasTex(W, H, g => {
+    g.fillStyle = '#8a6a4a'; g.fillRect(0, 0, W, H);
+    const sea = crossing(0, -16, -9), shore = crossing(-3.3, 10, 13), shore2 = crossing(-3.3, 14, 17);
+    for (let px = 0; px < W; px++) {
+      const x = SX0 + (px + .5) / PX, s = SL + prof(x), fold = 3.0 * Math.exp(-Math.pow((x - 3) / 8.5, 2)), soil = s - .42;
+      if (skin) { g.fillStyle = '#8d6b49'; g.fillRect(px, toY(soil), 1, H); }
+      else for (let k = -6; k < 13; k++) {
+        const bt = Math.min(soil, SL + .6 - 1.3 * k + fold * (1 - .05 * k) + .18 * Math.sin(x * .55 + k * 1.7)), bb = SL + .6 - 1.3 * (k + 1) + fold * (1 - .05 * (k + 1)) + .18 * Math.sin(x * .55 + (k + 1) * 1.7);
+        if (bb >= bt) continue; g.fillStyle = bands[(k + 20) % bands.length]; g.fillRect(px, toY(bt), 1, (bt - bb) * PX + 1);
+        g.fillStyle = 'rgba(70,45,25,.35)'; g.fillRect(px, toY(bb) - 1, 1, 2);
+      }
+      const under = x < sea ? '#d6c294' : (x > shore && x < shore2) ? '#e8e2d0' : null;
+      g.fillStyle = under || (skin ? '#6f9f45' : '#6e4c30'); g.fillRect(px, toY(s), 1, .42 * PX + 1);
+      if (!under && !skin && x < 5.5) { g.fillStyle = '#6f9f45'; g.fillRect(px, toY(s), 1, 5); }
+    }
+    for (let i = 0; i < 9000; i++) { const px = r() * W, x = SX0 + px / PX, y = r() * 16; if (y > SL + prof(x) - .5) continue;
+      g.fillStyle = r() < .5 ? 'rgba(60,40,22,.22)' : 'rgba(255,248,230,.25)'; g.beginPath(); g.ellipse(px, toY(y), 2 + r() * 4, 1.5 + r() * 2.5, r() * 3, 0, 7); g.fill(); }
+    g.strokeStyle = '#3b2a1c'; g.lineWidth = 6; g.lineJoin = 'round'; g.beginPath();
+    for (let px = 0; px <= W; px += 3) { const x = SX0 + px / PX; px ? g.lineTo(px, toY(SL + prof(x))) : g.moveTo(px, toY(SL + prof(x))); } g.stroke();
+  });
+  tex.repeat.set(1 / (SX1 - SX0), 1 / 16); tex.offset.set(-SX0 / (SX1 - SX0), 0); return tex;
+}
+function faceGeo() {
+  const s = new THREE.Shape(); s.moveTo(SX0, 0); s.lineTo(SX0, SL + prof(SX0));
+  for (let i = 1; i <= 360; i++) { const x = lerp(SX0, SX1, i / 360); s.lineTo(x, SL + prof(x)); }
+  s.lineTo(SX1, 0); s.closePath(); return new THREE.ShapeGeometry(s, 1);
+}
+function waterGeo(xa, xb, level, depth) {
+  const s = new THREE.Shape(); s.moveTo(xa, SL + level);
+  for (let i = 0; i <= 120; i++) { const x = lerp(xa, xb, i / 120); s.lineTo(x, SL + Math.min(prof(x), level)); }
+  s.lineTo(xb, SL + level); s.closePath(); return new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: false, curveSegments: 1 });
+}
+let END = null;
+function endTex() { if (END) return END; const bands = ['#c98f5c', '#efe1bb', '#ab937b', '#dbab6b', '#c2ab8c', '#a07d5f', '#dcc79c', '#b97c50'];
+  END = canvasTex(128, 512, (g, w, h) => { for (let i = 0; i < 9; i++) { g.fillStyle = bands[i % bands.length]; g.fillRect(0, i * h / 9, w, h / 9 + 1); g.fillStyle = 'rgba(70,45,25,.35)'; g.fillRect(0, i * h / 9, w, 2); }
+    g.fillStyle = '#6e4c30'; g.fillRect(0, 0, w, 22); const r = rng(9); for (let i = 0; i < 500; i++) { g.fillStyle = r() < .5 ? 'rgba(60,40,22,.22)' : 'rgba(255,248,230,.25)'; g.beginPath(); g.ellipse(r() * w, 22 + r() * (h - 22), 1.5 + r() * 3, 1 + r() * 2, r() * 3, 0, 7); g.fill(); } }); return END; }
+const edgeMat = new THREE.MeshBasicMaterial({ color: 0x3b2a1c });
+function edge(pts, r) { return new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), Math.max(4, pts.length * 2), r || .05, 6), edgeMat); }
+function sliceBlock(z0, z1, faceTex, backFace) {
+  const g = new THREE.Group();
+  const T = gridTop(z0, z1, 300, 10, SX0, SX1), n = T.xs.length;
+  const cA = new Float32Array(n * 3), cB = new Float32Array(n * 3), cur = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { const w = 1 + .05 * Math.sin(T.xs[i] * 5.1 + T.zs[i] * 2.3) + .03 * Math.sin(T.zs[i] * 7.7);
+    const a = stopsCol(TOP_A, T.xs[i]).multiplyScalar(w), b = stopsCol(TOP_B, T.xs[i]).multiplyScalar(w); cA.set([a.r, a.g, a.b], i * 3); cB.set([b.r, b.g, b.b], i * 3); }
+  cur.set(cA); T.geo.setAttribute('color', new THREE.BufferAttribute(cur, 3));
+  const top = new THREE.Mesh(T.geo, toon(0xffffff, { vertexColors: true })); top.receiveShadow = true; top.castShadow = true; g.add(top);
+  const fg = faceGeo(), fm = toon(0xffffff, { map: faceTex });
+  const front = new THREE.Mesh(fg, fm); front.position.z = z1; front.receiveShadow = true; g.add(front);
+  if (backFace) { const back = new THREE.Mesh(fg, fm); back.position.z = z0; back.scale.z = -1; g.add(back); }
+  const endM = toon(0xffffff, { map: endTex() });
+  for (const [x, sgn] of [[SX0, -1], [SX1, 1]]) { const h = SL + prof(x), e = new THREE.Mesh(new THREE.PlaneGeometry(z1 - z0, h), endM); e.rotation.y = sgn * Math.PI / 2; e.position.set(x, h / 2, (z0 + z1) / 2); g.add(e); }
+  const N = 140, ft = [], bt = []; for (let i = 0; i <= N; i++) { const x = lerp(SX0, SX1, i / N); ft.push(new THREE.Vector3(x, SL + prof(x), z1 + .01)); bt.push(new THREE.Vector3(x, SL + prof(x), z0 - .01)); }
+  g.add(edge(ft)); if (backFace) g.add(edge(bt));
+  for (const x of [SX0, SX1]) for (const z of (backFace ? [z0, z1] : [z1])) g.add(edge([new THREE.Vector3(x, 0, z), new THREE.Vector3(x, SL + prof(x), z)]));
+  g.add(edge([new THREE.Vector3(SX0, .02, z1 + .01), new THREE.Vector3(SX1, .02, z1 + .01)]));
+  const wm = new THREE.MeshLambertMaterial({ color: 0x3f8fd0, transparent: true, opacity: .72, depthWrite: false });
+  const wm2 = new THREE.MeshLambertMaterial({ color: 0x49a7c9, transparent: true, opacity: .72, depthWrite: false });
+  const med = new THREE.Mesh(waterGeo(SX0, crossing(0, -16, -9), 0, z1 - z0), wm); med.position.z = z0; med.renderOrder = 3; g.add(med);
+  const ds = new THREE.Mesh(waterGeo(crossing(-3.3, 10, 13), crossing(-3.3, 14, 17), -3.3, z1 - z0), wm2); ds.position.z = z0; ds.renderOrder = 3; g.add(ds);
+  return { g, top, mix(k) { for (let i = 0; i < n * 3; i++) cur[i] = lerp(cA[i], cB[i], k); T.geo.attributes.color.needsUpdate = true; } };
+}
+function sliceSet(Wd, o) {
+  o = o || {};
+  const main = sliceBlock(-SD / 2, SD / 2, layersTex(false), true); Wd.add(main.g);
+  const plinth = new THREE.Mesh(new THREE.BoxGeometry(SX1 - SX0 + 3, .3, SD + 3.5), toon(0xffffff, { map: groundTex('stone', [7, 2]) }));
+  plinth.position.set((SX0 + SX1) / 2, .15, 0); plinth.receiveShadow = true; ink(plinth, .05, 0x5b4a36, true); Wd.add(plinth);
+  // עצים במערב, שיחים יבשים במזרח, עיר בהר ועיר בעמק
+  const r = rng(5);
+  for (let i = 0; i < 34; i++) { const x = lerp(-11, 4.6, r()), z = lerp(-3.2, 3.2, r()); if (Math.abs(x + 9.4) < .9 && z > .5) continue; tree(Wd, x, surfY(x, z) - .05, z, .3 + r() * .14, r() < .3 ? 1 : 0); }
+  for (let i = 0; i < 9; i++) { const x = lerp(5.8, 9.6, r()), z = lerp(-3, 3, r()); Wd.add(ball(.18 + r() * .1, '#a48e55', { pos: [x, surfY(x, z) + .08, z], inkW: .015 })); }
+  const town = (x0, z0, n, sd) => { const rr = rng(sd); for (let i = 0; i < n; i++) { const x = x0 + (rr() - .5) * 1.6, z = z0 + (rr() - .5) * 2.4, y = surfY(x, z);
+    Wd.add(box(.42, .36, .42, '#f4eee2', { pos: [x, y + .16, z], inkW: .015 })); Wd.add(box(.46, .07, .46, rr() < .5 ? '#c9583c' : '#d7c9a8', { pos: [x, y + .37, z], inkW: .012 })); } };
+  town(3.9, .2, 6, 3); town(10.4, .3, 5, 4);
+  const labW = label(Wd, 'מערב', { pos: [SX0 - 1.2, SL + 2.6, SD / 2 + .5], height: 1.05, bg: 'rgba(160,96,10,.92)' });
+  const labE = label(Wd, 'מזרח', { pos: [SX1 + 1.2, SL + 2.6, SD / 2 + .5], height: 1.05, bg: 'rgba(160,96,10,.92)' });
+  for (let i = 0; i < 4; i++) Wd.add(cloud({ seed: 40 + i, size: 3.2 + i * .4, color: 0xffffff, puffs: 6, pos: [-60 + i * 42, 34 + (i % 2) * 6, -90 - (i % 3) * 12], cast: false }));
+  return { main, labW, labE };
+}
+function slCloud(Wd, seed) {
+  const c = Wd.add(cloud({ seed, size: 1.75, color: 0xc4cad4, puffs: 7 }));
+  const mats = []; c.traverse(m => { if (m.material && !mats.includes(m.material)) mats.push(m.material); });
+  const body = c.children[0].material;
+  const R = rain(Wd, { x0: -3.6, x1: 3.2, z0: -3.4, z1: 3.4, top: .01, bottom: -13, count: 1300, speed: 11, seed: seed + 3, color: 0x4f78b5, opacity: .85, len: .55 });
+  return { c, R, set(x, y, col, scale, op) { c.position.set(x, y, 0); c.scale.setScalar(scale); body.color.copy(col);
+    for (const m of mats) { m.transparent = op < .999; m.opacity = op; } c.visible = op > .01; R.position.set(x, y - .9 * scale, 0); } };
+}
+const SKY_SL = { ground: 'grass', skyTop: 0x8cc2ea, skyBottom: 0xf6eddb, fogColor: 0xf0eadc, fogNear: 90, fogFar: 340, sun: 1.75, sunPos: [8, 60, 45], shadowExt: 36 };
+
+// ======================================================================
+//  שוט 3: הענן מטפס על ההר
+// ======================================================================
+function shotC3() {
+  const Wd = world(SKY_SL);
+  const S = sliceSet(Wd);
+  // החלק הקדמי של "העוגה" שנחתך ויורד
+  const FP = 5.5, piece = sliceBlock(SD / 2, SD / 2 + FP, layersTex(true), false); Wd.add(piece.g);
+  const cutPts = []; for (let i = 0; i <= 200; i++) { const x = lerp(SX0, SX1, i / 200); cutPts.push(new THREE.Vector3(x, SL + prof(x) + .06, SD / 2)); }
+  const cutCurve = new THREE.CatmullRomCurve3(cutPts);
+  const cut = new THREE.Mesh(new THREE.TubeGeometry(cutCurve, 600, .07, 8), new THREE.MeshBasicMaterial({ color: 0xfff3b0, transparent: true })); Wd.add(cut);
+  const blade = glow(0xffe08a, 3.2); Wd.add(blade);
+  const CN = cut.geometry.index.count;
+  const C = slCloud(Wd, 7);
+  const cx = spline1([[9.0, -36], [19, -10.5], [28.5, .6], [40, 1.9], [57, 2.5]]);
+  const grey = hexC(0xc4cad4), dark = hexC(0x6a7fa6);
+  const L1 = label(Wd, 'צפת 700', { pos: [4.0, SL + 8.0, .3], height: .8, bg: 'rgba(28,84,160,.94)', depthTest: false });
+  const L2 = label(Wd, 'טבריה 400', { pos: [10.4, SL - 1.8, .3], height: .8, bg: 'rgba(80,120,170,.94)', depthTest: false });
+  const RK = spline([0, 19.6, 26.2], [[-9.3, 1.4], [-9.3, 1.4], [-3.1, 2.4]]);
+  const ravP = t => { const [x, z] = RK(t); return [x, surfY(x, z), z]; };
+  let CAM = null;
+  person(Wd, RAV, t => {
+    const p = ravP(t), q = ravP(t + .05), sp = Math.hypot(q[0] - p[0], q[2] - p[2]) / .05, c = [cx(t), cloudY(cx(t)), 0], st = { pos: p, groundY: p[1], talk: talk(t) }, cp = CAM(t).pos;
+    if (sp > .12) return Object.assign(st, { facing: face(p, q), walk: t * 8, stride: clamp(sp / 1.6, 0, .9), talk: 0 });
+    if (t < 9.5) return Object.assign(st, { facing: face(p, cp), perform: .8 });
+    if (t < 19.6) return Object.assign(st, present(p, c, cp, t < 12.5 ? 'explain' : null));
+    if (t < 38) return Object.assign(st, present(p, c, cp, t < 30 ? null : 'offer'));
+    return Object.assign(st, present(p, [4, SL + 7, 0], cp, t < 47.5 ? null : 'explain'));
+  });
+  Wd.on((t, cam) => {
+    const k = P(t, 2.0, 4.4), n = Math.floor(CN * ease.io(k) / 48) * 48; cut.geometry.setDrawRange(0, n); cut.visible = n > 0 && t < 6.2;
+    cut.material.opacity = 1 - P(t, 5.2, 6.2); blade.visible = k > 0 && k < 1; blade.position.copy(cutCurve.getPoint(ease.io(k)));
+    const m = ease.in(P(t, 4.6, 8.4)); piece.g.position.set(0, -m * 17, m * 3); piece.g.visible = m < .999;
+    compassL(S.labW, P(t, 7.4, 8.0), cam); compassL(S.labE, P(t, 7.8, 8.4), cam);
+    const x = cx(t), ck = sm(P(t, 23, 31));
+    C.set(x, cloudY(x) + .15 * Math.sin(t * .9), grey.clone().lerp(dark, ck), 1, 1);
+    C.R.material.opacity = .85 * P(t, 30, 32); C.R.visible = t > 30;
+    const m1 = grow(cam, L1.position, .8, .05), m2 = grow(cam, L2.position, .8, .05); L1.position.y = SL + 7.55 + .4 * m1; L2.position.y = SL - 2.4 + .4 * m2;
+    popL(L1, P(t, 38.6, 39.2), m1); popL(L2, P(t, 39.6, 40.2), m2);
+  });
+  const A = fly([
+    [0, [-33, 21, 40], [-3, 6.5, 0], 45],
+    [4.5, [-24, 16, 35], [-2.5, 7, 0], 45],
+    [9.5, [-15, 12.5, 30], [-4, 7.5, 0], 45],
+  ]);
+  const tr = t => { const x = cx(t), y = cloudY(x); return { pos: [x + 8, y + .2, 23.5], look: [x + 9, y - 2.4, 0], fov: 45 }; };
+  const B = fly([
+    [28.5, [6, SL + 8.6, 22], [5.8, SL + 4.6, 0], 45],
+    [33, [3.0, SL + 9.4, 19.5], [2.6, SL + 5.6, 0], 45],
+    [38, [4.0, SL + 8.0, 21], [3.8, SL + 5.0, 0], 45],
+    [44, [6.8, SL + 6.0, 26], [6.8, SL + 3.3, 0], 45],
+    [47.6, [6.8, SL + 6.0, 26.5], [6.4, SL + 3.4, 0], 45],
+  ]);
+  const cam = blend(blend(blend(A, tr, 9.6, 12.5), B, 26.5, 30.5), orb([0, SL + 1, 0], 33, 9, 14, 7, 47.6, 45), 47.6, 50.5);
+  CAM = cam;
+  return Object.assign(Wd, { cam });
+}
+
+// ======================================================================
+//  שוט 4: צל גשם
+// ======================================================================
+function shotC4() {
+  const Wd = world(SKY_SL);
+  const S = sliceSet(Wd);
+  const A1 = slCloud(Wd, 7), B1 = slCloud(Wd, 19);
+  const ax = spline1([[0, 2.5], [9.5, 3.2], [16, 9.5], [23, 13.5]]);
+  const bx = spline1([[17, -36], [27.5, -4.5], [40, -1.6], [57, -.4]]);
+  const grey = hexC(0xc4cad4), dark = hexC(0x6a7fa6), white = hexC(0xf4f6f8);
+  const Q = Wd.add(qmark('#ffc23a'));
+  // השמש בשמים (מופיעה כשהעננים מתפזרים)
+  const sun = new THREE.Group(); sun.position.set(30, 36, -46); Wd.add(sun);
+  const sunG = glow(0xffcf5a, 26); sun.add(sunG); const sunC = new THREE.Mesh(new THREE.SphereGeometry(2.6, 24, 16), new THREE.MeshBasicMaterial({ color: 0xffe066, transparent: true, fog: false })); sun.add(sunC);
+  // דגם להשוואה: קיר, שמש-צעצוע מאחוריו, והצל שלו על הרצפה לכיוון המצלמה
+  const MX = 25.5, MZ = 12.5, PY = .25;
+  Wd.add(cyl(4.2, 4.4, PY, '#e6dcc6', { pos: [MX, PY / 2, MZ], inkW: .04 }));
+  Wd.add(box(3.8, 2.2, .45, '#bfa47c', { pos: [MX, PY + 1.1, MZ - 1.0], inkW: .03, cast: false }));
+  for (let i = 1; i < 4; i++) Wd.add(box(3.82, .04, .47, '#9a8260', { pos: [MX, PY + i * .55, MZ - 1.0], ink: false, cast: false }));
+  const toy = new THREE.Group(); toy.position.set(MX, 6.4, MZ - 6); Wd.add(toy);
+  const tsun = ball(.55, '#ffd23f', { inkW: .03 }); tsun.material.emissive = new THREE.Color(0xffb300); tsun.material.emissiveIntensity = .6; toy.add(tsun);
+  for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2, c = mesh(new THREE.ConeGeometry(.12, .38, 10), toon('#ffc21a'), { inkW: .015, cast: false }); c.position.set(Math.cos(a) * .82, Math.sin(a) * .82, 0); c.rotation.z = a - Math.PI / 2; toy.add(c); }
+  const tsG = glow(0xffd060, 3.6); toy.add(tsG);
+  const shShape = new THREE.Shape([new THREE.Vector2(MX - 1.9, -(MZ - .78)), new THREE.Vector2(MX + 1.9, -(MZ - .78)), new THREE.Vector2(MX + 2.9, -(MZ + 2.1)), new THREE.Vector2(MX - 2.9, -(MZ + 2.1))]);
+  const shadow = new THREE.Mesh(new THREE.ShapeGeometry(shShape), new THREE.MeshBasicMaterial({ color: 0x22283a, transparent: true, opacity: .45, depthWrite: false }));
+  shadow.rotation.x = -Math.PI / 2; shadow.position.y = PY + .012; Wd.add(shadow);
+  const rayM = new THREE.MeshBasicMaterial({ color: 0xffd34d, transparent: true, opacity: .9 });
+  const RAYS = [[MX - .9, PY + 2.2, MZ - 1.0], [MX + .9, PY + 2.2, MZ - 1.0], [MX - 3.4, PY + .01, MZ + .6], [MX + 3.5, PY + .01, MZ + .3]].map(e => {
+    const a = toy.position.clone(), b = new THREE.Vector3(...e), m = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, 1, 8).translate(0, .5, 0), rayM);
+    m.position.copy(a); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), b.clone().sub(a).normalize()); m.userData.L = a.distanceTo(b); Wd.add(m); return m; });
+  // צל הגשם על המדרון המזרחי
+  const ov = gridTop(-SD / 2 + .05, SD / 2 - .05, 120, 8, 4.4, SX1 - .05, .05), on = ov.xs.length, oc = new Float32Array(on * 4);
+  for (let i = 0; i < on; i++) oc.set([.12, .16, .3, sm(clamp((ov.xs[i] - 4.4) / 1.4, 0, 1))], i * 4);
+  ov.geo.setAttribute('color', new THREE.BufferAttribute(oc, 4));
+  const ovM = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0, depthWrite: false }); const ovMesh = new THREE.Mesh(ov.geo, ovM); ovMesh.renderOrder = 2; Wd.add(ovMesh);
+  const LS = label(Wd, 'צל גשם', { pos: [11.0, SL + 2.4, 1.2], height: 1.15, bg: 'rgba(40,52,84,.94)', depthTest: false });
+  // הרב: מתבונן מן הצד המזרחי, נכנס לצל של הקיר, ומשם מראה את ההר
+  const RK = spline([0, 27.6, 29.3, 30.8], [[20.6, 6.6], [20.6, 6.6], [22.4, 12.6], [MX + .45, MZ + 1.0]]);
+  const ravP = t => { const [x, z] = RK(t), d = Math.hypot(x - MX, z - MZ); return [x, PY * sm(clamp((4.5 - d) / .45, 0, 1)), z]; };
+  let CAM = null;
+  person(Wd, RAV, t => {
+    const p = ravP(t), d = ravP(t + .05), sp = Math.hypot(d[0] - p[0], d[2] - p[2]) / .05, st = { pos: p, groundY: p[1], talk: talk(t) }, cp = CAM(t).pos;
+    const inSh = sm(P(t, 29.8, 30.6)); st.tint = 1 - .24 * inSh; st.tintB = 1 + .1 * inSh;
+    if (sp > .12) return Object.assign(st, { facing: face(p, d), walk: t * 8.5, stride: clamp(sp / 1.6, 0, .9), talk: 0 });
+    if (t < 27.8) return Object.assign(st, { facing: face(p, cp) - .4, gesture: t > 20 ? 'think' : null, perform: t > 20 ? 0 : .6, talk: t > 20 ? 0 : talk(t) });
+    if (t < 38) return Object.assign(st, present(p, toy.position.toArray(), cp, t < 31.5 ? 'explain' : null));
+    return Object.assign(st, present(p, [5, 10, 0], cp, t < 46 ? null : 'explainA'));
+  });
+  Wd.on((t, cam) => {
+    // ענן א: חוצה את הפסגה, מתכווץ לפתית חיוור ונעלם
+    const x = ax(t), y = x < 4 ? cloudY(x) : cloudY(4) - (x - 4) * .6, cr = sm(P(t, 10, 17)), fade = 1 - sm(P(t, 20, 25));
+    A1.set(x, y + .15 * Math.sin(t * .9), dark.clone().lerp(white, cr), lerp(1, .38, sm(P(t, 10, 19))), fade);
+    A1.R.material.opacity = .85 * (1 - P(t, 9.6, 12.2)); A1.R.visible = t < 12.2;
+    // ענן ב: מגיע מן הים ויורד על המערב
+    const xb = bx(t); B1.set(xb, cloudY(xb) + .15 * Math.sin(t * .8 + 1) + 1.7 * sm(P(t, 33, 42)), grey.clone().lerp(dark, sm(P(t, 24, 29))), 1.12, 1);
+    B1.c.visible = t > 17; B1.R.material.opacity = .85 * P(t, 27.5, 29.5); B1.R.visible = t > 27.5;
+    S.main.mix(sm(P(t, 10.5, 17)));
+    Q.position.set(10, SL + 3.4 + .2 * Math.sin(t * 1.4), .5); faceCam(Q, cam); Q.rotation.z = .08 * Math.sin(t * 1.8); popO(Q, P(t, 1.0, 2.0) * (1 - P(t, 10.2, 11)), 2.6);
+    const sk = sm(P(t, 19.5, 24)); Wd.sun.intensity = 1.6 + .75 * sk; Wd.hemi.intensity = 1.15 + .25 * sk; sunG.material.opacity = sk; sunC.material.opacity = sk; sun.visible = sk > .01;
+    sunG.scale.setScalar(26 + 2 * Math.sin(t * 2));
+    popO(toy, P(t, 28.6, 29.4)); toy.rotation.z = t * .15; tsG.material.opacity = .8 + .2 * Math.sin(t * 4);
+    for (let i = 0; i < RAYS.length; i++) { const k = sm(P(t, 29.6 + i * .3, 30.6 + i * .3)); RAYS[i].scale.set(1, Math.max(.001, RAYS[i].userData.L * k), 1); RAYS[i].visible = k > 0; }
+    shadow.material.opacity = .45 * P(t, 29, 30);
+    ovM.opacity = .55 * sm(P(t, 38.5, 40.5)); popL(LS, P(t, 39.2, 39.8), grow(cam, LS.position, 1.15, .045));
+    const kc = 1 - win(t, 27.2, 38.6, .6); compassL(S.labW, kc, cam); compassL(S.labE, kc, cam);
+  });
+  const cam = fly([
+    [0, [31.5, SL + 10, 9.76], [0, SL + 1, 0], 45],
+    [3.8, [5.5, SL + 5.8, 25], [5.5, SL + 5.6, 0], 45],
+    [9.5, [6.4, SL + 7.0, 23], [6.0, SL + 4.8, 0], 45],
+    [16.5, [10.5, SL + 10.5, 21.5], [9.0, SL + 5.4, -1], 45],
+    [23, [17.5, SL + 3.4, 23], [11, SL + 7.5, -4], 45],
+    [28.0, [24.5, SL + 1.0, 25.5], [21, 3.5, 8], 45],
+    [31.2, [MX + .6, 4.2, MZ + 12.2], [MX, 2.3, MZ - .5], 45],
+    [37.0, [MX - 2.5, 5.6, MZ + 14.5], [MX - 4.5, 3.0, MZ - 2], 45],
+    [41.5, [23, SL + 2.2, 10.5], [6, SL + 3.0, 0], 45],
+    [47.5, [22, SL + 3.4, 10.5], [4.5, SL + 4.0, 0], 45],
+    [57, [20.5, SL + 9.0, 13.5], [3.0, SL + 4.4, 0], 45],
+  ]);
+  CAM = cam;
+  return Object.assign(Wd, { cam });
+}
+
+// ======================================================================
+//  שוט 5: מפת המשקעים נצבעת מצפון לדרום
+// ======================================================================
+const RAMP = [[180, [162, 112, 63]], [300, [232, 208, 112]], [420, [124, 186, 90]], [620, [79, 159, 208]], [850, [35, 80, 159]]];
+function rampCol(mm) { if (mm <= RAMP[0][0]) return RAMP[0][1].map(v => v / 255); for (let i = 1; i < RAMP.length; i++) if (mm <= RAMP[i][0]) { const k = (mm - RAMP[i - 1][0]) / (RAMP[i][0] - RAMP[i - 1][0]); return RAMP[i - 1][1].map((v, j) => lerp(v, RAMP[i][1][j], k) / 255); } return RAMP[RAMP.length - 1][1].map(v => v / 255); }
+function rainPaint(land) {
+  const geo = land.geometry, p = geo.attributes.position, n = p.count, rc = new Float32Array(n * 3);
+  for (let i = 0; i < n; i++) { const [lo, la] = LL(p.getX(i), p.getZ(i)); rc.set(rampCol(rainfall(lo, la)).map(v => Math.pow(v, 2.2)), i * 3); }
+  geo.setAttribute('rainCol', new THREE.BufferAttribute(rc, 3));
+  const U = { uFront: { value: -30 }, uBand: { value: .9 } };
+  const mat = new THREE.MeshLambertMaterial({ vertexColors: true });
+  mat.onBeforeCompile = sh => {
+    Object.assign(sh.uniforms, U);
+    sh.vertexShader = 'attribute vec3 rainCol;\nvarying vec3 vRainCol;\nvarying float vMZ;\n' + sh.vertexShader.replace('#include <color_vertex>', '#include <color_vertex>\n vRainCol = rainCol; vMZ = position.z;');
+    sh.fragmentShader = 'uniform float uFront;\nuniform float uBand;\nvarying vec3 vRainCol;\nvarying float vMZ;\n' + sh.fragmentShader.replace('#include <color_fragment>',
+      'float kR = 1.0 - smoothstep(uFront - uBand, uFront, vMZ);\n vec3 cc = mix(vColor.rgb, vRainCol, kR);\n float edgeL = exp(-pow((vMZ - uFront + uBand * .5) / (uBand * .32), 2.0));\n cc = mix(cc, vec3(1.0, .97, .85), edgeL * .6);\n diffuseColor.rgb *= cc;');
+  };
+  mat.customProgramCacheKey = () => 'rainpaint-c';
+  land.material = mat; return U;
+}
+function shotC6() {
+  const Wd = world(SKY_MAP);
+  const g = mapSet(Wd), land = g.children[0], U = rainPaint(land);
+  // מקרא צף שצמוד למצלמה
+  const hud = new THREE.Group(); Wd.add(hud);
+  const CH = ['#23509f', '#4f9fd0', '#7cba5a', '#e8d070', '#a2703f'];
+  const panel = new THREE.Mesh(new THREE.PlaneGeometry(.5, .62), new THREE.MeshBasicMaterial({ map: canvasTex(200, 248, (q, w, h) => { q.fillStyle = 'rgba(16,14,30,.72)'; q.beginPath(); q.roundRect(2, 2, w - 4, h - 4, 26); q.fill(); }), transparent: true, depthWrite: false, depthTest: false, fog: false }));
+  panel.position.set(-.69, .09, -1.6); panel.renderOrder = 20; hud.add(panel);
+  const chips = CH.map((c, i) => { const m = new THREE.Mesh(new THREE.BoxGeometry(.085, .075, .02), new THREE.MeshBasicMaterial({ color: c, depthTest: false, fog: false, transparent: true }));
+    const o = new THREE.Mesh(m.geometry, new THREE.MeshBasicMaterial({ color: 0x0d0b18, depthTest: false, fog: false, transparent: true })); o.scale.set(1.18, 1.2, 1); o.position.z = -.003; o.renderOrder = 20; m.add(o);
+    m.position.set(-.55, .32 - i * .1, -1.59); m.renderOrder = 21; hud.add(m); return m; });
+  const mkL = (s, y) => { const sp = label(Wd, s, { height: .062, bg: null, color: '#ffffff', depthTest: false }); sp.material.depthTest = false; sp.renderOrder = 22; hud.add(sp); sp.position.set(-.62 - sp.scale.x / 2 - .005, y, -1.59); return sp; };
+  const lMany = mkL('הרבה גשם', .32), lFew = mkL('מעט גשם', .32 - 4 * .1);
+  // שלוש נקודות
+  const DISCS = [['הר מירון', '#23509f', 21.0], ['בית שמש', '#7cba5a', 30.6], ['יריחו', '#a2703f', 40.2]].map(([n, c, f0], i) => {
+    const b = atC(n), grp = new THREE.Group(); grp.position.set(b.x, b.y + .42, b.z); Wd.add(grp);
+    const w = new THREE.Mesh(new THREE.CylinderGeometry(.5, .5, .1, 48), toon('#fbfbf8')); w.castShadow = true; wInk(w, .022); grp.add(w);
+    const f = new THREE.Mesh(new THREE.CylinderGeometry(.5, .5, .12, 48), toon(c)); wInk(f, .022); grp.add(f);
+    const stem = cyl(.025, .025, .42, '#f2f2ee', { pos: [b.x, b.y + .21, b.z], inkW: .01 }); Wd.add(stem);
+    const qm = label(Wd, '?', { pos: [b.x, b.y + 1.05, b.z], height: .5, bg: 'rgba(16,14,30,.85)', color: '#ffd166' });
+    const nm = label(Wd, n, { pos: [b.x, b.y + 1.05, b.z], height: .46 });
+    const gl = glow(0xffffff, 1.6); gl.position.copy(grp.position); Wd.add(gl);
+    return { b, grp, w, f, stem, qm, nm, gl, a0: 10.6 + i * .55, f0 };
+  });
+  // הרב עומד על רחבת האבן, ליד הצד המזרחי של המפה (כמו מורה ליד לוח)
+  const RV = [6.0, -10.5];
+  let CAM = null;
+  person(Wd, RAV, t => {
+    const p = [RV[0], .16, RV[1]], st = { pos: p, groundY: .16, talk: talk(t) }, cp = CAM(t).pos;
+    if (t < 19.5 || t > 44) return Object.assign(st, { facing: face(p, cp), perform: .8 });
+    const d = t < 29 ? DISCS[0] : t < 38.5 ? DISCS[1] : DISCS[2];
+    return Object.assign(st, { facing: face(p, [d.b.x, 0, d.b.z]), gesture: 'pointFwd', talk: talk(t) });
+  });
+  Wd.on((t, cam) => {
+    U.uFront.value = lerp(-12.2, 12.2, ease.io(P(t, 1.0, 9.0)));
+    hud.position.copy(cam.position); hud.quaternion.copy(cam.quaternion);
+    popO(panel, P(t, 1.4, 2.0)); chips.forEach((c, i) => popO(c, P(t, 1.7 + i * .15, 2.2 + i * .15))); popL(lMany, P(t, 2.0, 2.5)); popL(lFew, P(t, 2.6, 3.1));
+    for (const d of DISCS) {
+      const a = P(t, d.a0, d.a0 + .6), fk = ease.out(P(t, d.f0, d.f0 + 1.4));
+      popO(d.grp, a); d.grp.position.y = d.b.y + .42 + .05 * Math.sin(t * 2 + d.a0); d.stem.visible = a > .01;
+      d.f.visible = fk > .001; d.f.scale.set(Math.max(.001, fk), 1, Math.max(.001, fk));
+      popL(d.qm, P(t, d.a0 + .5, d.a0 + 1.0) * (1 - P(t, d.f0 - .2, d.f0 + .2))); popL(d.nm, P(t, d.f0 + .9, d.f0 + 1.5));
+      d.gl.visible = a > .01; d.gl.material.opacity = .45 * a + .5 * win(t, d.f0, d.f0 + 2.2, .4);
+    }
+  });
+  const cam = fly([
+    [0, [-1.5, 14, -22], [0, 0, -7], 48, 0],
+    [4.5, [-5.5, 10.5, -11], [.5, 0, 0], 48, -.06],
+    [9.5, [-9.5, 10.5, 4.5], [0, 0, 2.5], 48, -.04],
+    [13.5, [-10.5, 10.8, 5.5], [.8, .4, -4.2], 46, 0],
+    [17.5, [-6.5, 7.6, -1.5], [1.2, .6, -7], 45, .07],
+    [21.2, [-2.8, 4.3, -5.4], [1.4, 1.0, -8.6], 45, .02],
+    [27, [-2.3, 4.5, -4.9], [1.3, 1.0, -8.6], 45, 0],
+    [29.2, [-6.2, 5.2, -1.8], [-.2, .6, -2.6], 45, -.05],
+    [31.0, [-4.0, 3.9, 1.9], [-.3, .7, -1.8], 45, -.07],
+    [37, [-3.4, 3.7, 1.7], [-.2, .7, -1.8], 45, 0],
+    [40.6, [4.5, 4.6, -6.6], [1.5, .5, -2.2], 45, -.08],
+    [44.5, [4.9, 5.4, -7.4], [1.4, .5, -2.0], 45, -.02],
+    [48, [3.5, 12, -12.5], [.2, 0, -1], 46, 0],
+  ]);
+  CAM = cam;
+  return Object.assign(Wd, { cam });
+}
+
+film({
+  title: 'מפת הגשם של ארץ ישראל', kicker: 'סרטון 3',
+  recap: ['בצפון יורד יותר גשם מבדרום', 'בהר יורד יותר מבעמק', 'במערב ההר יותר מבמזרחו: שם צל גשם'],
+  shots: [
+    { dur: 48, capAt: [4.2, 12.5, 21.5, 30.5, 39.5], caps: ['האם בכל ארץ ישראל יורד אותו גשם?', 'בצפת שבגליל יורדים בשנה 700 מילימטרים.', 'ובאילת שבדרום? נחשו!', 'רק 25 מילימטרים: בצפת יורד כמעט פי 30!', 'ובין שתי הערים פחות מ-500 קילומטרים: יום נסיעה אחד.'], build: shotC1 },
+    { dur: 57, capAt: [.6, 9.5, 19, 28.5, 38, 47.5], caps: ['ניסע מצפון לדרום; המספרים הם ממוצע של שנים רבות.', 'בצפון: הר מירון כ-1,000, וצפת 700 מילימטרים.', 'במרכז: ירושלים 540, ובית שמש שלנו כ-480.', 'בדרום: באר שבע 200, ואילת רק 25.', 'כלל ראשון: ככל שמדרימים, יורד פחות גשם.', 'למה? ענני החורף באים מן הים, ועוברים בעיקר בצפון.'], build: shotC2 },
+    { dur: 57, capAt: [.6, 9.5, 19, 28.5, 38, 47.5], caps: ['עכשיו נחתוך את הארץ ממערב למזרח, מן הים עד ים המלח.', 'ענן בא מן הים, ובדרכו עומד הר.', 'הענן לא יכול לעבור דרך ההר, אז הוא מטפס עליו.', 'למעלה קר, האדים מתעבים, והגשם יורד על ההר.', 'לכן בצפת שבהר 700, ובטבריה שבעמק רק כ-400.', 'כלל שני: בהר יורד יותר גשם מבעמק.'], build: shotC3 },
+    { dur: 57, capAt: [.6, 9.5, 19, 28.5, 38, 47.5], caps: ['ומה נשאר לענן אחרי שעבר את ההר?', 'כמעט כלום: הוא הוריד את מימיו בצד המערבי.', 'האוויר יורד מזרחה, מתחמם, והעננים מתפזרים.', 'כמו שקיר מסתיר את השמש, ההר מסתיר את הגשם.', 'לצד היבש שמאחורי ההר קוראים צל גשם.', 'כלל שלישי: במערב ההר יורד יותר מאשר במזרחו.'], build: shotC4 },
+    { dur: 48, capAt: [.6, 10, 19.5, 29, 38.5], caps: ['זו מפת משקעים: כחול הרבה גשם, צהוב וחום מעט.', 'שלוש נקודות נשארו לבנות: באיזה צבע תיצבע כל אחת?', 'הר מירון, הר גבוה בצפון: כחול כהה.', 'בית שמש, במרכז ובמערב ההר: ירוק.', 'יריחו, בצל הגשם שמאחורי ההר: חום.'], build: shotC6 },
+  ],
+});
+</script>
+</html>

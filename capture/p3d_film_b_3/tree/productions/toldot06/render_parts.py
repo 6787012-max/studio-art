@@ -18,7 +18,7 @@ ap.add_argument('film'); ap.add_argument('total', type=float); ap.add_argument('
 a = ap.parse_args()
 src = io.open(os.path.join(HERE, a.film + '.html'), encoding='utf-8').read()
 n = max(1, math.ceil(a.total / a.part)); L = a.total / n
-INC = ['lib/people_pro.js', 'lib/stage3d.js', 'lib/geo_eretz.js', 'node_modules/three/build/three.module.js', 'node_modules/three/build/three.core.js']
+INC = ['lib/people_pro.js', 'lib/stage3d.js', 'lib/figure3d.js', 'lib/geo_eretz.js', 'node_modules/three/build/three.module.js', 'node_modules/three/build/three.core.js']
 outdir = os.path.join(HERE, 'render', a.film); os.makedirs(outdir, exist_ok=True)
 res = {}
 
