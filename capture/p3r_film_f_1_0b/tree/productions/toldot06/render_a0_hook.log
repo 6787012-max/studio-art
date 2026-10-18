@@ -1,0 +1,2 @@
+part 1/1 t0=0.0 d=42.0 -> rc=0
+joined a0_hook: 42.0s (expected 42.0)
