@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>בני ספרד</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import { film, THREE, prog, ease, clamp } from '../../lib/stage3d.js';
+import { roadWorld, buildRoad, arrow, drop, pop, boy, route, cine, mkShot } from './road.js';
+
+const G = (t, ...r) => { for (const [a, b, g] of r) if (t >= a && t < b) return g; return null; };
+const mkBoy = (Wd, keys, gs, talk) => { const Rt = route(keys); return boy(Wd, t => Object.assign(Rt(t), { gesture: gs ? gs(t) : null, talk: talk ? talk(t) : 0, seed: .6 })); };
+const world0 = () => { const Wd = roadWorld(), R = buildRoad(Wd, { sefard: true }); return [Wd, R]; };
+const SL = -1.9, WL = 1.9;   // summer lane x, winter lane x
+
+film({
+  title: 'בני ספרד', kicker: "חלק ב'",
+  recap: [`בקיץ "ברכנו", ובחורף "ברך עלינו".`, `באמצע הברכה — חוזרים ל"ותן טל ומטר".`, `אחרי סוף הברכה — רבים אומרים מיד שם.`],
+  shots: [
+    // C1 - the two lanes at the station: sun lane "ברכנו", rain-cloud lane "ברך עלינו"
+    mkShot(12, ['בנוסח ספרד, ברכת החורף שונה מברכת הקיץ.', `בקיץ: "ברכנו". בחורף: "ברך עלינו".`], () => {
+      const [Wd, R] = world0();
+      mkBoy(Wd, [[0, 0, 8, 0], [4.2, 0, 17.5, 0], [5.3, 0, 17.5, Math.PI], [12, 0, 17.5, Math.PI]], t => G(t, [5.6, 11.8, 'wide']), t => t > 5.6 && t < 11 ? .45 + .45 * Math.sin(t * 8) : 0);
+      Wd.on(t => {
+        const both = .5 * prog(t, .8, 2) * (1 - prog(t, 5.6, 6.2));
+        R.highlight('summer', Math.max(both, prog(t, 6.1, 7.1) * (1 - prog(t, 9.0, 9.7))));
+        R.highlight('barech', Math.max(both, prog(t, 9.3, 10.3)));
+      });
+      return Object.assign(Wd, { cam: cine([[0, [0, 2.5, 8], 12, 7.5, 200, 52, 1], [4.4, [0, 3.0, 17.5], 11, 3.0, 220, 50, 1], [8.4, [0, 3.0, 19.5], 11, 10.5, 205, 56, -.4], [12, [0, 3.0, 20], 11, 9.5, 225, 56, -.4]]) });
+    }),
+    // C2 - at the start of the summer lane: drop, he crosses to the winter lane and continues
+    mkShot(12, [`נזכר אחרי "ברכנו ה' אלוקינו בכל מעשי ידינו"?`, `ממשיך "את השנה הזאת..." — בנוסח של החורף.`], () => {
+      const [Wd, R] = world0();
+      mkBoy(Wd, [[0, SL, 14, 0], [2.8, SL, 23.6, 0], [6.2, SL, 23.6, 0], [7.4, SL, 26.2, 0], [8.8, 0, 29, 0], [10.2, WL, 31.8, 0], [12, WL, 36, 0]], t => G(t, [3.0, 6.0, 'finger']));
+      drop(Wd, [SL, 0, 23.6], 2.6); arrow(Wd, [SL, 0, 23.6], [WL, 0, 33.5], { amount: t => prog(t, 3.8, 6.4), height: 1.3 });
+      Wd.on(t => { R.highlight('summer', .35 * prog(t, 1, 2) * (1 - prog(t, 6, 7))); R.highlight('barech', prog(t, 6.6, 8) * (1 - .5 * prog(t, 10.4, 12))); });
+      return Object.assign(Wd, { cam: cine([[0, [SL, 1.1, 23.5], 7, 2.2, 310, 46], [3.6, [SL, 1.3, 24], 6, 2.4, 352, 46], [6.2, [0, 1.6, 26], 9, 4.5, 402, 50], [8.8, [.3, 1.3, 29.5], 8, 3, 438, 48], [12, [WL, 1.3, 34.5], 8.5, 3.2, 380, 48]]) });
+    }),
+    // C3 - the middle of the winter lane, before its gold marker: arrow back to the blue marker
+    mkShot(10.7, ['נזכר באמצע הברכה, לפני "ברוך אתה ה\'"?', `חוזר ל"ותן טל ומטר", וגומר כסדר.`], () => {
+      const [Wd, R] = world0(), zt = R.z('tal');
+      mkBoy(Wd, [[0, WL, 46, 0], [2.6, WL, 50.4, 0], [6.2, WL, 50.4, 0], [6.8, WL, 50.4, Math.PI], [10.7, WL, zt + .9, Math.PI]], t => G(t, [3.0, 6.4, 'finger'], [10.0, 10.7, 'up']));
+      drop(Wd, [WL, 0, 50.4], 2.6, { dx: -1 }); arrow(Wd, [WL, 0, 50.4], [WL, 0, zt], { amount: t => prog(t, 3.6, 6.4), height: 1.6 });
+      Wd.on(t => R.highlight('tal', prog(t, 5.6, 6.8) * .85 * (1 - prog(t, 9.4, 10.7)) + .3 * prog(t, 9.4, 10.2)));
+      return Object.assign(Wd, { cam: cine([[0, [WL, 1.1, 48], 7.5, 2.8, 300, 46], [3.4, [WL, 1.2, 50.4], 6, 2.2, 352, 46], [6.4, [WL, 1.4, 46], 10, 6, 400, 50], [10.7, [WL, 1.2, 43], 7, 2.6, 378, 46]]) });
+    }),
+    // C4 - just past the gold marker: arrow forward to שמע קולנו, then a glow right where he stands
+    mkShot(20.7, ['אמר כבר "ברוך אתה ה\'", ועוד לא התחיל "תקע"?', 'לדעת המשנה ברורה — אומר ב"שמע קולנו".', 'ורבים מבני ספרד נוהגים לומר מיד שם,', 'וטוב לומר שוב גם ב"שמע קולנו".'], () => {
+      const [Wd, R] = world0(), zk = R.z('shma.ki');
+      mkBoy(Wd, [[0, WL, 53], [1.8, WL, 57.9], [3.9, 0, 63], [15.7, 0, 63], [20.7, 0, 75.5]], t => G(t, [4.3, 7.2, 'think'], [8.6, 15.5, 'finger']));
+      drop(Wd, [0, 0, 63], 4.0);
+      arrow(Wd, [0, 0, 63], [0, 0, zk], { amount: t => prog(t, 5.6, 9.4) * (1 - prog(t, 10.4, 11.4)) });
+      arrow(Wd, [0, 0, 63], [0, 0, zk], { amount: t => prog(t, 15.8, 18.8) });
+      Wd.on(t => { R.highlight('shma.ki', prog(t, 8.6, 9.6) * (1 - .6 * prog(t, 10.6, 11.6)) + .6 * prog(t, 16.5, 18.2) * (1 - 0)); R.highlight('extra', prog(t, 10.6, 12) * .9);
+        R.highlight('barech.end', .5 * prog(t, 1.2, 2) * (1 - prog(t, 3.2, 4.2))); });
+      pop(Wd, 'ותן טל ומטר', [0, 2.5, 64.5], 11.2, 99, { height: .6 });
+      pop(Wd, 'ותן טל ומטר', [0, 2.2, zk], 9.4, 1.8, { height: .8 });
+      return Object.assign(Wd, { cam: cine([[0, [0, 1.2, 58], 7, 2.6, 290, 46], [4.4, [0, 1.2, 63], 6, 2.4, 330, 46], [8.2, [0, 10, 92], 50, 34, 270, 52], [11.6, [0, 1.3, 63.4], 5.2, 2.4, 330, 46], [15.4, [0, 1.3, 64], 5, 2.4, 400, 46], [18, [0, 3, 70], 12, 5, 440, 50], [20.7, [0, 3, 80], 14, 5, 445, 50]]) });
+    }),
+    // C5 - already inside תקע: arrow to שמע קולנו, and from there on like Ashkenaz
+    mkShot(11, ['כבר התחיל "תקע"? אומר ב"שמע קולנו".', 'ומשם והלאה — כמו בני אשכנז.'], () => {
+      const [Wd, R] = world0(), zk = R.z('shma.ki');
+      mkBoy(Wd, [[0, 0, 67], [2.2, 0, 72.4], [6.4, 0, 72.4], [11, 0, 84.5]], t => G(t, [2.8, 6.2, 'finger']));
+      drop(Wd, [0, 0, 72.4], 2.4); arrow(Wd, [0, 0, 72.4], [0, 0, zk], { amount: t => prog(t, 3.2, 7.2) });
+      Wd.on(t => { R.highlight('teka', .6 * prog(t, 1, 2) * (1 - prog(t, 5, 6.2))); R.highlight('shma.ki', prog(t, 6.4, 7.6)); });
+      pop(Wd, 'ותן טל ומטר', [0, 2.2, zk], 7.4, 99, { height: .8 });
+      return Object.assign(Wd, { cam: cine([[0, [0, 1.2, 70], 7, 2.4, 300, 46], [3.6, [0, 1.3, 72.4], 4, 2.2, 335, 46], [7, [0, 9, 95], 48, 30, 270, 52], [11, [0, 10, 112], 40, 26, 232, 52]]) });
+    }),
+  ],
+});
+</script>
+</html>
