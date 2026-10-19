@@ -1,0 +1,301 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>אנשי קודש</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script>window.__T0=130.1829;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import { film, person, cloud, path, seq, THREE, prog, ease, clamp, lerp, rng, box, cyl, ball, toon, ink, canvasTex } from '../../lib/stage3d.js';
+import { POSES } from '../../lib/figure3d.js';
+import { roadWorld } from '../azamra342/road.js';
+import * as K from './k07lib.js';
+import * as F from './k07fx.js';
+const { RAV, BACHUR, ELDER, manN, boyN, holdAt, lerp3, chestPos, lbl, pf, mix, DAWN, INT, glowSprite, sunGlow, motes, innerLight, hills, groundPlane, trees, house, fence, dog, bowl, table, bench, stack, book, loaf, plate, scaleObj, doorObj, shtender, geniza, shelf, lamp, room, yeshiva, cine, fbm, PI } = K;
+const { kf, crowd, lightField, sinai, mist, risingGlow, flowers } = F;
+const sm = ease.sm, sin = Math.sin, cos = Math.cos;
+POSES.lookup = { head: [-.42, 0, 0], chest: [-.08, 0, 0] };
+POSES.eat = { armB: [-.35, 0, .15], foreB: [-2.2, -.25, 0], fist: { B: .3 }, head: [.06, 0, 0] };
+POSES.read = { head: [.16, 0, 0], chest: [.05, 0, 0], armA: [-.55, 0, -.1], foreA: [-.85, -.3, 0], armB: [-.55, 0, .1], foreB: [-.85, .3, 0] };
+
+const CREAM = ['#f6e9cc', '#f2e2bd', '#fbf0d6', '#efdcb4'];
+function village(Wd, hAt, list) { list.forEach(([x, z, ry, w, d, h], i) => house(Wd, { x, y: hAt(x, z), z, ry, w, d, h, wall: CREAM[i % 4] })); }
+function clouds(Wd, n, seed) { for (let i = 0; i < n; i++) Wd.add(cloud({ seed: seed + i, size: 7, color: 0xffe9e2, inkColor: 0xe9bcb0, pos: [-120 + i * 55, 70 + (i % 2) * 14, -230 - (i % 3) * 30], puffs: 6, cast: false })); }
+function exterior(Wd) {
+  const H = hills(Wd, { flat: [0, 0, 26, 95], seed: 4 }); sunGlow(Wd, [-90, 36, -460], 760, .8); K.yeshiva(Wd);
+  village(Wd, H.hAt, [[-15, 5, .25, 5.5, 4.5, 3.6], [16.5, 8, -.3, 6, 5, 3.4], [-23, -8, .5, 5, 4.5, 3.2], [25, -5, -.45, 5.5, 4.8, 3.8], [-9, 19, .1, 5, 4, 3.2], [10, 24, -.2, 5, 4.5, 3.4]]);
+  trees(Wd, H.hAt, { seed: 2, n: 90, area: [-70, 70, -60, 60], skip: (x, z) => Math.hypot(x, z) < 14 }); clouds(Wd, 5, 3); return H;
+}
+function studyRoom(Wd, o) {
+  o = o || {}; groundPlane(Wd, 0xa4cf9e);
+  room(Wd, { W: 9, D: 7, H: 3.8, holes: { back: [{ c0: -1.6, c1: 1.6, y0: 1.2, y1: 3.2 }], left: [{ c0: -1, c1: 1.4, y0: 1.2, y1: 3.0 }], right: [{ c0: -1, c1: 1.4, y0: 1.2, y1: 3.0 }] } });
+  shelf(Wd, -3.3, -3.2, 0, 2.4); shelf(Wd, 3.3, -3.2, 0, 2.4); lamp(Wd, -2, 2.9, -.5, o.l1 === undefined ? 6 : o.l1); lamp(Wd, 2, 2.9, -.5, o.l2 === undefined ? 6 : o.l2);
+}
+function lit(Wd, g, pos, t0, size, sc) {   // an object that pops into existence with a warm glow
+  g.position.set(...pos); const h = glowSprite(0xffd27a, size || 1.3, 0); h.position.set(pos[0], pos[1] + .3, pos[2]); Wd.add(h);
+  Wd.on(t => { const k = ease.out(prog(t, t0, t0 + .9)); g.visible = k > .01; g.scale.setScalar(Math.max(.001, k) * (sc || 1)); h.visible = k > .01; h.material.opacity = .8 * k * (.9 + .1 * sin(t * 3 + t0)); h.scale.setScalar((size || 1.3) * (.6 + .4 * k)); });
+}
+function sitter(Wd, look, pos, facing, o) {
+  o = o || {}; const sc = o.scale || 1; K.bench(Wd, pos[0], pos[2], .5 * sc, facing, .46 * sc);
+  const P = [pos[0], .012, pos[2]]; person(Wd, look, t => Object.assign({ pos: P, facing, sit: true, gesture: 'rest', smile: .4, seed: o.seed || .3 }, o.fn ? o.fn(t) : {}), { scale: sc });
+  if (o.light !== false) innerLight(Wd, () => chestPos(P, facing, { sit: true, scale: sc }), o.L || (t => 1 + .08 * sin(t * 2 + (o.seed || 0) * 9)), { k: sc, seed: o.seed });
+}
+
+film({ shots: [
+  // ===== 1. dawn over the green hills, fly in through the window to the RAV at his shtender (13.9) =====
+  { dur: 13.9, caps: [], build() {
+    const Wd = roadWorld(DAWN); exterior(Wd);
+    person(Wd, RAV, t => ({ pos: [0, .012, -.5], facing: 0, perform: .8, talk: .5 + .5 * sin(t * 9) * sin(t * 2.3 + 1), smile: .55, seed: .3 }));
+    shtender(Wd, { x: 0, z: .2, label: 'פרשת משפטים' });
+    return Object.assign(Wd, { cam: path([[0, [7, 3.1, 15], [0, 2.4, 0], 50], [3.2, [3, 2.2, 9], [0, 1.9, 0], 50], [6.4, [.5, 1.8, 4.2], [0, 1.6, -.4], 49], [8.4, [.25, 1.65, 2.0], [0, 1.5, -.5], 47], [11, [.9, 1.58, 1.2], [0, 1.5, -.5], 43], [13.9, [1.15, 1.52, .78], [0, 1.47, -.5], 40]]) });
+  } },
+  // ===== 2. the field fence, the dog by the gate, the puzzled bachur (6.2) =====
+  { dur: 6.2, caps: [], build() {
+    const Wd = roadWorld(DAWN), H = hills(Wd, { flat: [0, 0, 26, 90], seed: 12 }); sunGlow(Wd, [-90, 36, -460], 760, .8);
+    fence(Wd, { x0: -9, x1: 9, z: -1.0, gate: [2.9, 4.5] }); dog(Wd, { pos: [2.3, 0, -.2], ry: .15 }); bowl(Wd, 3.25, 0, .15);
+    trees(Wd, H.hAt, { seed: 6, n: 60, area: [-60, 60, -70, -6], skip: (x, z) => Math.hypot(x, z) < 8 }); clouds(Wd, 5, 8);
+    for (let i = 0; i < 6; i++) Wd.add(ball(.6, '#7fb36c', { pos: [-6 + i * 2.5, .3, -3.5 - (i % 2) * 2], scale: [1.4, .7, 1.2], ink: false }));
+    person(Wd, BACHUR, t => ({ pos: [-.1, 0, 1.2], facing: 2.1, gesture: 'think', brow: .35, smile: .05, seed: .4, look: .2 }));
+    return Object.assign(Wd, { cam: cine([[0, [1.1, .95, .5], 3.7, .45, 8, 46, 0], [6.2, [1.1, .95, .5], 3.0, .3, 84, 44, 0]]) });
+  } },
+  // ===== 3. the Ramban's table: laws, forbidden deeds, then the food (17) =====
+  { dur: 17, caps: [], build() {
+    const Wd = roadWorld(INT); groundPlane(Wd, 0xa4cf9e);
+    room(Wd, { W: 17, D: 8, H: 4.2, holes: { back: [{ c0: -6.5, c1: -4, y0: 1.3, y1: 3.6 }, { c0: -1.2, c1: 1.2, y0: 1.3, y1: 3.6 }, { c0: 4, c1: 6.5, y0: 1.3, y1: 3.6 }] } });
+    shelf(Wd, -2.6, -3.75, 0, 2.6); shelf(Wd, 2.6, -3.75, 0, 2.6); lamp(Wd, -5, 3.1, -.5, 7); lamp(Wd, 0, 3.1, -.5, 0); lamp(Wd, 5, 3.1, -.5, 7);
+    table(Wd, { x: 0, z: -.5, w: 11.5, d: 1.3 }); for (const x of [-4.5, -1.5, 1.5, 4.5]) { K.bench(Wd, x, .5, 2.4, 0, .46); K.bench(Wd, x, -1.5, 2.4, 0, .46); }
+    book(Wd, { pos: [-4.9, .78, -.5], w: .8, d: .55, color: 0x6a2030, glow: t => .35 + .15 * sin(t * 2) }); lbl(Wd, 'רמב"ן', [-4.9, 1.5, -.5], .3);
+    lit(Wd, scaleObj(Wd), [-3.3, .78, -.5], 4.2, 1.8, 1.8); lit(Wd, doorObj(Wd), [-1.7, .78, -.5], 6.8, 1.8, 1.8);
+    [2.6, 3.4, 4.2, 5.0].forEach((x, i) => lit(Wd, plate(Wd, [x, .78, -.5]), [x, .78, -.5], 10.8 + i * .8, 1.0, 1.25));
+    return Object.assign(Wd, { cam: path([[0, [-7.0, 2.0, 3.4], [-4.2, 1.1, -.5], 52], [5, [-4.2, 2.0, 3.4], [-3.0, 1.1, -.5], 52], [9.5, [-1.5, 2.0, 3.4], [-1.0, 1.1, -.5], 52], [13, [2.2, 2.0, 3.4], [2.8, 1.1, -.5], 52], [17, [3.2, 2.0, 3.4], [3.8, 1.1, -.5], 50]]) });
+  } },
+  // ===== 4. the bachur, the inner light, the murky cloud (21.6) =====
+  { dur: 21.6, caps: [], build() {
+    const Wd = roadWorld(INT); studyRoom(Wd); table(Wd, { x: 0, z: 0, w: 3.2, d: 1.5 }); K.bench(Wd, 0, -1.12, 1.2, 0, .46);
+    const P = [0, .012, -1.12]; person(Wd, BACHUR, t => ({ pos: P, facing: 0, sit: true, gesture: 'rest', smile: .4, seed: .2 }));
+    const Lf = t => 1.1 - .72 * sm(prog(t, 6, 9.5)) * (1 - sm(prog(t, 10, 11.5))) + .55 * sm(prog(t, 11.5, 15)) + .05 * sin(t * 2.2);
+    innerLight(Wd, () => chestPos(P, 0, { sit: true }), Lf, { light: true, power: .8, dist: 5, k: .85 });
+    plate(Wd, [0, .78, -.42]); const hl = glowSprite(0xffd27a, 1.2, 0); hl.position.set(0, .95, -.42); Wd.add(hl);
+    const gp = plate(Wd, [1.15, .78, -.1], 'grey'); const cl = new THREE.Group(); Wd.add(cl); const cm = new THREE.MeshLambertMaterial({ color: 0x8e8a92, transparent: true, opacity: .72, depthWrite: false });
+    for (let i = 0; i < 16; i++) { const m = new THREE.Mesh(new THREE.SphereGeometry(.07 + (i % 4) * .025, 12, 9), cm); m.position.set(Math.cos(i * 2.1) * .2, (i % 5) * .05, Math.sin(i * 1.7) * .16); m.userData.ph = i; cl.add(m); }
+    Wd.on(t => { hl.material.opacity = .85 * sm(prog(t, 11.2, 14)); hl.visible = hl.material.opacity > .01;
+      const k = ease.out(prog(t, 2.6, 5)) * (1 - sm(prog(t, 9.8, 12))); cl.visible = k > .01; cl.scale.setScalar(Math.max(.001, k * 1.7));
+      const u = sm(prog(t, 5, 9.4)), d = sm(prog(t, 9.6, 12)); const pp = lerp3([1.15, .95, -.1], [.32, .98, -.82], u); cl.position.set(pp[0] + d * .8, pp[1] + d * .6 + .03 * sin(t * 2), pp[2]);
+      cl.children.forEach(m => { m.position.y += 0; m.scale.setScalar(1 + .12 * sin(t * 2.3 + m.userData.ph)); });
+      gp.scale.setScalar(Math.max(.001, 1 - sm(prog(t, 11, 13)))); gp.visible = gp.scale.x > .01; });
+    return Object.assign(Wd, { cam: cine([[0, [0, 1.0, -1.12], 4.0, .6, 62, 48, 0], [9, [0, 1.0, -1.12], 2.8, .4, 38, 44, 0], [21.6, [0, 1.05, -1.12], 1.7, .12, 22, 38, .02]]) });
+  } },
+  // ===== 5. sunrise hillside: many men and boys, their lights rise to the glow (22.6) =====
+  { dur: 22.6, caps: [], build() {
+    const Wd = roadWorld(Object.assign({}, DAWN, { sunPos: [0, 24, 70], sun: 1.9, sunColor: 0xffcf98 })), H = hills(Wd, { flat: [0, -25, 48, 125], seed: 7 });
+    const G = [0, 68, 150]; sunGlow(Wd, [0, 40, 330], 520, .8); const gg = glowSprite(0xffd2a0, 170, .3); gg.position.set(...G); Wd.add(gg); const gc = glowSprite(0xffe2bc, 36, .3); gc.position.set(...G); Wd.add(gc);
+    Wd.on(t => { gg.material.opacity = .2 + .12 * sm(prog(t, 3, 11)) + .03 * sin(t); gc.material.opacity = .2 + .12 * sm(prog(t, 3, 11)); });
+    trees(Wd, H.hAt, { seed: 9, n: 80, area: [-90, 90, -100, 40], skip: (x, z) => Math.hypot(x, z + 25) < 52 }); clouds(Wd, 5, 21);
+    const real = [[-3.2, -1.2, 0], [-1.4, -2.4, 1], [.8, -1.6, 2], [2.6, -2.8, 3], [-4.6, -4.2, 4], [-.4, -4.8, 5], [1.6, -5.4, 6], [4.2, -4.4, 7]].map(([x, z, i]) => ({ x, z, i, boy: i % 3 === 2 }));
+    real.forEach(r => person(Wd, r.boy ? boyN(r.i) : manN(r.i), t => ({ pos: [r.x, 0, r.z], facing: .08 * sin(r.i + t * .3), gesture: ['lookup', 'lookup', 'pray', 'lookup'][r.i % 4], smile: .5, seed: .1 + .13 * r.i, look: .2 }), { scale: r.boy ? .8 : 1 }));
+    const items = crowd(Wd, { seed: 14, n: 160, cx: 0, cz: -34, rx: 26, rz: 22, yaw: 0, skip: (x, z) => z > -9 });
+    const pts = real.map(r => ({ x: r.x, y: r.boy ? 1.0 : 1.22, z: r.z + .12 })).concat(items.map(it => ({ x: it.x, y: 1.05 * it.s, z: it.z + .15 })));
+    lightField(Wd, pts, (i, t) => sm(prog(t, .3 + (i % 9) * .12, 1.8 + (i % 9) * .12)) * (.95 + .2 * sin(t * 1.7 + i)), { size: .9 });
+    const NR = 150, rm = motes(Wd, NR * 3, { depthTest: false }), rr = rng(4), rv = []; for (let i = 0; i < NR; i++) rv.push({ ph: rr(), sw: rr() * 6, p: pts[(i * 7) % pts.length] });
+    Wd.on(t => { for (let i = 0; i < NR; i++) for (let k = 0; k < 3; k++) { const v = rv[i], u = (t / 9 + v.ph + k / 3) % 1, e = u, f = Math.pow(sin(PI * u), .6) * sm(prog(t, 1.5, 3.5)), p = v.p;
+        rm.set(i * 3 + k, p.x + (G[0] - p.x) * e * e + .6 * sin(t * .8 + v.sw), p.y + (G[1] - p.y) * (1 - Math.pow(1 - e, 2)), p.z + (G[2] - p.z) * Math.pow(e, 2.2), .95 * (1 - .5 * e) * f, f, .8 * f, .45 * f); } rm.done(); });
+    return Object.assign(Wd, { cam: path([[0, [-4.6, 1.5, 4], [0, 1.35, -2.5], 50], [5, [-3, 1.7, 3.2], [1, 1.4, -2], 48], [8.5, [-20, 12, -6], [0, 12, -30], 54], [12, [-26, 20, -48], [0, 6, -25], 58], [15, [0, 12, -70], [0, 3, -20], 60], [18.5, [22, 15, -40], [0, 8, -15], 55], [22.6, [4.8, 1.7, 4.2], [0, 1.4, -2.8], 48]]) });
+  } },
+  // ===== 6. an ordinary street, then rising over the hill to the radiant town (24.9) =====
+  { dur: 24.9, caps: [], build() {
+    const Wd = roadWorld(Object.assign({}, DAWN, { fogNear: 120, fogFar: 700 }));
+    const hF = (x, z) => 9 * Math.exp(-Math.pow((z + 48) / 15, 2)) * Math.exp(-Math.pow(x / 110, 2)) + ease.sm(clamp((Math.abs(x) - 62) / 70, 0, 1)) * (14 + 16 * fbm(x * .02 + 3, z * .02 + 1)) + ease.sm(clamp((-z - 175) / 90, 0, 1)) * (18 + 14 * fbm(x * .02 + 8, z * .02 + 5)) + ease.sm(clamp((z - 60) / 80, 0, 1)) * 20 + (z < -20 && z > -85 ? .6 * fbm(x * .05, z * .05) : 0);
+    const cF = (x, z, h) => { const k = sm(clamp((-z - 28) / 38, 0, 1)), n = fbm(x * .04 + 3, z * .04 + 2), dull = [.66, .67, .58], lush = [.52, .80, .52]; return dull.map((v, i) => lerp(v, lush[i], k) * (.92 + .16 * n)); };
+    const H = hills(Wd, { h: hF, col: cF, size: 760, N: 170, cz: -60 });
+    Wd.add(box(7, .06, 70, '#b6ab98', { pos: [0, .03, -2], ink: false })); const dc = ['#b4ab9a', '#a8a090', '#bdb4a3', '#9f998c'], rd = rng(3);
+    for (let i = 0; i < 10; i++) for (const s of [-1, 1]) house(Wd, { x: s * (9 + rd() * 2.5), z: 14 - i * 5.2 - rd() * 1.5, ry: s < 0 ? PI / 2 : -PI / 2, w: 5 + rd() * 2, d: 5, h: 3.4 + rd() * 1.6, wall: dc[(i + (s > 0 ? 1 : 0)) % 4], roof: '#a39c8e', flat: true, win: '#6a7078' });
+    // (dull houses turned to face the street)
+    const rt = rng(9); for (let i = 0; i < 36; i++) { const a = rt() * 6.28, rr = 14 + rt() * 36, x = cos(a) * rr * 1.35, z = -122 + sin(a) * rr * .8; if (Math.hypot(x / 1.35, (z + 122) * 1.4) < 15) continue; house(Wd, { x, y: H.hAt(x, z), z, ry: rt() * .5 - .25, w: 4 + rt() * 3, d: 4 + rt() * 2.5, h: 3.2 + rt() * 2.4, wall: CREAM[i % 4], glow: true }); }
+    const bm = house(Wd, { x: 0, y: 0, z: -122, w: 17, d: 11, h: 7.6, wall: '#fbf0d6', glow: true });
+    for (const x of [-5, 0, 5]) { const pm = new THREE.Mesh(new THREE.PlaneGeometry(2.1, 4.6), new THREE.MeshBasicMaterial({ color: 0xffe29a })); pm.position.set(x, 3.6, 5.62); bm.add(pm); }
+    const bg = glowSprite(0xffd070, 46, .7); bg.position.set(0, 14, -118); Wd.add(bg);
+    const col = new THREE.Mesh(new THREE.CylinderGeometry(7, 11, 60, 24, 1, true), new THREE.MeshBasicMaterial({ color: 0xffd98a, transparent: true, opacity: .13, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false })); col.position.set(0, 38, -122); Wd.add(col);
+    const cT = [new THREE.Color(0xc9ccd0), new THREE.Color(0xf3b8b4)], cB = [new THREE.Color(0xeae4d8), new THREE.Color(0xffe3c6)], cFg = [new THREE.Color(0xe2dccf), new THREE.Color(0xfbdcc4)], cS = [new THREE.Color(0xfff4e4), new THREE.Color(0xffd7a6)];
+    Wd.on(t => { const k = sm(prog(t, 11, 19)); Wd.sky.material.uniforms.top.value.copy(cT[0]).lerp(cT[1], k); Wd.sky.material.uniforms.bot.value.copy(cB[0]).lerp(cB[1], k); Wd.scene.fog.color.copy(cFg[0]).lerp(cFg[1], k); Wd.sun.color.copy(cS[0]).lerp(cS[1], k); Wd.hemi.intensity = lerp(1.2, 1.55, k); Wd.sun.intensity = lerp(1.25, 1.85, k); bg.material.opacity = .5 * k; col.material.opacity = .11 * k; });
+    return Object.assign(Wd, { cam: path([[0, [0, 1.8, 16], [0, 2.2, -30], 50], [6, [1.5, 2.6, -4], [0, 3, -45], 50], [11, [0, 6.5, -34], [0, 5, -80], 52], [15, [0, 16, -52], [0, 6, -110], 54], [20, [-4, 15, -80], [0, 6, -118], 52], [24.9, [-7, 9, -90], [0, 8, -120], 48]]) });
+  } },
+  // ===== 7. a clay jug with a golden ribbon shatters; a vessel of light appears (15.8) =====
+  { dur: 15.8, caps: [], build() {
+    const Wd = roadWorld(INT); groundPlane(Wd, 0xa4cf9e);
+    room(Wd, { W: 14, D: 14, H: 4.6, holes: { back: [{ c0: -4, c1: 4, y0: 1.2, y1: 3.8 }], left: [{ c0: -3, c1: 3, y0: 1.2, y1: 3.8 }], right: [{ c0: -3, c1: 3, y0: 1.2, y1: 3.8 }] } });
+    lamp(Wd, -3, 3.4, -3, 6); lamp(Wd, 3, 3.4, 3, 6); table(Wd, { x: 0, z: 0, w: 2.4, d: 1.3 }); shelf(Wd, 0, 6.75, PI, 4);
+    const lp = [[0, 0], [.11, 0], [.15, .03], [.19, .12], [.2, .25], [.17, .38], [.1, .46], [.075, .52], [.09, .58], [.095, .6]].map(([x, y]) => new THREE.Vector2(x, y));
+    const J = new THREE.Group(); J.position.set(0, .78, 0); Wd.add(J); const jm = new THREE.Mesh(new THREE.LatheGeometry(lp, 28), toon('#c7703c')); jm.castShadow = true; ink(jm, .012); J.add(jm);
+    const hd = new THREE.Mesh(new THREE.TorusGeometry(.1, .025, 8, 16, PI), toon('#c7703c')); hd.position.set(.17, .34, 0); hd.rotation.z = -PI / 2; J.add(hd);
+    const rb = new THREE.Mesh(new THREE.TorusGeometry(.098, .014, 8, 24), toon('#e2b13a')); rb.position.y = .47; rb.rotation.x = PI / 2; J.add(rb); J.add(ball(.03, '#e2b13a', { pos: [.1, .47, 0], ink: false })); J.add(box(.07, .005, .03, '#e2b13a', { pos: [.13, .45, .03], rot: [0, 0, -.5], ink: false })); J.add(box(.07, .005, .03, '#e2b13a', { pos: [.13, .45, -.03], rot: [0, 0, -.9], ink: false }));
+    const tB = 4.2, rs = rng(5), SH = [];
+    for (let i = 0; i < 44; i++) { const a = rs() * 6.283, y0 = .05 + rs() * .5, g = i < 34 ? new THREE.Mesh(new THREE.TetrahedronGeometry(.035 + rs() * .04), toon('#c7703c')) : new THREE.Mesh(new THREE.BoxGeometry(.05, .006, .02), toon('#e2b13a')); g.castShadow = true; Wd.add(g);
+      SH.push({ m: g, p0: [cos(a) * .15, y0, sin(a) * .15], v: [cos(a) * (.5 + rs() * 1.2), .8 + rs() * 1.6, sin(a) * (.5 + rs() * 1.2)], r: [rs() * 6, rs() * 6, rs() * 6] }); }
+    const dm = motes(Wd, 90, {}), dr = rng(8), DV = []; for (let i = 0; i < 90; i++) DV.push({ a: dr() * 6.283, e: dr() * 2 - .4, s: .5 + dr() * 1.1 });
+    const V = new THREE.Group(); V.position.set(0, .78, 0); Wd.add(V); const vp = [[0, 0], [.12, 0], [.14, .04], [.17, .14], [.18, .26], [.14, .38], [.08, .48], [.06, .56], [.1, .62]].map(([x, y]) => new THREE.Vector2(x, y));
+    const vo = new THREE.Mesh(new THREE.LatheGeometry(vp, 32), new THREE.MeshBasicMaterial({ color: 0xe8f4ff, transparent: true, opacity: .32, side: THREE.DoubleSide, depthWrite: false })); V.add(vo);
+    const vi = new THREE.Mesh(new THREE.LatheGeometry(vp, 32), new THREE.MeshBasicMaterial({ color: 0xffd27a, transparent: true, opacity: .85 })); vi.scale.set(.8, .82, .8); vi.position.y = .02; V.add(vi); const vr = new THREE.Mesh(new THREE.TorusGeometry(.1, .008, 8, 28), new THREE.MeshBasicMaterial({ color: 0xfff0b8 })); vr.position.y = .62; vr.rotation.x = PI / 2; V.add(vr);
+    const vg = glowSprite(0xffcc70, 1.6, 0); vg.position.set(0, 1.1, 0); Wd.add(vg); const vl = new THREE.PointLight(0xffcc80, 0, 6, 1.4); vl.position.set(0, 1.3, 0); Wd.add(vl);
+    risingGlow(Wd, () => [0, 1.4, 0], t => sm(prog(t, 9, 11)), { n: 16, h: 1.0, r: .1, seed: 6, size: .1 });
+    Wd.on(t => { const sh = t >= tB; jm.parent.visible = !sh; J.rotation.z = (t > 3.2 && t < tB) ? .03 * sin(t * 60) * (t - 3.2) : 0;
+      SH.forEach(s => { s.m.visible = sh; if (!sh) return; const d = t - tB, hx = (1 - Math.exp(-2.2 * d)) / 2.2, yy = .78 + s.p0[1] + s.v[1] * d - 4.9 * d * d, y = Math.max(.8, yy), k = 1 - sm(prog(t, 6.8, 8.6)), sp = Math.min(d, yy > .8 ? d : 1.1);
+        s.m.position.set(s.p0[0] + s.v[0] * hx, y, s.p0[2] + s.v[2] * hx); s.m.rotation.set(s.r[0] * sp, s.r[1] * sp, s.r[2]); s.m.scale.setScalar(Math.max(.001, k)); });
+      for (let i = 0; i < 90; i++) { const v = DV[i], d = t - tB; if (d < 0 || d > 3.4) { dm.hide(i); continue; } const f = 1 - d / 3.4, r = d * v.s * .7; dm.set(i, cos(v.a) * r, 1.05 + v.e * .5 * d, sin(v.a) * r, .22 * f, 1 * f * .8, .78 * f * .8, .5 * f * .8); } dm.done();
+      const s = ease.out(prog(t, 7.6, 10.4)); V.visible = s > .01; V.scale.setScalar(Math.max(.001, s)); V.rotation.y = t * .5; vg.visible = s > .01; vg.material.opacity = .85 * s * (.9 + .1 * sin(t * 3)); vg.scale.setScalar(1.6 * s + .3 * Math.max(0, 1 - Math.abs(t - 8.4))); vl.intensity = 5 * s; });
+    return Object.assign(Wd, { cam: cine([[0, [0, .95, 0], 2.7, .45, -40, 46, 0], [15.8, [0, .95, 0], 2.5, .4, 230, 46, 0]]) });
+  } },
+  // ===== 8. the RSG book in a library, match-cut through its glowing page to Har Sinai at dawn (17.36) =====
+  { dur: 17.36, caps: [], build() {
+    const Wd = roadWorld(Object.assign({}, DAWN, { fogNear: 200, fogFar: 1900 })); groundPlane(Wd, 0x8cbf84, 0); const X0 = 1200;
+    room(Wd, { W: 10, D: 8, H: 4.6, holes: { back: [{ c0: -3.2, c1: -1.8, y0: 1.5, y1: 3.8 }, { c0: 1.8, c1: 3.2, y0: 1.5, y1: 3.8 }] } });
+    shelf(Wd, 0, -3.75, 0, 3.0);
+    shelf(Wd, -4.75, -1.2, PI / 2, 2.4); shelf(Wd, -4.75, 1.8, PI / 2, 2.4); shelf(Wd, 4.75, -1.2, -PI / 2, 2.4); shelf(Wd, 4.75, 1.8, -PI / 2, 2.4); lamp(Wd, -2.5, 3.2, -1.5, 7); lamp(Wd, 2.5, 3.2, 0, 7);
+    Wd.add(box(.55, 1.0, .45, '#7a4a2a', { pos: [0, .5, -1.55] })); Wd.add(box(.9, .05, .6, '#8a5a34', { pos: [0, 1.12, -1.5], rot: [.5, 0, 0] }));
+    book(Wd, { pos: [0, 1.16, -1.5], rx: .5, w: .8, d: .55, color: 0x2f3f6a, glow: () => 1 }); lbl(Wd, 'רס"ג', [0, 2.05, -1.62], .3);
+    const pg = glowSprite(0xffe6a0, 1.8, .6); pg.position.set(0, 1.3, -1.35); Wd.add(pg);
+    const M = sinai(Wd, { x: X0, z: -380, R: 170, H: 150, seed: 5 }); mist(Wd, { x: X0, z: -380, R: 150, H: 150, n: 18, seed: 5 });
+    const sg = glowSprite(0xffd8c0, 380, .35); sg.position.set(X0, 150, -420); Wd.add(sg); lbl(Wd, 'הר סיני', [X0, 190, -380], 24);
+    crowd(Wd, { seed: 17, n: 340, cx: X0, cz: -190, rx: 38, rz: 22, yaw: PI });
+    const fm = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), new THREE.MeshBasicMaterial({ color: 0xfff0d0, transparent: true, opacity: 0, depthTest: false, fog: false })); fm.renderOrder = 20; Wd.add(fm); const dv = new THREE.Vector3();
+    Wd.on((t, cam) => { cam.getWorldDirection(dv); fm.position.copy(cam.position).addScaledVector(dv, .5); fm.quaternion.copy(cam.quaternion); const f = t < 7.9 ? sm(prog(t, 7.55, 7.9)) : 1 - sm(prog(t, 7.9, 8.15)); fm.material.opacity = f; fm.visible = f > .01; });
+    const A = path([[0, [-5, 2.3, 3.4], [-.2, 1.3, -1.6], 54], [3, [-2.9, 1.9, 2.4], [0, 1.25, -1.55], 50], [5.8, [-.9, 1.65, .9], [0, 1.2, -1.5], 48], [7.9, [0, 1.52, -1.28], [0, 1.15, -1.5], 46]]);
+    const B = path([[7.9, [X0, 46, -20], [X0, 60, -350], 54], [12.5, [X0 - 14, 36, -60], [X0, 62, -350], 52], [17.36, [X0 - 22, 26, -88], [X0, 70, -340], 50]]);
+    return Object.assign(Wd, { cam: seq([0, A], [7.9, B]) });
+  } },
+  // ===== 9. the new creation: light washes over the crowd, every inner light ignites (31.02) =====
+  { dur: 31.02, caps: [], build() {
+    const Wd = roadWorld(Object.assign({}, DAWN, { fogNear: 120, fogFar: 800 })); groundPlane(Wd, 0x8cbf84, 0);
+    const M = sinai(Wd, { x: 0, z: -300, R: 150, H: 140, seed: 6 }); mist(Wd, { x: 0, z: -300, R: 140, H: 140, n: 14, seed: 6 }); sunGlow(Wd, [0, 150, -340], 420, .6, 0xffd0c0);
+    const items = crowd(Wd, { seed: 23, n: 430, cx: 0, cz: -92, rx: 48, rz: 33, yaw: PI, skip: (x, z) => z < -124 });
+    const RX = [-4.2, -2.4, -.8, .9, 2.6, 4.1, -3.2, .2, 3.4], RZ = [-126, -127, -125.5, -126.5, -127, -125, -122, -122.5, -121.8];
+    const real = RX.map((x, i) => ({ x, z: RZ[i], i, boy: i % 3 === 2 }));
+    real.forEach(r => person(Wd, r.boy ? boyN(r.i) : manN(r.i), t => ({ pos: [r.x, 0, r.z], facing: PI + .12 * sin(r.i * 2 + t * .3), gesture: ['rest', 'lookup', 'pray', 'rest'][r.i % 4], smile: .4 + .5 * sm(prog(t, 8, 12)), seed: .1 + .13 * r.i, look: .1 }), { scale: r.boy ? .8 : 1 }));
+    const pts = real.map(r => ({ x: r.x, y: r.boy ? 1.0 : 1.22, z: r.z - .12 })).concat(items.map(it => ({ x: it.x, y: 1.05 * it.s, z: it.z - .15 })));
+    const wZ = t => -190 + 9.5 * (t - 1), tI = p => 1 + (p.z + 190) / 9.5;
+    lightField(Wd, pts, (i, t, p) => { const ti = tI(p); return t < ti ? 0 : sm(prog(t, ti, ti + 1.4)) * (1.1 + .25 * sin(t * 2 + i)); }, { size: 1.0 });
+    const gm = motes(Wd, pts.length * 2, {}), gr = rng(31), GS = pts.map(() => [gr() * 10 - 5, 2 + gr() * 4, gr() * 12 - 20]);
+    Wd.on(t => { pts.forEach((p, i) => { const ti = tI(p); for (let k = 0; k < 2; k++) { const u = (t - (ti - 1.9 + k * .35)) / 1.9, j = i * 2 + k; if (u < 0 || u > 1) { gm.hide(j); continue; } const e = ease.in(u), s = GS[i];
+        gm.set(j, lerp(p.x + s[0], p.x, e), lerp(p.y + s[1], p.y, e), lerp(p.z + s[2], p.z, e), .26 * (1 - .5 * e), 1, .8, .45); } }); gm.done(); });
+    const wv = new THREE.Mesh(new THREE.PlaneGeometry(320, 28), new THREE.MeshBasicMaterial({ map: canvasTex(4, 128, (g, w, h) => { const r = g.createLinearGradient(0, 0, 0, h); r.addColorStop(0, 'rgba(255,214,130,0)'); r.addColorStop(.7, 'rgba(255,214,130,.5)'); r.addColorStop(1, 'rgba(255,236,190,.9)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false, opacity: .3 })); Wd.add(wv);
+    const wl = new THREE.PointLight(0xffd488, 0, 60, 1.6); Wd.add(wl);
+    Wd.on(t => { const z = wZ(t), on = t > 1 && t < 15; wv.visible = on; wv.position.set(0, 14, z); wl.position.set(0, 7, z - 3); wl.intensity = on ? 40 * Math.sin(PI * clamp((t - 1) / 14, 0, 1)) : 0; Wd.hemi.intensity = lerp(.95, 1.3, sm(prog(t, 4, 16))); });
+    const A = path([[0, [-1.4, 1.45, -138], [0, 1.55, -124], 50], [6, [.4, 1.5, -137.5], [1, 1.55, -122], 48], [11.5, [2.4, 2.2, -137], [0, 2.1, -118], 50]]);
+    const B = cine([[11.5, [0, 2, -105], 31, 1, 180, 50, 0], [18, [0, 2, -105], 42, 14, 260, 52, 0], [25, [0, 2, -105], 62, 30, 360, 52, -2], [31.02, [0, 2, -105], 80, 44, 470, 52, -4]]);
+    return Object.assign(Wd, { cam: mix(A, B, 10, 13) });
+  } },
+  // ===== 10. Avnei Nezer: the loaf and the seforim, side by side (15.37) =====
+  { dur: 15.37, caps: [], build() {
+    const Wd = roadWorld(INT); studyRoom(Wd); table(Wd, { x: 0, z: -.1, w: 3.4, d: 1.2 }); const BZ = -1.0;
+    const bx = t => kf(t, [[1.4, 0], [3.2, -.72], [5.2, -.72], [7.4, .72], [9.6, .72], [11.5, 0]]), bf = t => kf(t, [[1.4, 0], [2.2, -.55], [4.5, -.55], [5.2, 0], [5.6, 0], [6.4, .55], [8.6, .55], [9.6, 0]]);
+    const walking = t => (t > 1.6 && t < 3.2) || (t > 5.4 && t < 7.4) || (t > 9.6 && t < 11.5), carrying = t => t > 1.4 && t < 4.4, carry2 = t => t > 5.6 && t < 8.8;
+    person(Wd, BACHUR, t => Object.assign({ pos: [bx(t), .012, BZ], facing: bf(t), gesture: (carrying(t) || carry2(t)) ? 'offer' : 'rest', smile: .45, seed: .3 }, walking(t) ? { walk: t * 5, stride: .45 } : {}));
+    const LP = [-.95, .78, -.42];
+    loaf(Wd, { posFn: t => { const h = holdAt([bx(t), 0, BZ], bf(t), 1, .45, .88), hh = t < 4.4 ? h : [0, 0, 0]; if (t < 3.4) return h; if (t < 4.4) { const u = sm(prog(t, 3.4, 4.4)); return lerp3(holdAt([-.72, 0, BZ], -.55, 1, .45, .88), LP, u); } return LP; }, glow: t => sm(prog(t, 5, 8)) * .6 });
+    const pos2 = t => { const T0 = [0, .78, -.35], h = holdAt([bx(t), 0, BZ], bf(t), 1, .45, .86), S = [.95, 1.0, -.42]; if (t < 5.0) return T0; if (t < 5.9) return lerp3(T0, holdAt([-.72, 0, BZ], 0, 1, .45, .86), sm(prog(t, 5, 5.9))); if (t < 8.8) return t < 6 ? holdAt([bx(t), 0, BZ], bf(t), 1, .45, .86) : lerp3(h, h, 0); if (t < 9.6) return lerp3(holdAt([.72, 0, BZ], .55, 1, .45, .86), S, sm(prog(t, 8.8, 9.6))); return S; };
+    const sf = K.sefer(Wd, [0, 0, 0], { i: 5, w: .32, d: .24, h: .08 }); Wd.on(t => { const p = pos2(t); sf.position.set(...p); sf.visible = t > 4.9; sf.scale.setScalar(Math.max(.001, ease.out(prog(t, 4.9, 5.4)))); });
+    K.stack(Wd, [.95, .78, -.42], 3, .2); const OP = t => sm(prog(t, .2, 1));
+    book(Wd, { pos: [-.75, .78, .14], w: .6, d: .4, color: 0x6a2030, open: OP, ry: .08 }); lbl(Wd, 'אבני נזר', [-.75, 1.02, .3], .18);
+    book(Wd, { pos: [.95, .78, .14], w: .6, d: .4, color: 0x1f3b6b, open: OP, ry: -.08 }); lbl(Wd, 'מסכת סופרים', [.85, 1.02, .3], .18);
+    innerLight(Wd, t => chestPos([bx(t), .012, BZ], bf(t), {}), t => .9 + .4 * sm(prog(t, 4.4, 6)) + .08 * sin(t * 2), { k: 1.0 });
+    return Object.assign(Wd, { cam: path([[0, [-.2, 1.5, 2.6], [0, 1.0, -.4], 46], [5, [-1.4, 1.2, 1.9], [-.8, .9, -.3], 42], [10, [.2, 1.3, 2.2], [0, .9, -.3], 42], [12.4, [1.2, 1.3, 2.7], [.8, .9, -.3], 44], [15.37, [0, 1.4, 3.3], [0, .95, -.3], 44]]) });
+  } },
+  // ===== 11. bread for the body, Torah for the soul; the geniza (30) =====
+  { dur: 30, caps: [], build() {
+    const Wd = roadWorld(INT); studyRoom(Wd); table(Wd, { x: 0, z: 0, w: 3.2, d: 1.5 }); K.bench(Wd, 0, -1.12, 1.2, 0, .46); const P = [0, .012, -1.12];
+    const eating = t => (t > 3.4 && t < 4.4) || (t > 5.8 && t < 6.8);
+    person(Wd, BACHUR, t => ({ pos: P, facing: 0, sit: true, gesture: eating(t) ? 'eat' : (t < 12 ? 'rest' : (t < 20 ? ['explain', 'finger', 'read', 'explainA'][Math.floor((t - 12) / 2.4) % 4] : 'offer')), talk: t > 13 && t < 19 ? .4 + .3 * sin(t * 8) : 0, smile: .45, seed: .2 }));
+    const Lc = t => .85 + .85 * sm(prog(t, 10, 14)) + .06 * sin(t * 2.2);
+    innerLight(Wd, () => chestPos(P, 0, { sit: true }), Lc, { light: true, power: 1.5, dist: 5, k: 1.0 });
+    const LZ = [-.6, .78, -.15]; loaf(Wd, { pos: LZ, glow: t => sm(prog(t, 0, 2)) * .85 * (1 - .4 * sm(prog(t, 11, 14))) + .15 });
+    risingGlow(Wd, () => [LZ[0], .95, LZ[2]], t => (.35 + .65 * sm(prog(t, 0, 2))) * (1 - .4 * sm(prog(t, 11, 14))), { n: 10, h: .8, r: .08, seed: 2, size: .09 });
+    const BP = [.45, .78, -.2]; book(Wd, { pos: BP, w: .8, d: .55, color: 0x6a2030, open: t => sm(prog(t, 9, 11)), glow: t => sm(prog(t, 10, 12.5)) * (.8 + .15 * sin(t * 2)) });
+    risingGlow(Wd, () => [BP[0], .88, BP[2]], t => sm(prog(t, 10, 13)), { n: 16, h: 1.4, r: .15, seed: 5, size: .12 });
+    const pc = ball(.035, '#e9b660', { pos: [0, 0, 0], ink: false }); Wd.add(pc);
+    Wd.on(t => { let u = -1; if (t > 2.4 && t < 4.4) u = prog(t, 2.4, 4.4); else if (t > 4.8 && t < 6.8) u = prog(t, 4.8, 6.8); pc.visible = u >= 0; if (u >= 0) { const e = sm(u), p = lerp3([LZ[0], .95, LZ[2]], [.0, 1.03, -.86], e); pc.position.set(p[0], p[1] + .1 * sin(PI * e), p[2]); pc.scale.setScalar(1 - .8 * prog(u, .85, 1)); } });
+    const GP = [1.25, .78, .2]; geniza(Wd, { pos: GP, ry: 0 });
+    for (let i = 0; i < 8; i++) { const t0 = 21.2 + i * .85, pg = box(.22, .004, .3, i % 2 ? '#efe0b8' : '#e8d4a0', { pos: [0, 0, 0], ink: false }); Wd.add(pg); const sx = ((i * 37) % 11 - 5) * .02;
+      Wd.on(t => { const u = ease.io(prog(t, t0, t0 + 1.6)); pg.visible = t > t0 - .2; const p = lerp3([GP[0] + sx, 1.55 + .1 * i, GP[2] - .35], [GP[0] + sx * .5, GP[1] + .06 + i * .012, GP[2]], u); pg.position.set(p[0], p[1] + .1 * sin(PI * u), p[2]); pg.rotation.set(.5 * (1 - u), .4 * (1 - u) + sx * 3, .3 * (1 - u)); }); }
+    const gh = glowSprite(0xffd27a, 1.2, 0); gh.position.set(GP[0], GP[1] + .4, GP[2]); Wd.add(gh); Wd.on(t => { gh.material.opacity = .6 * sm(prog(t, 21, 24)); gh.visible = gh.material.opacity > .01; });
+    return Object.assign(Wd, { cam: path([[0, [2.4, 1.7, 2.6], [-.2, .95, -.5], 50], [7, [1.2, 1.35, 1.2], [-.2, .95, -.8], 42], [12, [-.6, 1.5, .9], [0, .9, -.5], 44], [16, [-2.0, 1.5, -.2], [0, .9, -.5], 44], [20, [-1.4, 1.7, -1.9], [.3, .9, -.3], 46], [24, [.8, 2.4, -.6], [1.2, .85, 0], 50], [27, [1.25, 2.3, .35], [1.25, .82, .05], 46], [30, [1.25, 2.1, .3], [1.25, .8, .05], 42]]) });
+  } },
+  // ===== 12. the bachur walks out; the hills brighten and bloom (12.28) =====
+  { dur: 12.28, caps: [], build() {
+    const Wd = roadWorld(Object.assign({}, DAWN, { skyTop: 0xcfc0c4, skyBottom: 0xf1e6da, hemi: 1.0, sun: 1.2 })); const pz = x => 2.2 * sin(x * .07);
+    const hF = (x, z) => { const d = Math.abs(z - pz(x)), k = ease.sm(clamp((d - 5) / 30, 0, 1)); return k * 16 * (.25 + 1.1 * fbm(x * .02 + 4, z * .02 + 6)); };
+    const H = hills(Wd, { h: hF, size: 500, N: 150 }); sunGlow(Wd, [-90, 36, -460], 760, .6);
+    for (let x = -14; x < 14; x += .6) Wd.add(box(.9, .03, 1.3, '#eadcb8', { pos: [x, .02, pz(x)], rot: [0, -Math.atan(2.2 * .07 * cos(x * .07)), 0], ink: false }));
+    const r = rng(41), pts = []; for (let i = 0; i < 360; i++) { const x = -15 + r() * 28, z = pz(x) + (r() < .5 ? -1 : 1) * (1.2 + r() * 5.5); pts.push({ x, y: hF(x, z), z }); }
+    const Bx = t => -9 + 1.25 * t; flowers(Wd, pts, (t, p) => sm(prog(Bx(t) - p.x, -1.2, 2.4)));
+    trees(Wd, H.hAt, { seed: 15, n: 60, area: [-40, 40, -40, 40], skip: (x, z) => Math.abs(z - pz(x)) < 9 });
+    const B = t => [Bx(t), 0, pz(Bx(t))], fac = t => Math.atan2(1.25, 1.25 * 2.2 * .07 * cos(Bx(t) * .07));
+    person(Wd, BACHUR, t => ({ pos: B(t), facing: fac(t), walk: t * 5.2, stride: .8, smile: .55, seed: .3 }));
+    innerLight(Wd, t => chestPos(B(t), fac(t), {}), t => .6 + .9 * sm(prog(t, 0, 12)), { k: 1.0 });
+    const cs = [new THREE.Color(0xcfc0c4), new THREE.Color(0xf3b8b4)], cb = [new THREE.Color(0xf1e6da), new THREE.Color(0xffe3c6)], cf = [new THREE.Color(0xe6dcd2), new THREE.Color(0xfbdcc4)];
+    Wd.on(t => { const k = sm(prog(t, 0, 12)); Wd.sky.material.uniforms.top.value.copy(cs[0]).lerp(cs[1], k); Wd.sky.material.uniforms.bot.value.copy(cb[0]).lerp(cb[1], k); Wd.scene.fog.color.copy(cf[0]).lerp(cf[1], k); Wd.hemi.intensity = lerp(1.0, 1.6, k); Wd.sun.intensity = lerp(1.2, 2.0, k); H.mat.color.setRGB(lerp(.8, 1.08, k), lerp(.85, 1.06, k), lerp(.8, .98, k)); });
+    return Object.assign(Wd, { cam: t => { const b = B(t), A = lerp(25, 72, sm(t / 12.28)) * PI / 180, R = lerp(3.5, 2.8, sm(t / 12.28)); return { pos: [b[0] + sin(A) * R, 1.45, b[2] + cos(A) * R], look: [b[0] + .25, 1.3, b[2]], fov: 46 }; } });
+  } },
+  // ===== 13. the stone yoke cracks into light; a tree grows from an open sefer (26.9) =====
+  { dur: 26.9, caps: [], build() {
+    const Wd = roadWorld(DAWN), H = hills(Wd, { flat: [0, 0, 22, 80], seed: 19 }); sunGlow(Wd, [-90, 36, -460], 760, .8); clouds(Wd, 4, 31); trees(Wd, H.hAt, { seed: 12, n: 50, area: [-60, 60, -60, 20], skip: (x, z) => Math.hypot(x, z) < 15 });
+    for (let x = -14; x < 14; x += .7) Wd.add(box(.9, .03, 1.5, '#eadcb8', { pos: [x, .02, 1.5], ink: false }));
+    const Y = new THREE.Group(); Y.position.set(0, 3.7, 0); Wd.add(Y); const gm = toon('#8f8d92'), parts = [];
+    const bl = box(1.3, .3, .34, '#8f8d92', { pos: [-.65, 0, 0] }), br = box(1.3, .3, .34, '#8f8d92', { pos: [.65, 0, 0] }); Y.add(bl); Y.add(br);
+    const cl1 = new THREE.Mesh(new THREE.TorusGeometry(.38, .09, 10, 20, PI), gm), cl2 = cl1.clone(); cl1.position.set(-.85, -.15, 0); cl2.position.set(.85, -.15, 0); cl1.rotation.z = PI; cl2.rotation.z = PI; ink(cl1, .02); ink(cl2, .02); cl1.castShadow = cl2.castShadow = true; Y.add(cl1); Y.add(cl2);
+    const cr = []; for (let i = 0; i < 6; i++) { const m = box(.05, .12, .02, '#1e1812', { pos: [(i % 2 ? .06 : -.05) * 1, .08 - i * .05, .18], rot: [0, 0, (i % 2 ? .5 : -.5)], ink: false }); m.scale.setScalar(.01); Y.add(m); cr.push(m); }
+    const sd = new THREE.Mesh(new THREE.CircleGeometry(3.0, 28), new THREE.MeshBasicMaterial({ color: 0x3a3a44, transparent: true, opacity: .3, depthWrite: false })); sd.rotation.x = -PI / 2; sd.position.set(0, .04, 0); Wd.add(sd);
+    const bm = motes(Wd, 160, {}), br2 = rng(3), BV = []; for (let i = 0; i < 160; i++) { const a = br2() * 6.283, e = br2() * 2 - .5; BV.push({ d: [cos(a) * (1 + br2() * 2), e * 1.2 + 1, sin(a) * (1 + br2() * 2)], sx: br2() * 2.4 - 1.2, sy: br2() * .8 }); }
+    const tB = 7; const fm2 = motes(Wd, 70, {}), fr2 = rng(13), FV = []; for (let i = 0; i < 70; i++) FV.push([fr2() * 4 - 2, 3 + fr2() * 1.6, fr2() * 1.6 - .8, fr2()]);
+    Wd.on(t => { const sh = prog(t, 4.2, 6.6), ds = sm(prog(t, tB, 9.8)); Y.visible = ds < .99; cr.forEach((m, i) => { m.scale.setScalar(sm(prog(sh, i / 6, i / 6 + .3)) + .001); });
+      const sp = t > tB ? sm(prog(t, tB, tB + 1.6)) : 0; bl.position.set(-.65 - sp * .9, -sp * sp * 1.8, 0); br.position.set(.65 + sp * .9, -sp * sp * 1.8, 0); bl.rotation.z = sp * .5; br.rotation.z = -sp * .5; cl1.position.y = -.15 - sp * 1.2; cl2.position.y = -.15 - sp * 1.2;
+      const k = 1 - ds; Y.scale.setScalar(1.8 * Math.max(.001, .4 + .6 * k)); Y.position.y = 3.7 + .06 * sin(t * 1.3) - sp * .5; gm.color.setRGB(lerp(.56, 1, ds), lerp(.55, .8, ds), lerp(.57, .4, ds)); sd.material.opacity = .3 * (1 - sm(prog(t, 6.5, 9)));
+      for (let i = 0; i < 160; i++) { const d = t - tB, v = BV[i]; if (d < 0 || d > 3.6) { bm.hide(i); continue; } const f = Math.sin(PI * clamp(d / 3.6, 0, 1)), q = d * .7; bm.set(i, v.d[0] * q, 3.0 + v.d[1] * q * .8 + d * .3, v.d[2] * q, .28 * f, f, .8 * f, .42 * f); } bm.done();
+      for (let i = 0; i < 70; i++) { const v = FV[i], e = ease.in(clamp((t - 8.1 - v[3] * 1.2) / 2.2, 0, 1)); if (e <= 0 || e >= 1) { fm2.hide(i); continue; } fm2.set(i, lerp(v[0], 0, e), lerp(v[1], .5, e), lerp(v[2], .95, e), .26 * (1 - .4 * e), 1, .82, .45); } fm2.done(); });
+    // the tree
+    const HT = 7.4, NS = 14, cl = y => [.32 * sin(y * .9 + .3), .2 * cos(y * .7)], rad = y => lerp(.5, .13, clamp(y / HT, 0, 1)), g = t => sm(prog(t, 10.4, 23.5)), trunkM = toon('#8a6a46');
+    const segs = []; for (let i = 0; i < NS; i++) { const y0 = i * HT / NS, y1 = (i + 1) * HT / NS, m = new THREE.Mesh(new THREE.CylinderGeometry(rad(y1), rad(y0), y1 - y0, 12), trunkM); m.castShadow = true; ink(m, .02); Wd.add(m); segs.push({ m, y0, y1 }); }
+    const gr = ['#5fa04a', '#6fb056', '#7cc063', '#58994a', '#86c06a'], rb = rng(6), brs = [];
+    [3.0, 3.7, 4.4, 5.0, 5.7, 6.4].forEach((yb, i) => { const a = i * 1.1 + .4, L = 1.7 + rb() * 1.0, tl = .85 + rb() * .25, gp = new THREE.Group(); const c = cl(yb); gp.position.set(c[0], yb, c[1]); Wd.add(gp);
+      const m = new THREE.Mesh(new THREE.CylinderGeometry(.06, .13, L, 8), trunkM); m.position.set(sin(a) * sin(tl) * L / 2, cos(tl) * L / 2, cos(a) * sin(tl) * L / 2); m.rotation.set(0, a, 0); m.rotateX(tl); ink(m, .015); gp.add(m);
+      for (const q of [1, .6]) gp.add(ball(1, gr[(i + (q < 1 ? 2 : 0)) % 5], { pos: [sin(a) * sin(tl) * L * q, cos(tl) * L * q + .2, cos(a) * sin(tl) * L * q], scale: [1.3 + rb() * .4, .95, 1.3 + rb() * .4], ink: false })); brs.push({ gp, yb }); });
+    const top = new THREE.Group(); const tc = cl(HT); top.position.set(tc[0], HT, tc[1]); Wd.add(top); for (let i = 0; i < 6; i++) top.add(ball(1, gr[i % 5], { pos: [cos(i * 1.05) * 1.1, .2 + (i % 2) * .5, sin(i * 1.05) * 1.1], scale: [1.6, 1.1, 1.6], ink: false })); top.add(ball(1, gr[1], { pos: [0, .9, 0], scale: [1.8, 1.2, 1.8], ink: false }));
+    const sb = book(Wd, { pos: [0, .04, .95], w: .8, d: .55, color: 0x6a2030, glow: t => sm(prog(t, 8.5, 11)) }); const bgl = glowSprite(0xffd070, 2.4, 0); bgl.position.set(0, .5, .95); Wd.add(bgl);
+    const tm = motes(Wd, 56, {}), tr = rng(9), TV = []; for (let i = 0; i < 56; i++) TV.push({ ph: tr(), s: .15 + tr() * .12 });
+    Wd.on(t => { const G = g(t) * HT; segs.forEach(s => { const v = clamp((G - s.y0) / (s.y1 - s.y0), 0, 1); s.m.visible = v > .01; s.m.scale.y = Math.max(.001, v); const a = cl(s.y0), b = cl(s.y1), len = s.y1 - s.y0, yc = s.y0 + len * v / 2, u = (yc - s.y0) / len; s.m.position.set(lerp(a[0], b[0], u), yc, lerp(a[1], b[1], u)); s.m.rotation.z = -(b[0] - a[0]) / len; s.m.rotation.x = (b[1] - a[1]) / len; });
+      brs.forEach(b => { const s = sm(prog(G - b.yb, .1, 1.6)); b.gp.visible = s > .01; b.gp.scale.setScalar(Math.max(.001, s)); }); const ts = sm(prog(G - HT * .75, 0, HT * .25)); top.visible = ts > .01; top.scale.setScalar(Math.max(.001, ts));
+      bgl.material.opacity = .8 * sm(prog(t, 9, 12)); bgl.visible = bgl.material.opacity > .01; bgl.scale.setScalar(2.4 + .3 * sin(t * 3));
+      for (let i = 0; i < 56; i++) { const v = TV[i]; if (t < 10.4) { tm.hide(i); continue; } const u = (t * .22 + v.ph) % 1, yy = u * Math.max(G, .05), c = cl(yy), r = rad(yy) * 1.2 + .04, an = yy * 2.2 + v.ph * 6; tm.set(i, c[0] + cos(an) * r, yy, c[1] + sin(an) * r, v.s, 1, .82, .45); } tm.done(); });
+    return Object.assign(Wd, { cam: path([[0, [3.5, 2.4, 15], [0, 3.6, 0], 46], [5, [1.8, 3.2, 9.5], [0, 3.7, 0], 44], [9.5, [0, 3.5, 5.2], [0, 3.7, 0], 44], [11.8, [-1.8, 1.5, 4.6], [0, .7, .9], 46], [15, [-4.2, 3.2, 8], [0, 2.6, 0], 48], [19, [-5.8, 5.2, 9.6], [0, 4.2, 0], 49], [23, [-6.6, 7.6, 11.2], [0, 5.6, 0], 50], [26.9, [-4.5, 8, 13], [0, 6, 0], 50]]) });
+  } },
+  // ===== 14. he meets himself in the glowing page (25.7) =====
+  { dur: 25.7, caps: [], build() {
+    const Wd = roadWorld(INT); studyRoom(Wd); table(Wd, { x: 0, z: 0, w: 3.2, d: 1.5 }); K.bench(Wd, 0, -1.12, 1.2, 0, .46); const P = [0, .012, -1.12];
+    person(Wd, BACHUR, t => ({ pos: P, facing: 0, sit: true, gesture: t < 14 ? 'read' : ['read', 'explain', 'read'][Math.floor((t - 14) / 4) % 3], smile: .6, brow: .3, seed: .2, talk: 0 }));
+    const Lc = t => 1.3 + .15 * sin(t * 2); innerLight(Wd, () => chestPos(P, 0, { sit: true }), Lc, { light: true, power: 1.5, dist: 5, k: 1.0 });
+    loaf(Wd, { pos: [-.95, .78, -.1], glow: t => .85 + .1 * sin(t * 2.5) }); risingGlow(Wd, () => [-.95, .95, -.1], () => .85, { n: 10, h: .8, r: .08, seed: 2, size: .09 });
+    const BP = [0, .78, -.42]; book(Wd, { pos: BP, w: 1.0, d: .7, color: 0x6a2030, glow: t => .9 + .1 * sin(t * 2) }); risingGlow(Wd, () => [0, .88, -.42], () => 1, { n: 16, h: 1.2, r: .16, seed: 5, size: .11 });
+    const pl = new THREE.PointLight(0xffd488, 0, 4, 1.5); pl.position.set(0, 1.0, -.45); Wd.add(pl); Wd.on(t => { pl.intensity = 1.6 + .2 * sin(t * 2); });
+    const gt = canvasTex(256, 384, (c, w, h) => { const gr = c.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, 'rgba(206,140,40,.9)'); gr.addColorStop(1, 'rgba(228,170,70,.9)'); c.fillStyle = gr;
+      c.beginPath(); c.arc(w / 2, h * .84, w * .17, 0, 7); c.fill(); c.beginPath(); c.arc(w / 2, h * .84 - w * .12, w * .12, PI, 0); c.fillStyle = 'rgba(120,80,30,.9)'; c.fill(); c.fillStyle = gr;
+      c.beginPath(); c.moveTo(w * .08, h * .45); c.quadraticCurveTo(w * .2, h * .62, w * .5, h * .64); c.quadraticCurveTo(w * .8, h * .62, w * .92, h * .45); c.lineTo(w * .92, h * .05); c.lineTo(w * .08, h * .05); c.closePath(); c.fill(); });
+    const gh = new THREE.Mesh(new THREE.PlaneGeometry(.42, .62), new THREE.MeshBasicMaterial({ map: gt, transparent: true, opacity: .6, depthWrite: false, side: THREE.DoubleSide })); gh.rotation.x = -PI / 2; gh.position.set(0, .868, -.42); Wd.add(gh);
+    Wd.on(t => { gh.material.opacity = .62 + .12 * sin(t * 2.2); });
+    return Object.assign(Wd, { cam: cine([[0, [0, .95, -.8], 2.3, .95, 198, 48, 0], [6, [0, .95, -.9], 2.55, .8, 148, 48, 0], [12, [0, .98, -1.0], 3.2, .55, 70, 46, 0], [17, [0, 1.05, -1.12], 2.7, .3, 28, 44, 0], [25.7, [0, 1.12, -1.12], 1.25, .12, 14, 38, 0]]) });
+  } },
+  // ===== 15. the elder rav by lamplight, the young men; pull back through the window to the RAV (18.33) =====
+  { dur: 18.33, caps: [], build() {
+    const Wd = roadWorld(DAWN); exterior(Wd); table(Wd, { x: 0, z: -1.15, w: 2.2, d: .9 }); K.bench(Wd, 0, -2.05, .6, 0, .46);
+    book(Wd, { pos: [0, .78, -1.3], w: .8, d: .55, color: 0x2f3f6a, glow: () => .45 }); lamp(Wd, 0, 2.4, -1.4, 6);
+    const EP = [0, .012, -2.05]; person(Wd, ELDER, t => ({ pos: EP, facing: .4, sit: true, gesture: ['finger', 'explain', 'read', 'explainA'][Math.floor(t / 3.1) % 4], talk: .35 + .3 * sin(t * 6), smile: .4, seed: .5 }));
+    innerLight(Wd, () => chestPos(EP, .4, { sit: true }), t => 1.35 + .1 * sin(t * 1.8), { k: 1.3 });
+    sitter(Wd, boyN(1), [-1.7, 0, -1.5], PI / 2, { scale: .8, seed: .2, fn: t => ({ gesture: 'rest', look: -.3 }) }); sitter(Wd, manN(2), [1.7, 0, -1.5], -PI / 2, { seed: .4 });
+    for (const [x, f, i] of [[-1.0, .99, 3], [1.1, -.98, 4]]) { const p = [x, .012, -2.35]; person(Wd, manN(i), t => ({ pos: p, facing: f, gesture: 'rest', smile: .45, seed: .1 * i })); innerLight(Wd, () => chestPos(p, f, {}), t => 1 + .1 * sin(t * 2 + i), { k: 1 }); }
+    person(Wd, RAV, t => ({ pos: [-1.0, .012, 1.9], facing: 0, gesture: 'rest', smile: 1, talk: 0, seed: .3 }));
+    return Object.assign(Wd, { cam: path([[0, [2.8, 1.55, .7], [-.2, 1.3, -2.0], 48], [4.5, [1.9, 1.6, .9], [0, 1.3, -2.0], 46], [8.5, [.9, 1.62, 1.3], [0, 1.35, -1.9], 46], [11.5, [.8, 1.6, 3.0], [0, 1.4, -1.5], 50], [14.5, [.8, 1.9, 7.5], [0, 1.7, 2], 50], [18.33, [1.6, 2.3, 15.5], [-.4, 1.9, 2.0], 46]]) });
+  } },
+] });
+window.__dur = Math.round(window.__dur * 100) / 100;   // 298.96
+</script>
+</html>
