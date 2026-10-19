@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>מעמד הר סיני</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script>window.__T0=170.2867;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import { film, person, cloud, label, path, orbit, seq, THREE, prog, ease, clamp, lerp, rng, box, cyl, ball, toon, ink, canvasTex, D } from '../../lib/stage3d.js';
+import { POSES } from '../../lib/figure3d.js';
+import { roadWorld } from '../azamra342/road.js';
+import { buildShul, buildDryland } from '../azamra342/shul.js';
+import * as K from './k06lib.js';
+const { cine, mix, lantern, holdAt, lerp3, lbl, glowSprite, flameSprite, FATHER, SON, RAV } = K;
+POSES.lookup = { head: [-.42, 0, 0], chest: [-.08, 0, 0] };   // gazing up at the mountain
+const PI = Math.PI, sm = ease.sm;
+const pf = (a, b, t0, t1, t) => lerp(a, b, sm(prog(t, t0, t1)));
+
+// ---------- worlds ----------
+const GOLD = { ground: 'sand', groundSize: 2600, groundRep: [430, 430], skyTop: 0x2f6dbd, skyBottom: 0xffd49a, fogColor: 0xf0cf9c, fogNear: 260, fogFar: 1500, sun: 2.1, sunColor: 0xffc27a, sunPos: [90, 45, 70], hemi: 1.2, hemiSky: 0xfff2d8, hemiGround: 0xb9915a, shadowExt: 30, skyR: 1700 };
+const DAY = { ground: 'sand', groundSize: 2200, groundRep: [370, 370], skyTop: 0x3f86d6, skyBottom: 0xfbe9c8, fogColor: 0xf1e1c0, fogNear: 220, fogFar: 1300, sun: 1.95, hemi: 1.3, hemiGround: 0xa58a5a, shadowExt: 34, skyR: 1700 };
+const SHULSKY = { skyTop: 0xa4c6ea, skyBottom: 0xf9e9c6, fogColor: 0xf4e5c3, fogNear: 70, fogFar: 340, sun: 2.2, hemi: 1.55, hemiGround: 0xa08a60 };
+
+// scatter rocks / bushes / small trees on the sand (deterministic)
+function scatter(Wd, seed, n, area, skip) {
+  const r = rng(seed);
+  for (let i = 0; i < n; i++) { const x = area[0] + r() * (area[1] - area[0]), z = area[2] + r() * (area[3] - area[2]); if (skip && skip(x, z)) continue; const s = .5 + r() * 1.6, k = r();
+    if (k < .5) Wd.add(ball(1, ['#b9a07a', '#a8906c', '#c8ae86'][i % 3], { pos: [x, s * .25, z], scale: [s * 1.2, s * .55, s], rot: [0, r() * 3, 0], ink: false }));
+    else if (k < .85) Wd.add(ball(1, ['#8a7a4e', '#7b6c44', '#9a8a5a'][i % 3], { pos: [x, s * .3, z], scale: [s, s * .6, s], ink: false }));
+    else { Wd.add(cyl(.12 * s, .2 * s, 1.8 * s, 0x6b4a30, { pos: [x, .9 * s, z], ink: false })); Wd.add(ball(1, '#8a9a62', { pos: [x, 2.2 * s, z], scale: [1.5 * s, .7 * s, 1.5 * s], ink: false })); } }
+}
+function dunes(Wd, seed, n, area, skip) {
+  const r = rng(seed); for (let i = 0; i < n; i++) { const x = area[0] + r() * (area[1] - area[0]), z = area[2] + r() * (area[3] - area[2]); if (skip && skip(x, z)) continue; const w = 25 + r() * 60, h = 3 + r() * 7;
+    Wd.add(ball(1, ['#e6c690', '#dcba82', '#efd09c'][i % 3], { pos: [x, 0, z], scale: [w, h, w * (.5 + r() * .5)], rot: [0, r() * 3, 0], ink: false })); }
+}
+
+film({
+  shots: [
+    // ===== 1. the rav at the shtender, slow push-in (10.6) =====
+    { dur: 10.6, caps: [], build() {
+      const Wd = roadWorld(SHULSKY); buildDryland(Wd, { skip: [[-16, 16, -12, 12]] }); buildShul(Wd, {});
+      person(Wd, RAV, t => ({ pos: [0, 0, -.35], facing: 0, perform: .8, talk: .5 + .5 * Math.sin(t * 9) * Math.sin(t * 2.3 + 1), smile: .55, seed: .3 }));
+      Wd.add(box(.52, .3, .04, 0x7a4a2a, { pos: [0, .62, .66], ink: false })); lbl(Wd, 'פרשת יתרו', [0, .62, .7], .13);
+      Wd.add(box(.5, .05, .3, 0xf0e6cc, { pos: [-.03, 1.1, .51], rot: [.42, 0, .04], ink: false })); Wd.add(box(.5, .05, .3, 0xf6eed8, { pos: [.03, 1.1, .51], rot: [.42, 0, -.04], ink: false }));
+      return Object.assign(Wd, { cam: path([[0, [5.6, 3.3, 5.3], [0, 1.2, -.4], 56], [10.6, [1.55, 1.5, 1.9], [0, 1.18, -.35], 41]]) });
+    } },
+    // ===== 2. desert fly-in to Har Sinai, descend to father and son, handing over the lantern (21) =====
+    { dur: 21, caps: [], build() {
+      const Wd = roadWorld(GOLD); const X0 = 0, Z0 = 40;
+      const M = K.mountain(Wd, { x: 0, z: -430, R: 150, H: 125, seed: 4, path: false });
+      const gl = glowSprite(0xffcf80, 520, .5); gl.position.set(0, 120, -440); Wd.add(gl);
+      lbl(Wd, 'הר סיני', [0, 185, -430], 26);
+      dunes(Wd, 3, 70, [-700, 700, -220, 420], (x, z) => Math.abs(x) < 40 && z > -20 && z < 120);
+      scatter(Wd, 8, 90, [-60, 60, -40, 120], (x, z) => Math.hypot(x - X0, z - Z0) < 12);
+      Wd.add(ball(1, 0xe3c48e, { pos: [X0, 0, Z0], scale: [9, 1.5, 9], ink: false }));
+      const fy = 1.5, fx = -.62, sx = .62;
+      const fa = t => pf(PI, PI / 2, 12, 13.6, t), sa = t => pf(PI, 1.5 * PI, 12.4, 13.8, t);
+      person(Wd, FATHER, t => ({ pos: [fx, fy, Z0], facing: fa(t), gesture: t > 8.2 && t < 11.8 ? 'point' : (t > 12.8 ? 'offer' : 'rest'), smile: .4, seed: .2 }));
+      person(Wd, SON, t => ({ pos: [sx, fy, Z0], facing: sa(t), gesture: t > 13.4 ? 'offer' : 'rest', look: .3, smile: .5, seed: .6 }), { scale: .72 });
+      lantern(Wd, t => { const Pf = holdAt([fx, fy, Z0], fa(t), 1, .42, .86), up = holdAt([fx, fy, Z0], fa(t), 1, .42, 1.12), Ps = holdAt([sx, fy, Z0], sa(t), .72, .4, .82);
+        let p = lerp3(Pf, up, sm(prog(t, 12.3, 13.3))); const u = sm(prog(t, 14.0, 15.8)); p = lerp3(p, Ps, u); p[1] += .22 * Math.sin(PI * u);
+        return { pos: p, lit: .55 + .55 * sm(prog(t, 12.5, 15.8)) + .35 * sm(prog(t, 17, 20.5)), glow: 1 + sm(prog(t, 16, 20.5)) * .9, power: 2 + 2.5 * sm(prog(t, 15, 20)) }; }, { dist: 20 });
+      const A = path([[0, [-70, 170, 330], [0, 60, -430], 55], [4.5, [-30, 85, 255], [0, 55, -430], 52], [8.5, [3, 10, 76], [0, 40, -430], 48]]);
+      const B = cine([[9, [X0, 2.4, Z0], 7.5, 3.4, 12, 46, -.1], [14, [X0, 2.4, Z0], 4.8, 1.0, 92, 44, -.1], [21, [X0, 2.45, Z0], 2.3, .45, 150, 40, -.35]]);
+      return Object.assign(Wd, { cam: mix(A, B, 7, 11.5) });
+    } },
+    // ===== 3. the pillar that stands on a thin support: doubt (17) =====
+    { dur: 17, caps: [], build() {
+      const Wd = roadWorld({ skyTop: 0x3577cc, skyBottom: 0xf7e2bd, fogColor: 0xefdcb8, fogNear: 60, fogFar: 360, sun: 1.9, hemi: 1.35, hemiGround: 0xa89066, shadowExt: 32 });
+      buildDryland(Wd, { skip: [[-16, 16, -16, 16]] });
+      K.pillar(Wd, { mode: 'weak' }); K.balance(Wd, { x: 6.2, z: 0 });
+      for (let i = 0; i < 4; i++) Wd.add(cloud({ seed: 4 + i, size: 4, color: 0xfaf4ea, pos: [-50 + i * 38, 32 + (i % 2) * 6, -60 - i * 6], puffs: 6, cast: false }));
+      return Object.assign(Wd, { cam: cine([[0, [3.1, 5.2, 0], 18, 2.4, 20, 46, -.8], [17, [3.1, 5.2, 0], 15, 5.4, 290, 46, -.8]]) });
+    } },
+    // ===== 4. the foot of Har Sinai: the crowd, the column of light, crane up (8.2) =====
+    { dur: 8.2, caps: [], build() {
+      const Wd = roadWorld(DAY); const M = K.mountain(Wd, { x: 0, z: -170, R: 110, H: 98, seed: 7, path: true });
+      const gl = glowSprite(0xffd890, 90, .7); gl.position.set(0, 99, -170); Wd.add(gl);
+      K.crowd(Wd, { seed: 12, n: 1100, cx: 0, cz: -62, rx: 48, rz: 52, face: [0, 0, -170], yAt: (x, z) => M.hAt(x - M.X, z - M.Z), skip: (x, z) => x > 3.4 && z > -22 && z < 0 || Math.abs(x) < 6 && z > -16 });
+      scatter(Wd, 5, 60, [-90, 90, -120, 30], (x, z) => Math.abs(x) < 40 && z > -80);
+      const col = new THREE.Group(); const top = new THREE.Vector3(0, 98, -170), bot = new THREE.Vector3(0, 1, -38), mid = top.clone().add(bot).multiplyScalar(.5), len = top.distanceTo(bot);
+      for (const [k, op] of [[1, .1], [.66, .13], [.4, .18]]) { const c = new THREE.Mesh(new THREE.CylinderGeometry(3.5 * k, 15 * k, len, 24, 1, true), new THREE.MeshBasicMaterial({ color: 0xffd98a, transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false })); col.add(c); }
+      col.position.copy(mid); col.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), top.clone().sub(bot).normalize()); Wd.add(col);
+      const pool = glowSprite(0xffd890, 70, .55); pool.position.set(0, 3, -40); Wd.add(pool);
+      Wd.on(t => { const k = ease.out(prog(t, .6, 3.2)); col.scale.set(k, 1, k); col.visible = k > .01; pool.material.opacity = .55 * k; });
+      const fl = [[0, -9.2, FATHER, 0, 1], [1, -10.4, SON, 1, .72], [-1.9, -9.8, K.fatherN(2), 2, 1], [1.7, -11.8, K.fatherN(4), 3, 1], [-.8, -11.6, K.sonN(2), 4, .72], [-2.6, -12.3, K.sonN(1), 5, .72]];
+      fl.forEach(([x, z, look, i, sc]) => person(Wd, look, t => ({ pos: [x, 0, z], facing: PI + (i - 2.5) * .06, gesture: 'lookup', smile: .3, seed: .13 * i + .1, look: .15 }), { scale: sc }));
+      return Object.assign(Wd, { cam: path([[0, [7.6, 1.55, -10.4], [-.6, 1.55, -10.5], 42], [3.4, [4.4, 1.7, -10.6], [0, 1.6, -10.4], 42], [6, [6, 10, -2], [0, 24, -120], 48], [8.2, [10, 30, 30], [0, 64, -160], 52]]) });
+    } },
+    // ===== 5. the pillar now stands on a mountain base; sparks bounce off (18.4) =====
+    { dur: 18.4, caps: [], build() {
+      const Wd = roadWorld({ skyTop: 0x3577cc, skyBottom: 0xf7e2bd, fogColor: 0xefdcb8, fogNear: 60, fogFar: 360, sun: 1.95, hemi: 1.3, hemiGround: 0xa89066, shadowExt: 32 });
+      buildDryland(Wd, { skip: [[-16, 16, -16, 16]] });
+      K.pillar(Wd, { mode: 'strong' }); K.balance(Wd, { x: 9.5, z: 0, strong: true });
+      for (let i = 0; i < 4; i++) Wd.add(cloud({ seed: 14 + i, size: 4, color: 0xfaf4ea, pos: [-50 + i * 38, 34 + (i % 2) * 6, -60 - i * 6], puffs: 6, cast: false }));
+      return Object.assign(Wd, { cam: cine([[0, [3, 6.2, 0], 15, .6, 10, 50, 3.4], [9, [3, 6.2, 0], 17, 1.2, 115, 50, 1.6], [18.4, [3, 6.2, 0], 20, 12, 190, 50, -.8]]) });
+    } },
+    // ===== 6. THE CENTRAL IMAGE: the chain of fathers and sons passing the lantern (34.6) =====
+    { dur: 34.6, caps: [], build() {
+      const Wd = roadWorld(Object.assign({}, DAY, { shadowExt: 38 }));
+      const M = K.mountain(Wd, { x: 0, z: -330, R: 150, H: 115, seed: 6 });
+      const glow = glowSprite(0xffc870, 380, 0); glow.position.set(0, 135, -330); Wd.add(glow);
+      Wd.on(t => { glow.material.opacity = .25 + .35 * ease.out(prog(t, 0, 4)); });
+      Wd.add(box(5.6, .1, 240, 0xe9d7ad, { pos: [0, .05, -100], ink: false }));
+      scatter(Wd, 6, 120, [-40, 40, -140, 30], (x, z) => Math.abs(x) < 5);
+      const NP = 10, Z0 = -100, DZ = 11, XF = -.95, XS = .95, PD = 1.3, tpOf = i => 2 + 2 * i, r = rng(3);
+      const fHold = (x, z, up) => holdAt([x, 0, z], PI / 2, 1, .42, up), sHold = (x, z) => holdAt([x, 0, z], -PI / 2, .72, .42, .86);
+      const stepOf = (t, tp) => .3 * sm(prog(t, tp - .8, tp - .2)) * (1 - sm(prog(t, tp + .9, tp + 1.6)));
+      const pairs = [];
+      for (let i = 0; i < NP; i++) { const z = Z0 + i * DZ, jx = (r() - .5) * .3, tp = tpOf(i), fx = t => XF + jx + stepOf(t, tp), sx = t => XS + jx - stepOf(t, tp);
+        person(Wd, K.fatherN(i), t => ({ pos: [fx(t), 0, z], facing: PI / 2, gesture: t > tp - .8 && t < tp + 1.1 ? 'offer' : (t >= tp + 1.1 ? 'heart' : 'rest'), smile: .45, seed: .1 + i * .07 }));
+        person(Wd, K.sonN(i), t => ({ pos: [sx(t), 0, z], facing: 1.5 * PI, gesture: t > tp - .6 ? 'offer' : 'rest', smile: .55, look: .2, seed: .5 + i * .05 }), { scale: .72 });
+        const litOf = t => i === 0 ? .1 + .9 * ease.out(prog(t, .3, 1.6)) : .08 + .92 * ease.out(prog(t, tp - .8, tp - .3));
+        const posOf = t => { const Pf = fHold(fx(t), z, .8 + .1 * sm(prog(t, tp - .8, tp - .1))), Ps = sHold(sx(t), z), u = ease.io(prog(t, tp, tp + PD)); const p = lerp3(Pf, Ps, u); p[1] += .28 * Math.sin(PI * u); return p; };
+        lantern(Wd, t => ({ pos: posOf(t), lit: litOf(t), power: 0, glow: 1.2 }), { light: false, seed: i });
+        pairs.push({ z, posOf, fHold: () => fHold(XF + jx, z, .85), tp });
+        if (i % 3 === 0) { const sp = lbl(Wd, 'דור', [0, 2.75, z], .55); const b = sp.scale.clone(); Wd.on(t => { const k = ease.out(prog(t, tp - .6, tp + .2)); sp.visible = k > .02; sp.scale.set(b.x * k, b.y * k, 1); }); } }
+      // the travelling light: an orb from each pair to the next, with a real light
+      const orb = glowSprite(0xffe3a0, 3.2, 1), orb2 = glowSprite(0xfff6dc, 1.3, 1); Wd.add(orb); Wd.add(orb2);
+      const ol = new THREE.PointLight(0xffc870, 0, 26, 1.2); Wd.add(ol);
+      Wd.on(t => { let act = -1, e = 0; for (let j = 0; j < NP - 1; j++) { const a = tpOf(j) + .6, b = tpOf(j) + 1.4; if (t >= a && t <= b) { act = j; e = ease.io((t - a) / (b - a)); } }
+        orb.visible = orb2.visible = act >= 0;
+        if (act >= 0) { const A = pairs[act].posOf(tpOf(act) + PD + .2), B = pairs[act + 1].fHold(), p = lerp3(A, B, e); p[1] += 1.1 * Math.sin(PI * e); orb.position.set(...p); orb2.position.set(...p); ol.position.set(...p); ol.intensity = 55 * Math.sin(PI * e); }
+        else ol.intensity = 0; });
+      // a soft steady light on the lit stretch of road
+      const sl = new THREE.PointLight(0xffc870, 0, 60, 1.1); sl.position.set(0, 4, -50); Wd.add(sl); Wd.on(t => { sl.intensity = 18 * ease.out(prog(t, 3, 20)); sl.position.z = lerp(-100, -5, prog(t, 2, 20)); });
+      const cam = path([[0, [.4, 2.1, -88], [0, 1.3, -106], 40], [7, [.4, 2.2, -62], [0, 1.4, -78], 40], [13, [.4, 2.3, -30], [0, 1.4, -46], 42], [19, [.4, 3.2, 2], [0, 1.5, -16], 46], [25, [5, 8, 12], [0, 1.5, -24], 42], [30, [7, 9, 18], [0, 2, -40], 40], [34.6, [9, 10, 24], [0, 3, -55], 38]]);
+      return Object.assign(Wd, { cam });
+    } },
+    // ===== 7. library: Rambam, Ramban, Sefer HaMitzvot, the empty slot lights up (17) =====
+    { dur: 17, caps: [], build() {
+      const Wd = roadWorld(SHULSKY); buildDryland(Wd, { skip: [[-16, 16, -12, 12]] }); buildShul(Wd, {});
+      const sht = Wd.scene.children.find(o => o.isGroup && o.position.x === 0 && Math.abs(o.position.z - .55) < 1e-6); if (sht) sht.visible = false;
+      const TZ = -3.6; Wd.add(box(3.8, .09, 1.5, 0x8a5a34, { pos: [0, .78, TZ] }));
+      for (const dx of [-1.75, 1.75]) for (const dz of [-.6, .6]) Wd.add(box(.1, .74, .1, 0x5e3a20, { pos: [dx, .4, TZ + dz], ink: false }));
+      const bookDefs = [[-1.15, 'רמב"ן', 0x7a1f2a, .78, 1.0], [0, 'ספר המצוות', 0x2f5a3a, .62, .86], [1.15, 'רמב"ם', 0x1f3b6b, .78, 1.0]];
+      bookDefs.forEach(([x, name, col, h, hh], i) => { const g = new THREE.Group(); g.position.set(x, .83, TZ + .1); g.rotation.x = -.28; Wd.add(g);
+        g.add(box(.68, h, .13, col, { pos: [0, h / 2 + .03, 0] })); g.add(box(.62, h - .08, .1, 0xf3ead2, { pos: [0, h / 2 + .03, .02], ink: false })); g.add(box(.7, .09, .15, 0xd9a63a, { pos: [0, h * .82 + .03, 0], ink: false })); g.add(box(.7, .09, .15, 0xd9a63a, { pos: [0, h * .22, 0], ink: false }));
+        Wd.add(box(.78, .06, .4, 0x6a4326, { pos: [x, .84, TZ + .05], ink: false })); const lb = lbl(Wd, name, [x, 1.9 + (i === 1 ? -.15 : 0), TZ + .1], .27); const b = lb.scale.clone(); Wd.on(t => { const k = ease.out(prog(t, 1.2 + i * .9, 2.0 + i * .9)); lb.scale.set(b.x * k, b.y * k, 1); lb.visible = k > .02; }); });
+      // row of glowing tablets on the back wall, one empty slot that lights up gold
+      const NT = 12, SLOT = 7, WZ = -5.66; const slotM = new THREE.MeshBasicMaterial({ color: 0xfff0c0, transparent: true, opacity: 0 }); let slotGlow;
+      for (let i = 0; i < NT; i++) { const x = (i - (NT - 1) / 2) * .78, y = 5.0;
+        Wd.add(box(.6, .86, .08, 0x5e3a20, { pos: [x, y, WZ + .02], ink: false }));
+        if (i === SLOT) { const sg = new THREE.Mesh(new THREE.PlaneGeometry(.5, .76), slotM); sg.position.set(x, y, WZ + .07); Wd.add(sg); slotGlow = glowSprite(0xffcf5a, 4.2, 0); slotGlow.position.set(x, y, WZ + .3); Wd.add(slotGlow); }
+        else { const sh = new THREE.Shape(); sh.moveTo(-.22, -.34); sh.lineTo(.22, -.34); sh.lineTo(.22, .14); sh.absarc(0, .14, .22, 0, PI, false); sh.lineTo(-.22, -.34); const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), new THREE.MeshBasicMaterial({ color: 0xf4e7c4 })); m.position.set(x, y, WZ + .07); Wd.add(m); } }
+      Wd.on(t => { const k = sm(prog(t, 9.5, 11.5)), pulse = .85 + .15 * Math.sin(t * 6); slotM.opacity = k; slotM.color.setRGB(1, lerp(.94, .76, k), lerp(.75, .25, k)); slotGlow.material.opacity = .9 * k * pulse; slotGlow.scale.setScalar(2.2 + 2.6 * k * pulse); });
+      const cam = path([[0, [-7.4, 1.7, -1.4], [-4.8, 2.1, -5.6], 52], [7.5, [-3.6, 1.6, -.4], [-1.2, 1.5, -4.2], 52], [11, [-.2, 1.9, 1.2], [0, 2.5, -4.6], 56], [17, [.4, 2.2, 1.6], [0, 3.1, -4.6], 58]]);
+      return Object.assign(Wd, { cam });
+    } },
+    // ===== 8. a house built on a stone of Har Sinai (22.2) =====
+    { dur: 22.2, caps: [], build() {
+      const Wd = roadWorld(Object.assign({}, DAY, { ground: 'dry', shadowExt: 36 }));
+      scatter(Wd, 9, 80, [-60, 60, -50, 50], (x, z) => Math.abs(x) < 14 && Math.abs(z) < 12);
+      const hw = 5, hd = 3.5, CH = .5, NC = 9, T0 = 2.2, DT = 1.35;
+      Wd.add(box(12, .5, 9, 0xcbbd9a, { pos: [0, .25, 0] }));
+      const cols = [0xf3e6c8, 0xeadbb8, 0xf6ecd2, 0xe3d2ac];
+      for (let j = 0; j < NC; j++) { const y = .5 + j * CH + CH / 2, sc = [];
+        const defs = [[2 * hw, CH, .5, 0, y, -hd], [2 * hw, CH, .5, 0, y, hd], [.5, CH, 2 * hd, -hw, y, 0], [.5, CH, 2 * hd, hw, y, 0]];
+        if (j < 4) { defs.splice(1, 1, [3.9, CH, .5, -3.05, y, hd], [3.9, CH, .5, 3.05, y, hd]); }
+        const g = new THREE.Group(); defs.forEach(d => g.add(box(d[0], d[1], d[2], cols[j % 4], { pos: [d[3], d[4], d[5]] }))); Wd.add(g);
+        const base = y - CH / 2; Wd.on(t => { const k = ease.out(prog(t, T0 + j * DT, T0 + j * DT + .9)); g.visible = k > .01; g.scale.y = Math.max(.001, k); g.position.y = base * (1 - k); }); }
+      const roof = new THREE.Group(); const RY = .5 + NC * CH;
+      for (const sx of [-1, 1]) roof.add(box(5.9, .3, 9.4, 0xc4673f, { pos: [sx * 2.55, RY + 1.2, 0], rot: [0, 0, -sx * .42] }));
+      roof.add(box(.5, .35, 9.6, 0xa5522f, { pos: [0, RY + 2.2, 0] })); Wd.add(roof); Wd.on(t => { const k = ease.out(prog(t, 15.2, 17.2)); roof.visible = k > .01; roof.position.y = (1 - k) * 9; });
+      const door = box(1.7, 2.4, .2, 0x5a3820, { pos: [0, 1.7, hd + .1] }); Wd.add(door); Wd.on(t => { door.visible = t > 14.8; });
+      const rk = K.sinaiRock(Wd, { pos: [-6.5, 0, 5.1], s: 1.7, power: 4 });
+      Wd.add(ball(1, 0xcbbd9a, { pos: [-6.5, 0, 5.1], scale: [.01, .01, .01], ink: false }));
+      // wonder sparks drifting away and vanishing
+      const NS = 18, rs = rng(21), SPK = [], cc = [0x7ab8ff, 0xff8ac8, 0xffe27a, 0xb69aff];
+      for (let i = 0; i < NS; i++) { const s = glowSprite(cc[i % 4], 1, 1); s.userData = { x: 2 + rs() * 5, z: 1 + rs() * 4, y0: 1.5 + rs() * 3, vx: 1.2 + rs() * 1.4, vy: .5 + rs() * .8, vz: -.8 + rs() * 1.6, t0: 1 + rs() * 9, life: 5 + rs() * 3 }; Wd.add(s); SPK.push(s); }
+      Wd.on(t => SPK.forEach(s => { const d = s.userData, u = (t - d.t0) / d.life; s.visible = u > 0 && u < 1; if (!s.visible) return; s.position.set(d.x + d.vx * (t - d.t0), d.y0 + d.vy * (t - d.t0) + .4 * Math.sin(t * 2 + d.x), d.z + d.vz * (t - d.t0)); const k = Math.sin(PI * u); s.scale.setScalar(1.6 * k + .1); s.material.opacity = k; }));
+      person(Wd, FATHER, t => ({ pos: [-9.6, 0, 7.6], facing: PI * .78, gesture: t > 4 && t < 9 ? 'point' : 'explain', talk: 0, smile: .45, seed: .2 }));
+      person(Wd, SON, t => ({ pos: [-8.6, 0, 7.8], facing: PI * .8, gesture: 'rest', look: .2, smile: .4, seed: .6 }), { scale: .72 });
+      const A = cine([[0, [0, 3, 0], 36, 15, 205, 50, 0], [10, [0, 3, 0], 25, 8, 280, 50, 0], [16, [0, 3, 0], 19, 5, 335, 50, 0]]);
+      const B = path([[16, [-11, 9, 12], [-6.5, 1.2, 5.1], 50], [19.5, [-8.6, 3.2, 8.2], [-6.5, 1.0, 5.1], 46], [22.2, [-7.5, 1.7, 6.5], [-6.5, .9, 5.1], 42]]);
+      return Object.assign(Wd, { cam: mix(A, B, 15.2, 19) });
+    } },
+    // ===== 9. THE BIG SINAI SHOT (14.9) =====
+    { dur: 14.9, caps: [], build() {
+      const Wd = roadWorld({ ground: 'sand', groundSize: 2200, groundRep: [370, 370], skyTop: 0x2a2458, skyBottom: 0xd98a6a, fogColor: 0x9a7080, fogNear: 200, fogFar: 1200, sun: 1.8, sunColor: 0xffe2c0, sunPos: [-70, 30, 60], hemi: 1.2, hemiSky: 0xcab8c8, hemiGround: 0x7a6050, shadowExt: 36, skyR: 1700 });
+      const MZ = -140, M = K.mountain(Wd, { x: 0, z: MZ, R: 98, H: 100, seed: 11, path: true, pathStart: PI * .5 });
+      const top = M.top, SX = top[0], SY = top[1], SZ = top[2], H = M.H;
+      const radAt = (a, target) => { let rho = 2; const dx = Math.cos(a), dz = Math.sin(a); while (rho < 140 && M.hAt(SX - M.X + dx * rho, SZ - M.Z + dz * rho) > target) rho += 1; return rho; };
+      // thick grey-violet cloud wrapping the upper third of the mountain, lit from inside
+      const cm = new THREE.MeshLambertMaterial({ color: 0x8a7a9a, emissive: 0x3a2c40, transparent: true, opacity: .9, depthWrite: false }), rc = rng(33), CP = [];
+      for (let i = 0; i < 120; i++) { const top2 = i >= 100, a = rc() * 6.283, h = top2 ? H * (1 + rc() * .12) : lerp(.5, 1.06, Math.pow(rc(), .8)) * H, rho = top2 ? rc() * 8 : radAt(a, h) + 3 + rc() * 8, s = top2 ? 12 + rc() * 8 : 10 + rc() * 11; const m = new THREE.Mesh(new THREE.SphereGeometry(s, 14, 10), cm); m.position.set(SX + Math.cos(a) * rho, h, SZ + Math.sin(a) * rho); m.scale.y = .8; m.renderOrder = 3; Wd.add(m); CP.push([a, h, rho]); }
+      const core = glowSprite(0xffa850, 150, .8); core.position.set(SX, SY * .8, SZ); Wd.add(core);
+      const rim = []; for (let k = 0; k < 7; k++) { const a = k / 7 * 6.283 + .3, h = H * (.75 + .1 * Math.sin(k * 2)), rho = radAt(a, h) + 16; const g = glowSprite(0xffb870, 46, .5); g.position.set(SX + Math.cos(a) * rho, h, SZ + Math.sin(a) * rho); Wd.add(g); rim.push(g); }
+      const cl = new THREE.PointLight(0xffb070, 0, 300, 1.2); cl.position.set(SX, SY * .85, SZ + 20); Wd.add(cl);
+      const LT = [2.2, 5.1, 7.9, 10.8, 13.4], FLS = []; for (let k = 0; k < 5; k++) { const a = 1.1 + k * 1.3, h = H * (.7 + .1 * (k % 3)), rho = radAt(a, h) + 22; const g = glowSprite(0xe4e6ff, 90, 0); g.position.set(SX + Math.cos(a) * rho, h, SZ + Math.sin(a) * rho); g.renderOrder = 8; Wd.add(g); FLS.push(g); }
+      Wd.on(t => { const f = 1 + .1 * Math.sin(t * 7) + .06 * Math.sin(t * 13.3); core.scale.setScalar(150 * f); cl.intensity = 500 * f; rim.forEach((g, k) => { g.material.opacity = .45 * (1 + .25 * Math.sin(t * 5 + k * 2)); });
+        FLS.forEach((g, k) => { const u = t - LT[k]; g.material.opacity = u > 0 && u < .5 ? (u < .1 ? 1 : (u > .18 && u < .26 ? .9 : Math.max(0, .5 - u))) : 0; }); });
+      // a few big flames along the lower edge of the cloud
+      const FL = [], rf = rng(44);
+      for (let i = 0; i < 9; i++) { const a = i / 9 * 6.283 + .2, rho = radAt(a, H * .58), x = SX + Math.cos(a) * rho, z = SZ + Math.sin(a) * rho, y = M.hAt(x - M.X, z - M.Z); const s = flameSprite(16, 34, true); s.position.set(x, y + .5, z); s.userData = { ph: rf() * 9, w: 16, h: 34 }; Wd.add(s); FL.push(s); }
+      Wd.on(t => FL.forEach(s => { const d = s.userData, f = 1 + .2 * Math.sin(t * 9 + d.ph) + .1 * Math.sin(t * 17 + d.ph * 2); s.scale.set(d.w * (1.08 - .12 * f), d.h * f, 1); }));
+      // rings of sound expanding horizontally around the mountain at mid-height
+      const RG = []; for (let k = 0; k < 8; k++) { const m = new THREE.Mesh(new THREE.TorusGeometry(1, .02, 8, 96), new THREE.MeshBasicMaterial({ color: 0xffe6b0, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false })); m.rotation.x = PI / 2; m.position.set(SX, H * .38, SZ); Wd.add(m); RG.push(m); }
+      const rt = [3.4, 4.2, 6.5, 7.3, 9.4, 10.2, 12.2, 13.0];
+      Wd.on(t => RG.forEach((m, k) => { const u = (t - rt[k]) / 3.6; m.visible = u > 0 && u < 1; if (!m.visible) return; const s = 45 + ease.out(u) * 170; m.scale.set(s, s, s); m.material.opacity = .7 * (1 - u) * (1 - u); }));
+      K.crowd(Wd, { seed: 17, n: 700, cx: 0, cz: -28, rx: 38, rz: 24, face: [0, 0, MZ], arms: 1 });
+      scatter(Wd, 7, 50, [-110, 110, -90, 30], (x, z) => Math.abs(x) < 42 && z > -52);
+      return Object.assign(Wd, { cam: cine([[0, [0, 22, MZ], 200, 8, 35, 52, 26], [5.5, [0, 22, MZ], 172, 30, 125, 52, 36], [10, [0, 22, MZ], 160, 54, 235, 54, 36], [14.9, [0, 22, MZ], 150, 16, 385, 56, 52]]) });
+    } },
+    // ===== 10. the tree everybody leans on, 360 orbit (18.5) =====
+    { dur: 18.5, caps: [], build() {
+      const Wd = treeWorld(); const T = treeScene(Wd, { storm: false });
+      return Object.assign(Wd, { cam: cine([[0, [0, 6.6, 0], 21, 2.0, 200, 50, -.6], [18.5, [0, 6.6, 0], 19, 3.4, 560, 50, -.6]]) });
+    } },
+    // ===== 11. the dust storm passes; the tree does not move (24.5) =====
+    { dur: 24.5, caps: [], build() {
+      const Wd = treeWorld(); const T = treeScene(Wd, { storm: true });
+      return Object.assign(Wd, { cam: cine([[0, [0, 5.2, 0], 27, 4.0, 20, 50, -.2], [14, [0, 5.0, 0], 15, 2.2, 8, 48, -.4], [24.5, [0, 5.4, 0], 17, 3.8, 82, 48, -.5]]) });
+    } },
+    // ===== 12. first to himself (5.7) =====
+    { dur: 5.7, caps: [], build() {
+      const Wd = roadWorld(GOLD); scatter(Wd, 12, 70, [-40, 40, -30, 40], (x, z) => Math.hypot(x, z) < 5); dunes(Wd, 3, 30, [-500, 500, -400, -60]);
+      const M = K.mountain(Wd, { x: 120, z: -300, R: 130, H: 105, seed: 8, path: false });
+      const fa = t => pf(0, 1.15, 2.6, 4.2, t);
+      person(Wd, FATHER, t => ({ pos: [0, 0, 0], facing: fa(t), gesture: t < 2.7 ? 'pray' : 'offer', smile: .55, brow: .1, seed: .2 }));
+      person(Wd, SON, t => ({ pos: [1.75, 0, .25], facing: pf(PI * 1.35, 1.5 * PI, 2.6, 3.8, t), gesture: t > 3.6 ? 'offer' : 'rest', look: .3, smile: .55, seed: .6 }), { scale: .72 });
+      lantern(Wd, t => { const Pc = holdAt([0, 0, 0], 0, 1, .34, .98), Po = holdAt([0, 0, 0], fa(t), 1, .42, .9); const p = lerp3(Pc, Po, sm(prog(t, 2.8, 4.4))); return { pos: p, lit: 1.1, glow: .22, power: 2.2 }; }, { dist: 12 });
+      return Object.assign(Wd, { cam: cine([[0, [.5, 1.4, .1], 2.9, .25, -30, 40, .05], [5.7, [.7, 1.38, .1], 2.5, .35, 32, 40, .05]]) });
+    } },
+    // ===== 13. the learning table, windows with Har Sinai at sunset (36.3) =====
+    { dur: 36.3, caps: [], build() {
+      const Wd = roadWorld({ ground: 'dry', groundSize: 2000, groundRep: [330, 330], skyTop: 0x35356e, skyBottom: 0xffa25a, fogColor: 0xe9a878, fogNear: 120, fogFar: 900, sun: 2.3, sunColor: 0xff9a48, sunPos: [90, 14, -4], hemi: 1.15, hemiSky: 0xffe8c8, hemiGround: 0x8a6a48, shadowExt: 30, skyR: 1700 });
+      buildShul(Wd, {});
+      const sht = Wd.scene.children.find(o => o.isGroup && o.position.x === 0 && Math.abs(o.position.z - .55) < 1e-6); if (sht) sht.visible = false;
+      K.mountain(Wd, { x: 250, z: -3, R: 135, H: 115, seed: 5, path: false });
+      const sg = glowSprite(0xffb060, 400, .5); sg.position.set(300, 40, -3); Wd.add(sg);
+      scatter(Wd, 14, 40, [20, 120, -30, 30]);
+      const TZ = -1.6; Wd.add(box(1.5, .09, 1.5, 0x8a5a34, { pos: [0, .78, TZ] }));
+      for (const dx of [-.62, .62]) for (const dz of [-.62, .62]) Wd.add(box(.08, .74, .08, 0x5e3a20, { pos: [dx, .4, TZ + dz], ink: false }));
+      Wd.add(box(.62, .06, .44, 0xf3ead2, { pos: [-.18, .85, TZ], rot: [0, .15, 0] })); Wd.add(box(.62, .06, .44, 0xf3ead2, { pos: [.18, .85, TZ], rot: [0, -.15, 0] })); Wd.add(box(.05, .1, .46, 0x5b1f2a, { pos: [0, .85, TZ], ink: false }));
+      Wd.add(box(.7, .05, .36, 0x1f3b6b, { pos: [0, .85, TZ + .45], rot: [0, .05, 0], ink: false }));
+      K.sitter(Wd, FATHER, [0, 0, TZ - 1.12], 0, { seed: .3, talk: true, fn: t => ({ gesture: ['explain', 'finger', 'explainA', 'point', 'explain'][Math.floor(t / 3.1) % 5] }) });
+      K.sitter(Wd, SON, [0, 0, TZ + 1.12], PI, { scale: .72, block: .4, seed: .7, fn: t => ({ gesture: ['rest', 'explainA', 'rest', 'think', 'rest'][Math.floor(t / 3.7) % 5] }) });
+      lantern(Wd, t => ({ pos: [0, 1.02, TZ + .1], lit: 1 + 1.15 * sm(prog(t, 29.5, 33)), glow: 1 + .9 * sm(prog(t, 29.5, 33)), power: 2 + 5 * sm(prog(t, 29.5, 33)) }), { dist: 26 });
+      return Object.assign(Wd, { cam: cine([[0, [0, 1.0, TZ], 7.4, 1.6, 250, 55, .3], [12, [0, 1.0, TZ], 3.7, .8, 248, 46, .3], [24, [0, 1.0, TZ], 3.3, .9, 430, 46, .3], [36.3, [0, 1.05, TZ], 5.0, 2.5, 590, 48, .2]]) });
+    } },
+    // ===== 14. Shabbat candles (1.73) =====
+    { dur: 1.73, caps: [], build() {
+      const Wd = roadWorld({ ground: undefined, fogColor: 0xf0d6a8, fogNear: 3.2, fogFar: 11, skyTop: 0xf2d9ae, skyBottom: 0xf6e3bd, sun: .5, hemi: .85, hemiGround: 0x9a7a52, shadowExt: 12 });
+      Wd.add(box(14, .2, 14, 0x7a5434, { pos: [0, -.1, -2], ink: false })); Wd.add(box(14, 6, .3, 0xf0e2c4, { pos: [0, 3, -6.2], ink: false }));
+      Wd.add(box(3.4, .07, 1.5, 0xe6dcc6, { pos: [0, .78, 0] })); Wd.add(box(3.4, .55, .03, 0xe2d8c2, { pos: [0, .5, .75], ink: false }));
+      for (const dx of [-.55, .55]) Wd.add(box(.06, .74, .06, 0x5e3a20, { pos: [dx * 2.6, .4, -.55], ink: false }));
+      for (const x of [-.3, .3]) { Wd.add(cyl(.09, .11, .04, 0xb98a3a, { pos: [x, .835, .05] })); Wd.add(cyl(.02, .03, .3, 0xb98a3a, { pos: [x, .99, .05] })); Wd.add(cyl(.07, .035, .05, 0xb98a3a, { pos: [x, 1.16, .05] })); Wd.add(cyl(.026, .026, .28, 0xe8dcc0, { pos: [x, 1.33, .05], ink: false }));
+        const fl = flameSprite(.16, .34); fl.position.set(x, 1.47, .05); fl.userData.x = x; Wd.add(fl); const g2 = glowSprite(0xffc870, 1.1, .8); g2.position.set(x, 1.52, .05); Wd.add(g2);
+        Wd.on(t => { const f = 1 + .12 * Math.sin(t * 14 + x * 9); fl.scale.set(.16, .34 * f, 1); g2.scale.setScalar(1.1 * f); }); }
+      const cl = new THREE.PointLight(0xffc468, 2.5, 8, 1.4); cl.position.set(0, 1.55, .3); Wd.add(cl);
+      Wd.add(ball(1, 0xd9a24a, { pos: [-.75, .9, .1], scale: [.3, .1, .15], ink: false })); Wd.add(ball(1, 0xd9a24a, { pos: [.75, .9, .1], scale: [.3, .1, .15], ink: false }));
+      person(Wd, RAV, t => ({ pos: [0, 0, -2.9], facing: 0, gesture: 'rest', smile: 1, talk: 0, seed: .3 }));
+      return Object.assign(Wd, { cam: path([[0, [0, 1.2, 1.7], [0, 1.1, 0], 40], [1.73, [0, 1.35, 2.8], [0, 1.15, -.3], 42]]) });
+    } },
+    // ===== 15. end: pull-back and rise from Har Sinai at sunset, the lantern on a rock (4.8) =====
+    { dur: 4.8, caps: [], build() {
+      const Wd = roadWorld(Object.assign({}, GOLD, { skyTop: 0x3a4a8a, skyBottom: 0xffb468, fogColor: 0xf0b57c, sunPos: [60, 14, 30], sunColor: 0xff9a50 }));
+      K.mountain(Wd, { x: 0, z: -380, R: 150, H: 120, seed: 4, path: false });
+      const sg = glowSprite(0xffb060, 520, .45); sg.position.set(0, 60, -400); Wd.add(sg);
+      dunes(Wd, 5, 40, [-600, 600, -250, 60], (x, z) => Math.abs(x) < 30 && z > -40);
+      scatter(Wd, 15, 50, [-30, 30, -20, 20], (x, z) => Math.hypot(x + 3, z) < 3);
+      Wd.add(ball(1, 0xb9a07a, { pos: [-3.2, 0, 0], scale: [1.3, .6, 1.0], ink: true }));
+      lantern(Wd, t => ({ pos: [-3.2, .75, 0], lit: 1.2, glow: 1.3, power: 5 }), { dist: 12 });
+      return Object.assign(Wd, { cam: path([[0, [-2.2, 1.0, 3.4], [-0.5, 14, -380], 46], [4.8, [-1.0, 7.5, 24], [0, 34, -380], 52]]) });
+    } },
+  ],
+});
+
+window.__dur = Math.round(window.__dur * 100) / 100;   // 255.43
+// ---------- the tree hill (shots 10 and 11) ----------
+function treeWorld() { return roadWorld({ ground: 'dry', groundSize: 2200, groundRep: [370, 370], skyTop: 0x3f86d6, skyBottom: 0xfbe9c8, fogColor: 0xf1e1c0, fogNear: 200, fogFar: 1100, sun: 1.95, sunPos: [-40, 55, 30], hemi: 1.35, hemiGround: 0xa58a5a, shadowExt: 32, skyR: 1700 }); }
+function treeScene(Wd, o) {
+  const HT = 2.4, HR = 30, hy = (x, z) => HT * Math.sqrt(Math.max(0, 1 - (x * x + z * z) / (HR * HR)));
+  Wd.add(ball(1, 0x9aa862, { pos: [0, 0, 0], scale: [HR, HT, HR], ink: false }));
+  scatter(Wd, 22, 60, [-90, 90, -90, 90], (x, z) => Math.hypot(x, z) < HR + 2);
+  const base = hy(0, 0);
+  K.oliveTree(Wd, { y: base });
+  const RP = [6.2, 4.4], rock = K.sinaiRock(Wd, { pos: [RP[0], hy(...RP) - .1, RP[1]], s: 2.3, power: 5 });
+  K.roots(Wd, [0.8, base, 0.5], [RP[0] - 1.4, hy(...RP), RP[1] - 1.0], { n: 5, y: base, cx: 0, cz: 0 });
+  K.tablets(Wd, [-.9, hy(-.9, 2.3) + .02, 2.3], { ry: .15 });
+  // chavruta pairs sitting around the trunk, learning
+  for (let k = 0; k < 6; k++) { const a = k * PI / 3 + .5, R = 5.3, cx = Math.sin(a) * R, cz = Math.cos(a) * R, tx = Math.cos(a), tz = -Math.sin(a), y = hy(cx, cz);
+    const xa = cx - tx * .85, za = cz - tz * .85, xb = cx + tx * .85, zb = cz + tz * .85, fa = Math.atan2(tx, tz), fb = Math.atan2(-tx, -tz);
+    Wd.add(box(.5, .06, .36, 0xf3ead2, { pos: [cx, y + .55, cz], rot: [0, a, 0], ink: false }));
+    K.sitter(Wd, k % 2 ? K.sonN(k) : K.fatherN(k + 1), [xa, y, za], fa, { scale: k % 2 ? .72 : 1, block: k % 2 ? .4 : .5, seed: .2 + k * .11, talk: true });
+    K.sitter(Wd, k % 2 ? K.fatherN(k + 2) : K.sonN(k + 2), [xb, y, zb], fb, { scale: k % 2 ? 1 : .72, block: k % 2 ? .5 : .4, seed: .4 + k * .09, fn: t => ({ gesture: ['rest', 'explainA', 'think', 'rest', 'explain'][Math.floor(t / 3.4 + k) % 5] }) }); }
+  // father and son with the lantern
+  const fx = -4.0, fz = 4.6, sx = -2.9, sz = 4.9, fy = hy(fx, fz);
+  person(Wd, FATHER, t => ({ pos: [fx, fy, fz], facing: pf(PI * .5, PI * .35, 3, 5, t), gesture: 'offer', smile: .5, seed: .25 }));
+  person(Wd, SON, t => ({ pos: [sx, hy(sx, sz), sz], facing: -PI * .55, gesture: 'rest', look: .3, smile: .5, seed: .65 }), { scale: .72 });
+  lantern(Wd, t => ({ pos: holdAt([fx, fy, fz], pf(PI * .5, PI * .35, 3, 5, t), 1, .42, .9), lit: 1.1, glow: 1.1, power: 6 }), { dist: 14 });
+  if (o.storm) {
+    const fog = Wd.scene.fog, hemi = Wd.hemi, f0 = new THREE.Color(0xf1e1c0), f1 = new THREE.Color(0xb59d7e), h0 = hemi.intensity;
+    const S = t => ease.io(prog(t, 1.5, 6)) * (1 - ease.io(prog(t, 15.5, 21)));
+    Wd.on(t => { const s = S(t); fog.near = lerp(200, 6, s); fog.far = lerp(1100, 62, s); fog.color.copy(f0).lerp(f1, s); hemi.intensity = h0 * (1 - .22 * s); });
+    // swirling leaves and scraps, blowing from the side
+    const NSC = 320, rs = rng(5), geo = new THREE.PlaneGeometry(.42, .24), im = new THREE.InstancedMesh(geo, new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide, fog: true }), NSC), D2 = new THREE.Object3D(), SC = [];
+    const pal = ['#8a8478', '#6a665c', '#a39a86', '#7a7a60', '#94886e'];
+    for (let i = 0; i < NSC; i++) { SC.push({ y: .6 + rs() * 12, z0: (rs() - .5) * 46, sp: 14 + rs() * 12, ph: rs() * 9, sw: 1 + rs() * 3, off: rs() * 70 }); im.setColorAt(i, new THREE.Color(pal[i % 5])); }
+    im.frustumCulled = false; Wd.add(im);
+    Wd.on(t => { const s = S(t); SC.forEach((d, i) => { const vis = i < NSC * s; const x = -36 + ((d.off + t * d.sp) % 72); const a = t * 3 + d.ph; D2.position.set(x, d.y + Math.sin(t * d.sw + d.ph) * 1.2, d.z0 + Math.cos(t * d.sw * .8 + d.ph) * 3 + x * .12); D2.rotation.set(a, a * 1.3, a * .7); D2.scale.setScalar(vis ? 1 : 0); D2.updateMatrix(); im.setMatrixAt(i, D2.matrix); }); im.instanceMatrix.needsUpdate = true; });
+    // dust veils
+    const dg = canvasTex(128, 128, (g, w, h) => { const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(176,150,112,.85)'); r.addColorStop(1, 'rgba(176,150,112,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); });
+    const DV = [], rd = rng(8); for (let i = 0; i < 36; i++) { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: dg, transparent: true, depthWrite: false, opacity: 0, fog: false })); s.userData = { y: 1 + rd() * 9, z0: (rd() - .5) * 40, sz: 6 + rd() * 9, sp: 5 + rd() * 6, off: rd() * 80 }; Wd.add(s); DV.push(s); }
+    Wd.on(t => { const st = S(t); DV.forEach(s => { const d = s.userData; const x = -40 + ((d.off + t * d.sp) % 80); s.position.set(x, d.y, d.z0 + x * .1); s.scale.set(d.sz * 1.5, d.sz, 1); s.material.opacity = .42 * st; }); });
+  }
+  return { hy };
+}
+</script>
+</html>
