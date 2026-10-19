@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>לא בטוח אם אמר?</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import { film, cloud, rain, label, THREE, prog, ease, clamp, lerp, rng, box, cyl, ball, toon, ink, canvasTex, groundTex, D } from '../../lib/stage3d.js';
+import { roadWorld, buildRoad, arrow, drop, pop, boy, route, cine, mkShot, SLAB_Y, LANE } from './road.js';
+import { buildDryland, buildShul } from './shul.js';
+
+const PI = Math.PI, sm = ease.sm, io = ease.io, V3 = (x, y, z) => new THREE.Vector3(x, y, z), V2 = (x, y) => new THREE.Vector2(x, y);
+const DRY = { skyTop: 0xa4c6ea, skyBottom: 0xf9e9c6, fogColor: 0xf4e5c3, fogNear: 70, fogFar: 340, sun: 2.2, hemi: 1.3, hemiGround: 0xa08a60 };
+const G = (t, ...r) => { for (const [a, b, g] of r) if (t >= a && t < b) return g; return null; };
+const mkBoy = (Wd, fn) => boy(Wd, t => Object.assign({ seed: .6 }, fn(t)));
+const onRoad = (keys, gs, ex) => { const Rt = route(keys); return t => Object.assign(Rt(t), { gesture: gs ? gs(t) : null }, ex ? ex(t) : null); };
+const still = (x, y, z, f, gs, ex) => t => Object.assign({ pos: [x, y, z], facing: f, groundY: y, gesture: gs ? gs(t) : null }, ex ? ex(t) : null);
+
+// ---------- small shared pieces ----------
+let _gm = null;
+const glowMap = () => _gm || (_gm = canvasTex(128, 128, (g, w, h) => { const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,255,255,.95)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }));
+const glowSp = (s, col, op) => { const m = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowMap(), color: col, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false, opacity: op === undefined ? 1 : op })); m.scale.set(s, s, 1); return m; };
+const face = (g, cam) => { g.rotation.y = Math.atan2(cam.position.x - g.position.x, cam.position.z - g.position.z); };
+function dropMesh(s, ghost) {
+  const prof = []; for (let i = 0; i <= 12; i++) { const a = i / 12 * PI / 2; prof.push(V2(.5 * Math.sin(a), -.5 * Math.cos(a))); } for (let i = 1; i <= 14; i++) { const y = i / 14; prof.push(V2(.5 * Math.pow(1 - y, 1.7), y * 1.05)); }
+  const m = new THREE.Mesh(new THREE.LatheGeometry(prof, 24), ghost ? new THREE.MeshBasicMaterial({ color: 0xaab8c8, transparent: true, opacity: .45, depthWrite: false }) : toon(0x2f93f0, { emissive: 0x0a3a7a }));
+  if (!ghost) { m.castShadow = true; ink(m, .03, 0x0d2f5e); } m.scale.setScalar(s); return m;
+}
+const pageTex = n => canvasTex(160, 200, (g, w, h) => { g.fillStyle = '#fffaf0'; g.fillRect(0, 0, w, h); g.fillStyle = '#c0392b'; g.fillRect(0, 0, w, 44); g.fillStyle = '#fff'; for (const x of [40, 80, 120]) { g.beginPath(); g.arc(x, 22, 6, 0, 7); g.fill(); }
+  g.fillStyle = '#3a2a1a'; g.font = '700 98px Assistant, Heebo, sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(String(n), w / 2, 124); g.strokeStyle = '#d9c9a4'; g.lineWidth = 6; g.strokeRect(3, 3, w - 6, h - 6); });
+function rod(a, b, r, col) { const A = V3(...a), B = V3(...b), d = B.clone().sub(A), len = d.length(), m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 6), toon(col)); m.position.copy(A).addScaledVector(d, .5); m.quaternion.setFromUnitVectors(V3(0, 1, 0), d.normalize()); return m; }
+
+// a thought bubble (billboard). inner: 'drop' | 'q'
+function thought(Wd, o) {
+  const S = o.size, g = new THREE.Group(); Wd.add(g);
+  [[0, 0, .52], [-.62, -.08, .38], [.62, -.08, .4], [-.32, .3, .4], [.32, .3, .42], [0, -.2, .46]].forEach(([x, y, r]) => g.add(ball(r * S, 0xfffdf6, { pos: [x * S, y * S, 0], scale: [1, 1, .38], inkW: .012 * S })));
+  let inner = null, q = null, qb = null;
+  if (o.inner === 'drop') { inner = dropMesh(.7 * S); inner.position.set(0, -.04 * S, .3 * S); g.add(inner); }
+  if (o.inner === 'q') { q = label(Wd, '?', { height: 1.0 * S, bg: null, color: '#2f7fd6', stroke: '#ffffff' }); qb = q.scale.clone(); }
+  const trail = []; if (o.from) for (let i = 0; i < 3; i++) { const b = ball([.07, .11, .16][i] * S, 0xfffdf6, { inkW: .01 }); Wd.add(b); trail.push(b); }
+  const base = o.pos;
+  Wd.on((t, cam) => { const k = o.vis(t), e = ease.out(k), vs = k > .01; g.visible = vs; trail.forEach(b => b.visible = vs); if (q) q.visible = vs;
+    const by = base[1] + .07 * Math.sin(t * 1.7); g.position.set(base[0], by, base[2]); face(g, cam); g.scale.setScalar(Math.max(.001, e));
+    if (q) { const dx = cam.position.x - base[0], dy = cam.position.y - by, dz = cam.position.z - base[2], L = Math.hypot(dx, dy, dz) || 1; q.position.set(base[0] + dx / L * .45 * S, by + dy / L * .45 * S, base[2] + dz / L * .45 * S); q.scale.set(qb.x * e, qb.y * e, 1); }
+    if (inner) inner.rotation.y = t * 1.1;
+    trail.forEach((b, i) => { const f = [.22, .45, .72][i], hp = o.from, tp = [base[0], by - .5 * S, base[2]]; b.position.set(lerp(hp[0], tp[0], f), lerp(hp[1], tp[1], f), lerp(hp[2], tp[2], f)); b.scale.setScalar(Math.max(.001, clamp(k * 3 - i * .8, 0, 1))); }); });
+}
+// a big clock (billboard); hands: t => [hourAngle, minuteAngle] (radians clockwise)
+function clockObj(Wd, o) {
+  const S = o.size, g = new THREE.Group(); g.position.set(...o.pos); Wd.add(g); const f = new THREE.Group(); f.scale.setScalar(S); g.add(f);
+  f.add(cyl(1, 1, .16, 0xfff6e2, { rot: [PI / 2, 0, 0] })); const rim = new THREE.Mesh(new THREE.TorusGeometry(1.02, .1, 12, 48), toon(0xe2b13a)); ink(rim, .02, 0x3a2a18); rim.castShadow = true; f.add(rim);
+  for (let i = 0; i < 12; i++) { const a = i / 12 * 2 * PI; f.add(box(.07, i % 3 === 0 ? .2 : .12, .05, 0x3a2a18, { pos: [Math.sin(a) * .82, Math.cos(a) * .82, .1], rot: [0, 0, -a], ink: false })); }
+  const hh = new THREE.Group(), mh = new THREE.Group(); hh.position.z = .13; mh.position.z = .17; f.add(hh, mh);
+  hh.add(box(.1, .5, .05, 0x2a1a10, { pos: [0, .25, 0], ink: false })); mh.add(box(.07, .74, .04, 0x2a1a10, { pos: [0, .37, 0], ink: false })); f.add(ball(.08, 0xc0392b, { pos: [0, 0, .2], ink: false }));
+  const gl = glowSp(3.6, 0xffd36a, .5); gl.position.z = -.3; f.add(gl);
+  Wd.on((t, cam) => { const k = o.vis(t), e = ease.out(k); g.visible = k > .01; g.scale.setScalar(Math.max(.001, e)); face(g, cam); g.position.y = o.pos[1] + .06 * Math.sin(t * 1.5 + 1);
+    const [h, m] = o.hands(t); hh.rotation.z = -h; mh.rotation.z = -m; gl.material.opacity = .25 + .3 * (o.glow ? o.glow(t) : 0); });
+}
+// a green check (billboard)
+function checkObj(Wd, o) {
+  const S = o.size, g = new THREE.Group(); g.position.set(...o.pos); Wd.add(g); const f = new THREE.Group(); f.scale.setScalar(S); g.add(f);
+  f.add(cyl(1, 1, .16, 0x2fb55a, { rot: [PI / 2, 0, 0] })); const ring = new THREE.Mesh(new THREE.TorusGeometry(1, .09, 12, 48), toon(0x8ee6a0)); ink(ring, .02, 0x14502a); f.add(ring);
+  f.add(box(.24, .55, .08, 0xffffff, { pos: [-.394, -.166, .12], rot: [0, 0, PI / 4], ink: false })); f.add(box(.24, 1.1, .08, 0xffffff, { pos: [.189, .029, .12], rot: [0, 0, -PI / 4], ink: false }));
+  const gl = glowSp(4.2, 0x7dffa0, .6); gl.position.z = -.3; f.add(gl);
+  Wd.on((t, cam) => { const k = o.vis(t), e = ease.out(clamp(k, 0, 1)) + .16 * Math.sin(clamp(k, 0, 1) * PI); g.visible = k > .01; g.scale.setScalar(Math.max(.001, e)); face(g, cam); g.position.y = o.pos[1] + .05 * Math.sin(t * 2); gl.material.opacity = .35 + .25 * Math.sin(t * 3); });
+}
+// a counter sprite showing a number
+function counter(Wd, o) {
+  const cv = document.createElement('canvas'); cv.width = 512; cv.height = 256; const c = cv.getContext('2d'), tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, fog: false })); sp.renderOrder = 6; Wd.add(sp); let last = -1; const W = o.w || 3;
+  sp.userData.set = (n, k) => { if (n !== last) { last = n; c.clearRect(0, 0, 512, 256); c.fillStyle = 'rgba(20,38,77,.93)'; c.beginPath(); c.roundRect(8, 8, 496, 240, 56); c.fill(); c.lineWidth = 12; c.strokeStyle = '#ffd166'; c.stroke();
+      c.font = '700 190px Assistant, Heebo, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 12; c.lineJoin = 'round'; c.strokeStyle = '#7a4a10'; c.strokeText(String(n), 256, 138); c.fillStyle = '#ffe9a0'; c.fillText(String(n), 256, 138); tex.needsUpdate = true; }
+    sp.scale.set(W * k, W * .5 * k, 1); sp.visible = k > .01; };
+  return sp;
+}
+// Shabbat table with two candles (lit: t => 0..1)
+function shabbatTable(Wd, o) {
+  const g = new THREE.Group(); g.position.set(...o.pos); g.rotation.y = o.ry || 0; Wd.add(g); const W = o.w || 2, Dp = o.d || .9, flames = [];
+  g.add(box(W, .78, Dp, 0xfbf7ee, { pos: [0, .39, 0] })); g.add(box(W + .06, .1, Dp + .06, 0xfffdf6, { pos: [0, .8, 0] })); g.add(box(W + .04, .05, Dp + .04, 0xd9b45a, { pos: [0, .12, 0] }));
+  for (const sx of [-1, 1]) { const x = sx * .42, z = -.08, s = 0xc9ccd4;
+    g.add(cyl(.12, .14, .05, s, { pos: [x, .875, z] })); g.add(cyl(.035, .045, .34, s, { pos: [x, 1.07, z] })); g.add(cyl(.075, .04, .07, s, { pos: [x, 1.27, z] })); g.add(cyl(.032, .032, .36, 0xfff3cf, { pos: [x, 1.48, z] }));
+    const fl = new THREE.Mesh(new THREE.SphereGeometry(.05, 10, 8), new THREE.MeshBasicMaterial({ color: 0xffd24a, fog: false })); fl.position.set(x, 1.74, z); g.add(fl);
+    const gl = glowSp(1.1, 0xffc860, .9); gl.position.set(x, 1.74, z); g.add(gl); flames.push([fl, gl]); }
+  g.add(ball(.2, 0xd99a3a, { pos: [-.12, .95, .12], scale: [1.5, .55, .85] })); g.add(ball(.2, 0xe2a948, { pos: [.14, .95, .14], scale: [1.5, .55, .85] }));
+  g.add(cyl(.05, .07, .03, 0xd8dbe4, { pos: [.78, .865, .15] })); g.add(cyl(.015, .015, .14, 0xd8dbe4, { pos: [.78, .945, .15] })); g.add(cyl(.065, .04, .11, 0xd8dbe4, { pos: [.78, 1.04, .15] }));
+  Wd.on(t => { const k = o.lit(t); flames.forEach(([fl, gl], i) => { fl.visible = gl.visible = k > .01; const fk = Math.max(.001, k) * (1 + .14 * Math.sin(t * 9 + i * 2.1)); fl.scale.set(fk * .8, fk * 1.9, fk * .8); const gs = 1.1 * k * (1 + .1 * Math.sin(t * 7 + i)); gl.scale.set(gs, gs, 1); }); });
+}
+// balance scale; theta(t) > 0 = the left pan (the drop) goes down
+function balance(Wd, o) {
+  const g = new THREE.Group(); g.position.set(...o.pos); Wd.add(g); const gold = 0xe2b13a, L = 1.7, PY = 3.6, HC = 1.65;
+  g.add(box(2.1, .22, 1.3, 0x7a4a2a, { pos: [0, .11, 0] })); g.add(box(1.5, .2, .9, 0x9a6a3a, { pos: [0, .32, 0] })); g.add(cyl(.1, .16, PY - .4, gold, { pos: [0, .42 + (PY - .4) / 2, 0] })); g.add(ball(.2, gold, { pos: [0, PY + .02, 0] }));
+  const beam = new THREE.Group(); beam.position.y = PY; g.add(beam); beam.add(box(2 * L + .3, .14, .14, gold)); for (const sx of [-1, 1]) beam.add(ball(.1, 0xfff0c0, { pos: [sx * (L + .1), 0, 0] })); beam.add(box(.05, .7, .05, 0xc0392b, { pos: [0, -.35, 0], ink: false }));
+  const pans = [0, 1].map(i => { const p = new THREE.Group(); g.add(p); p.add(cyl(.66, .36, .16, gold, { pos: [0, .08, 0] }));
+    for (let k = 0; k < 3; k++) { const a = k / 3 * 2 * PI + PI / 6; p.add(rod([Math.cos(a) * .6, .16, Math.sin(a) * .6], [0, HC, 0], .018, 0x9a7a2a)); }
+    const d = dropMesh(.55, i === 1); d.position.set(0, .18 + .5 * .55 + .02, 0); p.add(d); return p; });
+  const lb = [label(Wd, 'אמר', { height: .55, bg: 'rgba(24,96,176,.95)', color: '#fff' }), label(Wd, 'לא אמר', { height: .55, bg: 'rgba(90,92,104,.95)', color: '#fff' })], lbs = lb.map(l => l.scale.clone());
+  Wd.on(t => { const th = o.theta(t), k = sm(prog(t, 0, 1.1)), cs = Math.cos(th), sn = Math.sin(th); g.scale.setScalar(Math.max(.001, k)); beam.rotation.z = th;
+    const ends = [[-L * cs, PY - L * sn], [L * cs, PY + L * sn]]; ends.forEach(([x, y], i) => { pans[i].position.set(x, y - HC, 0); lb[i].position.set(o.pos[0] + x * k, o.pos[1] + (y + .8) * k, o.pos[2]); lb[i].visible = k > .5; lb[i].scale.set(lbs[i].x * k, lbs[i].y * k, 1); }); });
+}
+
+film({
+  title: 'לא בטוח אם אמר?', kicker: "חלק ד'",
+  recap: ['לא בטוח? תלוי בכוונה ובזמן.', '90 פעמים — ואז מסתפק לא חוזר.', 'ותן טל ומטר לברכה על פני האדמה!'],
+  shots: [
+    // E1 - 30 calendar pages fly around the boy; question marks; then the two things that decide
+    mkShot(12, ['בשלושים הימים הראשונים — לא בטוח אם אמר?', 'שני דברים קובעים: האם התכוון לומר, ומתי התעורר הספק.'], () => {
+      const Wd = roadWorld(); buildRoad(Wd, {}); const C = [0, 0, 31], rr = rng(7), pages = [], pg = new THREE.PlaneGeometry(.7, .88);
+      mkBoy(Wd, onRoad([[0, 0, 31, 0], [12, 0, 31, 0]], t => 'think'));
+      for (let k = 0; k < 30; k++) { const ring = k % 3, m = new THREE.Mesh(pg, new THREE.MeshLambertMaterial({ map: pageTex(k + 1), side: THREE.DoubleSide })); Wd.add(m);
+        pages.push({ m, R: [2.7, 3.4, 4.1][ring] + rr() * .3, y: [1.0, 1.9, 2.8][ring] + rr() * .5, a0: k * 2.399, w: [.5, -.38, .3][ring], t0: .2 + k * .19, ph: rr() * 6.28 }); }
+      Wd.on(t => { for (const p of pages) { const u = ease.out(prog(t, p.t0, p.t0 + 1.5)), a = p.a0 + p.w * t, bx = Math.cos(a) * p.R, bz = Math.sin(a) * p.R, by = p.y + .22 * Math.sin(t * 1.5 + p.ph);
+        const fx = Math.cos(p.a0) * (p.R + 16), fz = Math.sin(p.a0) * (p.R + 16), fy = p.y + 16; p.m.visible = t > p.t0; p.m.position.set(C[0] + lerp(fx, bx, u), lerp(fy, by, u), C[2] + lerp(fz, bz, u));
+        p.m.rotation.set(0, PI / 2 - a, 0); p.m.rotateZ(.18 * Math.sin(t * 1.2 + p.ph) + (1 - u) * 5); p.m.rotateX(.2 * Math.sin(t * 1.7 + p.ph)); } });
+      const qs = []; for (let i = 0; i < 12; i++) { const s = label(Wd, '?', { height: .85, bg: null, color: '#ffd23a', stroke: '#3a2410' }); qs.push({ s, b: s.scale.clone(), a0: i * .52, R: 1.7 + (i % 4) * .45, y: 1.3 + (i % 5) * .55, w: .6 * (i % 2 ? 1 : -1), t0: 1 + i * .35 }); }
+      Wd.on(t => qs.forEach(q => { const k = ease.out(prog(t, q.t0, q.t0 + .6)), a = q.a0 + q.w * t; q.s.visible = k > .01; q.s.position.set(C[0] + Math.cos(a) * q.R, q.y + .15 * Math.sin(t * 2 + q.a0), C[2] + Math.sin(a) * q.R); const z = k * (1 + .12 * Math.sin(t * 3 + q.a0)); q.s.scale.set(q.b.x * z, q.b.y * z, 1); }));
+      thought(Wd, { pos: [-2.0, 3.9, 31], size: .55, vis: t => prog(t, 6.6, 7.4), inner: 'drop' });
+      clockObj(Wd, { pos: [2.0, 3.9, 31], size: .5, vis: t => prog(t, 8.4, 9.2), hands: t => [.3 * t, 3.6 * t] });
+      return Object.assign(Wd, { cam: cine([[0, [0, 1.2, 31], 11, 17, 38, 50, .5], [3.6, [0, 1.2, 31], 7.4, 4.6, 8, 48, .5], [8, [0, 1.2, 31], 7.6, 4.4, -28, 50, .5], [12, [0, 1.3, 31], 9.2, 6, -8, 52, .6]]) });
+    }),
+    // E2 - he planned to say it: a thought bubble with a drop; a clock jumps forward; a green check
+    mkShot(12, ['התכוון לומר, והספק התעורר רק אחרי זמן רב?', 'לא חוזר.'], () => {
+      const Wd = roadWorld(), R = buildRoad(Wd, {}), z0 = 47;
+      mkBoy(Wd, onRoad([[0, 0, z0, 0], [12, 0, z0, 0]], t => t < 6.2 ? 'think' : 'thumb'));
+      thought(Wd, { pos: [2.1, 3.9, z0], size: .66, vis: t => prog(t, .7, 1.5) * (1 - prog(t, 5.6, 6.2)), inner: 'drop', from: [.2, 1.4, z0] });
+      clockObj(Wd, { pos: [-2.0, 3.6, z0], size: .62, vis: t => prog(t, 2.2, 3) * (1 - prog(t, 5.6, 6.2)), glow: t => G(t, [3.4, 5, 1]) || 0, hands: t => { const u = io(prog(t, 3.4, 5)); return [PI / 2 + u * 2 * PI, u * 24 * PI]; } });
+      checkObj(Wd, { pos: [0, 3.4, z0], size: .62, vis: t => prog(t, 6.3, 7.1) });
+      return Object.assign(Wd, { cam: cine([[0, [0, 1.3, z0], 6.4, 2.0, 30, 48, .8], [6, [0, 1.3, z0], 5.6, 1.6, -12, 48, .8], [12, [0, 1.4, z0], 5.2, 1.5, -32, 48, .8]]) });
+    }),
+    // E3 - no plan, doubt right after the prayer: the drop, a huge arrow back to the start of the road
+    mkShot(12, ['לא חשב על זה בכלל, והספק התעורר מיד אחרי התפילה?', 'חוזר לתחילת התפילה.'], () => {
+      const Wd = roadWorld(), R = buildRoad(Wd, {}), z0 = 179.2;
+      mkBoy(Wd, onRoad([[0, 0, z0, 0], [8.6, 0, z0, 0], [9.3, 0, z0, 0], [12, 0, 171, PI]], t => G(t, [0, 1.2, 'pray'], [1.2, 3.2, 'think'], [3.2, 9, 'finger'])));
+      thought(Wd, { pos: [1.6, 2.8, z0], size: .8, vis: t => prog(t, .8, 1.5) * (1 - prog(t, 2.8, 3.4)), inner: 'q', from: [.2, 1.4, z0] });
+      drop(Wd, [0, 0, z0], 3.1); arrow(Wd, [0, 0, z0], [0, 0, 0], { amount: t => prog(t, 4.6, 9.4) });
+      Wd.on(t => { R.highlight('start', prog(t, 9, 10.4)); });
+      return Object.assign(Wd, { cam: cine([[0, [0, 1.2, z0], 5.6, 2.0, 25, 46], [3.4, [0, 1.3, z0], 5.2, 1.8, -30, 46], [6.5, [0, 10, 140], 60, 40, 210, 54], [12, [0, 8, 80], 140, 95, 200, 56]]) });
+    }),
+    // E4 - he prays again (golden glow = nedava); then Shabbat candles and he does not repeat
+    mkShot(14, ['ובשני המקרים האחרים — מתפלל שוב בתנאי של נדבה.', 'ובשבת אין תפילת נדבה — ולכן לא חוזר.'], () => {
+      const Wd = roadWorld(Object.assign({}, DRY, { hemi: 1.55 })); buildDryland(Wd, { skip: [[-16, 16, -12, 12]] }); buildShul(Wd, {});
+      const turn = t => .75 * sm(prog(t, 7.2, 8.6));
+      mkBoy(Wd, still(0, .04, -.35, 0, t => t < 6.8 ? 'pray' : 'rest', t => ({ facing: turn(t), talk: t < 6.8 ? .55 * (.5 + .5 * Math.sin(t * 7)) : 0 })));
+      const aura = glowSp(3.6, 0xffd36a), sp = []; Wd.add(aura); for (let i = 0; i < 16; i++) { const s = glowSp(.28, 0xffe08a); Wd.add(s); sp.push(s); }
+      Wd.on(t => { const v = prog(t, .4, 1.6) * (1 - prog(t, 6.6, 7.8)); aura.visible = v > .01; aura.position.set(0, 1.0, -.35); const k = v * (1 + .08 * Math.sin(t * 3)); aura.scale.set(3.6 * k, 3.6 * k, 1); aura.material.opacity = .55 * v;
+        sp.forEach((s, i) => { const u = (t * .45 + i * .137) % 1, a = i * 2.4 + t * .8; s.visible = v > .05; s.position.set(Math.cos(a) * (.5 + .25 * u), .5 + u * 1.7, -.35 + Math.sin(a) * (.5 + .25 * u)); s.material.opacity = v * Math.sin(u * PI); }); });
+      pop(Wd, 'נדבה', [1.1, 1.0, -.35], 1.4, 5.2, { height: .5, bg: 'rgba(176,122,8,.97)' });
+      shabbatTable(Wd, { pos: [2.0, 0, -.4], lit: t => prog(t, 7.2, 8.4) }); pop(Wd, 'שבת', [2.0, 1.6, -.4], 8.6, 99, { height: .5, bg: 'rgba(40,60,120,.95)' });
+      return Object.assign(Wd, { cam: cine([[0, [0, 1.2, -.35], 4.2, .7, 335, 46], [6.6, [0, 1.2, -.35], 3.7, .5, 385, 46], [8.8, [1.0, 1.15, -.35], 4.6, .9, 395, 46], [14, [1.0, 1.1, -.35], 3.6, .5, 405, 46]]) });
+    }),
+    // E5 - a balance scale: level, then it tips toward "he said it"
+    mkShot(10.6, ['כל זה כשהספק שקול.', 'נראה לו יותר שאמר? לא חוזר.'], () => {
+      const Wd = roadWorld(); buildRoad(Wd, {}); const zc = -4.8;
+      balance(Wd, { pos: [0, 0, zc], theta: t => { const u = Math.max(0, t - 5.5), tip = t > 5.5 ? .3 * (1 - Math.exp(-3.2 * u) * Math.cos(7 * u)) : 0; return tip + .05 * Math.sin(t * 2.6) * (1 - prog(t, 4.4, 5.5)) * prog(t, 1, 1.8); } });
+      mkBoy(Wd, still(3.1, 0, zc, -PI / 2, t => t < 6.6 ? 'think' : 'thumb'));
+      checkObj(Wd, { pos: [0, 5.0, zc], size: .5, vis: t => prog(t, 7.2, 8) });
+      return Object.assign(Wd, { cam: cine([[0, [0, 2.1, zc], 10, 2.6, 205, 48, .6], [5, [0, 2.1, zc], 8.6, 2.4, 180, 48, .6], [10.6, [0, 2.3, zc], 7.8, 2.2, 152, 48, .6]]) });
+    }),
+    // E6 - THE ADVICE: a counter runs 1 -> 90 while 30 pages x 3 prayers stack up
+    mkShot(18, ['העצה: לומר 90 פעמים את המילים —', '"ואת כל מיני תבואתה לטובה, ותן טל ומטר לברכה על פני האדמה".', 'זה כמו 90 תפילות: 30 יום, שלוש תפילות ביום.'], () => {
+      const Wd = roadWorld(); buildRoad(Wd, {}); const C = [0, 0, -14], PR = 4.2, NP = 90;
+      const TW = [[-70, 'שחרית', 0xffe6a0], [0, 'מנחה', 0xcfe3ff], [70, 'ערבית', 0xdccdf5]].map(([ph, name, col]) => ({ x: C[0] + Math.sin(ph * D) * PR, z: C[2] + Math.cos(ph * D) * PR, name, col }));
+      TW.forEach(tw => Wd.add(cyl(1.0, 1.1, .14, 0xcdb88e, { pos: [tw.x, .07, tw.z] })));
+      const nAt = t => 1 + Math.floor(89 * sm(prog(t, 1.5, 14.5)) + 1e-6), T = []; for (let k = 0, t = 1.5; k < NP; k++) { while (nAt(t) < k + 1) t += .005; T.push(t); }
+      const mesh = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), toon(0xffffff), NP), DUM = new THREE.Object3D(), jr = rng(4), jit = []; mesh.frustumCulled = false; mesh.castShadow = true; mesh.receiveShadow = true; Wd.add(mesh);
+      for (let k = 0; k < NP; k++) { mesh.setColorAt(k, new THREE.Color(TW[k % 3].col).multiplyScalar(Math.floor(k / 3) % 2 ? .93 : 1)); jit.push((jr() - .5) * .35); } mesh.instanceColor.needsUpdate = true;
+      const cnt = counter(Wd, { w: 4 }), burst = glowSp(11, 0xffd36a); Wd.add(burst);
+      const lbs = TW.map(tw => label(Wd, tw.name, { height: .55, bg: 'rgba(70,44,14,.94)', color: '#ffeab8', pos: [tw.x, 4.4, tw.z] })), lbb = lbs.map(l => l.scale.clone());
+      const l30 = label(Wd, '30 יום', { height: .7, bg: 'rgba(24,96,176,.95)', color: '#fff', pos: [TW[1].x, 5.2, TW[1].z] }), l30b = l30.scale.clone();
+      Wd.on(t => { const n = t < 1.2 ? 1 : nAt(t); let last = 0; while (last < NP && T[last] <= t) last++; const bump = last ? Math.exp(-(t - T[last - 1]) * 9) : 0;
+        cnt.position.set(C[0], 5.7 + .1 * Math.sin(t * 2), C[2]); cnt.userData.set(n, ease.out(prog(t, 1, 1.7)) * (1 + .12 * bump));
+        for (let k = 0; k < NP; k++) { const s = t - T[k], tw = TW[k % 3];
+          if (s < 0) { DUM.scale.set(.0001, .0001, .0001); DUM.position.set(0, -9, 0); } else { const e = clamp(s / .85, 0, 1), es = sm(e), yt = .13 + Math.floor(k / 3) * .12;
+            DUM.position.set(lerp(C[0], tw.x, es), lerp(5.6, yt, es) + 1.6 * Math.sin(PI * e), lerp(C[2], tw.z, es)); DUM.rotation.set((1 - es) * 1.3, jit[k] + (1 - es) * 5, 0); const z = .4 + .6 * es; DUM.scale.set(1.55 * z, .1, 1.15 * z); }
+          DUM.updateMatrix(); mesh.setMatrixAt(k, DUM.matrix); } mesh.instanceMatrix.needsUpdate = true;
+        lbs.forEach((l, i) => { const k = ease.out(prog(t, 11.8 + i * .25, 12.5 + i * .25)); l.visible = k > .01; l.scale.set(lbb[i].x * k, lbb[i].y * k, 1); }); const k30 = ease.out(prog(t, 13, 13.8)); l30.visible = k30 > .01; l30.scale.set(l30b.x * k30, l30b.y * k30, 1);
+        burst.position.set(C[0], 5.7, C[2]); const bo = Math.sin(PI * prog(t, 15.2, 16.8)); burst.visible = bo > .01; burst.material.opacity = .85 * bo; });
+      mkBoy(Wd, still(0, 0, -14, PI, t => t < 1 ? null : t < 15 ? 'count' : 'up', t => ({ talk: t > 1.2 && t < 15 ? .5 + .5 * Math.sin(t * 10) : 0 })));
+      return Object.assign(Wd, { cam: cine([[0, [0, 2.4, -14], 9.6, 3.4, 125, 52, 1.4], [6, [0, 2.6, -14], 8.8, 3, 165, 52, 1.4], [12, [0, 3, -14], 8.8, 4, 205, 54, 1.2], [18, [0, 3.4, -14], 12, 7, 240, 56, .8]]) });
+    }),
+    // E7 - after the 90, doubt no longer sends him back; the Sefard way (90 times) in the winter lane
+    mkShot(12, ['ואז, אם יסתפק — לא חוזר.', 'בני ספרד אומרים 90 פעמים: "רופא חולי עמו ישראל, ברך עלינו".'], () => {
+      const Wd = roadWorld(), R = buildRoad(Wd, { sefard: true }), Rt = route([[0, 0, 17.2, PI], [6.2, 0, 17.2, PI], [8.4, LANE, 19.6, 0], [12, LANE, 27, 0]]);
+      mkBoy(Wd, t => Object.assign(Rt(t), { gesture: G(t, [0, 6, 'shrug'], [6.2, 9, 'finger']), talk: t > 6.4 ? .5 + .5 * Math.sin(t * 10) : 0 }));
+      const cnt = counter(Wd, { w: 2.0 }), lq = label(Wd, '?', { height: .75, bg: null, color: '#ffd23a', stroke: '#3a2410' }), lqb = lq.scale.clone(), phr = label(Wd, 'רופא חולי עמו ישראל', { height: .5, bg: 'rgba(176,122,8,.97)', color: '#fff' }), phb = phr.scale.clone();
+      checkObj(Wd, { pos: [0, 3.7, 17.2], size: .42, vis: t => prog(t, 3.3, 4) * (1 - prog(t, 6, 6.6)) });
+      Wd.on(t => { const p = Rt(t).pos, k = ease.out(prog(t, .5, 1.2)); cnt.position.set(p[0], 2.45, p[2]); cnt.userData.set(90, k);
+        const qk = ease.out(prog(t, 1.2, 1.8)) * (1 - prog(t, 3, 3.4)); lq.visible = qk > .01; lq.position.set(p[0], 3.7, p[2]); lq.scale.set(lqb.x * qk, lqb.y * qk, 1);
+        const pk = ease.out(prog(t, 6.8, 7.6)); phr.visible = pk > .01; phr.position.set(p[0], 3.4, p[2]); phr.scale.set(phb.x * pk, phb.y * pk, 1);
+        R.highlight('barech', .15 * prog(t, 7.2, 8.4)); });
+      return Object.assign(Wd, { cam: cine([[0, [0, 1.3, 18], 7.0, 1.6, 174, 46, .9], [3.8, [0, 1.3, 18], 7.0, 1.7, 172, 46, .9], [6.4, [.6, 1.5, 19.5], 6.5, 2.4, 130, 48, .8], [9, [1, 1.6, 22], 10.5, 4.2, 95, 50, .8], [12, [1.2, 2, 27], 10, 6, 60, 50, .4]]) });
+    }),
+    // E8 - Shabbat: the 90 is allowed too; it is a preparation for the prayer
+    mkShot(10.6, ['מותר לומר את 90 הפעמים גם בשבת.', 'זו הכנה לתפילה, ותועלתה מיד.'], () => {
+      const Wd = roadWorld({ skyTop: 0x86aee0, skyBottom: 0xffd9a8, fogColor: 0xf6dcb4, sun: 1.7, sunPos: [-40, 22, -10], hemi: 1.15, sunColor: 0xffe2b0 }), R = buildRoad(Wd, {});
+      shabbatTable(Wd, { pos: [0, 0, -10.8], lit: t => prog(t, .2, 1) });
+      mkBoy(Wd, still(0, 0, -9.8, PI, t => t < 5.4 ? 'explain' : 'up', t => ({ talk: .5 + .5 * Math.sin(t * 10) })));
+      const cnt = counter(Wd, { w: 2.6 }); pop(Wd, 'שבת', [-1.9, 1.5, -10.8], 1, 99, { height: .5, bg: 'rgba(40,60,120,.95)' });
+      Wd.on(t => { cnt.position.set(0, 3.4, -9.8); cnt.userData.set(90, ease.out(prog(t, 1.2, 2))); R.highlight('start', .4 * prog(t, 5.6, 7)); });
+      return Object.assign(Wd, { cam: cine([[0, [0, 1.7, -10.8], 3.0, -.2, 172, 38, 0], [3.2, [0, 1.7, -10.4], 4.4, .4, 185, 42, 0], [6.5, [0, 1.9, -10.2], 6.2, 1.6, 205, 46, 0], [10.6, [0, 2.2, -9.5], 7.4, 2.4, 222, 48, 0]]) });
+    }),
+    // E9 - the beit knesset: rain starts outside, the fields turn green
+    mkShot(12, ['ולסיום: גם מי ששכח — תפילתו נחשבת תפילה,', 'רק חסרה בה ההזכרה. שנזכה לגשמי ברכה!'], () => {
+      const Wd = roadWorld(Object.assign({}, DRY, { hemi: 1.55 })); buildDryland(Wd, { skip: [[-16, 16, -14, 12]] }); buildShul(Wd, {});
+      const sh = new THREE.Shape([V2(-250, -250), V2(250, -250), V2(250, 250), V2(-250, 250)]); sh.holes.push(new THREE.Path([V2(-8.95, -6.5), V2(-8.95, 6.5), V2(8.95, 6.5), V2(8.95, -6.5)]));
+      const og = new THREE.ShapeGeometry(sh); og.rotateX(-PI / 2); const gm = new THREE.MeshLambertMaterial({ map: groundTex('grass', [90, 90]), transparent: true, opacity: 0, depthWrite: false }), green = new THREE.Mesh(og, gm); green.position.y = .04; green.receiveShadow = true; Wd.add(green);
+      const c0 = [new THREE.Color(0xa4c6ea), new THREE.Color(0xf9e9c6), new THREE.Color(0xf4e5c3)], c1 = [new THREE.Color(0x768aa6), new THREE.Color(0xc9cfcf), new THREE.Color(0xc2c9c8)], tmp = new THREE.Color();
+      Wd.on(t => { const k = sm(prog(t, 2, 5.5)); gm.opacity = sm(prog(t, 3.8, 11)); Wd.sky.material.uniforms.top.value.copy(c0[0]).lerp(c1[0], k); Wd.sky.material.uniforms.bot.value.copy(c0[1]).lerp(c1[1], k); Wd.scene.fog.color.copy(c0[2]).lerp(c1[2], k); Wd.sun.intensity = lerp(2.2, 1.15, k); Wd.hemi.intensity = lerp(1.55, 1.3, k); });
+      const rA = t => prog(t, 2.6, 5); rain(Wd, { x0: -28, x1: 28, z0: -75, z1: -7.5, top: 28, bottom: 0, count: 1700, speed: 15, len: .9, opacity: .7, color: 0xb8cbe4, seed: 3, amount: rA });
+      rain(Wd, { x0: 9.5, x1: 40, z0: -9, z1: 9, top: 28, bottom: 0, count: 600, speed: 15, len: .9, opacity: .7, color: 0xb8cbe4, seed: 4, amount: rA }); rain(Wd, { x0: -40, x1: -9.5, z0: -9, z1: 9, top: 28, bottom: 0, count: 600, speed: 15, len: .9, opacity: .7, color: 0xb8cbe4, seed: 5, amount: rA });
+      const cls = [[-30, 30, -80], [10, 34, -95], [45, 28, -70], [-60, 36, -110], [25, 40, -130]].map(([x, y, z], i) => { const c = cloud({ seed: 90 + i, size: 8, color: 0xa7b0ba, pos: [x, y, z], puffs: 6, cast: false }); Wd.add(c); return [c, x]; }); Wd.on(t => cls.forEach(([c, x]) => { c.position.x = x + t * 1.2; }));
+      mkBoy(Wd, still(0, .04, -.35, 0, t => t < 5.8 ? 'pray' : 'up', t => ({ facing: -2.3 * sm(prog(t, 5.6, 6.8)), talk: t < 5.8 ? .55 * (.5 + .5 * Math.sin(t * 7)) : 0, smile: t > 6.5 ? .9 : .35 })));
+      return Object.assign(Wd, { cam: cine([[0, [0, 1.2, -.35], 4, .6, 335, 46, 0], [5, [0, 1.25, -.35], 3.6, .5, 350, 46, 0], [8, [0, 1.4, -1.4], 4.8, .4, 322, 50, 0], [12, [-.2, 1.3, -2.2], 5.2, .4, 318, 52, 0]]) });
+    }),
+  ],
+});
+</script>
+</html>

@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>ותן טל ומטר</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import { film, cloud, rain, path, label, THREE, prog, ease, clamp } from '../../lib/stage3d.js';
+import { roadWorld, buildRoad, boy, route, cine, mkShot, ct, pop } from './road.js';
+import { buildDryland, buildVillage, buildShul } from './shul.js';
+
+const DRY = { skyTop: 0xa4c6ea, skyBottom: 0xf9e9c6, fogColor: 0xf4e5c3, fogNear: 70, fogFar: 340, sun: 2.2, hemi: 1.3, hemiGround: 0xa08a60 };
+
+film({
+  title: 'ותן טל ומטר', kicker: 'אזמרה לשמך · גיליון 342',
+  shots: [
+    // A1 - end of summer: dry cracked field, a village with a beit knesset, a low flight; a rain cloud gathers at the end
+    mkShot(11, ['סוף הקיץ. האדמה יבשה, והשדות מחכים לגשם.', "מליל ז' חשון מבקשים בארץ ישראל: ותן טל ומטר."], () => {
+      const Wd = roadWorld(DRY);
+      buildDryland(Wd, { skip: [[-40, 40, 40, 110]] }); buildVillage(Wd, { x: 0, z: 62 });
+      const cl = Wd.add(cloud({ seed: 9, size: 8, color: 0xb4bcc6, pos: [-90, 34, 110], puffs: 7, cast: false }));
+      const cl2 = Wd.add(cloud({ seed: 12, size: 6, color: 0xc4cad2, pos: [-120, 30, 90], puffs: 6, cast: false }));
+      rain(Wd, { x0: -22, x1: 6, z0: 96, z1: 126, top: 30, bottom: 0, count: 500, speed: 18, len: 2.6, opacity: .5, color: 0x8aa4c4, amount: t => prog(t, 7.5, 10.5), offset: t => [0, 0] });
+      Wd.on(t => { cl.position.x = -90 + t * 4.2; cl2.position.x = -120 + t * 3.6; });
+      return Object.assign(Wd, { cam: path([[0, [-5, .9, -38], [0, 2.4, 40], 50], [5.5, [2, 1.3, -6], [0, 3.2, 56], 46], [11, [-2.5, 2.7, 34], [0, 3.8, 62], 44]]) });
+    }),
+    // A2 - inside the beit knesset: the boy prays at a shtender; orbit around him
+    mkShot(12, ['בברכת השנים אומרים: "ותן טל ומטר לברכה על פני האדמה".', 'אבל כל הקיץ אמרנו "ותן ברכה" — והלשון רגילה.'], () => {
+      const Wd = roadWorld(Object.assign({}, DRY, { hemi: 1.55 }));
+      buildDryland(Wd, { skip: [[-16, 16, -12, 12]] }); const S = buildShul(Wd, {});
+      boy(Wd, t => ({ pos: [0, .04, -.35], facing: 0, gesture: 'pray', talk: .55 * (.5 + .5 * Math.sin(t * 7)), seed: .6 }));
+      pop(Wd, "ז' חשון", [0, 1.95, -.35], 1.2, 99, { height: .55 });
+      pop(Wd, 'ותן ברכה', [.85, 1.45, -.35], ct(12, 2, 1) + .3, 99, { height: .45, bg: 'rgba(150,100,10,.95)' });
+      return Object.assign(Wd, { cam: cine([[0, [0, 1.2, -.35], 4.4, .7, 232, 46], [12, [0, 1.2, -.35], 3.7, .5, 372, 46]]) });
+    }),
+    // A3 - the boy stops and thinks; the camera rises and the prayer road unrolls ahead of him
+    mkShot(12, ['מה עושה מי ששכח?', 'הכול תלוי איפה נזכר. בואו נלך בדרך של התפילה.'], () => {
+      const Wd = roadWorld(); const R = buildRoad(Wd, {});
+      boy(Wd, t => Object.assign(route([[0, 0, -1.6, 0], [12, 0, -1.6, 0]])(t), { gesture: t < 6 ? 'think' : 'point', talk: 0, seed: .6 }));
+      Wd.on(t => R.reveal(7 + ease.io(prog(t, 5.2, 11.2)) * 190));
+      return Object.assign(Wd, { cam: cine([[0, [0, 1.0, -1.6], 2.6, .45, -50, 44, .1], [4.6, [0, 1.05, -1.6], 2.5, .5, -96, 44, .1], [7.4, [0, 1.5, -.6], 10, 9, -128, 48], [12, [0, 1.5, 12], 26, 12.5, -148, 56]]) });
+    }),
+  ],
+});
+</script>
+</html>
