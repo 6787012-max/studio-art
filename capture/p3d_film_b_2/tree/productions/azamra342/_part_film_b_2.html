@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>בני אשכנז</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script>window.__T0=83.6000;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import { film, THREE, prog, ease, clamp, cyl, ball, canvasTex } from '../../lib/stage3d.js';
+import { roadWorld, buildRoad, arrow, drop, pop, boy, route, cine, mkShot } from './road.js';
+
+const G = (t, ...r) => { for (const [a, b, g] of r) if (t >= a && t < b) return g; return null; };
+const mkBoy = (Wd, keys, gs) => { const Rt = route(keys); return boy(Wd, t => Object.assign(Rt(t), { gesture: gs ? gs(t) : null, seed: .6 })); };
+const world0 = () => { const Wd = roadWorld(), R = buildRoad(Wd, {}); return [Wd, R]; };
+
+// a scroll that floats up and unrolls, always facing the camera
+function scroll(Wd, text, pos, t0, t1) {
+  const g = new THREE.Group(), W = 2.0, Hh = 1.25; Wd.add(g);
+  const tex = canvasTex(512, 320, (c, w, h) => { const gr = c.createLinearGradient(0, 0, w, 0); gr.addColorStop(0, '#e6d3a0'); gr.addColorStop(.5, '#f6e9c4'); gr.addColorStop(1, '#e2cd98'); c.fillStyle = gr; c.fillRect(0, 0, w, h);
+    c.strokeStyle = '#a9803a'; c.lineWidth = 6; c.strokeRect(18, 18, w - 36, h - 36); c.font = '700 78px Assistant, Heebo, sans-serif'; c.direction = 'rtl'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#4a2c10'; c.fillText(text, w / 2, h / 2 + 4); });
+  const par = new THREE.Mesh(new THREE.PlaneGeometry(W, Hh), new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide })); g.add(par);
+  const top = cyl(.09, .09, W + .3, 0x7a4a2a, { rot: [0, 0, Math.PI / 2] }), bot = cyl(.09, .09, W + .3, 0x7a4a2a, { rot: [0, 0, Math.PI / 2] }); g.add(top, bot);
+  const gl = new THREE.Sprite(new THREE.SpriteMaterial({ map: canvasTex(128, 128, (c, w, h) => { const r = c.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,225,130,.9)'); r.addColorStop(1, 'rgba(255,200,80,0)'); c.fillStyle = r; c.fillRect(0, 0, w, h); }), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false })); gl.scale.set(5.5, 4.2, 1); g.add(gl);
+  Wd.on((t, cam) => { const u = t - t0, k = ease.out(prog(u, 0, 1.6)) * (1 - ease.in(prog(t, t1, t1 + .6))); g.visible = k > .01; if (!g.visible) return;
+    g.position.set(pos[0], pos[1] + 1.7 * k + .08 * Math.sin(t * 2.2), pos[2]); g.scale.setScalar(.2 + .8 * k); g.rotation.y = Math.atan2(cam.position.x - g.position.x, cam.position.z - g.position.z);
+    const u2 = .12 + .88 * ease.out(prog(u, .4, 1.9)); par.scale.y = u2; top.position.y = Hh / 2 * u2; bot.position.y = -Hh / 2 * u2; });
+}
+
+film({
+  title: 'בני אשכנז', kicker: "חלק א'",
+  recap: [`לפני "ברוך אתה ה'" — חוזרים ל"ותן טל ומטר".`, `אחרי — אומרים ב"שמע קולנו".`, `התחיל "רצה" — חוזר ל"ברך עלינו". סיים — לראש.`],
+  shots: [
+    // B1 - flight over the whole road
+    mkShot(12, ['זו הדרך של התפילה: כל ברכה היא תחנה.', 'נעקוב אחרי הילד, ונראה מה עושים בכל מקום.'], () => {
+      const [Wd, R] = world0(); mkBoy(Wd, [[0, 0, -3, 0], [12, 0, 12, 0]]);
+      return Object.assign(Wd, { cam: cine([[0, [0, 2, -2], 9, 6.5, 135, 48], [3.5, [0, 3, 25], 16, 10, 212, 50], [7, [0, 3, 95], 20, 12, 150, 52], [12, [0, 4, 160], 22, 11, 190, 52]]) });
+    }),
+    // B2 - in the middle of ברך עלינו: drop, arrow back to the blue marker, he steps back
+    mkShot(14, [`נזכר באמצע "ברך עלינו", לפני "ברוך אתה ה'" שבסופה?`, `חוזר ל"ותן טל ומטר", וממשיך משם כסדר.`], () => {
+      const [Wd, R] = world0(), z0 = R.z('tal');
+      mkBoy(Wd, [[0, 0, 44, 0], [3, 0, 50, 0], [7.2, 0, 50, 0], [7.9, 0, 50, Math.PI], [12.4, 0, z0 + 1, Math.PI], [14, 0, z0 + 1, Math.PI]], t => G(t, [3.4, 6.6, 'finger'], [12.6, 14, 'up']));
+      drop(Wd, [0, 0, 50], 3); arrow(Wd, [0, 0, 50], [0, 0, z0], { amount: t => prog(t, 4.6, 7.2) });
+      Wd.on(t => R.highlight('tal', prog(t, 6.6, 7.6) * (1 - prog(t, 12.5, 14)) * .8 + .2 * prog(t, 12.5, 13)));
+      return Object.assign(Wd, { cam: cine([[0, [0, 1.1, 48], 7.5, 3, 265, 46], [3.2, [0, 1.1, 50], 5.6, 2, 290, 46], [6.2, [0, 1.2, 47], 9, 6, 330, 50], [10, [0, 1, 43], 8.5, 3.6, 255, 48], [14, [0, 1.1, 40.5], 6, 2.5, 205, 46, .6]]) });
+    }),
+    // B3 - just past the gold marker: drop, a long arrow forward to שמע קולנו, he walks on
+    mkShot(16, [`כבר אמר "ברוך אתה ה'" בסוף הברכה?`, 'ממשיך בתפילה כרגיל,', `ואומר "ותן טל ומטר" ב"שמע קולנו", לפני "כי אתה שומע".`], () => {
+      const [Wd, R] = world0(), zk = R.z('shma.ki');
+      mkBoy(Wd, [[0, 0, 54, 0], [2.6, 0, 59.2, 0], [8.4, 0, 59.2, 0], [16, 0, 82, 0]], t => G(t, [2.9, 5.6, 'finger']));
+      drop(Wd, [0, 0, 59.2], 2.4); arrow(Wd, [0, 0, 59.2], [0, 0, zk], { amount: t => prog(t, 3.4, 8) });
+      Wd.on(t => R.highlight('shma.ki', prog(t, 7.4, 8.8)));
+      return Object.assign(Wd, { cam: cine([[0, [0, 1.1, 57], 7, 2.6, 262, 46], [3.2, [0, 1.1, 59.5], 6.5, 2.4, 320, 46], [6.5, [0, 12, 85], 42, 34, 215, 52], [9.5, [0, 12, 92], 55, 42, 205, 54], [16, [0, 1.5, 80], 9.5, 13.5, 315, 50]]) });
+    }),
+    // B4 - a small extra glowing slab appears between ברך עלינו and תקע
+    mkShot(10.7, [`פוחד שישכח שוב עד "שמע קולנו"?`, `אפשר לומר מיד — בין "ברך עלינו" ל"תקע".`], () => {
+      const [Wd, R] = world0();
+      mkBoy(Wd, [[0, 0, 59.4, 0], [6.2, 0, 59.4, 0], [8.4, 0, 64.5, 0], [10.7, 0, 64.5, 0]], t => G(t, [.6, 4.6, 'think'], [8.6, 10.7, 'finger']));
+      Wd.on(t => R.highlight('extra', prog(t, 3.2, 4.6) * (1 - .35 * prog(t, 9, 10.7))));
+      pop(Wd, 'ותן טל ומטר', [0, 2.3, 64.5], 8.7, 99, { height: .8 });
+      return Object.assign(Wd, { cam: cine([[0, [0, 1.1, 61], 7, 2.6, 275, 46], [5, [0, .8, 63], 6.5, 2.4, 315, 46], [10.7, [0, 1.2, 64.5], 7, 2.6, 380, 46]]) });
+    }),
+    // B5 - the gold marker at the end of שמע קולנו: a scroll floats up
+    mkShot(16, [`נזכר בסוף "שמע קולנו", אחרי "ברוך אתה ה'"?`, `אומר "למדני חוקיך" — וזה פסוק בתהילים.`, `ואז "ותן טל ומטר... כי אתה שומע", וממשיך.`], () => {
+      const [Wd, R] = world0(), ze = R.z('shma.end'), zk = R.z('shma.ki');
+      mkBoy(Wd, [[0, 0, 129, 0], [2, 0, ze, 0], [11.4, 0, ze, 0], [11.9, 0, ze, Math.PI], [14.2, 0, zk + .6, Math.PI], [16, 0, zk + .6, Math.PI]], t => G(t, [2.3, 5, 'finger'], [5.6, 9.5, 'up'], [14.4, 16, 'up']));
+      drop(Wd, [0, 0, ze], 2); scroll(Wd, 'למדני חוקיך', [0, 2.7, ze], 5.7, 10.6);
+      arrow(Wd, [0, 0, ze], [0, 0, zk], { amount: t => prog(t, 10.8, 13.2) });
+      Wd.on(t => { R.highlight('shma.end', .3 * prog(t, 1.5, 2.5) * (1 - prog(t, 9, 10))); R.highlight('shma.ki', prog(t, 12.4, 13.6)); });
+      pop(Wd, 'ותן טל ומטר', [0, 2.2, zk], 13.4, 99, { height: .8 });
+      return Object.assign(Wd, { cam: cine([[0, [0, 1.1, 131], 7, 2.6, 265, 46], [3, [0, 1.2, ze], 6, 2.2, 310, 46], [7, [0, 1.8, ze], 8, 2.8, 380, 46], [11, [0, 1.2, 130], 10, 6, 435, 50], [16, [0, 1.2, 126], 8.5, 3.2, 470, 47]]) });
+    }),
+    // B6 - between שמע קולנו and רצה: says it right there and walks on through the gate
+    mkShot(11, [`סיים "שומע תפילה", ועוד לא התחיל "רצה"?`, `אומר שם "ותן טל ומטר", וממשיך "רצה".`], () => {
+      const [Wd, R] = world0();
+      mkBoy(Wd, [[0, 0, 139.5, 0], [6.5, 0, 141.4, 0], [10.6, 0, 148, 0], [11, 0, 148.6, 0]], t => G(t, [2.2, 5, 'finger']));
+      drop(Wd, [0, 0, 141.4], 1.8); pop(Wd, 'ותן טל ומטר', [0, 2.1, 141.4], 3.4, 4.2, { height: .8 });
+      Wd.on(t => R.highlight('retze', .5 * prog(t, 6.5, 8)));
+      return Object.assign(Wd, { cam: cine([[0, [0, 1.1, 141], 7, 2.4, 95, 46], [5, [0, 1.2, 142.5], 9, 6, 80, 46], [11, [0, 2, 147], 5, 3.3, 12, 50]]) });
+    }),
+    // B7 - at רצה / מודים: dramatic rise, a big arrow back to the start of ברך עלינו
+    mkShot(14, [`כבר התחיל "רצה", או שהוא כבר ב"מודים"?`, `חוזר לתחילת "ברך עלינו", וממשיך משם כסדר.`], () => {
+      const [Wd, R] = world0(), zb = R.z('barech');
+      mkBoy(Wd, [[0, 0, 151, 0], [9.4, 0, 151, 0], [10.2, 0, 151, Math.PI], [14, 0, 139, Math.PI]], t => G(t, [2.2, 5, 'finger']));
+      drop(Wd, [0, 0, 151], 1.8); arrow(Wd, [0, 0, 151], [0, 0, zb], { amount: t => prog(t, 3.6, 8.8) });
+      Wd.on(t => { const a = 1 - prog(t, 4.5, 6); R.highlight('retze', .55 * a); R.highlight('modim', .55 * a); R.highlight('barech', prog(t, 8.4, 9.6)); });
+      return Object.assign(Wd, { cam: cine([[0, [0, 1.1, 151], 5.6, 2.4, 63, 46], [3.4, [0, 1.2, 151], 6, 2.4, 82, 46], [6, [0, 10, 125], 40, 30, 215, 52], [9, [0, 10, 88], 100, 72, 238, 56], [14, [0, 12, 80], 118, 82, 232, 56]]) });
+    }),
+    // B8 - the camera glides on to the last gate
+    mkShot(10.7, ['וכך עד "יהיו לרצון" האחרון —', 'זה שבסוף "אלוקי נצור", לפני "עושה שלום".'], () => {
+      const [Wd, R] = world0();
+      mkBoy(Wd, [[0, 0, 160, 0], [5, 0, 170.5, 0], [10.7, 0, 171.4, 0]], t => G(t, [6.5, 10.7, 'explain']));
+      Wd.on(t => { R.highlight('yihyu', prog(t, 1.4, 2.6)); R.highlight('oseh', .9 * prog(t, 6.4, 7.6)); });
+      return Object.assign(Wd, { cam: cine([[0, [0, 1.3, 161], 7.5, 2.8, 90, 46], [5, [0, 2.5, 172], 9.5, 5, 95, 48], [10.7, [0, 3, 181], 11, 3.5, 45, 50, 2.4]]) });
+    }),
+    // B9 - the end of the road before the footprints: a huge arrow back to the start
+    mkShot(12, [`סיים "יהיו לרצון" ואת הבקשות, ועוד לא פסע לאחור?`, 'חוזר לתחילת התפילה.'], () => {
+      const [Wd, R] = world0();
+      mkBoy(Wd, [[0, 0, 178.6, 0], [12, 0, 178.6, 0]], t => G(t, [2.2, 5, 'finger']));
+      drop(Wd, [0, 0, 178.6], 1.8); arrow(Wd, [0, 0, 178.6], [0, 0, 0], { amount: t => prog(t, 3.6, 8.6) });
+      Wd.on(t => { R.highlight('footprints', .6 * (1 - prog(t, 4, 5))); R.highlight('start', prog(t, 8.2, 9.6)); });
+      return Object.assign(Wd, { cam: cine([[0, [0, 1.1, 178.6], 7, 2.4, 320, 46], [3.4, [0, 1.2, 178.6], 6, 2.4, 278, 46], [6.5, [0, 12, 120], 70, 55, 205, 52], [12, [0, 10, 85], 150, 105, 200, 56]]) });
+    }),
+  ],
+});
+</script>
+</html>
