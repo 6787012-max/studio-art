@@ -152,7 +152,7 @@ window.STORY = function (K) {
     const shortLen = t => lerp(1, 0, sm(P(TL, 8.2, t))), longLen = t => lerp(1, .55, P(TL, TE, t));
     mk(-.75, .06, shortLen, 0); mk(-.45, .06, shortLen, .4); mk(.45, .62, longLen, .8); mk(.75, .62, longLen, 1.2);
     const ck = clock(Wd, { r: .8 }), xm = mark3d(Wd, 'cross', 1.0), ok = mark3d(Wd, 'check', 1.0), sx = mark3d(Wd, 'cross', 1.0), so = mark3d(Wd, 'check', 1.0);
-    Wd.on(t => { ck.set([0, 2.85 + .06 * Math.sin(t * 1.3), -.1], popE(P(3.0, 3.9, t)) * .95, lerp(18, 26.5, sm(P(TL, TE, t)))); xm.set([-1.75, 1.75, .4], popE(P(8.3, 9.2, t)) * 1.5, .06 * Math.sin(t * 4)); ok.set([1.75, 1.95, .4], popE(P(11.7, 12.6, t)) * 1.5, .05 * Math.sin(t * 3));
+    Wd.on(t => { ck.set([0, 2.85 + .06 * Math.sin(t * 1.3), -.1], popE(P(3.0, 3.9, t)) * .95, lerp(18, 26.5, sm(P(TL, TE, t)))); xm.set([-1.3, 1.5, .2], popE(P(8.3, 9.2, t)) * .5 * (1 - sm(P(10.6, 11.3, t))), .06 * Math.sin(t * 4)); ok.set([1.5, 2.0, .4], popE(P(11.7, 12.6, t)) * .62, .05 * Math.sin(t * 3));
       sx.set([-.6, 1.45, .3], popE(P(3.6, 4.3, t)) * .42 * (1 - sm(P(8.3, 8.8, t))), 0); so.set([.6, 2.2, .3], popE(P(3.6, 4.3, t)) * .42 * (1 - sm(P(11.7, 12.2, t))), 0); });
     boyP(Wd, 1, t => ({ pos: [2.9, 0, 1.6], facing: face(-2.9, -1.6), gesture: t > 5 ? 'think' : null, perform: t > 5 ? 0 : .3, brow: .3 * sm(P(4, 6, t)), smile: .3 + .6 * sm(P(11.5, 13, t)), look: -.3 }));
     Wd.center = [0, 0];
