@@ -15,8 +15,11 @@
 </script>
 <script type="module">
 import { film, clamp, ease } from '../../_studio-animatzia/lib/stage3d.js';
-import { buildBeat, buildHook, buildAnswer, fitText, FONT, REG, THEME } from './scenes.js';
-window.__REG = REG; window.__beats = null;
+import * as S3D from '../../_studio-animatzia/lib/stage3d.js';
+import * as SC from './scenes.js';
+import * as PR from './props.js';
+import { buildBeat, buildHook, buildAnswer, fitText, FONT, REG, THEME, questionMark, camCard } from './scenes.js';
+window.__REG = REG; window.__THREE = S3D.THREE; window.__beats = null;
 
 const T_OPEN = 14, T_BODY_END = 100, T_END = 120;   // 0-14 hook, 14-100 body, 100-120 answer
 const EP = Object.assign({ series: '', number: '', title: '', source: '', summary: '', summarySource: '', beats: [] }, window.EPISODE || {});
@@ -25,6 +28,14 @@ if (SERIES) { THEME.accent = SERIES[0]; THEME.dark = SERIES[1]; THEME.frame = SE
 const ACC = THEME.accent;
 window.__warnings = window.EPISODE ? [] : ['no EPISODE found'];
 
+// ---- optional episode-specific 3D story: EPISODE.story = 'story.js' (next to episode.js) sets window.STORY = K => ({hook(dur), scenes:[dur=>world...], answer(dur), grade(t), overlay(g,W,H,t)})
+const epPath = window.__EP || new URLSearchParams(location.search).get('ep') || '';
+let STORY = null;
+if (EP.story) {
+  await new Promise(res => { const sc = document.createElement('script'); sc.src = epPath.slice(0, epPath.lastIndexOf('/') + 1) + EP.story; sc.onload = res; sc.onerror = () => { window.__warnings.push('story file failed to load'); res(); }; document.head.appendChild(sc); });
+  if (typeof window.STORY === 'function') { try { STORY = window.STORY(Object.assign({}, S3D, SC, PR)); } catch (e) { window.__warnings.push('story error: ' + e.message); console.error(e); } }
+}
+window.__story = !!STORY;
 // ---- beats: sorted, contiguous, exactly covering 8..100 s
 function normalize(list) {
   let b = (list || []).filter(x => x && typeof x.t0 === 'number').map(x => Object.assign({}, x)).sort((p, q) => p.t0 - q.t0);
@@ -37,9 +48,11 @@ function normalize(list) {
 }
 const beats = normalize(EP.beats); window.__beats = beats;
 if (!EP.hook) { EP.hook = { scene: beats[0].scene }; window.__warnings.push('no hook'); }
-const shots = [{ dur: T_OPEN, caps: [], build: () => buildHook(EP, T_OPEN) }]
-  .concat(beats.map((b, i) => ({ dur: b.t1 - b.t0, caps: [], build: () => buildBeat(b, b.t1 - b.t0, i) })))
-  .concat([{ dur: T_END - T_BODY_END, caps: [], build: () => buildAnswer(EP, T_END - T_BODY_END) }]);
+const storyHook = d => { const Wd = STORY.hook(d), c = Wd.center || [0, 0]; if (!Wd.noQ) questionMark(Wd, Wd.qPos || c, Wd.qSize || 1.15);
+  camCard(Wd, { w: 3.4, h: 1.7, d: 3.6, t0: .15, t1: 3.0, draw: SC.titleDraw(EP) }); SC.REG.push(Wd); return Wd; };
+const shots = [{ dur: T_OPEN, caps: [], build: () => STORY ? storyHook(T_OPEN) : buildHook(EP, T_OPEN) }]
+  .concat(beats.map((b, i) => ({ dur: b.t1 - b.t0, caps: [], build: () => { if (STORY && STORY.scenes[i]) { const w = STORY.scenes[i](b.t1 - b.t0); w.beatIdx = i; SC.REG.push(w); return w; } return buildBeat(b, b.t1 - b.t0, i); } })))
+  .concat([{ dur: T_END - T_BODY_END, caps: [], build: () => buildAnswer(EP, T_END - T_BODY_END, STORY && STORY.answer) }]);
 film({ shots, xf: .3 });
 window.__dur = T_END;
 
@@ -92,9 +105,13 @@ function captionsAt(now) {
   for (const q of SEGS) { const a = clamp((now - q.s0) / .3, 0, 1) * (1 - clamp((now - q.s1) / .3, 0, 1)); if (a > .01) out.push({ text: q.text, a, mood: q.mood, big: q.big }); }
   return out;
 }
+const tmpc = document.createElement('canvas'); tmpc.width = 1920; tmpc.height = 1080; const gx = tmpc.getContext('2d');
 const base = window.__seek;
 window.__seek = t => {
   base(t); const now = Math.max(0, t + OFF), W = cv.width, H = cv.height;
+  if (STORY && STORY.grade) { const gr = STORY.grade(now); if (gr && (gr.sat < .99 || gr.bright !== undefined)) {   // colour grade (what-if = desaturated)
+    gx.clearRect(0, 0, W, H); gx.drawImage(cv, 0, 0); g.save(); g.filter = `saturate(${gr.sat}) brightness(${gr.bright === undefined ? 1 : gr.bright}) contrast(${gr.contrast || 1})`; g.drawImage(tmpc, 0, 0); g.restore(); } }
+  if (STORY && STORY.overlay) { g.save(); STORY.overlay(g, W, H, now); g.restore(); }
   for (const c of captionsAt(now)) drawCaption(W, H, c.text, c.a, c.mood, c.big);
   drawTimer(W, H, now); drawBadge(W, H);
 };
