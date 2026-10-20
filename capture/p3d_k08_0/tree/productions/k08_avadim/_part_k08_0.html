@@ -1,0 +1,350 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>עבדי מי אנחנו</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script>window.__T0=0.0000;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import { film, person, cloud, path, seq, orbit, THREE, prog, ease, clamp, lerp, rng, box, cyl, ball, toon, ink, canvasTex } from '../../lib/stage3d.js';
+import * as K from './k08lib.js';
+const { RAV, EVED, MASTER, BACHUR, manN, workerN, POSES, SR, SR2, TQ, TQ2, WAL, WAL2, COP, PI, sm, fbm, cine, route, sunWorld, skyGlows, skyClouds, sunGlow, glowSprite, motes, innerLight, beam, threadSet, terrain, groundPlane, house8, townOn, ridge, trees8, doorWall, courtyard, lamp, seaRoom, shelf, table, stool, bread, sefer, chestPos, lbl, boneAt, attach, lerp3 } = K;
+const sin = Math.sin, cos = Math.cos, FY = .1;
+const rig = (Wd, cam) => Object.assign(Wd, { cam });
+const talkF = (t, s) => .5 + .5 * sin(t * 9) * sin(t * 2.3 + (s || 1));
+function skyW(o) { const Wd = sunWorld(o); skyGlows(Wd, Wd.dir); skyClouds(Wd, 8, 3); return Wd; }
+function shtender(Wd, o) {
+  const g = new THREE.Group(); g.position.set(o.x || 0, FY, o.z || 0); Wd.add(g); g.add(box(.56, .04, .5, WAL, { pos: [0, .02, 0] })); g.add(box(.1, .9, .1, WAL, { pos: [0, .47, 0], ink: false }));
+  g.add(box(.62, .05, .46, WAL2, { pos: [0, 1.0, 0], rot: [-.42, 0, 0] })); g.add(box(.5, .02, .38, '#f6ecd4', { pos: [0, 1.04, -.005], rot: [-.42, 0, 0], ink: false })); g.add(box(.62, .34, .04, WAL2, { pos: [0, .83, .22] }));
+  if (o.label) lbl(Wd, o.label, [(o.x || 0), FY + .93, (o.z || 0) + .4], .1, { size: 60 }); return g;
+}
+function hillTown(Wd, seed) {
+  const hAt = (x, z) => { const d = Math.max(Math.abs(x) - 11, Math.abs(z) - 8.5, 0), k = sm(clamp(d / 16, 0, 1));
+    const back = sm(clamp((-z - 10) / 55, 0, 1)) * (18 + 10 * fbm(x * .03 + 1, z * .03 + 2)), side = sm(clamp((Math.abs(x) - 14) / 45, 0, 1)) * (9 + 7 * fbm(x * .025 + 5, z * .03 + 1)), val = sm(clamp((z - 9) / 70, 0, 1)) * 14;
+    return k * (back + side - val); };
+  terrain(Wd, { size: 760, N: 170, cz: -60, h: hAt });
+  townOn(Wd, hAt, { seed, n: 46, area: [-70, 70, -80, -14], skip: (x, z) => Math.abs(x) < 13 && z > -14 });
+  townOn(Wd, hAt, { seed: seed + 1, n: 14, area: [-95, -16, -14, 16] }); townOn(Wd, hAt, { seed: seed + 2, n: 14, area: [16, 95, -14, 16] });
+  townOn(Wd, hAt, { seed: seed + 3, n: 26, area: [-50, 50, 22, 75], glow: 1 });
+  trees8(Wd, hAt, { seed: seed + 4, n: 40, area: [-80, 80, -30, 70], skip: (x, z) => Math.abs(x) < 13 && z > -12 && z < 10 });
+  return hAt;
+}
+function brickTex(rep) { return canvasTex(256, 128, (g, w, h) => { g.fillStyle = '#b9694e'; g.fillRect(0, 0, w, h); const r = rng(7); for (let y = 0; y < 4; y++) for (let x = -1; x < 4; x++) { g.fillStyle = ['#c4745a', '#b4644a', '#cf8064', '#bd6c52'][Math.floor(r() * 4)]; g.fillRect(x * 64 + (y % 2) * 32 + 2, y * 32 + 2, 60, 28); } }, rep); }
+function brickBox(Wd, w, h, d, pos, rep) { const b = box(w, h, d, '#ffffff', { pos }); b.material = toon(0xffffff, { map: brickTex(rep) }); Wd.add(b); return b; }
+const EGY = { skyTop: 0xe3aaa6, skyBottom: 0xffc79e, fogColor: 0xf1b697, fogNear: 35, fogFar: 230, sun: 1.5, sunColor: 0xffb078, hemi: 1.3, hemiSky: 0xffd9c4, hemiGround: 0xc98a70, sunPos: [-60, 24, 25] };
+function egyW(o) { const Wd = sunWorld(Object.assign({}, EGY, o)); skyGlows(Wd, Wd.dir, 900);
+  terrain(Wd, { size: 900, N: 110, h: (x, z) => sm(clamp((Math.hypot(x, z) - 28) / 50, 0, 1)) * (2 * fbm(x * .02, z * .02) - .5), A: [.9, .66, .52], B: [.82, .57, .46], C: [.92, .74, .56] }); return Wd; }
+function cozy(Wd, o) {   // the cozy room in the master's house (shots 5, 10)
+  o = o || {}; groundPlane(Wd, 0xe0ab94);
+  seaRoom(Wd, { W: 8, D: 6.4, H: 3.2, skip: ['front'], ceil: o.ceil, holes: { left: [{ c0: -1.4, c1: 1.0, y0: 1.1, y1: 2.5, pane: true }], back: [{ c0: -3.2, c1: -1.0, y0: 1.2, y1: 2.5, pane: true }] } });
+  Wd.add(cyl(1.7, 1.7, .02, '#e9a891', { pos: [0, .03, .2], scale: [1.2, 1, .8], ink: false })); Wd.add(cyl(1.0, 1.0, .02, TQ2, { pos: [0, .045, .2], scale: [1.2, 1, .8], ink: false }));
+  // bed with a plump pillow
+  Wd.add(box(1.3, .3, 2.3, WAL, { pos: [2.7, .17, -1.95] })); Wd.add(box(1.2, .22, 2.2, '#f4e6d6', { pos: [2.7, .42, -1.95] })); Wd.add(box(1.24, .14, .85, TQ, { pos: [2.7, .56, -2.1] })); Wd.add(box(1.35, 1.0, .1, WAL, { pos: [2.7, .6, -3.1] }));
+  Wd.add(ball(1, '#fff3e4', { pos: [2.7, .66, -2.8], scale: [.46, .15, .3] })); Wd.add(ball(1, '#fbe6d2', { pos: [2.7, .72, -2.65], scale: [.4, .1, .26], ink: false }));
+  table(Wd, { x: -1.6, z: -.9, w: 1.7, d: .8 }); bread(Wd, [-1.6, .78, -.9]); Wd.add(ball(.07, '#d8503c', { pos: [-1.2, .85, -.8] })); Wd.add(ball(.07, '#f0a23c', { pos: [-1.1, .85, -.95] })); Wd.add(box(.7, .04, .3, '#f6e8d4', { pos: [-2.05, .8, -1.0], ink: false }));
+  stool(Wd, -1.6, -1.9, .46); shelf(Wd, .2, -2.95, 0, 1.6);
+  lamp(Wd, 0, 2.35, -.4, 5, { top: 3.2 }); lamp(Wd, -1.6, 2.2, -.9, 0, { top: 3.2 }); lamp(Wd, 2.7, 2.2, -1.5, 0, { top: 3.2 });
+}
+const sitting = (Wd, look, pos, facing, fn) => person(Wd, look, t => Object.assign({ pos, facing, sit: true, gesture: 'rest', smile: .5, seed: .3, groundY: pos[1] }, fn ? fn(t) : {}));
+const sit = (look, x, y, z) => ({ look, pos: [x, y, z] });
+
+film({ shots: [
+  // ===== 1. sunset over the hill town, glide down into the courtyard beit midrash to the RAV (20.55) =====
+  { dur: 20.55, caps: [], build() {
+    const Wd = skyW({}); hillTown(Wd, 11); courtyard(Wd); shtender(Wd, { x: -3, z: -1.95, label: 'פרשת משפטים' });
+    person(Wd, RAV, t => ({ pos: [-3, FY, -2.7], facing: .3, perform: .8, talk: talkF(t, 1), smile: .55, seed: .3, groundY: FY }));
+    return rig(Wd, path([[0, [22, 19, 42], [-3, 3, -6], 54], [4.5, [12, 12, 28], [-3, 2.5, -4], 52], [9, [4, 6, 16], [-3, 2, -3], 50], [11.5, [-1.2, 2.3, 6.2], [-3, 1.6, -2.6], 44], [13, [-2.3, 1.7, 1.5], [-3, 1.35, -2.7], 40], [17, [-2.35, 1.62, .9], [-3, 1.28, -2.7], 38], [20.55, [-2.3, 1.58, .55], [-3, 1.27, -2.7], 37]]));
+  } },
+  // ===== 2. THE TURQUOISE DOOR, Rashi's book, rings of golden voice rolling in from the mountains (20.0) =====
+  { dur: 20.0, caps: [], build() {
+    const Wd = skyW({}); terrain(Wd, { size: 900, N: 110, h: (x, z) => sm(clamp((Math.hypot(x, z) - 22) / 70, 0, 1)) * (3 * fbm(x * .02, z * .02) - .6) });
+    const arr = [0, 1, 2, 3, 4].map(k => 3 + 7.8 + 2.2 * k);
+    const dw = doorWall(Wd, { pos: [0, 0, 0], W: 12, H: 3.4, mez: t => 1 + 1.6 * arr.reduce((s, a) => s + Math.exp(-Math.pow((t - a) / .6, 2)), 0) });
+    for (const sx of [-1, 1]) Wd.add(box(14, 1.3, .5, SR, { pos: [sx * 13, .65, 0], inkW: .02 }));
+    // small stand with Rashi's book
+    const st = new THREE.Group(); st.position.set(-2.1, 0, 1.5); Wd.add(st); st.add(box(.5, .04, .44, WAL, { pos: [0, .02, 0] })); st.add(box(.1, .85, .1, WAL, { pos: [0, .45, 0], ink: false })); st.add(box(.62, .05, .46, WAL2, { pos: [0, .96, 0], rot: [-.42, 0, 0] }));
+    const bk = sefer(Wd, [-2.1, 1.0, 1.5], { ry: 0, w: .52, d: .36, color: '#7a2030' }); bk.rotation.x = -.42; bk.position.y = 1.02; lbl(Wd, 'רש"י', [-2.1, 1.62, 1.5], .2, { size: 64 });
+    trees8(Wd, (x, z) => 0, { seed: 3, n: 6, area: [3, 9, 1.5, 6] });
+    ridge(Wd, { x0: -290, x1: -250, z0: -90, z1: 90, n: 12, h: 55, seed: 3 }); ridge(Wd, { x0: -170, x1: 170, z0: -280, z1: -300, n: 14, h: 45, seed: 8 });
+    // rings of voice
+    const rings = [0, 1, 2, 3, 4, 5].map(k => { const g = new THREE.Group(); const m1 = new THREE.Mesh(new THREE.TorusGeometry(2.5, .07, 8, 56), new THREE.MeshBasicMaterial({ color: 0xffd88a, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, fog: false }));
+      const m2 = new THREE.Mesh(new THREE.TorusGeometry(2.5, .22, 8, 56), new THREE.MeshBasicMaterial({ color: 0xffc070, transparent: true, opacity: .2, blending: THREE.AdditiveBlending, depthWrite: false, fog: false })); g.add(m1, m2); g.rotation.y = PI / 2; Wd.add(g); return { g, m1, m2, t0: 3 + 2.2 * k }; });
+    Wd.on(t => { for (const r of rings) { const x = -250 + (t - r.t0) * 32, f = x < -6 ? 1 : clamp(1 - (x + 6) / 6, 0, 1); r.g.visible = x < 0 && x > -255 && f > .01; r.g.position.set(x, 1.4, 1.3); r.m1.material.opacity = .9 * f; r.m2.material.opacity = .22 * f; } });
+    return rig(Wd, path([[0, [7, 2.4, 12], [0, 1.5, 0], 48], [5, [3.8, 1.9, 6.5], [.2, 1.6, 0], 44], [9.5, [1.9, 1.7, 2.9], [.75, 1.6, .2], 38], [13, [1.5, 1.7, 2.4], [.8, 1.6, .2], 36], [16, [3, 2.2, 5.5], [-1.5, 1.7, 0], 42], [20, [2, 3.2, 10], [-9, 2.3, -3], 50]]));
+  } },
+  // ===== 3. market street at sunset: the EVED sells himself, the MASTER sits kindly; they walk off together (21.0) =====
+  { dur: 21.0, caps: [], build() {
+    const Wd = skyW({}); groundPlane(Wd, 0xdba58d, -.04); Wd.add(box(90, .08, 8, '#cf9c85', { pos: [0, 0, 0], ink: false, cast: false }));
+    const r = rng(5);
+    for (let i = 0; i < 14; i++) { const x = -40 + i * 6.4 + r() * 1.2; for (const s of [-1, 1]) house8(Wd, { x, z: s * 8.8, ry: s > 0 ? PI : 0, w: 5 + r() * 1.4, d: 4.4, h: 3.2 + r() * 2.6, i: i + (s > 0 ? 2 : 0), glow: r() < .4, awn: r() < .55 ? (r() < .5 ? TQ : '#e0705e') : null, tank: r() < .2 }); }
+    for (const [x, z] of [[-9, -5.6], [-4, 5.6], [8, -5.6], [14, 5.6]]) { Wd.add(box(1.8, .08, .9, WAL2, { pos: [x, .8, z] })); for (const sx of [-1, 1]) Wd.add(box(.07, .8, .07, WAL, { pos: [x + sx * .8, .4, z], ink: false })); Wd.add(box(2.1, .06, 1.3, r() < .5 ? TQ : '#e0705e', { pos: [x, 1.9, z + (z < 0 ? .3 : -.3)], rot: [z < 0 ? .22 : -.22, 0, 0], ink: false }));
+      for (let k = 0; k < 4; k++) Wd.add(ball(.1, ['#d8503c', '#f0a23c', '#cdd35a', '#b04a8a'][k], { pos: [x - .6 + k * .4, .9, z] })); }
+    for (let i = 0; i < 8; i++) { const x = -34 + i * 9.5, z = (i % 2 ? 5.3 : -5.3); Wd.add(ball(.32, '#c7703c', { pos: [x, .32, z], scale: [1, 1.2, 1] })); }
+    for (const x of [-6, 4, 14]) for (let k = 0; k < 9; k++) { const z = -8 + k * 2; const l = new THREE.Mesh(new THREE.SphereGeometry(.1, 8, 6), new THREE.MeshBasicMaterial({ color: 0xffd48a })); l.position.set(x, 4.2 - .5 * sin(PI * k / 8), z); Wd.add(l); const gs = glowSprite(0xffc070, .8, .5); gs.position.copy(l.position); Wd.add(gs); }
+    // the deal
+    table(Wd, { x: 0, z: 0, w: .9, d: 1.7 }); stool(Wd, 1.15, 0, .46);
+    for (let k = 0; k < 5; k++) Wd.add(cyl(.065, .065, .02, '#e2b13a', { pos: [-.1, .79 + k * .02, -.45], ink: false })); for (let k = 0; k < 3; k++) Wd.add(cyl(.065, .065, .02, '#e2b13a', { pos: [.12, .79 + k * .02, -.2], ink: false }));
+    sefer(Wd, [0, .78, .45], { ry: PI / 2, w: .5, d: .34, color: '#8a2c22' });
+    const mr = route([[0, 1.0, 0, -PI / 2], [11.2, 1.0, 0], [21, 11, -.5]], { y: .03 }), er = route([[0, -.95, 0, PI / 2], [11.4, -.95, 0], [21, 10.0, .85]], { y: .03 });
+    person(Wd, MASTER, t => Object.assign({ sit: t < 10.6, gesture: (t > 2 && t < 5) ? 'offer' : 'rest', smile: .6, seed: .2, groundY: .03, talk: (t > 2 && t < 5) ? talkF(t, 2) : 0 }, mr(t)));
+    person(Wd, EVED, t => Object.assign({ gesture: 'bow' + Math.round(10 * sm(prog(t, 5.5, 7.5)) * (1 - sm(prog(t, 9.5, 11)))), smile: .25, seed: .6, groundY: .03 }, er(t)));
+    for (let i = 0; i < 3; i++) { const q = route([[0, 30 - i * 9, -2.6 + i * 1.6], [21, 14 - i * 9, -2.6 + i * 1.6]], { y: .03 }); person(Wd, manN(i + 1), t => Object.assign({ gesture: 'rest', groundY: .03, seed: .1 * i }, q(t))); }
+    const cam1 = orbit([0, 1.25, 0], 4.6, .35, -55, 55, 0, 11, 42), cam2 = path([[11, [3.77, 1.6, 2.64], [0, 1.25, 0], 42], [16, [7.5, 1.55, 3.4], [4.6, 1.3, -.1], 42], [21, [14, 1.5, 3.6], [10.3, 1.3, .3], 42]]);
+    return rig(Wd, seq([0, cam1], [11, cam2]));
+  } },
+  // ===== 4. the EVED at the workbench: one short thread to the master's house, the golden beam stays on him (13.1) =====
+  { dur: 13.1, caps: [], build() {
+    const Wd = skyW({}); groundPlane(Wd, 0xdba58d, -.04); Wd.add(box(24, .1, 14, '#e3b9a1', { pos: [0, 0, -2], ink: false, cast: false }));
+    house8(Wd, { x: -4.9, z: -1.5, ry: PI / 2, w: 6.5, d: 5, h: 4.4, wall: '#e6b8a0', glow: true, awn: TQ }); Wd.add(box(.5, 5, 14, SR, { pos: [0, 2.5, -9.5], inkW: .02 })); house8(Wd, { x: 7, z: -5, ry: -PI / 2, w: 5, d: 4.5, h: 3.4, i: 3 });
+    table(Wd, { x: 0, z: -.9, w: 2.0, d: .8, h: .88 });
+    for (let k = 0; k < 3; k++) Wd.add(box(1.0, .05, .22, '#c9955e', { pos: [-.5 + k * .06, .93 + k * .05, -.9], rot: [0, .12 * k, 0], ink: false }));
+    Wd.add(box(.3, .05, .1, '#9a9aa2', { pos: [.7, .94, -.8], ink: false })); Wd.add(box(.5, .05, .22, '#c9955e', { pos: [.5, .93, -1.1], rot: [0, -.3, 0], ink: false }));
+    Wd.add(ball(.35, '#c7703c', { pos: [3, .38, -2.5], scale: [1, 1.2, 1] })); Wd.add(cyl(.3, .3, .8, WAL, { pos: [2.2, .45, -3.4] })); Wd.add(cyl(.3, .3, .8, WAL, { pos: [-2.6, .45, -4.6] }));
+    const P = person(Wd, EVED, t => ({ pos: [0, FY - .06, -1.65], facing: .12, gesture: 'hit' + Math.round(5 + 5 * sin(t * 5.2)), smile: .4, seed: .5, groundY: FY - .06, look: .15 }));
+    const ham = new THREE.Group(); ham.add(cyl(.02, .02, .34, '#7a4a2a', { pos: [0, -.12, 0], ink: false })); ham.add(box(.13, .07, .07, '#7e7e88', { pos: [0, .06, 0], ink: false })); attach(Wd, P, 'handB', ham, [0, -.05, 0], [0, 0, 0]);
+    const hA = boneAt(P, 'handA');
+    threadSet(Wd, { n: 1, anchor: () => [-2.4, 1.9, -1.5], target: () => hA(), a: (i, t) => ease.out(prog(t, .3, 1.6)) });
+    beam(Wd, () => [0, 0, -1.65], t => sm(prog(t, .3, 2.2)), { r: 1.25 });
+    innerLight(Wd, () => chestPos([0, FY - .06, -1.65], .12), t => 1.25 + .1 * sin(t * 2.2), { k: 1 });
+    return rig(Wd, path([[0, [2.4, 1.45, 2.0], [0, 1.25, -1.5], 42], [5, [1.7, 2.4, 3.2], [0, 1.8, -1.6], 44], [9, [1.0, 8.5, 5.0], [0, 5.5, -1.6], 48], [13.1, [.5, 19, 7], [0, 24, -1.6], 54]]));
+  } },
+  // ===== 5. the cozy room: bed, plump pillow, table with bread; the EVED sits content (23.4) =====
+  { dur: 23.4, caps: [], build() {
+    const Wd = skyW(K.INT); cozy(Wd);
+    const P = [-1.6, .012, -1.85];
+    person(Wd, EVED, t => ({ pos: P, facing: .1, sit: true, gesture: (t > 7 && t < 12) ? 'eat' : 'rest', smile: .75, seed: .3, groundY: .012, look: .1 }));
+    innerLight(Wd, () => chestPos(P, .1, { sit: true }), t => 1 + .08 * sin(t * 2), { k: .9 });
+    return rig(Wd, path([[0, [.6, 1.7, 4.4], [1.5, .9, -1.5], 46], [6, [1.5, 1.45, 2.2], [2.6, .85, -1.5], 44], [12, [.2, 1.35, 1.8], [-.8, .95, -1.2], 42], [18, [-.1, 1.3, .8], [-1.5, 1.1, -1.8], 38], [23.4, [-.6, 1.3, .15], [-1.6, 1.2, -1.85], 36]]));
+  } },
+  // ===== 6. Egypt in apricot haze: a line of men carry clay bricks; crane over them (8.1) =====
+  { dur: 8.1, caps: [], build() {
+    const Wd = egyW({});
+    brickBox(Wd, 70, 3.4, 1.4, [8, 1.7, -14], [14, 1]); brickBox(Wd, 1.4, 5, 24, [26, 2.5, -2], [4, 2]); for (let i = 0; i < 5; i++) Wd.add(cyl(.07, .07, 5.5, '#8a6040', { pos: [23.4, 2.7, -12 + i * 5], ink: false }));
+    for (let i = 0; i < 4; i++) brickBox(Wd, 2.2, .9, 1.1, [-4 + i * 4.5, .45, -6], [5, 2]); for (const [x, z, s] of [[-22, 2, 2.6], [-20, -1.5, 2], [-24, -2, 1.6]]) Wd.add(ball(s, '#b8664c', { pos: [x, s * .3, z], scale: [1.3, .55, 1.1] }));
+    for (let i = 0; i < 8; i++) { const x0 = -12 + i * 2.6, z = -.6 + (i % 2) * .9, rt = route([[0, x0, z], [8.1, x0 + 14, z]], { y: 0 }); person(Wd, workerN(i), t => Object.assign({ gesture: 'rest', smile: .15, seed: .1 * i }, rt(t)));
+      const b1 = box(.42, .13, .22, '#c6684c', { ink: false }), b2 = box(.42, .13, .22, '#bd5f45', { ink: false }); Wd.add(b1); Wd.add(b2);
+      Wd.on(t => { const s = rt(t), f = s.facing; b1.position.set(s.pos[0] + sin(f) * .3, 1.2, s.pos[2] + cos(f) * .3); b2.position.set(s.pos[0] + sin(f) * .3, 1.34, s.pos[2] + cos(f) * .3); b1.rotation.y = b2.rotation.y = f; }); }
+    for (let i = 0; i < 3; i++) { const x0 = 18 - i * 3.4, z = 1.8 + (i % 2) * .5, rt = route([[0, x0, z], [8.1, x0 - 12, z]], { y: 0 }); person(Wd, workerN(i + 3), t => Object.assign({ gesture: 'rest', smile: .1, seed: .3 + .1 * i }, rt(t))); }
+    return rig(Wd, path([[0, [13, 1.5, 4.2], [4, 1.35, 0], 46], [3.5, [12.5, 4.6, 8], [3, 1.2, 0], 48], [8.1, [10, 11.5, 13], [0, 0, -1], 52]]));
+  } },
+  // ===== 7. the palace hall at dusk: an empty throne, great doors open, people walk out to the sunset light (15.4) =====
+  { dur: 15.4, caps: [], build() {
+    const Wd = sunWorld({ skyTop: 0xa88cc8, skyBottom: 0xf4a888, fogColor: 0xedaa8c, fogNear: 60, fogFar: 340, sun: .7, hemi: 1.15, hemiSky: 0xffd0bc, hemiGround: 0xb87a68, sunPos: [-30, 24, -10], shadowExt: 40 });
+    skyGlows(Wd, new THREE.Vector3(0, .1, -1), 1200); groundPlane(Wd, 0xdcaa92, -.03); skyClouds(Wd, 8, 5);
+    const LZ = 58; Wd.add(box(19, .2, LZ + 8, '#d7a38a', { pos: [0, -.1, -LZ / 2 + 4], ink: false })); Wd.add(box(3, .03, LZ + 4, '#27a198', { pos: [0, .02, -LZ / 2 + 2], ink: false }));
+    for (const sx of [-1, 1]) { Wd.add(box(1.2, 11, LZ + 8, '#d29a82', { pos: [sx * 9.8, 5.5, -LZ / 2 + 4], inkW: .02 })); for (let z = 0; z > -LZ; z -= 8) { const w = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 1.4), new THREE.MeshBasicMaterial({ color: 0xffb27a })); w.position.set(sx * 9.18, 8.2, z - 3); w.rotation.y = -sx * PI / 2; Wd.add(w); } }
+    Wd.add(box(20, .6, LZ + 8, '#b87a66', { pos: [0, 11.2, -LZ / 2 + 4], ink: false, cast: false })); Wd.add(box(20, 11, 1.2, '#d29a82', { pos: [0, 5.5, 8.4], inkW: .02 }));
+    const torches = [];
+    for (let i = 0; i < 7; i++) for (const sx of [-1, 1]) { const z = 2 - i * 8; Wd.add(cyl(.62, .7, 10.4, '#e8b9a2', { pos: [sx * 6, 5.2, z] })); Wd.add(box(1.7, .4, 1.7, '#d29a82', { pos: [sx * 6, 10.3, z] })); Wd.add(box(1.5, .4, 1.5, '#d29a82', { pos: [sx * 6, .2, z] }));
+      if (i % 2 === 0) { Wd.add(cyl(.04, .05, 1.2, '#4a3020', { pos: [sx * 5.25, 3.0, z], ink: false })); const f = glowSprite(0xffa040, 1.7, .9); f.position.set(sx * 5.25, 3.85, z); Wd.add(f); const c = glowSprite(0xffe2a0, .7, 1); c.position.set(sx * 5.25, 3.8, z); Wd.add(c); torches.push([f, c]); } }
+    for (const z of [-12, -30, -46]) { const L = new THREE.PointLight(0xffa860, 14, 26, 1.4); L.position.set(0, 5, z); Wd.add(L); }
+    // the empty throne, seen from behind (faces -z)
+    Wd.add(box(5.4, .3, 4.2, '#c98770', { pos: [0, .15, 0] })); Wd.add(box(4.4, .3, 3.4, '#d49a82', { pos: [0, .45, -.1] })); Wd.add(box(3.4, .3, 2.6, '#dca790', { pos: [0, .75, -.2] }));
+    Wd.add(box(1.5, .5, 1.3, '#a8523c', { pos: [0, 1.15, -.4] })); Wd.add(box(1.5, .14, 1.35, '#e2b13a', { pos: [0, 1.45, -.4] })); Wd.add(box(1.9, 3.8, .4, '#b8604a', { pos: [0, 2.95, .45] })); Wd.add(box(2.1, .25, .5, '#e2b13a', { pos: [0, 4.9, .45] }));
+    for (const sx of [-1, 1]) { Wd.add(box(.25, .8, 1.2, '#a8523c', { pos: [sx * .85, 1.7, -.4] })); Wd.add(box(.12, 3, .2, '#e2b13a', { pos: [sx * .72, 3.0, .6], ink: false })); }
+    // the great doors
+    const ZD = -56;
+    for (const sx of [-1, 1]) Wd.add(box(7.2, 11, 1.4, '#d29a82', { pos: [sx * 6.0, 5.5, ZD], inkW: .02 })); Wd.add(box(5, 3, 1.4, '#d29a82', { pos: [0, 9.5, ZD], inkW: .02 }));
+    const gate = new THREE.Mesh(new THREE.PlaneGeometry(4.8, 8), new THREE.MeshBasicMaterial({ color: 0xf2a070, fog: false })); gate.visible = false;
+    Wd.add(box(120, .1, 330, '#e4a488', { pos: [0, -.06, ZD - 165], ink: false, cast: false })); Wd.add(box(5.2, .06, 330, '#f6c8a0', { pos: [0, .0, ZD - 165], ink: false, cast: false }));
+    const sd = new THREE.Mesh(new THREE.CircleGeometry(24, 40), new THREE.MeshBasicMaterial({ color: 0xffcf90, fog: false })); sd.position.set(0, 11, -330); Wd.add(sd); const sh = glowSprite(0xff9a60, 120, .5); sh.position.set(0, 11, -331); Wd.add(sh);
+    for (let i = 0; i < 18; i++) { const x0 = ((i % 3) - 1) * 1.3 + (i % 2 ? .4 : -.3), z0 = ZD - 5 - 4.2 * i, rt = route([[0, x0, z0], [15.4, x0 * 1.4, z0 - 24]], { y: 0 }); person(Wd, workerN(i + 20), t => Object.assign({ gesture: 'rest', seed: .1 * i }, rt(t))); }
+    const lv = [-1, 1].map(sx => { const p = new THREE.Group(); p.position.set(sx * 2.4, 0, ZD + .45); Wd.add(p); p.add(box(2.4, 8, .3, '#8a5a36', { pos: [-sx * 1.2, 4, 0] })); p.add(box(1.9, 7.2, .08, '#a8703f', { pos: [-sx * 1.2, 4, .17], ink: false })); p.add(ball(.14, '#d8a24a', { pos: [-sx * .3, 3.8, .22], ink: false })); return { p, sx }; });
+    const gl = glowSprite(0xff9c5c, 30, .5); gl.position.set(0, 5, ZD - 8); Wd.add(gl); const sp = new THREE.Mesh(new THREE.PlaneGeometry(9, 50), new THREE.MeshBasicMaterial({ color: 0xffcf8a, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false })); sp.rotation.x = -PI / 2; sp.position.set(0, .06, ZD + 24); Wd.add(sp);
+    Wd.on(t => { const th = 1.5 * sm(prog(t, 3.2, 7.5)); lv.forEach(l => l.p.rotation.y = -l.sx * th); gate.visible = true; sp.material.opacity = .2 * sm(prog(t, 3.5, 7)); gl.material.opacity = .3 + .12 * sm(prog(t, 3.5, 7));
+      torches.forEach(([f, c], i) => { f.scale.setScalar(1.55 + .2 * sin(t * 13 + i * 3)); c.scale.setScalar(.65 + .1 * sin(t * 17 + i)); }); });
+    for (let i = 0; i < 12; i++) { const x = (i % 2 ? 1 : -1) * (2.8 + (i * 7 % 5)), z0 = -49 - 3.6 * i, rt = route([[0, x, z0], [15.4, x * 1.25, z0 - 20]], { y: 0 }); person(Wd, workerN(i), t => Object.assign({ gesture: 'rest', seed: .1 * i }, rt(t))); }
+    return rig(Wd, path([[0, [-3.5, 2.4, 10.5], [0, 2.6, 0], 48], [3.8, [-4.6, 2.6, 2.4], [0, 2.4, -4], 50], [6.5, [-3.5, 3.2, -12], [0, 2.6, -40], 52], [10, [0, 2.9, -40], [0, 3.0, -70], 54], [12.5, [0, 2.7, -56], [0, 3, -90], 54], [15.4, [0, 2.6, -66], [0, 2.6, -110], 52]]));
+  } },
+  // ===== 8. a heap of clay bricks lifts and rearranges into a stair rising to a soft radiance (25.1) =====
+  { dur: 25.1, caps: [], build() {
+    const Wd = egyW({ fogFar: 300 });
+    const N = 24, NB = N * 12, r = rng(9), geo = new THREE.BoxGeometry(.6, .42, .3), im = new THREE.InstancedMesh(geo, toon(0xffffff), NB); im.frustumCulled = false; im.castShadow = true; im.receiveShadow = true; Wd.add(im);
+    const BC = ['#c4745a', '#b4644a', '#cf8064', '#bd6c52', '#d2876a'], S0 = [], T0 = [], TS = [];
+    for (let i = 0; i < NB; i++) { const a = r() * 6.283, rd = 2.8 * Math.sqrt(r()), hh = (1 - rd / 3) * 1.5 * r(); S0.push([2 + Math.cos(a) * rd, .21 + hh, 6 + Math.sin(a) * rd, r() * 3, (r() - .5) * .5, (r() - .5) * .5]);
+      const k = Math.floor(i / 12), j = i % 12; T0.push([(j % 4 - 1.5) * .62, .21 + .45 * k, -k * 1.0 + (Math.floor(j / 4) - 1) * .31]); TS.push(2 + k * .62 + j * .05); im.setColorAt(i, new THREE.Color(BC[i % 5])); }
+    const DUM = new THREE.Object3D();
+    Wd.on(t => { for (let i = 0; i < NB; i++) { const u = ease.io(prog(t, TS[i], TS[i] + 2.4)), a = S0[i], b = T0[i], ar = Math.sin(PI * u) * 5;
+        DUM.position.set(lerp(a[0], b[0], u), lerp(a[1], b[1], u) + ar, lerp(a[2], b[2], u)); DUM.rotation.set(a[4] * (1 - u) + ar * .05, a[3] * (1 - u), a[5] * (1 - u)); DUM.updateMatrix(); im.setMatrixAt(i, DUM.matrix); } im.instanceMatrix.needsUpdate = true; });
+    // the radiance (light only)
+    const rt = canvasTex(512, 512, (g, w, h) => { g.translate(w / 2, h / 2); for (let i = 0; i < 16; i++) { g.rotate(PI / 8); const gr = g.createLinearGradient(0, 0, w / 2, 0); gr.addColorStop(0, 'rgba(255,255,255,.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.beginPath(); g.moveTo(0, -5); g.lineTo(w / 2, -22); g.lineTo(w / 2, 22); g.lineTo(0, 5); g.fill(); } });
+    const rays = new THREE.Sprite(new THREE.SpriteMaterial({ map: rt, color: 0xffdfa0, blending: THREE.AdditiveBlending, transparent: true, depthWrite: false, fog: false, opacity: .8 })); rays.scale.set(110, 110, 1); rays.position.set(0, 26, -42); Wd.add(rays);
+    const g1 = glowSprite(0xffe6b0, 70, .9); g1.position.set(0, 26, -42); Wd.add(g1); const g2 = glowSprite(0xfff6e0, 20, .55); g2.position.set(0, 26, -42); Wd.add(g2);
+    Wd.on(t => { const k = sm(prog(t, 1, 14)); rays.material.opacity = .12 + .38 * k; rays.material.rotation = t * .05; g1.material.opacity = .2 + .4 * k; });
+    for (let i = 0; i < 7; i++) { const a = i / 7 * 6.283; Wd.add(cloud({ seed: 40 + i, size: 4, color: 0xe6d6f4, inkColor: 0xc3a8dc, pos: [Math.cos(a) * 30, 20 + (i % 3) * 4, -32 + Math.sin(a) * 8], puffs: 5, cast: false })); }
+    for (let m = 0; m < 5; m++) { const ts = 14 + 1.4 * m, ox = (m % 3 - 1) * .7;
+      person(Wd, workerN(m + 1), t => { const s = clamp((t - ts) * 2.2, 0, 22), mv = s > 0 && s < 22; return { pos: [ox, .42 + .45 * s, -s * 1.0], facing: PI, walk: mv ? s * 3.4 : undefined, gesture: 'rest', seed: .1 * m, groundY: .42 + .45 * s }; }); }
+    return rig(Wd, path([[0, [9, 2.6, 13], [1, .9, 6], 48], [4, [7, 3.4, 10.5], [1.5, 1.1, 5], 48], [9, [7.5, 6.5, 8], [0, 4, -6], 50], [14, [6, 9, 4], [0, 8, -12], 52], [19, [3.5, 12.5, -1], [0, 12, -24], 54], [25.1, [3, 17.5, -9], [0, 15, -30], 56]]));
+  } },
+  // ===== 9. time-lapse over the brick fields: the sun sweeps three days, then the haze clears into a column of light (9.7) =====
+  { dur: 9.7, caps: [], build() {
+    const Wd = egyW({}); const f = Wd.scene.fog; const top = Wd.sky.material.uniforms.top.value, bot = Wd.sky.material.uniforms.bot.value;
+    const NR = 9, per = 18, imb = new THREE.InstancedMesh(new THREE.BoxGeometry(.8, .22, .4), toon(0xffffff), NR * per), r = rng(4), D0 = new THREE.Object3D(); imb.frustumCulled = false; imb.castShadow = true; imb.receiveShadow = true; Wd.add(imb);
+    for (let i = 0; i < NR * per; i++) { const row = Math.floor(i / per), c = i % per; D0.position.set(-14 + c * 1.6, .11 + ((c * 7 + row) % 3 === 0 ? .22 : 0), -16 + row * 4.2); D0.rotation.y = (r() - .5) * .06; D0.updateMatrix(); imb.setMatrixAt(i, D0.matrix); imb.setColorAt(i, new THREE.Color(['#c4745a', '#b4644a', '#cf8064', '#bd6c52'][i % 4])); }
+    for (const [x, z] of [[-20, -8], [-24, 6], [22, 4]]) { Wd.add(ball(3, '#c98770', { pos: [x, 0, z], scale: [1, .9, 1] })); Wd.add(box(1.2, 1.4, .6, '#6a3a2a', { pos: [x, .7, z + 2.9], ink: false })); }
+    brickBox(Wd, 50, 3.2, 1.4, [0, 1.6, -26], [10, 1]); brickBox(Wd, 1.4, 3.2, 30, [-30, 1.6, -8], [5, 1]);
+    for (let i = 0; i < 6; i++) { const x0 = -10 + i * 4, z = -12 + (i % 3) * 8; person(Wd, workerN(i), t => { const ph = t * 2.4 + i, x = x0 + 5 * sin(ph), dx = 5 * 2.4 * cos(ph); return { pos: [x, 0, z], facing: dx > 0 ? PI / 2 : -PI / 2, walk: t * 14 + i, gesture: 'rest', seed: .1 * i }; }); }
+    const cB = new THREE.Color(0xb5a0da), cB2 = new THREE.Color(0xd5d8f4), dB = new THREE.Color(0xffb68e), dB2 = new THREE.Color(0xffe2c8);
+    Wd.sunFn = (t, W) => { const tl = Math.min(t, 7.2), a = 3 * PI * tl / 7.2, fr = (a / PI) % 1, el = t < 7.2 ? Math.sin(PI * fr) : 0, clear = sm(prog(t, 6.4, 9.2));
+      const E = .13 + .95 * el, az = t < 7.2 ? lerp(-1.25, 1.25, fr) : lerp(1.25, -.9, sm(prog(t, 7.2, 9.7)));
+      W.dir.set(Math.sin(az) * Math.cos(E), Math.sin(E), .25 * Math.cos(E)).normalize();
+      W.sun.color.setRGB(1, lerp(.7, .95, el), lerp(.45, .86, el)); W.sun.intensity = 1.1 + .7 * el; W.hemi.intensity = 1.0 + .35 * el;
+      top.copy(cB).lerp(cB2, el * (1 - clear)); bot.copy(dB).lerp(dB2, el * (1 - clear)); f.color.copy(bot); f.near = lerp(8, 100, clear); f.far = lerp(130, 650, clear); };
+    beam(Wd, () => [0, 0, -4], t => sm(prog(t, 7.2, 9.2)), { r: 3.4, h: 90 });
+    return rig(Wd, orbit([0, 3, -4], 42, 17, 20, 140, 0, 9.7, 50));
+  } },
+  // ===== 10. the EVED slumps on the soft bed; threads descend from above and attach; his inner light dims (22.34) =====
+  { dur: 22.34, caps: [], build() {
+    const Wd = skyW(K.INT); cozy(Wd, { ceil: false });
+    const P = person(Wd, EVED, t => ({ pos: [2.3, .012, -1.2], facing: -PI / 2, sit: true, gesture: 'slump' + Math.round(10 * sm(prog(t, 7, 12.5))), smile: lerp(.45, .08, sm(prog(t, 6, 11))), seed: .4, groundY: .012 }));
+    const tg = [boneAt(P, 'handA'), boneAt(P, 'handB'), boneAt(P, 'shA'), boneAt(P, 'shB')], an = [[1.9, 8, -1.9], [2.7, 9, -1.7], [1.9, 9, -.5], [2.7, 8, -.6]];
+    threadSet(Wd, { n: 4, anchor: i => an[i], target: (i, t) => tg[i](), a: (i, t) => ease.out(prog(t, 3 + i * .8, 6.2 + i * .8)) });
+    innerLight(Wd, () => chestPos([2.3, .012, -1.2], -PI / 2, { sit: true }), t => 1.1 - .5 * sm(prog(t, 6, 11)) + .04 * sin(t * 2.2), { k: 1 });
+    const T = [2.3, 1.1, -1.2];
+    return rig(Wd, cine([[0, T, 3.4, .5, 38, 44, 0], [8, T, 3.0, .45, -25, 42, .05], [17, T, 2.7, .4, -70, 40, .1], [22.34, T, 2.1, .2, -62, 34, .15]]));
+  } },
+  // ===== 11. six copper lamps light one after another; the EVED hesitates at THE TURQUOISE DOOR (10.9) =====
+  { dur: 10.9, caps: [], build() {
+    const Wd = skyW(K.INT); groundPlane(Wd, 0xe0ab94);
+    seaRoom(Wd, { W: 7.2, D: 6, H: 3.2, skip: ['front', 'right'] });
+    doorWall(Wd, { pos: [3.8, 0, 0], ry: -PI / 2, W: 6.4, H: 3.2, doorX: 1.0, wall: SR, bgPlane: false, open: t => .85 * sm(prog(t, 4.5, 7)) });
+    const OL = new THREE.PointLight(0xffc880, 10, 11, 1.3); OL.position.set(4.8, 1.7, 1.0); Wd.add(OL); const og = glowSprite(0xffd48a, 7, .55); og.position.set(5.5, 1.5, 1.0); Wd.add(og);
+    Wd.add(box(2.4, .06, .36, WAL, { pos: [-1.55, 1.45, -2.78] })); for (const sx of [-1, 1]) Wd.add(box(.06, .3, .3, WAL, { pos: [-1.55 + sx * 1.1, 1.3, -2.8], ink: false }));
+    const fl = []; for (let i = 0; i < 6; i++) { const x = -2.4 + i * .37; Wd.add(cyl(.05, .08, .05, COP, { pos: [x, 1.51, -2.78] })); Wd.add(ball(1, COP, { pos: [x, 1.58, -2.78], scale: [.07, .05, .07] })); Wd.add(box(.02, .03, .1, COP, { pos: [x + .07, 1.6, -2.78], ink: false }));
+      const f = glowSprite(0xffb050, .3, 0), h = glowSprite(0xffd890, 1.5, 0), c = glowSprite(0xfff2d0, .12, 0); f.position.set(x, 1.68, -2.78); h.position.set(x, 1.68, -2.78); c.position.set(x, 1.66, -2.78); Wd.add(f); Wd.add(h); Wd.add(c); fl.push([f, h, c, .7 + i * .85]); }
+    lamp(Wd, 1.0, 2.5, -1.0, 3, { top: 3.2 });
+    Wd.on(t => fl.forEach(([f, h, c, t0], i) => { const k = sm(prog(t, t0, t0 + .5)), fk = 1 + .1 * sin(t * 12 + i * 2); f.material.opacity = k; c.material.opacity = k; h.material.opacity = .6 * k; f.scale.setScalar(.3 * fk * k + .001); h.scale.setScalar((1.2 + .3 * k) * fk); }));
+    const fn = t => { const u = sm(prog(t, 4.2, 8.4)); return { pos: [lerp(-1.9, 3.05, u), .012, lerp(-2.0, 1.0, u)], facing: lerp(lerp(PI, 1.03, sm(prog(t, 4, 5))), -.64, sm(prog(t, 8.1, 9.4))), walk: (t > 4.2 && t < 8.4) ? (t - 4.2) * 5.6 : undefined, gesture: 'rest', brow: t > 8.6 ? .4 : 0, smile: .1, seed: .3, groundY: .012 }; };
+    person(Wd, EVED, fn);
+    return rig(Wd, path([[0, [-.9, 1.5, 1.4], [-1.7, 1.6, -2.9], 44], [5.5, [-.2, 1.5, 2.4], [-.4, 1.55, -2.9], 44], [7.7, [.9, 1.55, 2.9], [2.4, 1.4, .6], 42], [10.9, [1.5, 1.55, 2.7], [3.0, 1.4, 1.0], 37]]));
+  } },
+  // ===== 12. the modern beit midrash: the BACHUR with the Shulchan Aruch, the golden beam on him (15.75) =====
+  { dur: 15.75, caps: [], build() {
+    const Wd = skyW(K.INT); groundPlane(Wd, 0xe0ab94);
+    seaRoom(Wd, { W: 9.4, D: 8, H: 3.8, skip: ['front'] }); shelf(Wd, -3, -3.75, 0, 3); shelf(Wd, 3, -3.75, 0, 3); lamp(Wd, -2.5, 2.8, -.5, 4, { top: 3.8 }); lamp(Wd, 2.5, 2.8, -.5, 0, { top: 3.8 }); lamp(Wd, 0, 2.9, 2, 0, { top: 3.8 });
+    table(Wd, { x: 0, z: -.1, w: 1.8, d: .9 }); sefer(Wd, [0, .78, -.12], { w: .56, d: .38, color: '#4a2a18', glow: .35 }); lbl(Wd, 'שולחן ערוך', [-.85, .98, .1], .12, { size: 60 });
+    for (const [x, z] of [[-3.1, -2.2], [3.0, -2.4]]) { table(Wd, { x, z: z + .6, w: 1.5, d: .8 }); sefer(Wd, [x, .78, z + .6], { w: .5, d: .34, color: '#2a4a6a' }); sitting(Wd, manN(Math.abs(Math.round(x))), [x, .012, z], 0, t => ({ gesture: 'read', seed: x })); }
+    const P = [0, .012, -.95];
+    person(Wd, BACHUR, t => ({ pos: P, facing: 0, sit: true, gesture: 'read', smile: .35, seed: .5, groundY: .012 }));
+    beam(Wd, () => [0, 0, -.95], t => .55 * sm(prog(t, .3, 2)), { r: .75 }); innerLight(Wd, () => chestPos(P, 0, { sit: true }), t => 1.5 + .1 * sin(t * 2), { k: 1.2, light: true, power: 1.5 });
+    const T = [0, 1.0, -.95];
+    return rig(Wd, cine([[0, T, 3.3, .75, -80, 42, .15], [7, T, 3.0, .7, 0, 40, .17], [15.75, T, 3.3, .8, 80, 42, .15]]));
+  } },
+  // ===== 13. a pastel plaza at dusk with blank glowing panels; threads run to the passers-by who do not notice (13.15) =====
+  { dur: 13.15, caps: [], build() {
+    const Wd = skyW({ skyTop: 0xa99be0, skyBottom: 0xffb4bc, fogColor: 0xf6b9c4, fogNear: 60, fogFar: 300, sun: 1.4, sunColor: 0xffc0a0, hemiSky: 0xffd8e0, hemiGround: 0xc89aa8, sunPos: [-50, 18, 20] });
+    groundPlane(Wd, 0xf0c8cc, -.05);
+    const pt = canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#f5d6d8'; g.fillRect(0, 0, w, h); g.fillStyle = '#c4e6e0'; g.fillRect(0, 0, 64, 64); g.fillRect(64, 64, 64, 64); g.strokeStyle = 'rgba(150,100,110,.25)'; g.lineWidth = 2; g.strokeRect(0, 0, w, h); }, [20, 45]);
+    const fl = new THREE.Mesh(new THREE.PlaneGeometry(80, 180), toon(0xffffff, { map: pt })); fl.rotation.x = -PI / 2; fl.position.set(0, 0, -30); fl.receiveShadow = true; Wd.add(fl);
+    const wt = canvasTex(128, 128, (g, w, h) => { g.fillStyle = 'rgba(255,255,255,0)'; for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) { g.fillStyle = (x + y) % 3 === 0 ? '#ffe3b0' : '#e8f4f2'; g.fillRect(x * 32 + 6, y * 32 + 7, 20, 18); } }, [5, 4]);
+    const PAS = ['#f0b8c0', '#a8d8d4', '#f3d4b8', '#c4b4e0', '#f6c8b0', '#b8d8e8'];
+    for (const sx of [-1, 1]) for (let i = 0; i < 7; i++) { const z = 30 - i * 24, h = 14 + ((i * 5) % 8), w = 16; Wd.add(box(w, h, 22, PAS[(i + (sx > 0 ? 2 : 0)) % 6], { pos: [sx * 32, h / 2, z], inkW: .03 }));
+      const fc = new THREE.Mesh(new THREE.PlaneGeometry(20, h - 3), new THREE.MeshBasicMaterial({ map: wt, transparent: true })); fc.position.set(sx * 32 - sx * 8.05, h / 2 + 1, z); fc.rotation.y = sx > 0 ? -PI / 2 : PI / 2; Wd.add(fc); Wd.add(box(w + .6, .5, 22.6, i % 2 ? TQ2 : '#f08a9a', { pos: [sx * 32, h + .25, z], ink: false })); }
+    const gradT = canvasTex(64, 256, (g, w, h) => { const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#ff9ec0'); gr.addColorStop(.5, '#ffc8d0'); gr.addColorStop(1, '#7fe0d4'); g.fillStyle = gr; g.fillRect(0, 0, w, h); });
+    const PN = [[-8, 8], [9, -2], [-9, -14], [9.5, -26], [-8.5, -38]], pm = [];
+    PN.forEach(([x, z], i) => { const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = x < 0 ? PI / 2 - .25 : -PI / 2 + .25; Wd.add(g); g.add(box(3.9, 6.8, .35, '#e6dcec', { pos: [0, 5.9, 0] })); g.add(cyl(.12, .16, 2.6, '#cfc4d8', { pos: [0, 1.3, -.05] }));
+      const m = new THREE.Mesh(new THREE.PlaneGeometry(3.5, 6.4), new THREE.MeshBasicMaterial({ map: gradT, fog: false })); m.position.set(0, 5.9, .19); g.add(m); pm.push(m);
+      const gs = glowSprite(i % 2 ? 0x7fe0d4 : 0xff9ec0, 15, .3); gs.position.set(x + (x < 0 ? 1.2 : -1.2), 6, z); Wd.add(gs); });
+    Wd.on(t => pm.forEach((m, i) => m.material.color.setScalar(.88 + .12 * sin(t * 1.6 + i * 1.3))));
+    const MEN = [[-3.4, 16], [3.4, 12], [-6, 2], [5.5, -6], [-2.6, -12], [2.4, -18], [-6.5, -22], [6, -30], [-6.8, -34], [2.3, 6], [5, -40], [-2.4, 18]], PP = [], pan = i => PN[i % 5];
+    MEN.forEach(([x, z0], i) => { const s = i % 2 ? 1 : -1, rt = route([[0, x, z0], [13.15, x, z0 + s * 17]], { y: 0 }); PP.push(person(Wd, manN(i + 2), t => Object.assign({ gesture: 'rest', smile: .2, seed: .13 * i }, rt(t)))); });
+    const hs = PP.map(P => [boneAt(P, 'handA'), boneAt(P, 'shB')]);
+    threadSet(Wd, { n: 24, anchor: i => { const p = pan(i >> 1); return [p[0] + (p[0] < 0 ? .7 : -.7), 8.4, p[1]]; }, target: (i, t) => hs[i >> 1][i & 1](), a: (i, t) => ease.out(prog(t, .2, 1.4)), r: .014 });
+    return rig(Wd, path([[0, [.8, 1.7, 26], [0, 2.4, 0], 48], [6, [-.5, 2.0, 5], [.8, 2.6, -12], 50], [13.15, [.6, 1.9, -18], [0, 3, -45], 50]]));
+  } },
+  // ===== 14. a gentle river at sunset; the BACHUR on the bank: threads pull him, he looks up, they dissolve, the beam lands (19.3) =====
+  { dur: 19.3, caps: [], build() {
+    const Wd = skyW({});
+    const hAt = (x, z) => { const w = Math.abs(z + 8.5); let h = .25; if (w < 5.5) h = lerp(.25, -1.3, sm(clamp((5.5 - w) / 2.5, 0, 1))); return h + sm(clamp((-z - 14) / 30, 0, 1)) * (6 + 7 * fbm(x * .03, z * .03)) + (Math.abs(x) > 10 ? .3 * fbm(x * .1, z * .1) : 0); };
+    terrain(Wd, { size: 320, N: 150, cz: -40, h: hAt, A: [.88, .62, .5], B: [.74, .56, .42], C: [.66, .68, .42] }); trees8(Wd, hAt, { seed: 7, n: 30, area: [-70, 70, -34, -16] }); trees8(Wd, hAt, { seed: 9, n: 10, area: [-40, 40, 4, 14] });
+    const wg = new THREE.PlaneGeometry(200, 11, 100, 8); wg.rotateX(-PI / 2); const wp = wg.attributes.position, wc = new Float32Array(wp.count * 3), bx = [], bz = [];
+    for (let i = 0; i < wp.count; i++) { const zz = wp.getZ(i) / 5.5; bx.push(wp.getX(i)); bz.push(wp.getZ(i)); const k = Math.pow(Math.abs(zz), .8), c = [lerp(.98, .2, k), lerp(.7, .7, k), lerp(.62, .72, k)]; wc[i * 3] = c[0]; wc[i * 3 + 1] = c[1]; wc[i * 3 + 2] = c[2]; }
+    wg.setAttribute('color', new THREE.BufferAttribute(wc, 3)); const water = new THREE.Mesh(wg, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: .93 })); water.position.set(0, 0, -8.5); Wd.add(water);
+    Wd.on(t => { for (let i = 0; i < wp.count; i++) wp.setY(i, .04 * sin(bx[i] * .6 + t * 1.1 + bz[i] * .8) + .02 * sin(bx[i] * 1.7 - t * 1.7)); wp.needsUpdate = true; });
+    const r = rng(12), sp = motes(Wd, 70), SPK = []; for (let i = 0; i < 70; i++) SPK.push([r() * 50 - 25, -12 + r() * 7, r() * 6]); Wd.on(t => { SPK.forEach((s, i) => sp.set(i, s[0], .08, s[1], .12 * Math.max(0, sin(t * 2.4 + s[2])), 1, .85, .65)); sp.done(); });
+    for (let i = 0; i < 36; i++) { const x = -30 + r() * 60, z = -3.9 + r() * .8; for (let k = 0; k < 4; k++) Wd.add(cyl(.0, .035, .9 + r() * .4, '#8aa05a', { pos: [x + (r() - .5) * .3, .45, z + (r() - .5) * .3], rot: [(r() - .5) * .3, 0, (r() - .5) * .3], ink: false })); }
+    const LC = ['#c4663c', '#e0a040', '#d6764a', '#a8523a'], lv = []; for (let i = 0; i < 26; i++) { const m = ball(1, LC[i % 4], { scale: [.16, .03, .11], ink: false }); Wd.add(m); lv.push([m, r() * 120, -12 + r() * 7.4, r() * 6]); }
+    const bo = []; for (let i = 0; i < 7; i++) { const g = new THREE.Group(); Wd.add(g); g.add(box(.42, .1, .17, '#fbf1e2', { pos: [0, .05, 0], ink: false })); g.add(box(.02, .3, .15, '#fff7ec', { pos: [0, .25, 0], ink: false })); g.add(box(.34, .02, .15, '#f4e6d4', { pos: [-.05, .21, 0], rot: [0, 0, .5], ink: false })); bo.push([g, r() * 120, -10.5 + r() * 5, r() * 6]); }
+    Wd.on(t => { for (const [m, x0, z, ph] of lv) { m.position.set(((x0 + .9 * t + 60) % 120) - 60, .03 + .015 * sin(t * 2 + ph), z + .2 * sin(t * .6 + ph)); m.rotation.y = t * .3 + ph; } for (const [g, x0, z, ph] of bo) { g.position.set(((x0 + .7 * t + 60) % 120) - 60, .02 + .03 * sin(t * 1.7 + ph), z + .25 * sin(t * .5 + ph)); g.rotation.set(.05 * sin(t * 1.5 + ph), .3 * sin(t * .4 + ph), .06 * sin(t * 1.3 + ph)); } });
+    const BP = [0, .25, .5], P = person(Wd, BACHUR, t => ({ pos: BP, facing: 0, gesture: t < 10 ? 'lean' : t < 15.6 ? 'lookup' : 'rest', smile: t < 10 ? .05 : .7, seed: .6, groundY: .25, brow: t < 10 ? .3 : 0 }));
+    const tg = [boneAt(P, 'handA'), boneAt(P, 'handB'), boneAt(P, 'shA'), boneAt(P, 'shB')], an = [[11, 1.6, -1.0], [13, 2.6, -3.5], [10, .9, 1.8], [14, 2.0, -6]];
+    threadSet(Wd, { n: 4, anchor: i => an[i], target: (i, t) => tg[i](), a: (i, t) => ease.out(prog(t, .2 + i * .3, 1.8 + i * .3)), d: t => sm(prog(t, 10.6, 12.8)) });
+    beam(Wd, () => [0, .25, .5], t => sm(prog(t, 11.5, 14)), { r: 1.2 }); innerLight(Wd, () => chestPos(BP, 0), t => .6 + .95 * sm(prog(t, 11.5, 14.5)) + .04 * sin(t * 2.2), { k: 1 });
+    const T = [0, 1.3, .5];
+    return rig(Wd, cine([[0, T, 5.2, .5, -30, 44, .1], [9, T, 3.7, .45, -14, 40, .15], [13, T, 5.5, 2.8, -45, 44, .1], [19.3, T, 11, 9, -100, 50, 0]]));
+  } },
+  // ===== 15. the walnut wardrobe opens: neat dark suits, white shirts, black hats, soft copper light (11.8) =====
+  { dur: 11.8, caps: [], build() {
+    const Wd = skyW(K.INT); groundPlane(Wd, 0xe0ab94);
+    seaRoom(Wd, { W: 8, D: 6, H: 3.4, skip: ['front', 'left', 'right'] }); lamp(Wd, -2.2, 2.7, -.5, 0, { top: 3.4 }); lamp(Wd, 2.4, 2.7, .5, 0, { top: 3.4 });
+    const WZ = -2.5; Wd.add(box(2.96, 2.7, .05, WAL, { pos: [0, 1.4, WZ - .38] })); for (const sx of [-1, 1]) Wd.add(box(.07, 2.8, .8, WAL, { pos: [sx * 1.48, 1.4, WZ] })); Wd.add(box(3.1, .1, .86, WAL, { pos: [0, 2.8, WZ] })); Wd.add(box(2.96, .1, .8, WAL, { pos: [0, .2, WZ] })); Wd.add(box(3.1, .16, .9, '#4a2c18', { pos: [0, .08, WZ], ink: false })); Wd.add(box(2.9, .04, .78, WAL2, { pos: [0, 2.42, WZ] }));
+    const rail = cyl(.02, .02, 2.9, '#c9a050', { pos: [0, 2.0, WZ], rot: [0, 0, PI / 2], ink: false }); Wd.add(rail);
+    const garment = (x, kind, i) => { const g = new THREE.Group(); g.position.set(x, 2.0, WZ + (i % 2 ? .06 : -.06)); Wd.add(g); const col = kind ? '#f6f3ec' : (i % 4 === 0 ? '#1d1d27' : '#22222d'), sl = kind ? '#ece8df' : col;
+      g.add(box(.5, .8, .15, col, { pos: [0, -.46, 0], inkW: .008 })); for (const sx of [-1, 1]) g.add(box(.13, .68, .13, sl, { pos: [sx * .32, -.43, 0], rot: [0, 0, sx * .04], ink: false })); g.add(cyl(.012, .012, .12, '#b0b0b8', { pos: [0, .06, 0], ink: false }));
+      if (kind) g.add(box(.22, .05, .12, '#ffffff', { pos: [0, -.06, .02], ink: false })); else g.add(box(.09, .55, .02, '#e9e5dd', { pos: [0, -.38, .08], ink: false })); return g; };
+    const gs = []; for (let i = 0; i < 9; i++) gs.push(garment(-1.2 + i * .3, i % 3 === 2 ? 1 : 0, i));
+    for (let i = 0; i < 6; i++) { const x = -1.22 + i * .49; Wd.add(cyl(.25, .25, .03, '#121216', { pos: [x, 2.45, WZ], ink: false })); Wd.add(cyl(.17, .18, .15, '#17171c', { pos: [x, 2.54, WZ] })); Wd.add(cyl(.185, .185, .03, '#2c2c34', { pos: [x, 2.48, WZ], ink: false })); }
+    for (const sx of [-1, 1]) { Wd.add(box(.28, .1, .12, '#0d0d10', { pos: [sx * .5 - .3, .3, WZ + .1], ink: false })); Wd.add(box(.28, .1, .12, '#0d0d10', { pos: [sx * .5 + .3, .3, WZ + .1], ink: false })); }
+    const lv = [-1, 1].map(sx => { const p = new THREE.Group(); p.position.set(sx * 1.5, 0, WZ + .42); Wd.add(p); p.add(box(1.47, 2.7, .06, WAL2, { pos: [-sx * .74, 1.4, 0] })); p.add(box(1.1, 2.2, .03, '#7a4a2a', { pos: [-sx * .74, 1.4, .04], ink: false })); p.add(ball(.05, '#d8a24a', { pos: [-sx * 1.3, 1.3, .07], ink: false })); return { p, sx }; });
+    const WL = new THREE.PointLight(0xffc880, 3, 7, 1.3); WL.position.set(0, 1.9, WZ + .2); Wd.add(WL); const wg = glowSprite(0xffd090, 3, .3); wg.position.set(0, 1.5, WZ - .33); Wd.add(wg);
+    Wd.on(t => { const th = 1.95 * sm(prog(t, 1.6, 4.6)); lv.forEach(l => l.p.rotation.y = l.sx * th); gs.forEach((g, i) => g.rotation.z = .02 * sin(t * 1.3 + i) * sm(prog(t, 2, 4))); WL.intensity = 3 * sm(prog(t, 1.4, 3.5)); wg.material.opacity = .45 * sm(prog(t, 1.4, 3.5)); });
+    return rig(Wd, path([[0, [1.0, 1.75, 5.6], [0, 1.6, -2.2], 42], [6, [.6, 1.7, 3.8], [0, 1.6, -2.4], 40], [11.8, [.2, 1.6, 2.1], [0, 1.55, -2.5], 38]]));
+  } },
+  // ===== 16. a conveyor of identical grey hats and coats, each pulled by a thread from a big blank panel (13.3) =====
+  { dur: 13.3, caps: [], build() {
+    const Wd = skyW({ skyTop: 0xbdb4d0, skyBottom: 0xe8c8c0, fogColor: 0xdcc4c0, fogNear: 28, fogFar: 150, sun: 1.2, sunColor: 0xf0cfc0, hemi: 1.35, hemiSky: 0xf0e0e8, hemiGround: 0xa89aa8, sunPos: [-40, 26, 25] });
+    groundPlane(Wd, 0xc4b8c2, -.03); Wd.add(box(130, .4, 1.7, '#55535f', { pos: [0, .35, 0] })); Wd.add(box(130, .04, 1.4, '#6d6b79', { pos: [0, .56, 0], ink: false })); for (let x = -60; x <= 60; x += 4) Wd.add(box(.2, .3, 1.5, '#444250', { pos: [x, .15, 0], ink: false }));
+    Wd.add(box(80, 3.4, .5, '#d6cadb', { pos: [0, 7.6, -2.2] })); const pf = new THREE.Mesh(new THREE.PlaneGeometry(78, 3.0), new THREE.MeshBasicMaterial({ color: 0xe6d8ec, fog: false })); pf.position.set(0, 7.6, -1.93); Wd.add(pf);
+    for (const x of [-30, -10, 10, 30]) Wd.add(cyl(.18, .22, 6, '#bdb2c4', { pos: [x, 3.4, -2.6] }));
+    const NI = 47, L = 84, gi = []; for (let i = 0; i < NI; i++) { const g = new THREE.Group(); Wd.add(g); g.position.y = .58;
+      g.add(cyl(.22, .22, .06, '#6a6874', { pos: [0, .03, 0], ink: false })); g.add(cyl(.03, .03, .55, '#6a6874', { pos: [0, .3, 0], ink: false })); g.add(box(.62, .95, .3, '#8e8b97', { pos: [0, 1.12, 0] }));
+      for (const sx of [-1, 1]) g.add(box(.14, .78, .2, '#85828f', { pos: [sx * .38, 1.1, 0], rot: [0, 0, sx * .12], ink: false })); g.add(cyl(.34, .34, .035, '#6f6d7a', { pos: [0, 1.68, 0] })); g.add(cyl(.22, .24, .2, '#76737f', { pos: [0, 1.8, 0] })); gi.push(g); }
+    const xi = (i, t) => (((i * 1.8 + 3.4 * t) % L) + L) % L - 40; Wd.on(t => gi.forEach((g, i) => { g.position.x = xi(i, t); }));
+    threadSet(Wd, { n: NI, anchor: (i, t) => [xi(i, t), 6.0, -1.9], target: (i, t) => [xi(i, t), 2.45, 0], a: (i, t) => 1, r: .014 });
+    return rig(Wd, path([[0, [-14, 1.3, 3.0], [-6, 1.5, 0], 42], [5, [-3, 1.5, 3.6], [4, 1.6, 0], 42], [10, [8, 1.9, 3.2], [14, 1.7, 0], 42], [13.3, [15, 2.4, 3.4], [21, 1.8, 0], 42]]));
+  } },
+  // ===== 17. the BACHUR before a huge grey clockwork: gears halt and crumble to dust, light floods in (15.1) =====
+  { dur: 15.1, caps: [], build() {
+    const Wd = skyW({ skyTop: 0xaaa4c0, skyBottom: 0xd8c4c4, fogColor: 0xd4c0c0, fogNear: 40, fogFar: 200, sun: 1.0, sunColor: 0xe8d0c0, hemi: 1.3, hemiSky: 0xece0e4, hemiGround: 0x9c909c, sunPos: [-40, 26, 25] });
+    groundPlane(Wd, 0xb8aeb8, -.03); const top = Wd.sky.material.uniforms.top.value, bot = Wd.sky.material.uniforms.bot.value, fogc = Wd.scene.fog.color;
+    const GZ = -8, back = box(34, 17, .5, '#b6acba', { pos: [-1, 8.3, GZ - .95] }); Wd.add(back);
+    const gear = (R, teeth, depth) => { const sh = new THREE.Shape(), n = teeth * 4, Ri = R * .84; for (let i = 0; i < n; i++) { const a = i / n * PI * 2, rr = (i % 4 === 1 || i % 4 === 2) ? R : Ri, x = Math.cos(a) * rr, y = Math.sin(a) * rr; if (i) sh.lineTo(x, y); else sh.moveTo(x, y); } sh.closePath();
+      const h = new THREE.Path(); h.absarc(0, 0, R * .28, 0, PI * 2, true); sh.holes.push(h); const g = new THREE.ExtrudeGeometry(sh, { depth, bevelEnabled: false }); g.translate(0, 0, -depth / 2); return g; };
+    const GD = [[-9, 3, 3], [-3.2, 4.2, 2.7], [1.6, 6.1, 2.4], [6, 4, 2.2], [-4.4, 9, 2.2], [1.2, 9.9, 1.8], [-10.2, 8, 1.8], [6.6, 8.8, 2]], GC = ['#8e8c9a', '#9a97a6', '#848290'], gm = [], TC = 10.4;
+    GD.forEach(([x, y, R], i) => { const m = new THREE.Mesh(gear(R, Math.round(R * 5), .55), toon(GC[i % 3])); m.position.set(x, y, GZ + (i % 2) * .22); m.castShadow = true; Wd.add(m); const ax = cyl(R * .14, R * .14, .9, '#6c6a78', { pos: [0, 0, 0] }); ax.rotation.x = PI / 2; m.add(ax); gm.push(m); });
+    const PNL = [[-1, 13.8, GZ - .5, 6, 3.4], [8, 12.4, GZ - .5, 4, 3], [-9.5, 12.8, GZ - .5, 4.4, 3]], pm = PNL.map(([x, y, z, w, h]) => { const g = new THREE.Group(); g.position.set(x, y, z); Wd.add(g); g.add(box(w, h, .4, '#d4c8d8')); const f = new THREE.Mesh(new THREE.PlaneGeometry(w - .3, h - .3), new THREE.MeshBasicMaterial({ color: 0xe0d2e8, fog: false })); f.position.z = .22; g.add(f); return { g, f }; });
+    const S = t => t < 5.6 ? 0 : t > 8.4 ? 1.4 + (t - 8.4) : (() => { const u = (t - 5.6) / 2.8; return 2.8 * (u * u * u - u * u * u * u / 2); })();
+    const NF = 14, FM = new THREE.InstancedMesh(new THREE.TetrahedronGeometry(1), toon(0xffffff), GD.length * NF); FM.frustumCulled = false; FM.castShadow = true; Wd.add(FM); const FD = new THREE.Object3D(), rr = rng(33);
+    const FR = []; GD.forEach(([x, y, R], gi) => { for (let j = 0; j < NF; j++) { const a = rr() * 6.283, rd = R * (.15 + .85 * rr()); FR.push({ gi, x: x + Math.cos(a) * rd, y: y + Math.sin(a) * rd, vx: Math.cos(a) * (.4 + rr() * 1.4), vy: 1 + rr() * 2.2, vz: .4 + rr() * 1.6, s: .12 + rr() * .3, r: rr() * 6 }); } FM.setColorAt(gi * NF + 0, new THREE.Color(GC[gi % 3])); }); for (let i = 0; i < FR.length; i++) FM.setColorAt(i, new THREE.Color(GC[FR[i].gi % 3]));
+    const dm = motes(Wd, GD.length * 10);
+    const fl = glowSprite(0xffd9a0, 55, 0); fl.position.set(-1, 8, GZ - 3); Wd.add(fl); const cW = new THREE.Color(0xf4c4a8), cW2 = new THREE.Color(0xffe6b8);
+    Wd.on(t => { const sg = (i) => (i % 2 ? 1 : -1) * 1.1 / GD[i][2] * 2.2;
+      gm.forEach((m, i) => { const tc = TC + i * .18, k = 1 - sm(prog(t, tc, tc + .5)); m.visible = k > .01; m.scale.setScalar(Math.max(.001, k)); m.rotation.z = sg(i) * (t - S(t)); });
+      FR.forEach((f, i) => { const d = t - (TC + f.gi * .18); if (d < 0) { FD.scale.setScalar(.0001); FD.position.set(f.x, f.y, GZ); } else { const yy = Math.max(.2, f.y + f.vy * d - 4.9 * d * d * .6); FD.position.set(f.x + f.vx * d * .5, yy, GZ + f.vz * d * .7); FD.rotation.set(f.r * d, f.r * d * .7, f.r); FD.scale.setScalar(Math.max(.0001, f.s * (1 - sm(prog(d, 2.2, 4.2))))); } FD.updateMatrix(); FM.setMatrixAt(i, FD.matrix); }); FM.instanceMatrix.needsUpdate = true;
+      for (let g = 0; g < GD.length; g++) for (let j = 0; j < 10; j++) { const d = t - (TC + g * .18); if (d < 0 || d > 3.2) { dm.hide(g * 10 + j); continue; } const a = j * .63 + g, e = 1 - d / 3.2, rd = d * (.8 + j * .12); dm.set(g * 10 + j, GD[g][0] + Math.cos(a) * rd, GD[g][1] + Math.sin(a) * rd * .6 + d * .3, GZ + .3 + d * .4, (.7 + .2 * (j % 3)) * e, .75 * e, .6 * e, .62 * e); } dm.done();
+      back.visible = t < TC + 1.2; pm.forEach((p, i) => { const k = 1 - sm(prog(t, TC - .2 + i * .15, TC + .5 + i * .15)); p.g.visible = k > .01; p.g.scale.setScalar(Math.max(.001, k)); p.f.material.color.setScalar(.9 + .1 * sin(t * 1.5 + i)); });
+      const k = sm(prog(t, 10.6, 13.4)); fl.material.opacity = .75 * k; top.copy(new THREE.Color(0xaaa4c0)).lerp(new THREE.Color(0xf2b8a8), k); bot.copy(new THREE.Color(0xd8c4c4)).lerp(new THREE.Color(0xffe2b0), k); fogc.copy(bot); Wd.hemi.intensity = lerp(1.3, 1.9, k); Wd.sun.color.copy(new THREE.Color(0xe8d0c0)).lerp(cW2, k); });
+    const BP = t => { const u = sm(prog(t, 7.6, 9.2)); return [lerp(1.5, 2.6, u), 0, lerp(-.5, .15, u)]; };
+    const P = person(Wd, BACHUR, t => ({ pos: BP(t), facing: -1.4, walk: (t > 7.6 && t < 9.2) ? -(t - 7.6) * 7 : undefined, gesture: 'rest', smile: .05, brow: .3, seed: .6, groundY: 0, look: -.3 }));
+    const tg = [boneAt(P, 'handA'), boneAt(P, 'handB'), boneAt(P, 'shA'), boneAt(P, 'shB')], an = [[-3.2, 4.2, GZ + .5], [1.6, 6.1, GZ + .5], [-9, 3, GZ + .5], [-1, 12.0, GZ - .1]];
+    threadSet(Wd, { n: 4, anchor: i => an[i], target: (i, t) => tg[i](), a: (i, t) => ease.out(prog(t, .5 + i * .5, 3 + i * .5)), d: t => sm(prog(t, 8.8, 10.6)) });
+    innerLight(Wd, t => chestPos(BP(t), -1.4), t => .75 + .05 * sin(t * 2) + .8 * sm(prog(t, 11, 14)), { k: 1 });
+    const T = [1.8, 1.2, -.4];
+    return rig(Wd, cine([[0, T, 7.6, 1.6, -20, 48, .2], [8, T, 4.3, .8, -40, 40, .2], [11, T, 4.3, .8, -40, 40, .2], [13, T, 9, 3.5, -30, 46, .3], [15.1, T, 15, 5, -24, 50, .5]]));
+  } },
+  // ===== 18. the courtyard at golden sunset: THE TURQUOISE DOOR open; the BACHUR walks out into the beam; the RAV smiles; final pull-back over the town (24.52) =====
+  { dur: 24.52, caps: [], build() {
+    const Wd = skyW({ sun: 2.0, sunColor: 0xffc060, skyTop: 0xd9a0c0, skyBottom: 0xffc27a, fogColor: 0xffc896, hemiSky: 0xffe0b8, hemiGround: 0xd8906a, sunPos: [-50, 20, 15] });
+    hillTown(Wd, 11); courtyard(Wd, { open: t => sm(prog(t, 4.5, 8)), mez: t => 1.6 }); shtender(Wd, { x: -3, z: -1.95, label: 'פרשת משפטים' });
+    person(Wd, RAV, t => ({ pos: [-3, FY, -2.7], facing: .45, perform: .8, talk: talkF(t, 3), smile: .85, seed: .3, groundY: FY }));
+    const br = route([[0, 1.0, 3.0], [5, 2.4, .2], [9, 3.5, -3.6], [11.6, 3.5, -6.6], [16, 3.5, -12.5, 0], [24.52, 3.5, -12.5]], { y: FY });
+    person(Wd, BACHUR, t => Object.assign({ gesture: 'rest', smile: t > 12 ? .7 : .3, seed: .5, groundY: FY }, br(t)));
+    beam(Wd, t => { const p = br(t).pos; return [p[0], 0, p[2]]; }, t => sm(prog(t, 12, 15)), { r: 1.3 });
+    innerLight(Wd, t => { const p = br(t).pos; return [p[0], p[1] + 1.15, p[2]]; }, t => 1 + .7 * sm(prog(t, 12, 15)) + .05 * sin(t * 2.2), { k: 1 });
+    return rig(Wd, path([[0, [-2.3, 1.6, .6], [-3, 1.45, -2.7], 37], [4.5, [-2.2, 1.6, .5], [-3, 1.45, -2.7], 37], [8, [-.4, 1.7, 2.8], [-.2, 1.45, -2.4], 42], [10.5, [1.3, 1.7, 1.0], [3.5, 1.5, -5], 44], [15, [2.2, 1.8, -.8], [3.5, 1.6, -8.5], 44], [18, [3.5, 4.5, 6.5], [3.5, 2.5, -8], 46], [21.5, [2, 14, 26], [2, 5, -12], 50], [24.52, [-4, 32, 52], [0, 6, -16], 54]]));
+  } },
+] });
+</script>
