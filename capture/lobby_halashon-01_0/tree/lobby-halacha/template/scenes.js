@@ -55,29 +55,29 @@ function camFor(kind, idx, dur, c) {   // beats longer than 9 s get a cut every 
 }
 
 // ---------------------------------------------------------------- world + textures
-function mkWorld(o) {
+export function mkWorld(o) {
   const Wd = world(Object.assign({ skyTop: 0x6fb4f0, skyBottom: 0xfff0d2, fogColor: 0xfff0d8, fogNear: 30, fogFar: 130, sun: 1.9, sunPos: [-14, 26, 16], hemi: 1.5, hemiSky: 0xfffbf0, hemiGround: 0x9a8660, shadowExt: 16, skyR: 300 }, o));
   Wd.sun.shadow.mapSize.set(1024, 1024);
   Wd.on((t, cam) => { Wd.sky.position.copy(cam.position); });
   return Wd;
 }
-const glowTex = () => once('glow', () => canvasTex(128, 128, (c, w, h) => { const r = c.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,236,170,.95)'); r.addColorStop(1, 'rgba(255,200,90,0)'); c.fillStyle = r; c.fillRect(0, 0, w, h); }));
-function glowSprite(w, h, opacity) {
+export const glowTex = () => once('glow', () => canvasTex(128, 128, (c, w, h) => { const r = c.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,236,170,.95)'); r.addColorStop(1, 'rgba(255,200,90,0)'); c.fillStyle = r; c.fillRect(0, 0, w, h); }));
+export function glowSprite(w, h, opacity) {
   const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false, opacity: opacity || 1 }));
   s.scale.set(w, h, 1); return s;
 }
-const planksTex = rep => once('plank' + rep, () => { const r = rng(31); return canvasTex(256, 256, (g, w, h) => { const cols = ['#c99a66', '#bd8c58', '#d3a574', '#b5844f'];
+export const planksTex = rep => once('plank' + rep, () => { const r = rng(31); return canvasTex(256, 256, (g, w, h) => { const cols = ['#c99a66', '#bd8c58', '#d3a574', '#b5844f'];
   for (let y = 0; y < h; y += 32) { let x = -r() * 120; while (x < w) { const bw = 120 + r() * 140; g.fillStyle = cols[Math.floor(r() * 4)]; g.fillRect(x, y, bw, 32); g.fillStyle = 'rgba(80,50,20,.45)'; g.fillRect(x, y, 2, 32); x += bw; } g.fillStyle = 'rgba(80,50,20,.5)'; g.fillRect(0, y, w, 2); } }, rep); });
-const booksTex = seed => once('books' + seed, () => { const r = rng(seed); return canvasTex(512, 512, (g, w, h) => { g.fillStyle = '#6b4526'; g.fillRect(0, 0, w, h); const rows = 6, rh = (h - 16) / rows, pal = ['#8a2a2a', '#244a86', '#2f6a3a', '#6a4a2a', '#7b2a5a', '#2a2a36', '#9a7a30', '#4a3470', '#a84a22'];
+export const booksTex = seed => once('books' + seed, () => { const r = rng(seed); return canvasTex(512, 512, (g, w, h) => { g.fillStyle = '#6b4526'; g.fillRect(0, 0, w, h); const rows = 6, rh = (h - 16) / rows, pal = ['#8a2a2a', '#244a86', '#2f6a3a', '#6a4a2a', '#7b2a5a', '#2a2a36', '#9a7a30', '#4a3470', '#a84a22'];
   for (let i = 0; i < rows; i++) { const y0 = 8 + i * rh; g.fillStyle = '#3a2210'; g.fillRect(10, y0, w - 20, rh - 10); let x = 12;
     while (x < w - 16) { const bw = 9 + r() * 15, bh = (rh - 14) * (.72 + r() * .26); if (x + bw > w - 12) break; g.fillStyle = pal[Math.floor(r() * pal.length)]; g.fillRect(x, y0 + rh - 10 - bh, bw - 1.5, bh); g.fillStyle = '#e3bd62'; g.fillRect(x + 1, y0 + rh - 10 - bh + bh * .12, bw - 3.5, 2.2); x += bw; }
     g.fillStyle = '#8a5a30'; g.fillRect(0, y0 + rh - 10, w, 10); } g.strokeStyle = '#4a2c14'; g.lineWidth = 10; g.strokeRect(5, 5, w - 10, h - 10); }); });
 const skyPanelTex = () => once('skypanel', () => canvasTex(128, 256, (g, w, h) => { const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#9fd0ff'); gr.addColorStop(1, '#f4fbff'); g.fillStyle = gr; g.fillRect(0, 0, w, h);
   g.fillStyle = 'rgba(255,255,255,.85)'; for (const [x, y, r] of [[30, 150, 22], [60, 144, 28], [92, 154, 20], [70, 60, 16], [95, 54, 12]]) { g.beginPath(); g.arc(x, y, r, 0, 7); g.fill(); } }));
-function archShape(w, h) { const s = new THREE.Shape(); s.moveTo(-w / 2, 0); s.lineTo(w / 2, 0); s.lineTo(w / 2, h - w / 2); s.absarc(0, h - w / 2, w / 2, 0, PI, false); s.lineTo(-w / 2, 0); return s; }
-const bm = (color, o) => new THREE.MeshBasicMaterial(Object.assign({ color, fog: false }, o || {}));
+export function archShape(w, h) { const s = new THREE.Shape(); s.moveTo(-w / 2, 0); s.lineTo(w / 2, 0); s.lineTo(w / 2, h - w / 2); s.absarc(0, h - w / 2, w / 2, 0, PI, false); s.lineTo(-w / 2, 0); return s; }
+export const bm = (color, o) => new THREE.MeshBasicMaterial(Object.assign({ color, fog: false }, o || {}));
 
-function windowUnit(Wd, x, y0, z, ry, w, h) {   // glowing arched window on a wall, facing +z when ry = 0
+export function windowUnit(Wd, x, y0, z, ry, w, h) {   // glowing arched window on a wall, facing +z when ry = 0
   const g = new THREE.Group(); g.position.set(x, y0, z); g.rotation.y = ry; Wd.add(g);
   const fr = new THREE.Mesh(new THREE.ShapeGeometry(archShape(w + .24, h + .12)), toon(0x8a5a30)); fr.position.z = .01; g.add(fr);
   const pn = new THREE.Mesh(new THREE.ShapeGeometry(archShape(w, h), 12), bm(0xffffff, { map: skyPanelTex() })); pn.position.z = .02;
@@ -112,13 +112,13 @@ function hall(Wd, o) {   // long hall (yeshiva corridor / beit midrash). Long ax
   return { L, HZ, H };
 }
 
-function chair(Wd, x, z, ry, seatY) {
+export function chair(Wd, x, z, ry, seatY) {
   const g = new THREE.Group(); g.position.set(x, 0, z); g.rotation.y = ry; Wd.add(g);   // sitter faces +z when ry = 0
   g.add(box(.46, .05, .46, 0x9a6a3e, { pos: [0, seatY, 0] })); g.add(box(.46, .42, .05, 0x8a5a34, { pos: [0, seatY + .26, -.2] }));
   for (const dx of [-.2, .2]) for (const dz of [-.2, .2]) g.add(box(.05, seatY, .05, 0x6a4326, { pos: [dx, seatY / 2, dz], ink: false }));
 }
 
-function homeRoom(Wd, shabbat) {
+export function homeRoom(Wd, shabbat) {
   const HX = 5, HZ = 5, H = 3.5, wallC = shabbat ? 0xf6ead0 : 0xf0e3c6;
   const fl = new THREE.Mesh(new THREE.PlaneGeometry(2 * HX, 2 * HZ), toon(0xffffff, { map: planksTex([5, 4.5]) })); fl.rotation.x = -PI / 2; fl.receiveShadow = true; Wd.add(fl);
   Wd.add(box(3.8, .004, 2.9, 0x9a3a34, { pos: [0, .002, 0], ink: false })); Wd.add(box(3.4, .006, 2.5, 0xd9a63a, { pos: [0, .003, 0], ink: false })); Wd.add(box(3.2, .008, 2.3, 0x9a3a34, { pos: [0, .004, 0], ink: false }));
@@ -161,15 +161,15 @@ function homeRoom(Wd, shabbat) {
 
 // ---------------------------------------------------------------- characters
 const SK = ['#f0d2b4', '#e8c3a0', '#f4d9bf', '#dcb08a'];
-const lookOf = i => ({ kind: 'boy', hat: 'kippa', beardLen: 0, skin: SK[i % 4], pants: ['#1b1d24', '#22262e', '#17181d'][i % 3], glasses: i % 3 === 1 });
+export const lookOf = i => ({ kind: 'boy', hat: 'kippa', beardLen: 0, skin: SK[i % 4], pants: ['#1b1d24', '#22262e', '#17181d'][i % 3], glasses: i % 3 === 1 });
 export const REG = [];   // debug registry: every scene world with its people (used by stills.py --check)
-const boyP = (Wd, i, fn) => { const P = person(Wd, lookOf(i), t => Object.assign({ seed: .2 + .17 * i }, fn(t)), { scale: 1 }); (Wd.people = Wd.people || []).push(P);
+export const boyP = (Wd, i, fn) => { const P = person(Wd, lookOf(i), t => Object.assign({ seed: .2 + .17 * i }, fn(t)), { scale: 1 }); (Wd.people = Wd.people || []).push(P);
   let fixed = false;   // the stock kippa is a dome only 1.1x the head, so the curly hair sheet (up to 1.11x) pokes through it and reads as a knob: make it a wider, flatter black cap
   Wd.on(() => { if (fixed || !P.figure) return; fixed = true;
     P.figure.group.traverse(m => { if (m.isMesh && m.geometry && m.geometry.type === 'SphereGeometry' && m.geometry.parameters.thetaLength === .8) { m.scale.multiplyScalar(1.22); m.scale.y *= .94; m.rotation.x = 0; P.kippa = m; } }); });
   return P; };
-const talkAmt = (t, s) => clamp(Math.sin(t * 1.6 + s * 5) * 3 + .9, 0, 1) * (.5 + .5 * Math.sin(t * 10.3 + s));
-const face = (dx, dz) => Math.atan2(dx, dz);
+export const talkAmt = (t, s) => clamp(Math.sin(t * 1.6 + s * 5) * 3 + .9, 0, 1) * (.5 + .5 * Math.sin(t * 10.3 + s));
+export const face = (dx, dz) => Math.atan2(dx, dz);
 
 // two boys talking; geo {cx, z, i0, sep}. actions: whisper, point (the other boy scratches his head), turn_away (he shrugs), smile, think, shrug
 function pair(Wd, beat, dur, geo) {
@@ -204,7 +204,8 @@ function sceneClassroom(beat, dur, idx) {
   boyP(Wd, idx + 2, t => ({ pos: [cx - 8 + 16 * ((t * .05 + idx * .2) % 1), 0, -4.2], facing: PI / 2, walk: t * 5.5 + idx }));   // a passer-by far behind
   return Object.assign(Wd, { cam: camFor('classroom', idx, dur, [cx, 0]) });
 }
-function sceneYard(beat, dur, idx) {
+export function yardWorld(o) {
+  o = o || {};
   const Wd = mkWorld({ ground: 'grass', groundSize: 320, skyTop: 0x4f9fe8, fogNear: 45, fogFar: 150, sunPos: [-20, 30, 18], shadowExt: 22 });
   const pave = new THREE.Mesh(new THREE.PlaneGeometry(46, 30), new THREE.MeshLambertMaterial({ map: groundTex('stone', [9, 6]) })); pave.rotation.x = -PI / 2; pave.position.set(0, .006, -1); pave.material.polygonOffset = true; pave.material.polygonOffsetFactor = -2; pave.material.polygonOffsetUnits = -2; pave.receiveShadow = true; Wd.add(pave);
   Wd.add(box(46.4, .12, .2, 0xcfc4aa, { pos: [0, .06, 14.1], ink: false })); Wd.add(box(46.4, .12, .2, 0xcfc4aa, { pos: [0, .06, -16.1], ink: false }));
@@ -215,9 +216,13 @@ function sceneYard(beat, dur, idx) {
   for (const [x, z, s] of [[-12, -9, 1.0], [11, -10, 1.2], [-17, 2, .9], [17, 0, 1.0]]) { Wd.add(cyl(.22 * s, .3 * s, 2.7 * s, 0x7a5232, { pos: [x, 1.35 * s, z] })); Wd.add(ball(1.7 * s, 0x6fae57, { pos: [x, 3.8 * s, z], scale: [1, .9, 1] })); Wd.add(ball(1.2 * s, 0x82bf62, { pos: [x + 1.1 * s, 3.2 * s, z + .4], scale: [1, .9, 1] })); }
   for (let x = -22; x <= 22.1; x += 1.6) Wd.add(box(.1, 1.5, .1, 0x8a8f96, { pos: [x, .75, 14.4], ink: false })); Wd.add(box(46, .08, .06, 0x8a8f96, { pos: [0, 1.3, 14.4], ink: false })); Wd.add(box(46, .08, .06, 0x8a8f96, { pos: [0, .6, 14.4], ink: false }));
   Wd.add(box(2.4, .1, .55, 0x9a6a3e, { pos: [-6.5, .5, -3.5] })); Wd.add(box(2.4, .5, .08, 0x8a5a34, { pos: [-6.5, .78, -3.8] })); for (const dx of [-1, 1]) Wd.add(box(.1, .5, .5, 0x6a4326, { pos: [-6.5 + dx, .25, -3.5], ink: false }));
-  Wd.add(ball(.13, 0xffffff, { pos: [3.2, .13, 1.4] }));
+  if (!o.noBall) Wd.add(ball(.13, 0xffffff, { pos: [3.2, .13, 1.4] }));
   const clouds = [0, 1, 2, 3].map(i => { const c = cloud({ seed: 3 + i, size: 2.2 + i * .4, puffs: 6, pos: [-30 + i * 22, 16 + i * 2, -40 - i * 6] }); Wd.add(c); return c; });
   Wd.on(t => clouds.forEach((c, i) => { c.position.x = -30 + i * 22 + t * .5; }));
+  return Wd;
+}
+function sceneYard(beat, dur, idx) {
+  const Wd = yardWorld();
   const cx = ((idx % 3) - 1) * 2.5; pair(Wd, beat, dur, { cx, z: 0, i0: idx });
   boyP(Wd, idx + 2, t => { const a = t * .3 + idx; const x = Math.cos(a) * 3.2, zz = -7 + Math.sin(a) * 1.4, dx = -Math.sin(a) * 3.2, dz = Math.cos(a) * 1.4; return { pos: [x, 0, zz], facing: face(dx, dz), walk: t * 5.4 }; });
   boyP(Wd, idx + 3, t => ({ pos: [-6.5, 0, -3.3], facing: face(1, .6), sit: true, groundY: 0, talk: .3 * talkAmt(t, 3), perform: .5, smile: .5 }));
@@ -241,7 +246,7 @@ function sceneHome(beat, dur, idx) {
 }
 
 // floating card (text / title / summary): canvas drawn by `draw`, world size w x h, faces +z.
-function card3d(Wd, o) {
+export function card3d(Wd, o) {
   const g = new THREE.Group(); Wd.add(g);
   const tex = canvasTex(o.cw || 1536, o.ch || 1024, o.draw);
   const face = new THREE.Mesh(new THREE.PlaneGeometry(o.w, o.h), bm(0xffffff, { map: tex })); face.position.z = .005; g.add(face);
@@ -275,7 +280,7 @@ export function buildBeat(beat, dur, idx) {
 }
 
 // ---------------------------------------------------------------- opening + summary (cards in 3D space)
-function sparkles(Wd, n, seed, spread, zoff) {
+export function sparkles(Wd, n, seed, spread, zoff) {
   const r = rng(seed), base = [], pos = new Float32Array(n * 3);
   for (let i = 0; i < n; i++) base.push([(r() - .5) * spread[0], r() * spread[1], (r() - .5) * spread[2], .15 + r() * .3, r() * 6]);
   const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
@@ -284,7 +289,7 @@ function sparkles(Wd, n, seed, spread, zoff) {
   Wd.on(t => { for (let i = 0; i < n; i++) { const b = base[i]; pos[i * 3] = b[0] + Math.sin(t * b[3] + b[4]) * .4; pos[i * 3 + 1] = 0.3 + (b[1] + t * b[3] * .6) % spread[1]; pos[i * 3 + 2] = b[2] + Math.cos(t * b[3] * .8 + b[4]) * .4; } geo.attributes.position.needsUpdate = true; });
 }
 // card pinned in front of the camera (the animated title card of the hook)
-function camCard(Wd, o) {
+export function camCard(Wd, o) {
   const tex = canvasTex(1536, 768, o.draw);
   const m = new THREE.Mesh(new THREE.PlaneGeometry(o.w, o.h), new THREE.MeshBasicMaterial({ map: tex, transparent: true, depthTest: false, depthWrite: false, fog: false }));
   m.renderOrder = 20; m.frustumCulled = false; Wd.add(m); const dir = new THREE.Vector3();
@@ -292,7 +297,7 @@ function camCard(Wd, o) {
     cam.getWorldDirection(dir); m.position.copy(cam.position).addScaledVector(dir, o.d); m.quaternion.copy(cam.quaternion);
     m.scale.setScalar((.6 + .4 * a) * (1 + .3 * b)); m.material.opacity = a * (1 - b); });
 }
-function questionMark(Wd, c, h) {
+export function questionMark(Wd, c, h) {
   const g = new THREE.Group(); Wd.add(g);
   const tex = canvasTex(256, 256, (cx, w, hh) => { cx.font = `700 230px ${FONT}`; cx.textAlign = 'center'; cx.textBaseline = 'middle'; cx.lineJoin = 'round'; cx.strokeStyle = '#3a2a05'; cx.lineWidth = 26; cx.strokeText('?', w / 2, hh / 2 + 10); cx.fillStyle = THEME.accent; cx.fillText('?', w / 2, hh / 2 + 10); });
   for (let j = 0; j < 5; j++) { const m = new THREE.Mesh(new THREE.PlaneGeometry(h, h), new THREE.MeshBasicMaterial({ map: tex, transparent: true, alphaTest: .1, fog: false, color: j < 4 ? 0x7a5a18 : 0xffffff, side: THREE.DoubleSide })); m.position.z = -(4 - j) * .035; g.add(m); }
@@ -300,21 +305,22 @@ function questionMark(Wd, c, h) {
   Wd.on((t, cam) => { const k = ease.out(prog(t, 3.0, 4.0)); g.visible = k > .01; g.scale.setScalar(.3 + .7 * k);
     g.position.set(c[0] + 1.6, 1.95 + .06 * Math.sin(t * 1.7), c[1] - .2); g.rotation.y = Math.atan2(cam.position.x - g.position.x, cam.position.z - g.position.z) + .55 * Math.sin(t * 1.1); });
 }
-export function buildHook(EP, dur) {
-  const H = EP.hook || {}, b = { scene: H.scene || 'classroom', action: H.action, variant: H.variant, mood: H.mood, text: H.text, ref: H.ref };
-  const Wd = buildBeat(b, dur, 1), c = Wd.center || [0, 0];
-  questionMark(Wd, c, 1.15);
-  camCard(Wd, { w: 3.4, h: 1.7, d: 3.6, t0: .15, t1: 3.0, draw: (cx, w, h) => {
+export const titleDraw = EP => (cx, w, h) => {
     const gr = cx.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, '#fff7e0'); gr.addColorStop(1, '#f3dfae'); cx.fillStyle = gr; cx.fillRect(0, 0, w, h);
     cx.strokeStyle = THEME.accent; cx.lineWidth = 22; cx.strokeRect(20, 20, w - 40, h - 40); cx.strokeStyle = THEME.dark; cx.lineWidth = 4; cx.strokeRect(52, 52, w - 104, h - 104);
     cx.direction = 'rtl'; cx.textAlign = 'center'; cx.textBaseline = 'middle';
     const f1 = fitText(cx, EP.series || '', { maxW: w - 300, maxLines: 1, max: 84, min: 44, lh: 1.2 }); cx.font = `700 ${f1.size}px ${FONT}`; cx.fillStyle = THEME.dark; cx.fillText(f1.lines[0] || '', w / 2, h * .2);
     const fit = fitText(cx, EP.title || '', { maxW: w - 260, maxLines: 2, max: 190, min: 80, lh: 1.15, maxH: h * .55 }), lh = fit.size * 1.15; cx.fillStyle = '#1d2a5a'; cx.font = `700 ${fit.size}px ${FONT}`;
-    const y0 = h * .58 - (fit.lines.length - 1) * lh / 2; fit.lines.forEach((l, i) => cx.fillText(l, w / 2, y0 + i * lh)); } });
+    const y0 = h * .58 - (fit.lines.length - 1) * lh / 2; fit.lines.forEach((l, i) => cx.fillText(l, w / 2, y0 + i * lh)); };
+export function buildHook(EP, dur) {
+  const H = EP.hook || {}, b = { scene: H.scene || 'classroom', action: H.action, variant: H.variant, mood: H.mood, text: H.text, ref: H.ref };
+  const Wd = buildBeat(b, dur, 1), c = Wd.center || [0, 0];
+  questionMark(Wd, c, 1.15);
+  camCard(Wd, { w: 3.4, h: 1.7, d: 3.6, t0: .15, t1: 3.0, draw: titleDraw(EP) });
   return Wd;
 }
-export function buildAnswer(EP, dur) {
-  const yard = EP.answerScene === 'yard', Wd = (yard ? sceneYard : sceneClassroom)({ scene: yard ? 'yard' : 'classroom', action: 'smile', mood: 'good' }, dur, 1), c = Wd.center || [0, 0];
+export function buildAnswer(EP, dur, bg) {
+  const yard = EP.answerScene === 'yard', Wd = bg ? bg(dur) : (yard ? sceneYard : sceneClassroom)({ scene: yard ? 'yard' : 'classroom', action: 'smile', mood: 'good' }, dur, 1), c = Wd.center || [0, 0];
   sparkles(Wd, 50, 7, [14, 7, 2.4], c[1] - 3.6);   // behind the card only
   const ans = EP.answer || EP.summary || '', credit = EP.credit || EP.summarySource || EP.source || '', W = 1536, Hh = 967;
   const g = card3d(Wd, { w: 3.97, h: 2.5, pos: [c[0], 2.7, c[1] - 1.2], cw: W, ch: Hh, t0: .3, draw: (cx, w, h) => {
@@ -327,7 +333,7 @@ export function buildAnswer(EP, dur) {
   if (credit) { const tex = canvasTex(W, Hh, (cx, w, h) => { cx.direction = 'rtl'; cx.textAlign = 'center'; cx.textBaseline = 'middle'; const f = fitText(cx, credit, { maxW: w - 300, maxLines: 1, max: 64, min: 36, lh: 1.2 }); cx.font = `700 ${f.size}px ${FONT}`; cx.fillStyle = '#6b4310'; cx.fillText(f.lines[0] || '', w / 2, h * .88); });
     const m = new THREE.Mesh(new THREE.PlaneGeometry(3.97, 2.5), new THREE.MeshBasicMaterial({ map: tex, transparent: true, opacity: 0, fog: false, depthWrite: false })); m.position.z = .012; g.add(m);
     Wd.on(t => { m.material.opacity = ease.sm(prog(t, 12, 12.8)); }); }
-  const d = yard ? 7.2 : 5.8;   // camera height 2.4 looking at y 2.2: card spans ~16-63% of the frame height, boys' heads ~67%
+  const d = Wd.ansD || (yard ? 7.2 : 5.8);   // camera height 2.4 looking at y 2.2: card spans ~16-63% of the frame height, boys' heads ~67%
   Wd.cardGroup = g; REG.answer = Wd;
   return Object.assign(Wd, { cam: cine([[0, [c[0], 2.2, c[1]], d + .2, .2, 10, 42, 0], [dur * .5, [c[0], 2.2, c[1]], d + .1, .2, -6, 42, 0], [dur, [c[0], 2.2, c[1]], d, .2, -10, 42, 0]]) });
 }
