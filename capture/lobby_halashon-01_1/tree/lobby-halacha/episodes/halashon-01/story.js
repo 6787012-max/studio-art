@@ -47,7 +47,11 @@ window.STORY = function (K) {
     boyP(Wd, 5, t => Object.assign({ pos: [5.2, 0, 2.5], facing: PI - .5, perform: .5, smile: .2 }, SIT));
     boyP(Wd, 6, t => Object.assign({ pos: [-2.0, 0, 4.3], facing: PI, perform: .6, talk: .3 * talkAmt(t, 3), smile: .4 }, SIT));
     Wd.on(t => { const k = popE(P(.6, 1.8, t)); paper.set([2.4, 2.3 + .09 * Math.sin(t * 1.6), 3.0], k * 1.1, PI + .3 * Math.sin(t * .8)); });
-    Wd.center = [.6, 2.0]; Wd.qPos = [-.6, 2.4]; Wd.qSize = 1.5;
+    // the "?" is kept at a fixed spot in the upper part of the frame (placed on the camera's view ray): always fully visible, medium size, never near the lens
+    Wd.noQ = true; const qm = K.qmark(Wd, '#5ec8ff', 1.1), fw = new THREE.Vector3(), up = new THREE.Vector3(), rt = new THREE.Vector3();
+    Wd.on((t, cam) => { cam.getWorldDirection(fw); up.set(0, 1, 0).applyQuaternion(cam.quaternion); rt.set(1, 0, 0).applyQuaternion(cam.quaternion);
+      const p = cam.position.clone().addScaledVector(fw, 6.5).addScaledVector(up, 1.15).addScaledVector(rt, .9); qm.set([p.x, p.y + .08 * Math.sin(t * 1.7), p.z], K.popE(P(3.0, 4.0, t)) * 1.0, .12 * Math.sin(t * 1.1)); });
+    Wd.center = [.6, 2.0];
     Wd.cam = seq([0, cine([C(0, [1.0, 1.0, 2.5], 8.0, 2.4, 205, 48, 0), C(5, [1.2, 1.1, 2.5], 5.8, 1.4, 172, 44, 0)])],
       [5, cine([C(5, [2.4, 1.5, 2.6], 5.8, .5, 205, 44), C(9, [2.4, 1.5, 2.6], 4.8, .45, 160, 42)])],
       [9, cine([C(9, [-0.2, 1.0, 2.5], 2.6, .3, 120, 42, 0), C(12, [0.3, 1.1, 2.5], 3.4, .6, 160, 42, 0), C(14, [1.2, 1.2, 2.5], 5.4, 1.4, 190, 44, 0)])]);
