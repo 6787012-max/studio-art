@@ -1,0 +1,22 @@
+{
+ "film": "film_c.html",
+ "status": "FAIL",
+ "time": "2026-10-23T16:25:51",
+ "samples": 28,
+ "findings": [
+  {
+   "sev": "P1",
+   "code": "HERO_SMALL",
+   "t": 8.0,
+   "shot": "s01",
+   "detail": "hero height 34% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  }
+ ],
+ "sheets": null,
+ "timing": {
+  "ready_s": 13.2,
+  "gates_s": 322.7,
+  "total_s": 336.7
+ }
+}

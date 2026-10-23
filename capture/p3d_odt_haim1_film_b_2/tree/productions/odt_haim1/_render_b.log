@@ -1,0 +1,4 @@
+16:40:26 render_all: production=odt_haim1 films=film_b part=50s hq=True dry_run=False
+16:41:56 budget WARN: ahead of pace - continue sparingly: spent $359 of $2600 (cap $2340), allowed by now $302 (119% of pace) [render]
+16:41:56 verify gate: PASS for film_b
+16:42:54 film_b: length 113.0s, rendering (part 50 s, 8 includes)
