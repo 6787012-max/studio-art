@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>oto pilot film a</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script>window.__T0=89.9080; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js", "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+import { film } from '../../lib/stage3d.js';
+import { dolly, crane, pushIn } from '../../lib/motion3d.js';
+import * as O from './oto.js';
+const { THREE, P, ease, prog, lerp, clamp, rng, person, box, cyl, ball, farm, barn, sign, pair, animal, calendar, clock, scrollProp, fireflies, birdsCross, yard, rope, lantern, kf, onScreen, BOY, MAN1, MAN2, COL } = O;
+const PI = Math.PI;
+
+const T = await O.boot();
+const S = {};
+
+// s01 - title: cow + calf walk toward the camera and stop at the title sign
+S.s01 = () => {
+  const Wd = farm({ seed: 1, hemi: 1.45 }); barn(Wd, { pos: [-4, 0, -22], scale: 1.6 }); yard(Wd, { fenceZ: -13 });
+  sign(Wd, 'LBL_TITLE', { pos: [0, 0, -2.2], y: 3.9, w: 6.4, posts: true, gold: true, fs: 170 });
+  sign(Wd, 'LBL_TITLE_SUB', { pos: [0, 0, -2.2], y: 2.5, w: 3.6, fs: 130, bg: '#fff3c9' });
+  P.bush(Wd, { pos: [-4.4, 0, -1.4], scale: 1.1 }); P.bush(Wd, { pos: [4.6, 0, -1.6], scale: 1.2 });
+  const { cow } = pair(Wd, t => { const k = prog(t, .2, 6.0); return { pos: [-.7, 0, lerp(9.5, 3.4, k)], facing: 0, mode: k > 0 && k < 1 ? 'walk' : 'stand' }; }, { scale: 1.12 });
+  Wd.hero = cow;
+  return Object.assign(Wd, { cam: kf([[0, [-1.4, 1.15, 12.9], [-.2, 1.7, 0], 46], [3.8, [-.2, 1.1, 9.6], [0, 1.7, 0], 44], [T.s01.dur, [1.0, 1.15, 6.4], [.1, 1.45, 0], 42]]) });
+};
+
+// ---------- question shots (s05 clock / s06 calendar / s07 animals) ----------
+function question(id, mirror, prop, push) {
+  const c = T[id], a1 = c.capAt[1], m = mirror ? -1 : 1, tc = c.dur * .42, Wd = farm({ seed: 5 + (mirror ? 1 : 0) }); barn(Wd, { pos: [-3 * m, 0, -10], scale: 1 }); yard(Wd, { fenceZ: -6 });
+  person(Wd, BOY, t => ({ pos: [-.3 * m, 0, 0], facing: .12 * m, scale: .72, gesture: t < a1 ? 'think' : (t < a1 + 1.8 ? 'up' : 'thumb'), smile: t < a1 ? .15 : .85, look: t < a1 ? .5 * Math.sin(t * .8) : 0, seed: .4 }));
+  sign(Wd, 'LBL_' + id.toUpperCase() + '_ANS', { pos: [-1.9 * m, 0, .2], y: 1.2, w: 2.8, fs: 170, bg: '#2f9e4f', color: '#ffffff', edge: '#d7f5dc', frame: 0x1d6b34, at: a1 });
+  prop(Wd, a1, m);
+  const X = (x, y, z) => [x * m, y, z];
+  return Object.assign(Wd, { cam: kf([[0, X(3.4, 1.7, 8.8), X(.7, 1.4, -.6), 46], [tc * .5, X(2.2, 1.3, 6.4), X(.3, 1.0, -.2), 43], [tc, X(.5, 1.05, push ? 3.5 : 3.9), X(-.2, .72, 0), 40], [c.dur, X(.2, 1.0, push ? 3.0 : 3.5), X(-.25, .7, 0), 38]]) });
+}
+S.s05 = () => question('s05', false, (Wd, a1) => clock(Wd, { pos: [1.0, 0, -1.3], r: .9, by: .5, hand: t => 2 * PI * prog(t, .4, a1) }));
+S.s06 = () => question('s06', true, (Wd, a1, m) => {
+  const x = 1.3 * m; calendar(Wd, { pos: [x, .45, -1.3], w: 1.7, h: 2.0, flip: t => prog(t, a1 * .3, a1 * .3 + 1.4) });
+  for (const s of [-1, 1]) Wd.add(cyl(.07, .09, .5, COL.woodD, { pos: [x + s * .7, .22, -1.35], inkW: .02 }));
+}, true);
+S.s07 = () => question('s07', false, (Wd, a1) => {
+  animal(Wd, t => { const k = prog(t, .4, 5.6); return { pos: [lerp(-7, 2.1, k), 0, -3.0], facing: PI / 2, mode: k > 0 && k < 1 ? 'walk' : 'stand' }; }, { height: .85 });
+  animal(Wd, t => { const k = prog(t, 4.4, 10.0); return { pos: [lerp(-9, .7, k), 0, -3.2], facing: PI / 2, mode: k > 0 && k < 1 ? 'walk' : 'stand' }; }, { height: 1.55 });
+}, true);
+
+// s02 - concept: pair in the sunny yard, big translucent sun disc rises, crane up
+S.s02 = () => {
+  const Wd = farm({ seed: 2 }); barn(Wd, { pos: [0, 0, -5], scale: 1.25 }); yard(Wd, { fenceZ: -3 });
+  sign(Wd, 'LBL_S02_SUB', { pos: [-.4, 0, -.2], y: 2.3, w: 3.4, fs: 150, bg: '#fff3c9', gold: true });
+  sign(Wd, 'LBL_S02_KICK', { pos: [-2.4, 0, 0], y: 1.5, w: 1.5, fs: 160, posts: true });
+  const sun = new THREE.Group(); const disc = new THREE.Mesh(new THREE.CircleGeometry(1.9, 40), new THREE.MeshBasicMaterial({ color: 0xffd23a, transparent: true, opacity: .3, fog: false, depthWrite: false })); sun.add(disc);
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: O.canvasTex(128, 128, (g, w, h) => { const r = g.createRadialGradient(64, 64, 8, 64, 64, 64); r.addColorStop(0, 'rgba(255,220,100,.8)'); r.addColorStop(1, 'rgba(255,200,60,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false })); halo.scale.set(9, 9, 1); halo.material.opacity = .3; sun.add(halo);
+  Wd.add(sun); Wd.on((t, cam) => { sun.position.set(2.6, lerp(1.0, 2.5, ease.out(prog(t, .3, 7))), .5); sun.lookAt(cam.position); sun.scale.setScalar(.8 + .25 * prog(t, 0, 8)); });
+  const { cow } = pair(Wd, t => ({ pos: [-.4, 0, 2.4], facing: .15, mode: 'stand' })); Wd.hero = cow;
+  return Object.assign(Wd, { cam: kf([[0, [1.2, .95, 6.4], [-.2, 1.2, 2.4], 42], [T.s02.dur, [-.4, 1.1, 6.4], [-.1, 1.2, 2.4], 42]]) });
+};
+
+// s03 - verse: orbit around the scroll, pair far behind, birds cross
+S.s03 = () => {
+  const Wd = farm({ seed: 3, skyBot: 0xffe9b8 }); yard(Wd, { fenceZ: -9 }); barn(Wd, { pos: [7, 0, -20], scale: 1.4 });
+  const sc = scrollProp(Wd, 'LBL_S03_REF', { pos: [0, 0, 0] }); Wd.hero = sc;
+  pair(Wd, t => ({ pos: [-3.5, 0, -9], facing: .5, mode: 'eat' }), { scale: 1 });
+  birdsCross(Wd, 6, 6.5, -3, -14, 14, .5, T.s03.dur, 3);
+  return Object.assign(Wd, { cam: crane([0, 0, 0], 4.5, 1.5, 2.1, -32, 32, 0, T.s03.dur, { lookDy: 1.25, fov0: 44, fov1: 42 }) });
+};
+
+// s04 / s09 - quiet backdrop behind a clip (clip rect x 240-1680, y 14-824): barn far away, cow left edge, calf right edge
+function backdrop(id, dusk) {
+  const d = T[id].dur, Wd = farm(dusk ? { seed: 4, skyTop: 0x1d2a5e, skyBot: 0x8d8fc9, fogColor: 0x6f78b8, grass: 0x35637a, patches: [0x2e5a6a, 0x3f7488], hemi: .8, hemiSky: 0x9aa8ee, hemiGround: 0x35405a, sun: .6, sunColor: 0xffb88a, sunPos: [-30, 20, 20], cloudColor: 0xb7b9e6 } : { seed: 9, skyBot: 0xffeccf });
+  const b = barn(Wd, { pos: [dusk ? 2 : -2, 0, -28], scale: 1.9, lit: dusk }); Wd.hero = b;
+  P.tree(Wd, { pos: [-16, 0, -14], kind: 0, scale: 1.8 }); P.tree(Wd, { pos: [18, 0, -16], kind: 1, scale: 1.8 }); P.fence(Wd, { pos: [-18, 0, -9], len: 14 }); P.fence(Wd, { pos: [4, 0, -9], len: 14 });
+  P.bush(Wd, { pos: [-8, 0, -7], scale: 1.4 }); P.bush(Wd, { pos: [9, 0, -8], scale: 1.5 }); P.rock(Wd, { pos: [-5, 0, -3], seed: 3, scale: 1.2 });
+  const cam = dusk ? kf([[0, [3.6, 2.4, 14], [0, 2.9, -26], 46], [d, [-3.6, 2.5, 12.5], [0, 2.9, -26], 46]]) : kf([[0, [-3.6, 2.4, 14], [0, 2.9, -26], 46], [d, [3.6, 2.5, 12.5], [0, 2.9, -26], 46]]);
+  const tint = dusk ? 0x2a3358 : undefined, at = (nx, t) => { const p = onScreen(cam, t, nx, 12); return [p[0], 0, p[1]]; };
+  animal(Wd, t => ({ pos: at(-.9, t), facing: PI / 2 - .2, mode: 'eat' }), { height: 1.0, tint }); animal(Wd, t => ({ pos: at(.9, t), facing: -PI / 2 + .2, mode: 'stand' }), { height: .58, tint });
+  if (dusk) fireflies(Wd, 42, { x0: -16, x1: 16, y0: .5, y1: 3.2, z0: -22, z1: 2 }, 11); else birdsCross(Wd, 5, 9, -16, -22, 24, .5, d, 8);
+  return Object.assign(Wd, { cam });
+}
+S.s04 = () => backdrop('s04', true);
+S.s09 = () => backdrop('s09', false);
+
+// s08 - card: bull at the far fence, camera pans to the cow + calf
+S.s08 = () => {
+  const Wd = farm({ seed: 8 }); barn(Wd, { pos: [-6, 0, -17], scale: 1.4 }); P.fence(Wd, { pos: [1, 0, -10.5], len: 13 }); P.fence(Wd, { pos: [-13, 0, -10.5], len: 9 });
+  P.tree(Wd, { pos: [13, 0, -12], kind: 0, scale: 1.6 }); P.bush(Wd, { pos: [6, 0, -3], scale: 1.3 }); P.bush(Wd, { pos: [-9, 0, -4], scale: 1.2 }); P.rock(Wd, { pos: [5, 0, 1], seed: 5 });
+  animal(Wd, t => ({ pos: [.6, 0, -4.6], facing: -PI / 2 - .5, mode: 'eat' }), { name: 'bull', height: 1.5, tint: 0x9a8070 });
+  const { cow } = pair(Wd, t => ({ pos: [-1.6, 0, 0], facing: .35, mode: 'stand' })); Wd.hero = cow;
+  sign(Wd, 'LBL_S08_KICK', { pos: [-2.3, 0, -1.2], y: 3.0, w: 1.9, fs: 150, posts: true, gold: true });
+  sign(Wd, 'LBL_S08_SUB', { pos: [-2.3, 0, -1.2], y: 2.3, w: 1.9, fs: 130, bg: '#fff3c9' });
+  return Object.assign(Wd, { cam: kf([[0, [-.2, 1.3, 4.6], [-.7, 1.3, 0], 42], [T.s08.dur, [-1.2, 1.3, 4.3], [-1.1, 1.3, 0], 42]]) });
+};
+
+// s10 - market: man leads the cow (+ calf) by a rope toward a buyer, camera tracks sideways
+S.s10 = () => {
+  const d = T.s10.dur, Wd = farm({ seed: 10 }), lane = new THREE.Mesh(new THREE.PlaneGeometry(70, 7), O.toon(0xd8c49a)); lane.rotation.x = -PI / 2; lane.position.set(0, .03, .4); lane.receiveShadow = true; Wd.add(lane);
+  P.tent(Wd, { pos: [-2.4, 0, -4.8], rot: .15, color: P.PAL.yellow, scale: 1.2 }); P.tent(Wd, { pos: [-8.5, 0, -4.5], rot: -.2, color: P.PAL.blue, scale: 1.2 }); P.tent(Wd, { pos: [5.2, 0, -5.2], rot: .1, color: P.PAL.blue, scale: 1.2 });
+  P.house(Wd, { pos: [-12, 0, -14], rot: .3 }); P.house(Wd, { pos: [10, 0, -15], rot: -.3, color: 0xf3dcae }); P.tree(Wd, { pos: [-16, 0, -6], kind: 0, scale: 1.4 }); P.tree(Wd, { pos: [14, 0, -7], kind: 1, scale: 1.4 });
+  P.bench(Wd, { pos: [1, 0, -2.6], rot: 0 }); [[-5.6, -2.5], [3.8, -3.0], [8.2, -2.4]].forEach(([x, z]) => { Wd.add(box(.9, .6, .9, COL.wood, { pos: [x, .3, z], inkW: .02 })); });
+  sign(Wd, 'LBL_S10_KICK', { pos: [5.8, 0, -1.0], y: 2.3, w: 1.8, fs: 160, posts: true, gold: true });
+  sign(Wd, 'LBL_S10_SUB', { pos: [-.4, 0, -3.7], y: 2.7, w: 3.6, fs: 130, bg: '#fff3c9', posts: true });
+  const mx = t => lerp(5.3, -1.4, prog(t, .3, 6.2)), mv = t => t > .3 && t < 6.2;
+  person(Wd, MAN1, t => ({ pos: [mx(t), 0, .2], facing: -PI / 2, walk: mv(t) ? (5.3 - mx(t)) * 6.3 : undefined, gesture: mv(t) ? undefined : 'offer', smile: .5, seed: .3 }));
+  person(Wd, MAN2, t => ({ pos: [-3.6, 0, .2], facing: PI / 2 - .25, gesture: t < 5 ? 'rest' : 'hips', smile: .3, seed: .7, talk: 0 }));
+  const { cow } = pair(Wd, t => ({ pos: [mx(t) + 3.2, 0, .2], facing: -PI / 2, mode: mv(t) ? 'walk' : 'stand' })); Wd.hero = cow;
+  rope(Wd, t => [[mx(t) + .3, 1.0, .35], [mx(t) + 2.0, 1.15, .25]]);
+  const cx = t => t < 6.2 ? mx(t) + 2.1 : lerp(mx(t) + 2.1, -.1, ease.io(prog(t, 6.2, d)));
+  return Object.assign(Wd, { cam: t => ({ pos: [cx(t) + .3, 1.4, 5.6], look: [cx(t) + .1, 1.0, .2], fov: 42 }) });
+};
+
+// s11 - verse again, sunset, four marked calendar pages fan out
+S.s11 = () => {
+  const d = T.s11.dur, Wd = farm({ seed: 11, skyTop: 0x5d4a8e, skyBot: 0xffa65c, fogColor: 0xf2a070, grass: 0x7fb259, patches: [0x70a251, 0x8fc668], hemi: 1.0, hemiSky: 0xffd9b0, hemiGround: 0x6a5a48, sun: 1.5, sunColor: 0xffa860, sunPos: [-40, 14, 30], cloudColor: 0xffc9a0 });
+  yard(Wd, { fenceZ: -9 }); barn(Wd, { pos: [-8, 0, -20], scale: 1.4 });
+  const sc = scrollProp(Wd, 'LBL_S11_REF', { sunset: true, noGlow: true }); Wd.hero = sc;
+  [-33, -11, 11, 33].forEach((deg, i) => { const piv = new THREE.Group(); piv.position.set(0, 1.5, -1.5 - i * .02); Wd.add(piv); const fake = { add: x => piv.add(x), on: f => Wd.on(f) }; calendar(fake, { w: 1.1, h: 1.5, marks: [[3], [8], [10], [15]][i], stars: true, pos: [0, 0, 0] });
+    Wd.on(t => { piv.rotation.z = -deg * PI / 180 * ease.out(prog(t, 1.0 + i * .25, 3.4 + i * .25)); }); });
+  return Object.assign(Wd, { cam: crane([0, 0, 0], 5.2, 1.4, 3.3, -26, 26, 0, d, { lookDy: 1.7, fov0: 44, fov1: 44 }) });
+};
+
+// s12 - village lane filling with men and cows heading to the barn; festival marks on the barn calendar
+S.s12 = () => {
+  const d = T.s12.dur, Wd = farm({ seed: 12 }), lane = new THREE.Mesh(new THREE.PlaneGeometry(5.5, 44), O.toon(0xd8c49a)); lane.rotation.x = -PI / 2; lane.position.set(0, .03, -3); lane.receiveShadow = true; Wd.add(lane);
+  const b = barn(Wd, { pos: [0, 0, -18], scale: 1.4 }); Wd.hero = b;
+  calendar(Wd, { pos: [-3.9, 1.0, -13.0], w: 2.0, h: 2.5, marks: [1, 3, 6, 9, 12, 14, 17], stars: true });
+    sign(Wd, 'LBL_S12_KICK', { pos: [-4.6, 0, -6.2], y: 2.8, w: 2.6, fs: 150, posts: true, gold: true });
+  [[-8.5, -3, .3], [8.5, -6, -.3], [-8.8, -10, .2], [9.3, -12, -.2], [-12, 4, .5], [12.5, 5, -.5]].forEach(([x, z, r], i) => P.house(Wd, { pos: [x, 0, z], rot: r, color: i % 2 ? 0xf3dcae : 0xeed8ac }));
+  P.tree(Wd, { pos: [-14, 0, -4], kind: 0, scale: 1.5 }); P.tree(Wd, { pos: [15, 0, -2], kind: 1, scale: 1.5 });
+  const looks = [MAN1, MAN2, { coat: '#4a3b30', hat: 'kippa', beard: '#2a2018', beardLen: .5, skin: '#d9ac86' }, BOY, MAN1, MAN2, BOY], xs = [-1.9, -.7, 1.2, .3, 1.9, -1.4, .8];
+  looks.forEach((lk, i) => { const z0 = 8.5 - i * 1.5, x = xs[i], kid = lk === BOY;
+    person(Wd, lk, t => { const z = Math.max(-12.4, z0 - 1.05 * Math.max(0, t)), mv = z > -12.4; return { pos: [x, 0, z], facing: PI, walk: mv ? (z0 - z) * 6.3 : undefined, scale: kid ? .72 : 1, gesture: mv ? undefined : 'rest', smile: .4, seed: i * .17 + .05 }; }); });
+  pair(Wd, t => ({ pos: [-.4, 0, -1.5 - .45 * t], facing: PI, mode: 'walk' }), { side: -1, scale: 1.3 });
+  animal(Wd, t => ({ pos: [2.4, 0, -2.5 - .6 * t], facing: PI, mode: 'walk' }), { height: 1.5 });
+  return Object.assign(Wd, { cam: crane([0, 0, -6], 8.4, 6.0, 3.6, 24, -24, 0, d, { lookDy: 1.0, fov0: 46, fov1: 44 }) });
+};
+
+// s13 - summary: five lanterns light up in step with the captions
+S.s13 = () => {
+  const d = T.s13.dur, ca = T.s13.capAt, Wd = farm({ seed: 13 }); barn(Wd, { pos: [3, 0, -14], scale: 1.4 }); yard(Wd, { fenceZ: -8 });
+  for (const s of [-1, 1]) Wd.add(cyl(.12, .15, 3.0, COL.woodD, { pos: [s * 4.4, 1.5, -2.3], inkW: .03 }));
+  Wd.add(box(9.4, .22, .3, COL.wood, { pos: [0, 3.0, -2.3], inkW: .03 }));
+  [-3.2, -1.6, 0, 1.6, 3.2].forEach((x, i) => lantern(Wd, [x, 2.3, -2.3], ca[i], i + 1));
+  sign(Wd, 'LBL_SUMMARY', { pos: [0, 0, -2.3], y: 3.85, w: 2.9, fs: 170, gold: true, bg: '#fff3c9' });
+  person(Wd, BOY, t => { const u = ca.findIndex(c => t >= c && t < c + 1.5); return { pos: [-2.4, 0, .4], facing: .25, scale: .72, gesture: u >= 0 ? 'explain' : 'rest', smile: .7, seed: .5 }; });
+  const { cow } = pair(Wd, t => ({ pos: [.9, 0, .2], facing: -.15, mode: 'stand' }), { scale: 1.3 }); Wd.hero = cow;
+  return Object.assign(Wd, { cam: crane([0, 0, 0], 6.0, 1.3, 1.7, -22, 22, 0, d, { lookDy: 1.5, fov0: 45, fov1: 44 }) });
+};
+
+// s14 - credits: golden hour, cow + calf resting under a tree, slow pull back
+S.s14 = () => {
+  const d = T.s14.dur, Wd = farm({ seed: 14, skyTop: 0x78a8e0, skyBot: 0xffcf86, fogColor: 0xf6cf98, grass: 0x80b552, hemi: 1.0, hemiSky: 0xffe7c0, sun: 1.7, sunColor: 0xffbf70, sunPos: [-35, 24, 20], cloudColor: 0xffe2bd });
+  barn(Wd, { pos: [-8, 0, -16], scale: 1.3 }); P.tree(Wd, { pos: [4.9, 0, -1.2], kind: 0, scale: 2.0 }); P.fence(Wd, { pos: [-12, 0, -9], len: 12 }); P.fence(Wd, { pos: [2, 0, -9], len: 12 }); P.bush(Wd, { pos: [7, 0, 0], scale: 1.3 }); P.rock(Wd, { pos: [-4.5, 0, 1.5], seed: 6 });
+  const { cow } = pair(Wd, t => ({ pos: [1.5, 0, .5], facing: -1.1, mode: 'low' })); Wd.hero = cow;
+  return Object.assign(Wd, { cam: dolly([3.4, 1.3, 3.8], [-.8, 2.3, 6.6], [1.8, 1.0, 0], 0, d, { fov0: 42, fov1: 44 }) });
+};
+
+const ORDER = ['s01','s02','s03','s04','s05','s06','s07','s08','s09','s10','s11','s12','s13','s14'];
+film({ title: 'oto pilot a', W: 1920, H: 1080, vault: 'captions_vault.json', shots: ORDER.map(id => O.shotCfg(T, id, S[id])) });
+</script>
+</html>
