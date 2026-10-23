@@ -1,0 +1,187 @@
+{
+ "fps": 30,
+ "titleDur": 4.2,
+ "recapDur": 0,
+ "shots": [
+  {
+   "id": "s01",
+   "brief": "B1",
+   "dur": 12.0,
+   "briefDur": 12.0,
+   "captions": [
+    {
+     "id": "CAP_B_01",
+     "at": 0.5,
+     "until": 6.1
+    },
+    {
+     "id": "CAP_B_02",
+     "at": 6.1,
+     "until": 11.7
+    }
+   ],
+   "capAt": [
+    0.5,
+    6.1
+   ],
+   "words": []
+  },
+  {
+   "id": "s02",
+   "brief": "B2",
+   "dur": 12.0,
+   "briefDur": 12.0,
+   "captions": [
+    {
+     "id": "CAP_B_03",
+     "at": 0.5,
+     "until": 11.7
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s03",
+   "brief": "B3",
+   "dur": 11.0,
+   "briefDur": 11.0,
+   "captions": [
+    {
+     "id": "CAP_B_04",
+     "at": 0.5,
+     "until": 10.7
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s04",
+   "brief": "B4",
+   "dur": 11.0,
+   "briefDur": 11.0,
+   "captions": [
+    {
+     "id": "CAP_B_05",
+     "at": 0.5,
+     "until": 10.7
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s05",
+   "brief": "B5",
+   "dur": 12.0,
+   "briefDur": 12.0,
+   "captions": [
+    {
+     "id": "CAP_B_06",
+     "at": 0.5,
+     "until": 11.7
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s06",
+   "brief": "B6",
+   "dur": 12.0,
+   "briefDur": 12.0,
+   "captions": [
+    {
+     "id": "CAP_B_07",
+     "at": 0.5,
+     "until": 11.7
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s07",
+   "brief": "B7",
+   "dur": 11.0,
+   "briefDur": 11.0,
+   "captions": [
+    {
+     "id": "CAP_B_08",
+     "at": 0.5,
+     "until": 10.7
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s08",
+   "brief": "B8",
+   "dur": 11.0,
+   "briefDur": 11.0,
+   "captions": [
+    {
+     "id": "CAP_B_09",
+     "at": 0.5,
+     "until": 10.7
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s09",
+   "brief": "B9",
+   "dur": 11.0,
+   "briefDur": 11.0,
+   "captions": [
+    {
+     "id": "CAP_B_10",
+     "at": 0.5,
+     "until": 10.7
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s10",
+   "brief": "B10",
+   "dur": 10.0,
+   "briefDur": 10.0,
+   "captions": [
+    {
+     "id": "CAP_B_11",
+     "at": 0.5,
+     "until": 9.7
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  }
+ ],
+ "audio": {
+  "narration": null,
+  "music": null
+ }
+}
