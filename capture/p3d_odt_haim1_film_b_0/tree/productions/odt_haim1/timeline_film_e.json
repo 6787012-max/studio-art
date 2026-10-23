@@ -1,0 +1,51 @@
+{
+ "fps": 30,
+ "titleDur": 4.2,
+ "recapDur": 9.0,
+ "shots": [
+  {
+   "id": "s01",
+   "brief": "E1",
+   "dur": 15.0,
+   "briefDur": 15.0,
+   "captions": [
+    {
+     "id": "CAP_E_01",
+     "at": 0.5,
+     "until": 7.6
+    },
+    {
+     "id": "CAP_E_02",
+     "at": 7.6,
+     "until": 14.7
+    }
+   ],
+   "capAt": [
+    0.5,
+    7.6
+   ],
+   "words": []
+  },
+  {
+   "id": "s02",
+   "brief": "E2",
+   "dur": 14.0,
+   "briefDur": 14.0,
+   "captions": [
+    {
+     "id": "CAP_E_03",
+     "at": 0.5,
+     "until": 13.7
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  }
+ ],
+ "audio": {
+  "narration": null,
+  "music": null
+ }
+}
