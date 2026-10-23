@@ -1,0 +1,20 @@
+# REVIEW-story (Reviewer 2: story, pacing, 12-year-old clarity). Time stamps = film time (shot n starts at 4.2+10(n-1)+... per sheet labels s01=0.3 s title, s01 mid=5.0).
+Inputs seen: beat sheet, seams sheet, phone sheet (JPG). Not seen: motion between samples, shrug/vanish end of shot 3, left-side man of shot 6 -> "cannot verify" where noted.
+
+P2 | film/title | t=0.3s | title card sits under a dark brown veil (banned dark look) before the sunny set -> keep fade but reach full-bright by t=1.5 s (veil alpha 0.55 -> 0 over 0-1.5 s) | title text and set stay
+P1 | film/shot1 | t=5.0s | boy ~25% frame height while coins pop; hero rule needs >=40% in key shot -> end crane at eye level by t=4.0 s with boy height 0.42 of frame (camera 3.2 m back, y 1.3 m) | halo of coins, bench, trees stay
+P0 | film/shot2 | t=15.0s | two roads are visible but the heap (left) and the 10 stacks (right) are tiny and far; the "one heap vs many steps" choice is not readable -> raise heap cone scale x1.8 and place it at 40% road length, enlarge stacks x1.6 (radius .18->.29), end wide at t=9 s with both props inside the central 60% of frame | split road, boy pointing, caption stay
+P1 | film/shot3 | t=20.3s | boy is ~12% frame height and a SECOND small boy figure runs in the foreground (reads as a second hero, not in brief) -> remove the foreground figure; start pushIn at t=0 so boy >=30% by t=2 s | stall with toys, heap, flying coins (25.0 s frame is clear)
+P2 | film/shot3 | t=25.0s | idea reads (heap flies off) -> keep; cannot verify empty-ground shrug at 8.5-10 s (no sample) | arc coins, wide arms
+P1 | film/shot4 | t=30.3-35.0s | boy ~30% and at far left edge at start, stations/posts have no visible growing flags at this size; "patience" reads as a stroll -> frame boy at 40% height, flags: scale 0.4->1.0 at each station with a bright colour (green/blue/red) | stacks, fence, house end frame (40.0 s house reads clearly)
+P1 | film/shot4,6,7,8 captions | t=35.0/55.0/65.0/75.0s | second caption of the shot is dim/translucent in the sample on the phone sheet (low contrast, unreadable at 390 px) -> hold caption alpha 1.0 from 0.4 s after its start; cross-fade <=0.3 s | caption box size/position stay
+P1 | film/shot5 | t=45.0s | boy ~20% height and half hidden behind the open book; face invisible, "up" gesture only seen at the end -> camera dolly end distance 2.0 m, boy at table end centered, book lower; raise arms (up) by t=7.0 s | library set, golden book glow (clear), lamp
+P0 | film/shot6 | t=55.0s | the contrast "one poor man under a huge heap" vs "12 men one coin each" is not shown: left side with heap is out of frame; the 12 men stand abreast holding hands (reads as a chain, not a queue) -> start crane wide with BOTH sides in frame until t=3 s, place heap man at left third; rotate queue 90 deg into depth line, 1.1 m gaps; boy gives coin to first 3 men visibly with coin flying 0.4 s | boy walking along line, men's smiles
+P1 | film/shot7 | t=60.3-65.0s | heart is almost invisible for the first 6 s (scale 0.3 hidden behind boy), growth not noticeable -> scale 0.5->1.6, offset in front of chest +0.35 m toward camera, add a 0.15 s pop per gift | red-gold heart, passers-by, huge heart at 70.0 s (clear)
+P2 | film/shot7 | t=70.0s | heart covers the boy's face at the end -> shrink to 1.3 and shift left 0.4 m so face and heart are both visible | orbit end
+P1 | film/shot8 | t=75.0s | boy (small, right edge) not identifiable as the one raising a finger; a bearded man dominates the left -> push in so boy is at center third, height >=35%, start crane at t=8.0 s with him inside frame | warm lamps, bookshelf, calm end
+P2 | film/seams | t=10.0,20.0,30.0 | transitions 1->2, 2->3, 3->4 are slow dissolves (ghost frames) not directional continuations -> acceptable; keep exit direction left on 2->3 and right on 3->4 as in brief | seam 4->5 warm dissolve works; seam 6->7 matches camera height and reads well
+P2 | film/ending | t=80s | cannot verify recap card (not in sheets) | -
+
+Counts: P0 2, P1 7, P2 5 (estimated: see lines).
+DONE 8/8

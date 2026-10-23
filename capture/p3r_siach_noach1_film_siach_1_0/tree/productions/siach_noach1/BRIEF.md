@@ -1,0 +1,38 @@
+# BRIEF - film_siach: "The Money Test" (Siach Meorer, parashat Noach 5787) - a 3D film for the builders
+
+Source: weekly sheet by R' Winberg, `D:/video-projects/siach-meorer/assets/src/noach.pdf`, section 1 (pages 2-3). Captions below were checked word by word against the sheet text by the supervisor.
+Audience: Haredi boys, yeshiva-prep age 13-17. Shown with music and NO narration and NO computer voice: the captions are the whole explanation (Yosef standing order).
+One central idea (metaphor): two roads for the same thousand coins. Road ONE = one big heap, gone in a flash. Road TWO = many small steps that build something. Then the Rambam rule: one shekel to a thousand poor men trains the heart.
+Engine, rules, quality bar: exactly `C:/Users/<user>/.claude/skills/video-production/references/builder_kit.md` and reference production `productions/azamra342/` (copy the head from `productions/azamra342/_head_example.html`, patterns from `road.js`, `film_e.html` interior). Kit demo: `productions/_kit_build/film_demo.html`.
+Output: ONE page `productions/siach_noach1/film_siach.html` (1920x1080, film() with title card + recap + vault). Total duration = title 4.2 + 8 shots x 10 + recap 9 = about 93 s. Check `window.__dur`.
+
+## Look constants (numbers, not adjectives)
+- Warm bright children's-film palette: sky top #7EC8F0, sky bottom #FFF1C9, ground sand/stone warm #E9D3A1, accent gold #F5B820, coin gold #FFD54A (outline ink #3A2A12, width as in the house toon+ink style), calm blue #3C7FD8, green #5CAA4A. Light: warm sun from upper-left, hemi sky blue / ground warm.
+- THE BOY (hero, every shot he appears): student, `boy()` look from `azamra342/road.js`, kippa visible, `{scale:.72}`, the SAME look in every shot. All other men/boys: lite looks, kippa on every figure, no women or girls, no crosses.
+- Coins: flat gold discs with ink outline (cyl, radius .18, height .03), stacks of 5; the big heap = a cone of ~60 discs built by code, not a prop file. Poor men: lite figures with simple clothes (drab brown / grey tones) - respectful, not ragged.
+- BANNED: dark/black skies, empty stage after a caption leaves, figures cut by frame edge, a hero smaller than 40% of frame height in his key shot, fully still 1-second windows (the camera moves), text on props (no labels on objects), any ritual object (no sefer Torah, tefillin, tzitzit shown as objects), hard cuts more than 1/3 of seams.
+
+## Characters and gestures (working list only)
+rest explain point wide think up offer heart shrug count hips. Everything else is a defect.
+
+## Shots (dur 10 s each = 8 shots) and EXACT captions (1-2 captions per shot, each >= 4.5 s, on-screen text ONLY these)
+TITLE: מבחן הממון
+KICKER: שיח מעורר · פרשת נח
+RECAP: 1) הרגל קטן שחוזר על עצמו בונה את הנפש  2) אלף פעמים של נתינה מרגילים את הלב לרחמים  3) איזו פעולה קטנה של חסד תעשה שוב ושוב?
+
+| # | Intent (one sentence) | World + action | Camera start->end | Captions |
+|---|---|---|---|---|
+| 1 | The reward arrives: effort has a result. | Sunny stone courtyard with two trees and a bench. The boy walks in toward camera carrying a small gold pouch; coins pop out of it and ring around him in a halo (pop at 2.5 s). Gesture heart, then rest. Boy large by 3 s. | crane down high wide -> eye level medium on the boy | עמלת בבין הזמנים, והשכר הוא אות להתמדה |
+| 2 | The dilemma: one thousand coins, two roads. | Same courtyard seen from behind the boy: the ground splits into two stone roads. LEFT road ends in one big heap of gold (cone ~60 discs, glows). RIGHT road runs far, with 10 small stacks of 5 discs spaced along it. Boy thinks (gesture think), then points left, then right. | slow orbit 25 deg behind the boy, ends wide on both roads | בבת אחת, או בתשלומים? |
+| 3 | Road one: big now, but the temptation to waste it. | LEFT road: boy stands at the big heap with arms wide (gesture wide). From 4 s coins fly off the heap in arcs, the cone shrinks to 0 by 8.5 s while a market stall with 3 shiny toys (box shapes, bright colours) is behind him. Boy looks at the empty ground (gesture shrug). | pushIn on boy and heap, then pull back at 7 s to show the empty ground | דבר גדול כאן ועכשיו, אבל יש פיתוי לבזבז הכל מהר מדי |
+| 4 | Road two: patience builds. | RIGHT road: sun disc moves across the sky from left to right over the 9.5 s. The boy walks along the road and picks up one small stack at each of three stations (day markers = small posts with a growing flag); at the end a little house (house prop) is built piece by piece (walls rise by t) with his savings. | side tracking dolly following the boy, ends on the finished little house | לומדים לדחות סיפוקים ולשמור על הכסף לאורך זמן / אבל צריך סבלנות |
+| 5 | The Rambam decides. | Quiet study room (bookshelf, table, lamp with glow, window light). The boy leans on the table over an OPEN book (open book prop) that glows softly gold; pages flip once at 3 s. Gesture think, then up (idea). No other figure. | slow dolly toward the table, ends on the open book with the boy behind it | והכריע הרמב״ם בפירוש המשניות למסכת אבות |
+| 6 | One shekel to a thousand poor men beats a thousand to one. | Split staging in ONE wide set: LEFT a single poor man receives a huge heap (cone) - his figure is small under it. RIGHT a long queue of 12 poor men (crowd), the boy walks along it and gives each one a single coin (gesture offer), each man smiles (smile 1) in turn. Camera favours the right side. | high crane wide over both sides, descends to eye level on the queue | אלף שקלים לצדקה: עדיף שקל לאלף עניים / מאשר הכל לעני אחד |
+| 7 | Giving again and again trains the heart. | Street scene, 5 men and boys pass the boy one after another; he gives each a coin. A warm red-gold HEART shape (ball with ink outline, pulse) in front of his chest grows a little with each gift: scale 0.3 -> 1.6 over the shot (pure function of t). Gesture offer, heart. | slow orbit around the boy at medium distance, ends on the large heart and his face | פעם אחת, מעשה חסד אחד / אלף פעמים, מרגילים את הלב להיות רחמן ונדבן |
+| 8 | The habit builds the soul; and a question for the Shabbat table. | Warm evening room with a long table, 4 men and boys sit around it (no women), lamps glow, window shows dusk orange. The boy raises one finger (gesture up), the others lean in (talk 0.6). End on a wide of the whole table, calm. | slow pushIn from the doorway to the table, then a small crane up at 8 s | ההרגל שחוזר על עצמו הוא שבונה את הנפש / ולשולחן השבת: איזו פעולה קטנה של חסד אפשר לעשות שוב ושוב, בכל יום? |
+
+## Seams
+Shot 1->2 crane keeps downward flow into the orbit; 2->3 left-moving orbit ends facing the left road, shot 3 starts there; 3->4 camera exits right and shot 4 enters from the left; 4->5 dissolve through warm light (the finished house door); 5->6 hard cut allowed (new place); 6->7 same camera height continues; 7->8 pull back and rise. Stage ground opaque (no white flash).
+
+## Rules for the builder
+Follow the worker rules block in builder_kit.md. Captions only as vault IDs. Do not render video. Report in English, no Hebrew.
