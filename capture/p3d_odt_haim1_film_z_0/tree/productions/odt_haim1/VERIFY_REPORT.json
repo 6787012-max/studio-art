@@ -1,0 +1,26 @@
+{
+ "film": "film_a.html",
+ "status": "FAIL",
+ "time": "2026-10-23T13:44:11",
+ "samples": 0,
+ "findings": [
+  {
+   "sev": "P0",
+   "code": "NOT_READY",
+   "t": null,
+   "shot": null,
+   "detail": "window.__ready never became true: Page.goto: Timeout 30000ms exceeded.\nCall log:\n  - navigating to \"file:///C:/projects/_studio-animatzia/productions/odt_haim1/film_a.html?hq=1\", waiting until \"",
+   "fix": "run stills.py on the film, read the page errors, fix the first one"
+  },
+  {
+   "sev": "P0",
+   "code": "NO_SAMPLES",
+   "t": null,
+   "shot": null,
+   "detail": "0 frames sampled",
+   "fix": "a verify with zero samples is a FAIL; resolve the blocking finding"
+  }
+ ],
+ "sheets": null,
+ "timing": {}
+}

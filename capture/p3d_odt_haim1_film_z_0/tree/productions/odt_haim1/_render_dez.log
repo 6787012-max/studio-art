@@ -1,0 +1,15 @@
+16:23:11 render_all: production=odt_haim1 films=film_d,film_e,film_z part=50s hq=True dry_run=False
+!! BUDGET GUARD FAILED OPEN (render continues): TimeoutExpired: Command '['C:\\Users\\יוסף שניידר\\AppData\\Local\\Programs\\Python\\Python311\\python.exe', 'C:/tools/usage-budget/budget.py']' timed out after 120 seconds
+16:25:27 budget OK: budget unknown (TimeoutExpired: Command '['C:\\Users\\יוסף שניידר\\AppData\\Local\\Programs\\Python\\Python311\\python.exe', 'C:/tools/usage-budget/budget.py']' timed out after 120 seconds)
+16:25:27 verify gate: PASS for film_d, film_e, film_z
+16:26:14 film_d: length 74.0s, rendering (part 50 s, 8 includes)
+16:48:13 film_d part 1/2 t0=0.0 d=37.0 -> rc=1
+17:57:26 film_d part 2/2 t0=37.0 d=37.0 -> rc=0
+17:57:26 film_d: failed parts [0], retry round 1
+18:17:13 film_d retry part 0 sub 1/2 t0=0.0 d=18.5 -> rc=0
+18:56:49 film_d retry part 0 sub 2/2 t0=18.5 d=18.5 -> rc=0
+18:56:50 film_d: ok 74.0s
+18:57:00 film_e: length 38.0s, rendering (part 50 s, 8 includes)
+20:09:36 film_e part 1/1 t0=0.0 d=38.0 -> rc=0
+20:09:38 film_e: ok 38.0s
+20:09:59 film_z: length 10.0s, rendering (part 50 s, 8 includes)

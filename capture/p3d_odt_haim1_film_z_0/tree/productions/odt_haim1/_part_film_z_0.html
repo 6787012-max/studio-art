@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>odt_haim1 film_z</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script>window.__T0=0.0000; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import { film, path } from '../../lib/stage3d.js';
+import { hallWorld, man, shot, ease, prog, INSTR, GROUP, THREE } from './hall.js';
+import { buildArc, discPos } from './arc.js';
+
+const face = (x, z, tx, tz) => Math.atan2(tx - x, tz - z);
+
+film({
+  title: 'TITLE_A', vault: 'captions_vault.json',
+  shots: [
+    // Z1 - calm closing frame: the hall, the glowing arc, the group standing together
+    shot(10, [], [], () => {
+      const Wd = hallWorld(); const A = buildArc(Wd);
+      Wd.on(t => { for (let n = 1; n <= 8; n++) A.light(n, (.55 + .12 * Math.sin(t * .8 + n * .7)) * ease.out(prog(t, 0, 2 + n * .15))); });
+      const cx = 0, cz = -3.2; let hero = null;
+      const seats = []; for (let i = 0; i < 9; i++) { const a = (i - 4) * 13, x = cx + Math.sin(a * Math.PI / 180) * 2.6, z = cz - 1.0 + (1 - Math.cos(a * Math.PI / 180)) * -2.2 - Math.abs(i - 4) * 0.0; seats.push([x, z]); }
+      seats.forEach(([x, z], i) => {
+        const look = i === 4 ? INSTR : GROUP[i > 4 ? i - 1 : i];
+        const P = man(Wd, look, t => ({ pos: [x, 0, z], facing: face(x, z, cx + (x - cx) * .3, cz + 8), gesture: 'rest', smile: .8 }));
+        if (i === 4) hero = P;
+      });
+      Wd.hero = hero;
+      return Object.assign(Wd, { cam: path([[0, [-1.2, 1.7, 3.4], [0, 1.4, -3.4], 36], [10, [1.2, 1.9, 3.0], [0, 1.4, -3.3], 36]]) });
+    }),
+  ],
+});
+</script>
+</html>
