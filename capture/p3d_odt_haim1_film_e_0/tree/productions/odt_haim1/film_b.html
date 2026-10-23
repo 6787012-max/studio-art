@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>odt_haim1 film_b</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import { film, path, orbit, ball, box } from '../../lib/stage3d.js';
+import { hallWorld, man, walkTo, shot, spots, confetti, ease, prog, clamp, lerp, INSTR, GROUP, P, THREE } from './hall.js';
+import { buildArc, discPos } from './arc.js';
+
+// disc k lit now, earlier discs softly lit
+function lights(Wd, A, k, t0, upTo) {
+  Wd.on(t => { for (let n = 1; n <= 8; n++) A.light(n, n < k ? .38 : n === k ? ease.out(prog(t, t0 === undefined ? .5 : t0, (t0 === undefined ? .5 : t0) + 1.6)) * (n === 5 ? 1.35 : 1) : 0); });
+}
+// the eight men on a horseshoe around centre c; fn(i, t, s) -> state patch
+function crew(Wd, c, r, a0, a1, fn) {
+  const S = spots(c.x, c.z, r, 8, a0, a1);
+  return { S, men: S.map((s, i) => man(Wd, GROUP[i], t => Object.assign({ pos: [s.x, 0, s.z], facing: s.f, smile: .5 }, fn(i, t, s)))) };
+}
+const instr = (Wd, c, fn) => man(Wd, INSTR, t => Object.assign({ pos: [c.x, 0, c.z], facing: 0, smile: .6 }, fn(t)));
+
+film({
+  title: 'TITLE_B', kicker: 'KICKER_B', vault: 'captions_vault.json',
+  shots: [
+    // B1 - high flight over the whole arc; all 8 numbers readable; the instructor strolls along the first discs while they light up one by one
+    Object.assign(shot(12, ['CAP_B_01', 'CAP_B_02'], [0.5, 6.1], () => {
+      const Wd = hallWorld(); const A = buildArc(Wd);
+      Wd.on(t => { for (let n = 1; n <= 8; n++) A.light(n, ease.out(prog(t, 5.5 + (n - 1) * .6, 6.8 + (n - 1) * .6)) * .9 + .15); });
+      const p3 = discPos(3), p6 = discPos(6), ir = walkTo([[0, p3.x - 1, p3.z - 1.2, 1.2], [12, p6.x - 1, p6.z - 1.4]]);
+      Wd.hero = man(Wd, INSTR, t => Object.assign({ gesture: 'rest', smile: .8 }, ir(t)));
+      return Object.assign(Wd, { cam: path([[0, [-14, 10, -10.6], [-6, 0, -1.8], 56], [6, [0, 11.8, -10.8], [0, 0, .6], 58], [12, [14, 10, -10.6], [6, 0, -.2], 56]]) });
+    }), { wide: true }),
+
+    // B2 - disc 1 lights; the instructor greets the group, loose circle around him
+    shot(12, ['CAP_B_03'], [0.5], () => {
+      const Wd = hallWorld(); const A = buildArc(Wd); const c = discPos(1); lights(Wd, A, 1);
+      crew(Wd, c, 2.5, -125, 125, (i, t) => ({ gesture: t < 2 ? 'rest' : (i % 3 === 0 ? 'wave' : 'rest'), smile: .8, talk: 0 }));
+      Wd.hero = instr(Wd, c, t => ({ gesture: t < 4 ? 'wave' : (Math.floor(t / 2.5) % 2 ? 'offer' : 'explain'), talk: .5 + .5 * Math.sin(t * 8), smile: .9 }));
+      return Object.assign(Wd, { cam: orbit([c.x + .3, .95, c.z + .3], 5.6, 2.4, 138, 168, 0, 12, 46) });
+    }),
+
+    // B3 - disc 2; the group laughs, shoulders drop
+    shot(11, ['CAP_B_04'], [0.5], () => {
+      const Wd = hallWorld(); const A = buildArc(Wd); const c = discPos(2); lights(Wd, A, 2);
+      crew(Wd, c, 2.5, -125, 125, (i, t) => ({ gesture: Math.floor((t + i * .37) / 1.1) % 2 ? 'shrug' : 'rest', smile: 1, talk: .6 * Math.abs(Math.sin(t * 6 + i)), brow: .2 }));
+      Wd.hero = instr(Wd, c, t => ({ gesture: 'hips', smile: 1, talk: .5 * Math.abs(Math.sin(t * 6)) }));
+      return Object.assign(Wd, { cam: orbit([c.x, .95, c.z + .3], 5.6, 2.4, 150, 188, 0, 11, 46) });
+    }),
+
+    // B4 - disc 3; quick movement, a ball flies between them
+    shot(11, ['CAP_B_05'], [0.5], () => {
+      const Wd = hallWorld(); const A = buildArc(Wd); const c = discPos(3); lights(Wd, A, 3);
+      const order = [0, 4, 2, 6, 1, 5, 3, 7, 0, 4], SEG = 1.0, T0 = 1.0, S = spots(c.x, c.z, 2.5, 8, -125, 125);
+      const seg = t => clamp(Math.floor((t - T0) / SEG), -1, order.length - 2);
+      crew(Wd, c, 2.5, -125, 125, (i, t) => { const k = seg(t), u = (t - T0) / SEG - k; const catching = k >= 0 && order[k + 1] === i && u > .4, throwing = k >= 0 && order[k] === i && u < .35; return { gesture: catching ? 'offer' : throwing ? 'explain' : 'rest', smile: .9 }; });
+      Wd.hero = instr(Wd, c, t => ({ gesture: 'rest', smile: .9 }));
+      const bl = ball(.11, 0xe8803a, { pos: [S[0].x, 1.3, S[0].z] }); Wd.add(bl);
+      Wd.on(t => { const k = seg(t); if (k < 0) { bl.position.set(S[order[0]].x, 1.25, S[order[0]].z); return; } const u = clamp((t - T0) / SEG - k, 0, 1), a = S[order[k]], b = S[order[k + 1]];
+        bl.position.set(lerp(a.x, b.x, u), 1.25 + Math.sin(u * Math.PI) * .9, lerp(a.z, b.z, u)); });
+      return Object.assign(Wd, { cam: orbit([c.x, .95, c.z + .2], 5.0, 2.4, 160, 200, 0, 11, 46) });
+    }),
+
+    // B5 - disc 4; the group tries a task, the instructor steps back and watches
+    shot(12, ['CAP_B_06'], [0.5], () => {
+      const Wd = hallWorld(); const A = buildArc(Wd); const c = discPos(4); lights(Wd, A, 4);
+      const cols = [0xe8803a, 0x4a7fc8, 0xc9a227, 0x5a9a6a, 0xd05a5a];
+      const bs = cols.map((col, i) => { const b = box(.34, .34, .34, col, { pos: [c.x, .17, c.z] }); Wd.add(b); return b; });
+      const home = [[-.5, .35], [.45, .1], [-.2, -.45], [.4, -.5], [.05, .5]];
+      Wd.on(t => bs.forEach((b, i) => { const u = ease.io(prog(t, 3 + i * .9, 6 + i * 1.1)); b.position.set(c.x + lerp(home[i][0], -.8 + i * .4, u), .17, c.z + lerp(home[i][1], -.1, u)); b.rotation.y = (1 - u) * (i + 1); }));
+      const G = ['point', 'think', 'count', 'explain', 'think', 'point', 'explain', 'count'];
+      crew(Wd, c, 1.7, -125, 125, (i, t) => ({ gesture: G[(i + Math.floor(t / 2.6)) % 8], talk: .35 * Math.abs(Math.sin(t * 5 + i * 2)) * (Math.floor(t / 2.6 + i) % 3 === 0 ? 1 : 0), brow: .25 }));
+      const ir = walkTo([[0, c.x, c.z, 0], [1.2, c.x, c.z], [4.2, c.x + 3.8, c.z - 1.3], [12, c.x + 3.8, c.z - 1.3]]);
+      Wd.hero = man(Wd, INSTR, t => Object.assign({ smile: .5 }, ir(t), t > 4.4 ? { facing: Math.atan2(-3.8, 1.3), gesture: 'think' } : { gesture: 'rest' }));
+      return Object.assign(Wd, { cam: orbit([c.x + 1, .8, c.z - .2], 5.6, 2.4, 160, 200, 0, 12, 46) });
+    }),
+
+    // B6 - disc 5, the biggest and brightest; the group works together, focused
+    shot(12, ['CAP_B_07'], [0.5], () => {
+      const Wd = hallWorld(); const A = buildArc(Wd); const c = discPos(5); lights(Wd, A, 5);
+      const cols = [0xe8803a, 0x4a7fc8, 0xc9a227, 0x5a9a6a, 0xd05a5a, 0xf6efe2], tw = [];
+      cols.forEach((col, i) => { const b = box(.55 - i * .03, .3, .55 - i * .03, col, { pos: [c.x, .15 + i * .3, c.z] }); Wd.add(b); tw.push(b); });
+      Wd.on(t => tw.forEach((b, i) => { const k = ease.out(prog(t, 1.5 + i * 1.5, 2.2 + i * 1.5)); b.visible = k > .02; b.scale.setScalar(Math.max(.02, k)); b.position.y = .03 + (.15 + i * .3) * Math.max(.02, k) + (i ? 0 : 0); }));
+      const G = ['point', 'explain', 'think', 'count'];
+      crew(Wd, c, 2.15, -125, 125, (i, t) => ({ gesture: G[(i + Math.floor(t / 3.1)) % 4], talk: .3 * Math.abs(Math.sin(t * 4 + i)), brow: .3, smile: .4 }));
+      Wd.hero = instr(Wd, { x: c.x + 3.3, z: c.z - 1.6 }, t => ({ facing: Math.atan2(-3.3, 1.6), gesture: 'rest', smile: .7 }));
+      return Object.assign(Wd, { cam: orbit([c.x, .85, c.z + .1], 5.6, 2.4, 158, 198, 0, 12, 46) });
+    }),
+
+    // B7 - disc 6; everybody cheers together
+    shot(11, ['CAP_B_08'], [0.5], () => {
+      const Wd = hallWorld(); const A = buildArc(Wd); const c = discPos(6); lights(Wd, A, 6);
+      confetti(Wd, [c.x, 0, c.z], 1.0, 70, 5);
+      crew(Wd, c, 2.5, -125, 125, (i, t) => ({ pos: [c.x + Math.sin((-125 + 250 * i / 7) * Math.PI / 180) * 2.5, Math.max(0, Math.sin(t * 7 + i * .8)) * .1 * prog(t, 1, 1.5), c.z + Math.cos((-125 + 250 * i / 7) * Math.PI / 180) * 2.5], gesture: t < 1 ? 'rest' : 'up', talk: t < 1 ? 0 : .8 * Math.abs(Math.sin(t * 9 + i)), smile: 1, brow: .3 }));
+      Wd.hero = instr(Wd, c, t => ({ gesture: t < 1 ? 'rest' : 'up', talk: .8 * Math.abs(Math.sin(t * 9)), smile: 1 }));
+      return Object.assign(Wd, { cam: orbit([c.x, .95, c.z + .3], 5.6, 2.4, 152, 190, 0, 11, 46) });
+    }),
+
+    // B8 - disc 7; the group sits in a circle, one speaks, the others listen
+    shot(11, ['CAP_B_09'], [0.5], () => {
+      const Wd = hallWorld(); const A = buildArc(Wd); const c = discPos(7); lights(Wd, A, 7);
+      const S = spots(c.x, c.z, 2.3, 9, -130, 130);
+      S.forEach(s => P.chair(Wd, { pos: [s.x, 0, s.z], rot: s.f }));
+      const speaker = 4;
+      S.forEach((s, i) => { const look = i === 8 ? INSTR : GROUP[i];
+        const pp = man(Wd, look, t => ({ pos: [s.x, 0, s.z], facing: s.f, sit: true, gesture: i === speaker ? (Math.floor(t / 2.2) % 2 ? 'explain' : 'explainA') : 'rest', talk: i === speaker ? .55 + .45 * Math.sin(t * 8.5) : 0, smile: i === speaker ? .5 : .6, look: i === speaker ? 0 : (i < speaker ? .5 : -.5) * .6 })); if (i === speaker) Wd.hero = pp; });
+      return Object.assign(Wd, { cam: orbit([c.x, .95, c.z + 1.3], 3.6, 2.0, 158, 198, 0, 11, 46) });
+    }),
+
+    // B9 - disc 8; everyone raises hands for the closing clap
+    shot(11, ['CAP_B_10'], [0.5], () => {
+      const Wd = hallWorld(); const A = buildArc(Wd); const c = discPos(8); lights(Wd, A, 8);
+      const clap = t => t < 1.5 ? 'rest' : t < 4.5 ? 'up' : (Math.floor(t * 2.6) % 2 ? 'up' : 'pray');
+      crew(Wd, c, 2.5, -125, 125, (i, t) => ({ gesture: clap(t + i * .02), smile: 1, talk: 0 }));
+      Wd.hero = instr(Wd, c, t => ({ gesture: clap(t), smile: 1 }));
+      return Object.assign(Wd, { cam: orbit([c.x, .95, c.z + .3], 5.6, 2.4, 160, 196, 0, 11, 46) });
+    }),
+
+    // B10 - the camera rises; the arc glows end to end, a man on every disc
+    Object.assign(shot(10, ['CAP_B_11'], [0.5], () => {
+      const Wd = hallWorld(); const A = buildArc(Wd);
+      Wd.on(t => { for (let n = 1; n <= 8; n++) A.light(n, ease.out(prog(t, .6 + (n - 1) * .55, 1.8 + (n - 1) * .55)) * 1.1); });
+      for (let n = 1; n <= 8; n++) { const p = discPos(n), up = .8 + n * .55; const mm = man(Wd, GROUP[n - 1], t => ({ pos: [p.x, 0, p.z], facing: Math.PI - .15 * (n - 4.5) / 4, gesture: t > up ? 'up' : 'rest', smile: 1 })); if (n === 5) Wd.hero = mm; }
+      return Object.assign(Wd, { cam: path([[0, [0, 2.4, -11.2], [0, 1.0, -1], 54], [5, [0, 8.2, -12.2], [0, .6, -.5], 50], [10, [0, 21, -16.5], [0, 0, -.8], 54]]) });
+    }), { wide: true }),
+  ],
+});
+</script>
+</html>

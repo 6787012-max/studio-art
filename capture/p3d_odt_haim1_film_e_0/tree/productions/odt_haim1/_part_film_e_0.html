@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>odt_haim1 film_e</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script>window.__T0=0.0000; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import { film, path, canvasTex, box, cyl, ball, mesh, toon, world } from '../../lib/stage3d.js';
+import { hallWorld, man, walkTo, shot, ease, prog, clamp, lerp, INSTR, GROUP, THREE, P } from './hall.js';
+import { buildArc, discPos } from './arc.js';
+
+const glowTex = canvasTex(128, 128, (g, w, h) => { const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,240,180,1)'); r.addColorStop(.4, 'rgba(255,205,100,.5)'); r.addColorStop(1, 'rgba(255,190,80,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); });
+// a small glowing object (ball / rod / card) built for the hand
+function glowObj(kind) {
+  const g = new THREE.Group(), core = new THREE.MeshBasicMaterial({ color: 0xffe9a8, fog: false });
+  if (kind === 0) g.add(new THREE.Mesh(new THREE.SphereGeometry(.1, 16, 12), core));
+  else if (kind === 1) { const m = new THREE.Mesh(new THREE.CylinderGeometry(.025, .025, .55, 8), core); g.add(m); }
+  else g.add(new THREE.Mesh(new THREE.BoxGeometry(.2, .28, .025), core));
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex, blending: THREE.AdditiveBlending, depthWrite: false, fog: false, transparent: true, opacity: .95 })); s.scale.set(.75, .75, 1); g.add(s); return g;
+}
+function holdGlow(Wd, Pn, kind) {
+  let done = false;
+  Wd.on(() => { if (done || !Pn.figure) return; done = true; const h = Pn.figure.bones.handA.userData.hand, o = glowObj(kind); o.position.set(0, -.12, .02); h.add(o); });
+}
+
+film({
+  title: 'TITLE_E', kicker: 'KICKER_E', recap: ['RECAP_E_1', 'RECAP_E_2', 'RECAP_E_3'], vault: 'captions_vault.json',
+  shots: [
+    // E1 - the group leaves the hall at sunset
+    shot(15, ['CAP_E_01', 'CAP_E_02'], [0.5, 7.6], () => {
+      const Wd = hallWorld({ skyTop: 0x5a5f92, skyBottom: 0xffa060, fogColor: 0xf0b284, sunColor: 0xff9248, sun: 1.7, hemi: 1.15, hemiSky: 0xffd9b4, hemiGround: 0xb27c52, sunPos: [-30, 9, 10] });
+      const A = buildArc(Wd);
+      Wd.on(t => { for (let n = 1; n <= 8; n++) A.light(n, .55); });
+      // the doorway in the right wall, filled with sunset light
+      const dz = -1.5, dg = canvasTex(64, 256, (g, w, h) => { const l = g.createLinearGradient(0, 0, 0, h); l.addColorStop(0, '#ffe2a0'); l.addColorStop(1, '#ff9a50'); g.fillStyle = l; g.fillRect(0, 0, w, h); });
+      const door = new THREE.Mesh(new THREE.PlaneGeometry(2.6, 3.6), new THREE.MeshBasicMaterial({ map: dg, fog: false })); door.rotation.y = -Math.PI / 2; door.position.set(15.96, 1.8, dz); Wd.add(door);
+      Wd.add(box(.25, 3.9, .25, 0x1f2a44, { pos: [15.85, 1.95, dz - 1.4], ink: false })); Wd.add(box(.25, 3.9, .25, 0x1f2a44, { pos: [15.85, 1.95, dz + 1.4], ink: false })); Wd.add(box(.25, .25, 3.05, 0x1f2a44, { pos: [15.85, 3.85, dz], ink: false }));
+      const beam = new THREE.Mesh(new THREE.PlaneGeometry(6, 3.6), new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false, fog: false })); beam.rotation.y = -Math.PI / 2; beam.position.set(15.9, 1.8, dz); Wd.add(beam);
+      const starts = [[-1, -6.5], [1, -3.2], [-3, -1.2], [2, 1.6], [-4.5, -4], [0.5, -9], [-2, 2.8], [3.5, -6]];
+      let hero = null, hr = null;
+      starts.forEach((s, i) => {
+        const H7 = i === 7, tEnd = H7 ? 14.6 : 9.6 + i * .62, tStart = H7 ? 2.5 : Math.max(0, tEnd - 11.5), y0 = H7 ? dz : dz + (i % 3 - 1) * .5;
+        const r = walkTo([[0, s[0], s[1], Math.PI / 2], [tStart + .3, s[0], s[1]], [tStart + 3.5 + (i % 2), (s[0] + 15) / 2 - 3, (s[1] + y0) / 2], [tEnd, 15.2, y0], [15, 15.2, y0]]);
+        const Pn = man(Wd, GROUP[i], t => { const o = r(t); return Object.assign(o, { gesture: 'rest', smile: .8, hidden: !H7 && t > tEnd + .2, facing: t < tStart + .3 ? 0.9 : o.facing }); });
+        holdGlow(Wd, Pn, i % 3); if (H7) { hero = Pn; hr = r; }
+      });
+      Wd.hero = hero;
+      return Object.assign(Wd, { cam: t => { const h = hr(Math.min(t, 14.9)).pos, k = Math.min(1, t / 2); const px = Math.min(h[0] + 2.4, 15.3), pz = h[2] + 5.0 - .8 * k; return { pos: [px, 1.7, pz], look: [h[0] + .3, 1.15, h[2]], fov: 46 }; } });
+    }),
+
+    // E2 - the field at the farm at dusk
+    shot(14, ['CAP_E_03'], [0.5], () => {
+      const Wd = world({ ground: 'grass', groundSize: 500, skyTop: 0x4a4f86, skyBottom: 0xff9a5c, fogColor: 0xf2a878, fogNear: 30, fogFar: 200, sunColor: 0xff8a40, sun: 1.5, sunPos: [-45, 12, -40], hemi: 1.0, hemiSky: 0xffc9a0, hemiGround: 0x6a5a40, shadowExt: 40, skyR: 450 });
+      // sun on the horizon
+      const sunD = new THREE.Mesh(new THREE.CircleGeometry(14, 40), new THREE.MeshBasicMaterial({ color: 0xffe2a0, fog: false })); sunD.position.set(-45, 12, -230); Wd.add(sunD);
+      const sg = new THREE.Mesh(new THREE.PlaneGeometry(130, 130), new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, opacity: .8, blending: THREE.AdditiveBlending, depthWrite: false, fog: false })); sg.position.set(-45, 12, -225); Wd.add(sg);
+      // hills
+      [[-80, -140, 60, 14], [40, -160, 80, 16], [130, -130, 60, 11], [-150, -100, 50, 10]].forEach(([x, z, r, h]) => { const m = new THREE.Mesh(new THREE.SphereGeometry(r, 24, 12), toon(0x4a6a3a)); m.scale.y = h / r; m.position.set(x, 0, z); Wd.add(m); });
+      // barn + silo
+      const bx = -17, bz = -26; Wd.add(box(8, 4.5, 6, 0xb5473a, { pos: [bx, 2.25, bz] }));
+      const roof = mesh(new THREE.CylinderGeometry(0, 5.6, 2.8, 4), toon(0x5a3c2e), { pos: [bx, 5.9, bz], rot: [0, Math.PI / 4, 0], scale: [1.06, 1, .88] }); Wd.add(roof);
+      Wd.add(box(2, 3, .1, 0xf3e6c8, { pos: [bx + 0.5, 1.6, bz + 3.05] }));
+      Wd.add(cyl(1.5, 1.5, 7, 0xc8c2b4, { pos: [bx + 6.2, 3.5, bz - 1] })); Wd.add(mesh(new THREE.SphereGeometry(1.5, 16, 8, 0, 6.3, 0, 1.57), toon(0x6a6a72), { pos: [bx + 6.2, 7, bz - 1] }));
+      // trees, fences, hay, crop rows
+      [[-30, -18], [-26, -34], [22, -30], [30, -20], [14, -42], [-8, -40], [-36, -8]].forEach(([x, z], i) => P.tree(Wd, { pos: [x, 0, z], kind: i % 3 === 2 ? 1 : 0, scale: 1.1 + (i % 3) * .15 }));
+      for (let i = 0; i < 6; i++) P.fence(Wd, { pos: [-6 + i * 4, 0, -12], len: 4 });
+      for (let i = 0; i < 6; i++) P.fence(Wd, { pos: [-6 + i * 4, 0, -50 + 0], len: 4 });
+      [[10, -22], [13, -24], [-3, -27]].forEach(([x, z]) => Wd.add(cyl(.9, .9, 1.2, 0xd9b45a, { pos: [x, .6, z], rot: [0, 0, Math.PI / 2] })));
+      for (let r = 0; r < 7; r++) Wd.add(box(24, .28, .5, r % 2 ? 0x6a8a3a : 0x7a9a46, { pos: [20, .14, -16 - r * 2.2], ink: false }));
+      // the sign silhouette (no text), dark against the sunset
+      const sx = -3, sz = -18; const dark = 0x1e2236; const SG = new THREE.Group(); SG.position.set(sx, 0, sz); Wd.add(SG);
+      SG.add(box(.28, 3.4, .28, dark, { pos: [-1.3, 1.7, 0] })); SG.add(box(.28, 3.4, .28, dark, { pos: [1.3, 1.7, 0] }));
+      SG.add(box(3.6, 1.7, .22, dark, { pos: [0, 3.2, 0] }));
+      const rim = new THREE.Mesh(new THREE.PlaneGeometry(9, 9), new THREE.MeshBasicMaterial({ map: glowTex, transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false, fog: false })); rim.position.set(sx, 3.2, sz - .6); Wd.add(rim);
+      // the group walks across the field toward the sign, each with a glowing object
+      let hero = null;
+      for (let i = 0; i < 8; i++) {
+        const sx0 = 14 - (i % 4) * 1.6 + (i >> 2) * 1.0, sz0 = -4 - (i >> 2) * 2.0 - (i % 3) * .6;
+        const tx = -3 + (i - 3.5) * 1.3, tz = -13.5 - (i % 2) * 1.2;
+        const r = walkTo([[0, sx0, sz0, -2.0], [.5 + i * .2, sx0, sz0], [13.4, tx, tz], [14, tx, tz]]);
+        const Pn = man(Wd, GROUP[i], t => Object.assign(r(t), { gesture: 'rest', smile: .6 }));
+        holdGlow(Wd, Pn, i % 3); 
+      }
+      Wd.hero = SG;
+      return Object.assign(Wd, { cam: path([[0, [9, 2.6, 2], [-2, 1.8, -14], 55], [7, [4, 2.4, -10.5], [-3, 2.2, -18], 46], [14, [2.5, 2.3, -9.5], [-3, 2.2, -18], 46]]) });
+    }),
+  ],
+});
+</script>
+</html>

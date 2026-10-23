@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>odt_haim1 film_a</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import { film, path, orbit } from '../../lib/stage3d.js';
+import { hallWorld, man, walkTo, shot, lean, ease, prog, clamp, lerp, INSTR, GROUP, THREE } from './hall.js';
+import { buildArc, goldThread, discPos } from './arc.js';
+
+const V3 = (x, y, z) => [x, y, z];
+
+film({
+  title: 'TITLE_A', kicker: 'KICKER_A', vault: 'captions_vault.json',
+  shots: [
+    // A1 - the empty hall at golden afternoon; the camera glides in low over the floor; the 8 discs light up one after another
+    shot(12, ['CAP_A_01', 'CAP_A_02'], [0.5, 6.1], () => {
+      const Wd = hallWorld(); const A = buildArc(Wd);
+      Wd.on(t => { for (let n = 1; n <= 8; n++) A.light(n, ease.out(prog(t, 1.2 + (n - 1) * .85, 2.6 + (n - 1) * .85))); });
+      Wd.hero = A.discs[4].g;
+      return Object.assign(Wd, { cam: path([[0, [-13.8, 1.1, -8.6], [-7, 0, -2.6], 54], [6, [-3.0, 3.0, -8.8], [2.5, 0, .6], 56], [12, [6.5, 3.4, -9.0], [10, 0, 1.6], 54]]) });
+    }),
+
+    // A2 - pushing: the instructor behind a participant pushes; the participant leans back and stops. soft grey tint
+    shot(14, ['CAP_A_03', 'CAP_A_04'], [0.5, 7.1], () => {
+      const Wd = hallWorld(); const A = buildArc(Wd); Wd.setMood(t => .9);
+      const X = -1.7;
+      const pr = walkTo([[0, X, -6.6, 0], [3.2, X, -6.6], [5.6, X, -6.0], [14, X, -6.0]]);
+      const ir = walkTo([[0, X, -11.4, 0], [3.2, X, -7.6], [5.6, X, -6.95], [14, X, -6.95]]);
+      const Pp = man(Wd, GROUP[1], t => Object.assign(pr(t), { gesture: t < 5.5 ? 'rest' : 'hips', smile: t < 3 ? .5 : 0, brow: prog(t, 5.5, 7) * -.4 }));
+      lean(Wd, Pp, t => ({ facing: 0, ang: ease.io(prog(t, 5.2, 7.4)) * .2 }));
+      const Pi = man(Wd, INSTR, t => Object.assign(ir(t), { gesture: t < 3.0 ? 'rest' : 'push2', smile: .3 }));
+      lean(Wd, Pi, t => ({ facing: 0, ang: -ease.io(prog(t, 3.0, 5.6)) * .12 }));
+      Wd.hero = Pi;
+      return Object.assign(Wd, { cam: orbit([X, .95, -6.7], 6.0, 1.2, 68, 102, 0, 14, 42) });
+    }),
+
+    // A3 - pulling: the tint turns warm; a golden thread from a glowing disc; he walks forward by himself, smiling; two follow. The camera circles them.
+    shot(14, ['CAP_A_05', 'CAP_A_06'], [0.5, 7.1], () => {
+      const Wd = hallWorld(); const A = buildArc(Wd); Wd.setMood(t => 1 - ease.io(prog(t, .2, 3.4)));
+      const X = -1.7, D = discPos(4);
+      Wd.on(t => { for (let n = 1; n <= 8; n++) A.light(n, n === 4 ? ease.out(prog(t, 1.4, 3)) * 1.1 : 0); });
+      const r1 = walkTo([[0, X, -6.2, 0], [3.4, X, -6.2], [11.2, X, -2.5]]);
+      const r2 = walkTo([[0, -4.4, -9.2, 0], [5.0, -4.4, -9.2], [12.4, -3.4, -3.6]]);
+      const r3 = walkTo([[0, .8, -9.6, 0], [5.8, .8, -9.6], [13, .5, -3.3]]);
+      const m1 = man(Wd, GROUP[1], t => Object.assign(r1(t), { smile: .3 + .7 * prog(t, 3.4, 5), gesture: t < 3.6 ? 'rest' : 'explain', brow: .2 }));
+      const m2 = man(Wd, GROUP[3], t => Object.assign(r2(t), { smile: .9 }));
+      const m3 = man(Wd, GROUP[5], t => Object.assign(r3(t), { smile: .9 }));
+      man(Wd, INSTR, t => ({ pos: [-7.3, 0, -3.6], facing: Math.atan2(3.5, -1.2), gesture: t < 3 ? 'rest' : 'offer', smile: .9, talk: 0 }));
+      const dp = [D.x, .35, D.z - 1.3];
+      goldThread(Wd, t => { const p = r1(t).pos; return { a: dp, b: [p[0], 1.15, p[2]], amt: ease.out(prog(t, 2.6, 4.4)) }; });
+      goldThread(Wd, t => { const p = r2(t).pos; return { a: dp, b: [p[0], 1.15, p[2]], amt: ease.out(prog(t, 5.0, 6.8)) }; });
+      goldThread(Wd, t => { const p = r3(t).pos; return { a: dp, b: [p[0], 1.15, p[2]], amt: ease.out(prog(t, 5.8, 7.6)) }; });
+      Wd.hero = m1;
+      return Object.assign(Wd, { cam: orbit([-2.2, .85, -4.4], 6.0, 1.7, -48, 38, 0, 14, 44) });
+    }),
+  ],
+});
+</script>
+</html>
