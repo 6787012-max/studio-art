@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>portrait probe</title>
+<style>html,body{margin:0;background:#000}canvas{display:block;width:100vw;height:auto}</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script type="importmap">{ "imports": {
+  "three": "../../node_modules/three/build/three.module.js",
+  "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+// Portrait probe (Shorts 1080x1920): one 6 s shot, one man, two plain-English captions (short, then long enough to wrap).
+import { film, world, person, THREE, ease, prog } from '../../lib/stage3d.js';
+import * as P from '../../lib/props3d.js';
+import { dolly } from '../../lib/motion3d.js';
+
+const RAV = { coat: '#2a2a33', beard: '#3a2a20', beardLen: .6, hat: 'kippa', skin: '#efcfb0', glasses: true };
+const sky = o => Object.assign({ ground: 'grass', skyTop: 0x5aa5ee, skyBottom: 0xfbeacb, fogColor: 0xeaeedd, fogNear: 50, fogFar: 220, shadowExt: 28 }, o);
+
+film({
+  title: 'portrait probe', W: 1080, H: 1920,
+  shots: [
+    { dur: 6, caps: ['Short caption', 'A much longer caption line that has to wrap over several lines inside the narrow portrait box without leaving the safe area'], build() {
+      const Wd = world(sky({}));
+      P.tree(Wd, { pos: [-5, 0, -6], kind: 0 }); P.tree(Wd, { pos: [5, 0, -7], kind: 1 });
+      person(Wd, RAV, t => ({ pos: [0, 0, 0], facing: 0, gesture: 'explain', talk: .5 + .5 * Math.sin(t * 8) }));
+      return Object.assign(Wd, { cam: dolly([0, 1.7, 7], [0, 1.6, 5], t => [0, 1.4, 0], 0, 6, { fov0: 50, fov1: 46 }) });
+    } }
+  ]
+});
+</script>

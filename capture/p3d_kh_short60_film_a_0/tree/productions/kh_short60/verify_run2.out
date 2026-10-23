@@ -1,0 +1,5 @@
+P0 | NOT_READY | t=- | - | window.__ready never became true: Page.goto: Timeout 30000ms exceeded.
+Call log:
+  - navigating to "file:///C:/projects/_studio-animatzia/productions/kh_short60/film_a.html?hq=1", waiting until  | Fix: run stills.py on the film, read the page errors, fix the first one
+P0 | NO_SAMPLES | t=- | - | 0 frames sampled | Fix: a verify with zero samples is a FAIL; resolve the blocking finding
+SUMMARY | FAIL | samples=0 | dur=n/a | P0=2 P1=0 P2=0 | {}

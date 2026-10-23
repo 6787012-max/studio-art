@@ -1,0 +1,2 @@
+P1 | CAPTION_SHORT | t=25.1 | s03 | caption on screen 4.1 s (< 4.40 s) | Fix: each caption needs >= 4.4 s on screen: lengthen the window or cut words
+SUMMARY | FAIL | samples=18 | dur=43.7 | P0=0 P1=1 P2=0 | {"ready_s": 3.6, "gates_s": 160.8, "total_s": 215.9}

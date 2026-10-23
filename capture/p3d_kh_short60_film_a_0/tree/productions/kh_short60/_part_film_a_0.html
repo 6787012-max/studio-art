@@ -1,0 +1,197 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>kh short a</title>
+<style>html,body{margin:0;background:#000}canvas{display:block;width:100vw;height:auto}</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script>window.__T0=0.0000; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+// kh_short60 / film_a - portrait 1080x1920, 4 shots, vault captions only (zero Hebrew in code)
+import { film, world, person, cloud, rain, path, THREE, prog, ease, clamp, lerp, rng, cyl, ball, mesh, toon, canvasTex } from '../../lib/stage3d.js';
+import * as P from '../../lib/props3d.js';
+import { follow, tween, bob } from '../../lib/motion3d.js';
+
+const GOLD = 0xf2c14e, DRY = 0xd9b45f, GREEN = 0x6aa84f;
+const RAV = { coat: '#2b2f3a', beard: '#3a2a20', beardLen: .6, hat: 'kippa', skin: '#efcfb0', pants: '#1b1d24' };
+const POOR = { coat: '#7a5232', beard: '#6b5a48', beardLen: .5, hat: 'kippa', skin: '#d9ac86', pants: '#2b2420' };
+const FARM = { coat: '#4f6d8a', beard: '#3a2618', beardLen: .4, hat: 'kippa', skin: '#e6bf9a', pants: '#2a2f3a' };
+const HILL = [9, -1.2, -26], DOOR = [9, 4.4, -26], SUN = [-9, 9, -46];
+const G = (t, ...r) => { for (const [a, b, g] of r) if (t >= a && t < b) return g; return null; };
+const cDry = new THREE.Color(DRY), cGreen = new THREE.Color(GREEN);
+
+let GT = null;
+const glowTex = () => GT || (GT = canvasTex(128, 128, (g, w, h) => { const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,240,190,1)'); r.addColorStop(.3, 'rgba(255,205,100,.55)'); r.addColorStop(1, 'rgba(255,180,70,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }));
+const glow = (size, op) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false, opacity: op === undefined ? .8 : op })); s.scale.set(size, size, 1); return s; };
+
+// ---- golden thread: grows from A to B (functions of t), travelling bright dashes ----
+const UPV = new THREE.Vector3(0, 1, 0), CGEO = new THREE.CylinderGeometry(1, 1, 1, 8, 1, true);
+function thread(Wd, A, B, o) {
+  o = o || {}; const r = o.r || .05, grow = o.grow || (() => 1), pulseF = o.pulse || (() => 1), nd = o.dashes === undefined ? 3 : o.dashes, sp = o.speed || .3;
+  const core = new THREE.Mesh(CGEO, new THREE.MeshBasicMaterial({ color: GOLD, fog: false }));
+  const hm = new THREE.MeshBasicMaterial({ color: 0xffd98a, transparent: true, opacity: .3, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
+  const halo = new THREE.Mesh(CGEO, hm), g = new THREE.Group(); g.add(core, halo);
+  const ds = []; for (let i = 0; i < nd; i++) { const s = glow(r * 7, 1); g.add(s); ds.push(s); }
+  Wd.add(g); const a = new THREE.Vector3(), b = new THREE.Vector3(), d = new THREE.Vector3(), n = new THREE.Vector3();
+  Wd.on(t => {
+    const k = clamp(grow(t), 0, 1); g.visible = k > .005; if (!g.visible) return;
+    a.set(...A(t)); b.set(...B(t)); d.subVectors(b, a).multiplyScalar(k); const L = d.length(); if (L < 1e-3) { g.visible = false; return; }
+    n.copy(d).normalize(); const pl = pulseF(t);
+    for (const [m, rr] of [[core, r * (.7 + .4 * pl)], [halo, r * (1.2 + .4 * pl)]]) { m.position.copy(a).addScaledVector(d, .5); m.quaternion.setFromUnitVectors(UPV, n); m.scale.set(rr, L, rr); }
+    hm.opacity = .08 + .16 * pl;
+    ds.forEach((s, i) => { const u = ((t * sp + i / nd + (o.phase || 0)) % 1 + 1) % 1; s.position.copy(a).addScaledVector(d, u); s.material.opacity = .95 * Math.sin(Math.PI * u) * (.55 + .45 * pl); });
+  });
+  return g;
+}
+
+// ---- golden doorway on the hill ----
+function doorway(Wd, pos, sc) {
+  const g = new THREE.Group(), mat = () => toon(GOLD, { emissive: 0x7a5812 });
+  for (const s of [-1, 1]) g.add(mesh(new THREE.CylinderGeometry(.25, .25, 3, 20), mat(), { pos: [s * 1.2, 1.5, 0] }));
+  g.add(mesh(new THREE.TorusGeometry(1.2, .25, 12, 28, Math.PI), mat(), { pos: [0, 3, 0] }));
+  const sh = new THREE.Shape(); sh.moveTo(-1.2, 0); sh.lineTo(1.2, 0); sh.lineTo(1.2, 3); sh.absarc(0, 3, 1.2, 0, Math.PI, false); sh.lineTo(-1.2, 0);
+  const lm = new THREE.MeshBasicMaterial({ color: 0xffd86a, transparent: true, opacity: .95, depthWrite: false, fog: false });
+  const lit = new THREE.Mesh(new THREE.ShapeGeometry(sh), lm); lit.position.z = -.05; g.add(lit);
+  const gl = glow(11, .8), gl2 = glow(26, .35); gl.position.y = gl2.position.y = 2.4; g.add(gl, gl2);
+  g.position.set(...pos); g.scale.setScalar(sc); Wd.add(g);
+  Wd.on(t => { gl.scale.setScalar(11 * (1 + .06 * Math.sin(t * 2.1))); lm.opacity = .88 + .08 * Math.sin(t * 1.7); });
+  return g;
+}
+
+// ---- vegetation driven by green(t) ----
+const cLeaf0 = new THREE.Color(0x9a9a4a), cLeaf1 = new THREE.Color(0x5fa046), cBush0 = new THREE.Color(0xa88b4a), cBush1 = new THREE.Color(0x5c9a47);
+function treeG(Wd, pos, green, sc, seed) {
+  const g = new THREE.Group(), wood = 0x6b4a2e;
+  g.add(cyl(.17, .27, 2.4, wood, { pos: [0, 1.2, 0] }));
+  for (const [x, y, z, rx, rz] of [[.6, 2.3, 0, 0, -.9], [-.6, 2.5, .1, 0, .9], [0, 3.0, .4, .5, 0], [.2, 3.1, -.4, -.5, .2]]) g.add(cyl(.05, .09, 1.5, wood, { pos: [x, y, z], rot: [rx, 0, rz] }));
+  const lm = toon(0x9a9a4a), can = [[0, 3.9, 0, 1.5], [.9, 3.3, .3, 1.0], [-.8, 3.4, -.3, 1.1]].map(([x, y, z, rr]) => { const m = mesh(new THREE.SphereGeometry(rr, 20, 14), lm, { pos: [x, y, z] }); g.add(m); return m; });
+  g.position.set(pos[0], 0, pos[1]); g.scale.setScalar(sc); g.rotation.y = seed; Wd.add(g);
+  Wd.on(t => { const k = prog(green(t), .12, .85); lm.color.copy(cLeaf0).lerp(cLeaf1, k); can.forEach(m => { m.visible = k > .02; m.scale.setScalar(Math.max(.001, ease.out(k))); }); });
+}
+function bushG(Wd, pos, green, sc) {
+  const m = mesh(new THREE.SphereGeometry(.6, 18, 12), toon(0xa88b4a), { pos: [pos[0], .36 * sc, pos[1]], scale: [sc * 1.2, sc * .7, sc] }); Wd.add(m);
+  Wd.on(t => { m.material.color.copy(cBush0).lerp(cBush1, green(t)); });
+}
+function flowers(Wd, n, area, t0f, seed) {
+  const r = rng(seed), cols = [0xfff2b0, 0xf2c14e, 0xe9697a, 0xb48be0, 0xff9a4d];
+  for (let i = 0; i < n; i++) {
+    const x = lerp(area[0], area[1], r()), z = lerp(area[2], area[3], r()), t0 = t0f(r()), col = cols[Math.floor(r() * cols.length)];
+    const g = new THREE.Group(); g.add(cyl(.014, .014, .3, 0x4c8a40, { pos: [0, .15, 0], ink: false }), ball(.075, col, { pos: [0, .32, 0], inkW: .008 })); g.position.set(x, 0, z); Wd.add(g);
+    Wd.on(t => { const u = prog(t, t0, t0 + .6), s = ease.out(u) * (1 + .3 * Math.sin(Math.PI * u)) * 1.25; g.visible = s > .01; g.scale.setScalar(Math.max(s, .0001)); });
+  }
+}
+
+let CRK = null;
+const crackTex = () => CRK || (CRK = canvasTex(512, 512, (g, w, h) => { const r = rng(11); g.strokeStyle = 'rgba(95,62,28,.75)'; g.lineWidth = 7; g.lineCap = 'round';
+  for (let i = 0; i < 28; i++) { let x = r() * w, y = r() * h; g.beginPath(); g.moveTo(x, y); for (let k = 0; k < 6; k++) { x += (r() - .5) * 100; y += (r() - .5) * 100; g.lineTo(x, y); } g.stroke(); } }, [15, 15]));
+
+// ---- the valley (shared look) ----
+function valley(green, o) {
+  o = o || {};
+  const Wd = world({ skyTop: 0xf2a65a, skyBottom: 0xfde9c4, fogColor: 0xf8dcae, fogNear: 24, fogFar: 62, sunColor: 0xffd9a0, sun: 2.1, sunPos: [-30, 16, -24], hemiSky: 0xffe6b8, hemiGround: 0xa88458, hemi: 1.05, shadowExt: 34 });
+  const gm = new THREE.MeshLambertMaterial({ color: DRY }), gnd = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), gm); gnd.rotation.x = -Math.PI / 2; gnd.receiveShadow = true; Wd.add(gnd);
+  const cm = new THREE.MeshBasicMaterial({ map: crackTex(), transparent: true, depthWrite: false, opacity: .6 }), crk = new THREE.Mesh(new THREE.PlaneGeometry(120, 120), cm); crk.rotation.x = -Math.PI / 2; crk.position.set(0, .006, -10); Wd.add(crk);
+  const hill = ball(8, DRY, { pos: HILL, scale: [1, .7, 1] }); Wd.add(hill);
+  const far = [ball(14, 0xcaa86a, { pos: [-24, -4, -48], scale: [1.4, .5, 1] }), ball(12, 0xc09c60, { pos: [30, -3, -52], scale: [1.5, .5, 1] }), ball(10, 0xd2b070, { pos: [-2, -3, -56], scale: [1.8, .4, 1] })]; far.forEach(m => Wd.add(m));
+  doorway(Wd, DOOR, o.door || 1.6);
+  P.sunDisc(Wd, { pos: SUN, r: o.sunR || 2.2 });
+  if (!o.noClouds) for (const [x, y, z, s, sd] of [[-24, 15, -44, 2.4, 2], [18, 18, -50, 2.8, 5], [-4, 22, -52, 2.2, 8]]) Wd.add(cloud({ seed: sd, size: s, color: 0xfbe2b4, pos: [x, y, z], cast: false }));
+  for (const [x, z, sd] of (o.trees || [[-9, -3, .4], [4.8, -9, 2.1]])) treeG(Wd, [x, z], green, 1.1, sd);
+  for (const [x, z, s] of (o.bushes || [[-3.2, -3.5, 1], [6.5, -5, 1.2], [-7.5, -1, 1.1]])) bushG(Wd, [x, z], green, s);
+  P.rock(Wd, { pos: [-4.5, 0, 2.2], seed: 4 }); P.rock(Wd, { pos: [7.5, 0, -3], seed: 9, scale: 1.3 });
+  Wd.on(t => { const k = green(t); gm.color.copy(cDry).lerp(cGreen, k); cm.opacity = .6 * (1 - prog(k, .05, .8)); hill.material.color.copy(cDry).lerp(cGreen, k); });
+  return Wd;
+}
+
+// world position of the midpoint between a person's two hands
+const _a = new THREE.Vector3(), _b = new THREE.Vector3();
+function handMid(Pp, out, fb) {
+  const B = Pp.figure && Pp.figure.bones; if (!B || !B.handA || !B.handB) return out.set(fb[0], fb[1], fb[2]);
+  const a = (B.handA.userData && B.handA.userData.hand) || B.handA, b = (B.handB.userData && B.handB.userData.hand) || B.handB;
+  a.getWorldPosition(_a); b.getWorldPosition(_b); return out.copy(_a).add(_b).multiplyScalar(.5);
+}
+
+film({
+  W: 1080, H: 1920, xf: .4, vault: 'captions_vault.json',
+  shots: [
+    // ===================== s01: the question =====================
+    { id: 's01', dur: 8.7, caps: ['CAP_A_01'], capAt: [0.0], build() {
+      const Wd = valley(() => 0, { door: 1.1 });
+      P.table(Wd, { pos: [0, 0, .95], w: 1.7, d: .8 }); P.bookOpen(Wd, { pos: [0, .8, .95], scale: 1.7 });
+      const fAng = tween([[0, .5], [2.3, .5], [3.4, 1.75], [5.0, 1.75], [6.0, .5], [99, .5]], 'io');
+      person(Wd, RAV, t => ({ pos: [0, 0, 0], facing: fAng(t), gesture: G(t, [0, 3, 'think'], [3, 5.5, 'point'], [5.5, 6.2, 'shrug'], [6.2, 99, 'explain']), talk: t > 6.2 ? .5 + .5 * Math.sin(t * 8) : 0, smile: .3, seed: .4 }));
+      // the big gold question mark rising from the book
+      const qt = canvasTex(256, 256, (c, w, h) => { c.font = '900 220px Assistant, Heebo, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round'; c.strokeStyle = '#3b2410'; c.lineWidth = 28; c.strokeText('?', w / 2, h / 2 + 10); c.fillStyle = '#f2c14e'; c.fillText('?', w / 2, h / 2 + 10); });
+      const q = new THREE.Sprite(new THREE.SpriteMaterial({ map: qt, transparent: true, fog: false })), qg = glow(2.2, .6); Wd.add(q, qg);
+      Wd.on(t => { const a = prog(t, 1.2, 2) * (1 - prog(t, 6.6, 7.4)); q.visible = qg.visible = a > .01; const y = 1.2 + 1.2 * ease.io(prog(t, 1.5, 4)) + bob(t, .05, .5);
+        q.position.set(0, y, .95); q.scale.set(.8 * a, .8 * a, 1); qg.position.set(0, y, .93); qg.material.opacity = .6 * a; });
+      return Object.assign(Wd, { cam: path([[0, [-2.4, 1.4, 8.0], [.7, .3, -.6], 46], [4.5, [-1.6, 1.4, 5.3], [.45, .95, -.6], 43], [8.7, [-1.4, 1.3, 5.0], [.35, 1.5, -1.6], 43]]) });
+    } },
+    // ===================== s02: doing, here =====================
+    { id: 's02', dur: 10.5, caps: ['CAP_A_02', 'CAP_A_03'], capAt: [0.0, 5.5], build() {
+      const Wd = valley(() => 0, { door: 1.1, trees: [[-9, -4, .4], [-2.5, -13, 2.1]] });
+      P.pathStones(Wd, { pts: [[.9, .15], [4.3, .2]] });
+      P.fence(Wd, { pos: [7.4, 0, .2], rot: Math.PI / 2, len: 5 }); P.bench(Wd, { pos: [6.4, 0, .2], rot: -Math.PI / 2 });
+      const walk = follow([[0, 0], [4.35, .2]], { speed: 1.35, t0: 5.2 }), face0 = 1.5;
+      const man = person(Wd, RAV, t => { const w = walk(t), f = lerp(face0, w.facing, ease.sm(prog(t, 5.0, 5.6)));
+        return Object.assign({}, w, { facing: f, gesture: t < 4.7 ? 'up' : 'offer', talk: 0, smile: .45, seed: .4, walk: t < 5.2 ? undefined : w.walk }); });
+      const poorX = tween([[0, 6.3], [8.2, 6.3], [9.0, 5.85]], 'io');
+      const poor = person(Wd, POOR, t => ({ pos: [poorX(t), 0, .2], facing: -Math.PI / 2, sit: t < 8.4, gesture: t < 8.4 ? 'rest' : (t < 10.1 ? 'offer' : 'thumb'), smile: .5, seed: .7 }));
+      const fm = person(Wd, FARM, t => ({ pos: [7.2, 0, -6.6], facing: Math.PI / 2, gesture: Math.floor(t * .9) % 2 ? 'explainA' : 'explain', smile: .4, seed: .2 }));
+      P.tree(Wd, { pos: [8.6, 0, -6.6], kind: 0, scale: .4 });
+      const bread = new THREE.Group(); bread.add(ball(.08, 0xe0b060, { scale: [1.5, .8, .9], inkW: .006 })); Wd.add(bread);
+      const v1 = new THREE.Vector3(), v2 = new THREE.Vector3();
+      Wd.on(t => { const a = prog(t, 4.9, 5.4); bread.visible = a > .01; if (!bread.visible) return; handMid(man, v1, [0, 1, 0]); handMid(poor, v2, [6, 1, 0]);
+        bread.position.copy(v1).lerp(v2, ease.io(prog(t, 9.6, 10.1))); bread.scale.setScalar(a); });
+      return Object.assign(Wd, { cam: path([[0, [-5, 8.5, 8], [3.5, 2.5, -6], 52], [2.6, [-3.8, 4.0, 6.6], [2.0, 2.0, -2.5], 49], [5.4, [-1.2, 1.45, 5.8], [1.1, .85, 0], 46], [7.6, [3.4, 1.5, 7.2], [4.4, .7, 0], 45], [9.0, [5.0, 1.5, 7.6], [5.4, .7, 0], 44], [10.5, [5.1, 1.5, 7.6], [5.5, .7, 0], 44]]) });
+    } },
+    // ===================== s03: rain in its time =====================
+    { id: 's03', dur: 10.3, wide: true, caps: ['CAP_A_04', 'CAP_A_05'], capAt: [0.0, 5.5], build() {
+      const green = t => ease.io(prog(t, 5.8, 9.6));
+      const Wd = valley(green, { door: 1.1, trees: [[-7.5, -4, .4], [5.2, -8, 2.1], [-3, -11, 1.2]], noClouds: true, sunR: 1.3 });
+      for (const [x, y, z, s, sd] of [[-26, 13, -44, 2.2, 2], [24, 12, -46, 2.4, 5]]) Wd.add(cloud({ seed: sd, size: s, color: 0xfbe2b4, pos: [x, y, z], cast: false }));
+      flowers(Wd, 44, [-6, 6, -4, 3], r => 7.0 + r * 2.4, 31);
+      const man3 = person(Wd, RAV, t => ({ pos: [0, 0, 0], facing: 0, gesture: t < 6.6 ? 'heart' : 'wide', talk: 0, smile: .5, seed: .4 }));
+      const loaf = ball(.08, 0xe0b060, { scale: [1.5, .8, .9], inkW: .006 }), lv = new THREE.Vector3(); Wd.add(loaf);
+      Wd.on(t => { const a = 1 - prog(t, .7, 1.3); loaf.visible = a > .01; if (!loaf.visible) return; handMid(man3, lv, [0, 1.2, .3]); loaf.position.copy(lv); loaf.scale.setScalar(a); });
+      const C = [.5, 10, -1.2], cl = cloud({ seed: 3, size: 1.0, color: 0xffffff, pos: C }), cmat = cl.children[0].material, cA = new THREE.Color(0xffffff), cB = new THREE.Color(0x8a93a6);
+      cl.children[cl.children.length - 1].visible = false; const cg = new THREE.Group(); cg.position.set(...C); cl.position.set(0, 0, 0); cg.add(cl); Wd.add(cg);
+      Wd.on(t => { const a = ease.out(prog(t, 1.2, 3.0)); cg.visible = a > .01; cg.scale.setScalar(Math.max(.001, a * lerp(1, 1.8, ease.io(prog(t, 3.4, 5.2))))); cmat.color.copy(cA).lerp(cB, ease.io(prog(t, 3.4, 5.2))); });
+      thread(Wd, () => [.25, 1.3, .2], () => C, { r: .03, grow: t => ease.io(prog(t, .6, 3.4)), pulse: t => .45 + .55 * prog(t, 3.4, 5.2), speed: 1.25, dashes: 2 });
+      rain(Wd, { x0: -12, x1: 12, z0: -14, z1: 7, top: 14, count: 900, speed: 16, len: 1.6, color: 0xf2f6ff, opacity: 1, amount: t => prog(t, 5.5, 6.7) });
+      rain(Wd, { x0: -4, x1: 4, z0: -3, z1: 5, top: 9, count: 500, speed: 14, len: 1.3, color: 0xf2f6ff, opacity: 1, seed: 9, amount: t => prog(t, 5.8, 7.0) });
+      return Object.assign(Wd, { cam: path([[0, [.6, 1.2, 4.8], [0, .5, 0], 46], [1.2, [.6, 1.3, 5.2], [0, .6, 0], 47], [2.6, [.8, 2.8, 10], [.3, 4.8, -1], 58], [5.5, [.8, 2.8, 10], [.3, 4.6, -1], 58], [7.0, [.5, 1.4, 5.6], [0, .7, 0], 48], [8.5, [.6, 1.4, 5.8], [0, .7, 0], 48], [10.3, [.2, 1.1, 4.4], [0, .5, 0], 46]]) });
+    } },
+    // ===================== s04: a physical world run by spiritual laws =====================
+    { id: 's04', dur: 14.2, wide: true, caps: ['CAP_A_06', 'CAP_A_07'], capAt: [0.0, 6.7], build() {
+      const green = () => 1;
+      const Wd = valley(green, { door: 1.1, trees: [[-6.5, -4, .4], [6.5, -4, 2.1], [-9, -9, 1.2], [9.5, -12, .9], [2, -13, 3]], bushes: [[-3.2, -3.5, 1], [6.5, 1, 1.2], [-7.5, -1, 1.1], [3, -6, 1]] });
+      flowers(Wd, 60, [-7, 7, -3, 3], () => -1, 31);
+      P.house(Wd, { pos: [-8, 0, -7], rot: .5 }); P.house(Wd, { pos: [7.5, 0, -9], rot: -.5, color: 0xf4dfb4 }); P.house(Wd, { pos: [-1, 0, -15], rot: 0, color: 0xe9cf9f });
+      const MP = [0, 0, 4], FP = [-3.4, 0, .2], PP = [3.6, 0, .8];
+      const man = person(Wd, RAV, t => ({ pos: MP, facing: 0, gesture: G(t, [0, 6.5, 'rest'], [6.5, 11, 'offer'], [11, 99, 'wide']), talk: 0, smile: t > 11 ? .7 : .4, seed: .4 }));
+      person(Wd, FARM, t => ({ pos: FP, facing: -Math.PI / 2, gesture: Math.floor(t * .9) % 2 ? 'explainA' : 'explain', smile: .4, seed: .2 }));
+      person(Wd, POOR, t => ({ pos: PP, facing: Math.PI / 2 + .6, gesture: t > 7 ? 'thumb' : 'rest', smile: .6, seed: .7 }));
+      P.tree(Wd, { pos: [-4.8, 0, .2], kind: 0, scale: .55 });
+      const CL = [0, 14.5, -12], cl = cloud({ seed: 7, size: 2.3, color: 0xfff1c8, pos: CL, cast: false }); cl.children[cl.children.length - 1].visible = false; Wd.add(cl); const lg = glow(20, .6); lg.position.set(...CL); Wd.add(lg);
+      Wd.on(t => { lg.scale.setScalar(20 * (1 + .05 * Math.sin(t * 1.3))); });
+      const pl = i => t => clamp(Math.pow(Math.max(0, Math.sin((t - .4 * i) * 2.6)), 2) * 1.0, 0, 1) * .85 + .15;
+      const srcs = [[[MP[0], 1.95, MP[2] - .1], .03], [[FP[0], 1.3, FP[2]], .035], [[PP[0], 1.2, PP[2]], .035], [[-8, 3.5, -7], .05], [[7.5, 3.5, -9], .05], [[-1, 3.5, -15], .05]];
+      srcs.forEach(([p, r], i) => thread(Wd, () => p, () => CL, { r, grow: t => ease.out(prog(t, .1 + .25 * i, 1.6 + .25 * i)), pulse: pl(i), speed: .22 + .02 * i, phase: i * .17 }));
+      // the coin: lifts from the doorway, glides down a thread into the open hands
+      thread(Wd, () => DOOR, () => [0, 1.0, 4.3], { r: .04, grow: t => t > 9.5 ? 0 : ease.io(prog(t, 6.4, 7.8)), pulse: () => .8, dashes: 2, speed: .25 });
+      const coin = new THREE.Group(), cd = cyl(.1, .1, .03, GOLD, { rot: [Math.PI / 2, 0, 0], inkW: .008 }); cd.material.emissive = new THREE.Color(0x8a6414); coin.add(cd); const cgl = glow(.9, .9); coin.add(cgl); Wd.add(coin);
+      const v = new THREE.Vector3(), dp = new THREE.Vector3(...DOOR).add(new THREE.Vector3(0, 1.5, 0));
+      Wd.on(t => { coin.visible = t > 6.7; if (!coin.visible) return; handMid(man, v, [.2, 1.1, 4.5]); v.y += .05; const k = ease.io(prog(t, 7.0, 9.6));
+        coin.position.copy(dp).lerp(v, k); coin.position.y += 2.8 * Math.sin(Math.PI * Math.min(k, 1)) * (1 - k); coin.rotation.y = .5 * Math.sin(t * 2.2); coin.scale.setScalar(lerp(2.6, 1, k)); });
+      P.flock(Wd, 7, [-2, 0, -6], 10, 11, 4, { speed: .12, scale: 1.7 });
+      rain(Wd, { x0: -12, x1: 12, z0: -14, z1: 8, top: 14, count: 500, speed: 15, len: .8, color: 0xe6efff, opacity: .8, amount: t => .6 * (1 - prog(t, 10, 13)) });
+      const burst = glow(60, 0); burst.position.set(SUN[0], SUN[1], SUN[2] + 2); Wd.add(burst); Wd.on(t => { burst.material.opacity = .55 * prog(t, 10.5, 13.5); });
+      return Object.assign(Wd, { cam: path([[0, [1.6, 1.8, 9.6], [0, 2.6, -2], 52], [1.5, [1.0, 5.6, 12.8], [0, 4.6, -5], 55], [5.0, [0, 7.2, 14], [0, 5, -7], 56], [6.5, [-.8, 1.6, 9.0], [1.0, 2.2, 0], 52], [8.2, [-.8, 1.6, 9.0], [1.0, 2.0, .5], 50], [9.8, [.6, 1.35, 8.0], [0, .8, 4], 46], [11.5, [.6, 1.3, 8.0], [0, .7, 4], 45], [14.2, [.3, 1.2, 7.5], [0, .75, 4], 43]]) });
+    } },
+  ],
+});
+</script>
+</html>

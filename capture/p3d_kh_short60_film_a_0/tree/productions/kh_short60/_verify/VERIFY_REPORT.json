@@ -1,0 +1,18 @@
+{
+ "film": "film_a.html",
+ "status": "PASS",
+ "time": "2026-10-23T14:47:41",
+ "samples": 18,
+ "findings": [],
+ "sheets": {
+  "beat": "C:/projects/_studio-animatzia/productions/kh_short60/_verify/_view/_verify_beat_sheet_1.jpg",
+  "seam": "C:/projects/_studio-animatzia/productions/kh_short60/_verify/_view/_verify_seams_1.jpg",
+  "phone": "C:/projects/_studio-animatzia/productions/kh_short60/_verify/_view/_verify_phone_sheet_1.jpg"
+ },
+ "timing": {
+  "ready_s": 20.8,
+  "gates_s": 308.9,
+  "sheets_s": 1077.8,
+  "total_s": 1409.2
+ }
+}

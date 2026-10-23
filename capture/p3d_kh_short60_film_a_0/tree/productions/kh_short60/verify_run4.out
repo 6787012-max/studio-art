@@ -1,0 +1,7 @@
+PASS
+
+Sheets (CLEAN, safe to Read):
+  beat: C:/projects/_studio-animatzia/productions/kh_short60/_verify/_view/_verify_beat_sheet_1.jpg
+  seam: C:/projects/_studio-animatzia/productions/kh_short60/_verify/_view/_verify_seams_1.jpg
+  phone: C:/projects/_studio-animatzia/productions/kh_short60/_verify/_view/_verify_phone_sheet_1.jpg
+SUMMARY | PASS | samples=18 | dur=43.7 | P0=0 P1=0 P2=0 | {"ready_s": 20.8, "gates_s": 308.9, "sheets_s": 1077.8, "total_s": 1409.2}
