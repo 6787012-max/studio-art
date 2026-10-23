@@ -41,7 +41,7 @@ with sync_playwright() as p:
         pg.on('pageerror', lambda e: errors.append(str(e)[:300]))
         pg.on('console', lambda m: errors.append(m.text[:300]) if m.type == 'error' else None)
         pg.goto(url, wait_until='load')
-        pg.wait_for_function('window.__ready === true', timeout=30000)
+        pg.wait_for_function('window.__ready === true', timeout=240000)
         if a.size is None:   # portrait-aware: no --size means "match the page canvas" for portrait, 1280x720 for landscape (unchanged)
             cv = pg.evaluate("(()=>{const c=document.getElementById('c')||document.querySelector('canvas');return c?[c.width,c.height]:[0,0]})()")
             if cv[1] > cv[0] > 0:
