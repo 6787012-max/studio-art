@@ -45,7 +45,9 @@ dur = float(subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=d
                            capture_output=True, text=True).stdout.strip())
 vb = int(min(4000, 22.5 * 8 * 1024 / dur - 128))
 mail = W / 'email.mp4'
-base = ['ffmpeg', '-hide_banner', '-loglevel', 'error', '-y', '-i', str(out), '-vf', 'scale=1280:720:flags=lanczos', '-c:v', 'libx264', '-preset', 'slow', '-b:v', '%dk' % vb]
+_sz = cfg.get('size', '1920x1080').split('x')
+mail_scale = 'scale=720:1280:flags=lanczos' if int(_sz[1]) > int(_sz[0]) else 'scale=1280:720:flags=lanczos'   # portrait email copy
+base = ['ffmpeg', '-hide_banner', '-loglevel', 'error', '-y', '-i', str(out), '-vf', mail_scale, '-c:v', 'libx264', '-preset', 'slow', '-b:v', '%dk' % vb]
 subprocess.run(base + ['-pass', '1', '-passlogfile', str(W / 'p'), '-an', '-f', 'mp4', '/dev/null'], check=True)
 subprocess.run(base + ['-pass', '2', '-passlogfile', str(W / 'p'), '-c:a', 'aac', '-b:a', '128k', '-movflags', '+faststart', str(mail)], check=True)
 o = R / 'out'

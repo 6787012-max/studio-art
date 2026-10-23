@@ -352,27 +352,47 @@ function txt(g, s, x, y, font, fill, a, align, stroke, lw) { g.save(); g.globalA
 function wrap(g, s, font, maxW) { g.font = font; rtl(g); const w = s.split(' '), L = []; let cur = ''; for (const x of w) { const t = cur ? cur + ' ' + x : x; if (g.measureText(t).width > maxW && cur) { L.push(cur); cur = x; } else cur = t; } if (cur) L.push(cur); return L; }
 // פריסת כתובית: פונקציה אחת שמשמשת גם לציור וגם ל-window.__caption (g = קנבס מדידה בלבד)
 function capLayout(g, W, H, s) {
+  if (H > W) {   // portrait (Shorts): box <= .86W, font ~.062W (.05W if >4 lines), bottom edge at .80H (above phone UI), max 4 lines
+    const pad = W * .03, maxW = W * .86 - pad * 2; let fs = W * .062, font = `700 ${Math.round(fs)}px ${F_B}`, L = wrap(g, s, font, maxW);
+    if (L.length > 4) { fs = W * .05; font = `700 ${Math.round(fs)}px ${F_B}`; L = wrap(g, s, font, maxW); }
+    const lh = fs * 1.28, tp = fs * .34, bh = L.length * lh + tp * 2, by = H * .80 - bh;
+    let mw = 0; g.font = font; rtl(g); for (const l of L) mw = Math.max(mw, g.measureText(l).width);
+    return { font, L, lh, bh, by, mw, tp, r: fs * .36, rect: { x: W / 2 - mw / 2 - pad, y: by, w: mw + pad * 2, h: bh } };
+  }
   const font = `700 ${Math.round(H * .05)}px ${F_B}`, L = wrap(g, s, font, W * .78), lh = H * .064, bh = L.length * lh + H * .035, by = H - H * .05 - bh;
   let mw = 0; g.font = font; rtl(g); for (const l of L) mw = Math.max(mw, g.measureText(l).width);
-  return { font, L, lh, bh, by, mw, rect: { x: W / 2 - mw / 2 - H * .03, y: by, w: mw + H * .06, h: bh } };
+  return { font, L, lh, bh, by, mw, tp: H * .022, r: H * .022, rect: { x: W / 2 - mw / 2 - H * .03, y: by, w: mw + H * .06, h: bh } };
 }
 let MEASURE = null;
 const measureCtx = () => MEASURE || (MEASURE = document.createElement('canvas').getContext('2d'));
 function caption(g, W, H, s, a) {
-  const Ly = capLayout(measureCtx(), W, H, s), { font, L, lh, bh, by, rect } = Ly;
+  const Ly = capLayout(measureCtx(), W, H, s), { font, L, lh, bh, by, rect, tp, r } = Ly;
   g.save(); g.globalAlpha = a * .8; g.fillStyle = 'rgba(14,12,26,.82)';
-  g.beginPath(); g.roundRect(rect.x, rect.y, rect.w, rect.h, H * .022); g.fill(); g.restore();
-  L.forEach((l, i) => txt(g, l, W / 2, by + H * .022 + lh * (i + .78), font, '#fff', a));
+  g.beginPath(); g.roundRect(rect.x, rect.y, rect.w, rect.h, r); g.fill(); g.restore();
+  L.forEach((l, i) => txt(g, l, W / 2, by + tp + lh * (i + .78), font, '#fff', a));
 }
 function titleCard(g, W, H, kicker, title, a, k) {
   g.save(); g.globalAlpha = a * .55; g.fillStyle = '#0d0b18'; g.fillRect(0, 0, W, H); g.restore();
-  const dy = (1 - ease.out(k)) * H * .04;
-  txt(g, kicker, W / 2, H * .41 + dy, `700 ${Math.round(H * .045)}px ${F_B}`, '#ffd166', a);
-  txt(g, title, W / 2, H * .55 + dy, `400 ${Math.round(H * .105)}px ${F_T}`, '#fff', a, 'center', 'rgba(10,8,20,.6)', H * .012);
+  const dy = (1 - ease.out(k)) * H * .04, P = H > W;   // portrait: sizes keyed to W and shrunk to fit .9W
+  const fit = (str, px, wt, fam) => { if (!P) return px; g.font = `${wt} ${px}px ${fam}`; rtl(g); const tw = g.measureText(str || '').width; return tw > W * .9 ? px * W * .9 / tw : px; };
+  const kpx = fit(kicker, P ? W * .06 : H * .045, 700, F_B), tpx = fit(title, P ? W * .13 : H * .105, 400, F_T);
+  txt(g, kicker, W / 2, H * .41 + dy, `700 ${Math.round(kpx)}px ${F_B}`, '#ffd166', a);
+  txt(g, title, W / 2, H * .55 + dy, `400 ${Math.round(tpx)}px ${F_T}`, '#fff', a, 'center', 'rgba(10,8,20,.6)', P ? W * .012 : H * .012);
   g.save(); g.globalAlpha = a; g.fillStyle = '#ffd166'; const lw = W * .12 * ease.out(k); g.fillRect(W / 2 - lw / 2, H * .6, lw, H * .007); g.restore();
 }
 function recapCard(g, W, H, items, a, k) {
   g.save(); g.globalAlpha = a * .7; g.fillStyle = '#0d0b18'; g.fillRect(0, 0, W, H); g.restore();
+  if (H > W) {   // portrait recap: sizes keyed to W, rows stacked in the .2H-.75H band, text wrapped to the row
+    txt(g, 'מה למדנו?', W / 2, H * .25, `400 ${Math.round(W * .1)}px ${F_T}`, '#ffd166', a);
+    const fs = W * .05, rh = H * .1;
+    items.forEach((s, i) => { const ki = ease.out(clamp(k * items.length * 1.1 - i, 0, 1)); if (ki <= 0) return; const y = H * .34 + i * H * .14;
+      g.save(); g.globalAlpha = a * ki; g.fillStyle = 'rgba(255,255,255,.1)'; g.beginPath(); g.roundRect(W * .06, y - rh * .5, W * .88, rh, W * .02); g.fill();
+      g.fillStyle = '#7bd389'; g.beginPath(); g.arc(W * .87, y, W * .035, 0, 7); g.fill(); g.restore();
+      txt(g, '✓', W * .87, y + W * .015, `900 ${Math.round(W * .04)}px ${F_B}`, '#0d2a14', a * ki);
+      const L = wrap(g, s, `700 ${Math.round(fs)}px ${F_B}`, W * .72).slice(0, 2), lh = fs * 1.25;
+      L.forEach((l, j) => txt(g, l, W * .81, y + fs * .35 - (L.length - 1) * lh / 2 + j * lh, `700 ${Math.round(fs)}px ${F_B}`, '#fff', a * ki, 'right')); });
+    return;
+  }
   txt(g, 'מה למדנו?', W / 2, H * .25, `400 ${Math.round(H * .085)}px ${F_T}`, '#ffd166', a);
   items.forEach((s, i) => { const ki = ease.out(clamp(k * items.length * 1.1 - i, 0, 1)); if (ki <= 0) return; const y = H * (.4 + i * .14);
     g.save(); g.globalAlpha = a * ki; g.fillStyle = 'rgba(255,255,255,.1)'; g.beginPath(); g.roundRect(W * .14, y - H * .065, W * .72, H * .1, H * .02); g.fill();
@@ -422,7 +442,8 @@ export function film(cfg) {
     g.strokeStyle = 'rgba(255,255,255,.45)'; g.beginPath();
     for (const k of [1 / 3, 2 / 3]) { g.moveTo(W * k, 0); g.lineTo(W * k, H); g.moveTo(0, H * k); g.lineTo(W, H * k); } g.stroke();
     g.strokeStyle = 'rgba(0,255,120,.9)'; g.setLineDash([H / 54, H / 108]);
-    g.strokeRect(W * .11, H * .78, W * .78, H * .17);                    // safe caption zone (max width .78W, bottom .05H margin)
+    if (H > W) g.strokeRect(W * .07, H * .56, W * .86, H * .24);     // portrait: caption zone (max .86W, bottom edge .80H above phone UI)
+    else g.strokeRect(W * .11, H * .78, W * .78, H * .17);           // safe caption zone (max width .78W, bottom .05H margin)
     g.strokeStyle = 'rgba(255,200,0,.7)'; g.strokeRect(W * .05, H * .05, W * .9, H * .9);   // title-safe
     g.setLineDash([]); g.fillStyle = 'rgba(0,0,0,.6)'; g.fillRect(6, 6, H * .4, H * .045);
     g.fillStyle = '#7CFF9B'; g.font = `700 ${Math.round(H * .03)}px monospace`; g.direction = 'ltr'; g.textAlign = 'left'; g.textBaseline = 'top';
@@ -436,8 +457,8 @@ export function film(cfg) {
     else { renderShot(w, lt); mg.drawImage(ST.glc, 0, 0); }
     // film badge in the corner
     const ttl = cfg.title ? V(cfg.title) : null;
-    if (ttl) { mg.save(); mg.globalAlpha = .85; mg.font = `700 ${Math.round(H * .028)}px ${F_B}`; rtl(mg); const tw = mg.measureText(ttl).width; mg.fillStyle = 'rgba(14,12,26,.7)';
-      mg.beginPath(); mg.roundRect(W - tw - H * .085, H * .03, tw + H * .055, H * .05, H * .015); mg.fill(); mg.restore(); txt(mg, ttl, W - H * .058, H * .065, `700 ${Math.round(H * .028)}px ${F_B}`, '#ffd166', .95, 'right'); }
+    if (ttl) { const u = H > W ? W * 9 / 16 : H; mg.save(); mg.globalAlpha = .85; mg.font = `700 ${Math.round(u * .028)}px ${F_B}`; rtl(mg); const tw = mg.measureText(ttl).width; mg.fillStyle = 'rgba(14,12,26,.7)';
+      mg.beginPath(); mg.roundRect(W - tw - u * .085, u * .03, tw + u * .055, u * .05, u * .015); mg.fill(); mg.restore(); txt(mg, ttl, W - u * .058, u * .065, `700 ${Math.round(u * .028)}px ${F_B}`, '#ffd166', .95, 'right'); }
     if (t < T0) { const c = capsAt(w, lt); if (c) caption(mg, W, H, V(c.s), c.a); }
     if (cfg.kicker && t < 4.2) { const a = clamp(t / .4, 0, 1) * clamp((4.2 - t) / .6, 0, 1); titleCard(mg, W, H, V(cfg.kicker), ttl, a, clamp(t / 1.2, 0, 1)); }
     if (RC && t > T0 - .8) { const k = clamp((t - T0 + .8) / .8, 0, 1); recapCard(mg, W, H, cfg.recap.map(V), k, clamp((t - T0) / (RC * .55), 0, 1)); }
@@ -485,8 +506,8 @@ export function film(cfg) {
     return { x: x0, y: y0, w: x1 - x0, h: y1 - y0, visible: vis, behindCamera: false, heightFrac: (y1 - y0) / ch, partlyBehind: front < 8 };
   };
   window.__sceneHash = () => {
-    const c = document.createElement('canvas'); c.width = 192; c.height = 108; const g = c.getContext('2d'); g.drawImage(main, 0, 0, 192, 108);
-    const d = g.getImageData(0, 0, 192, 108).data; let h = 0x811c9dc5;
+    const hw = H > W ? 108 : 192, hh = H > W ? 192 : 108, c = document.createElement('canvas'); c.width = hw; c.height = hh; const g = c.getContext('2d'); g.drawImage(main, 0, 0, hw, hh);
+    const d = g.getImageData(0, 0, hw, hh).data; let h = 0x811c9dc5;
     for (let j = 0; j < d.length; j++) { h ^= d[j]; h = Math.imul(h, 0x01000193) >>> 0; }
     return ('00000000' + h.toString(16)).slice(-8);
   };
