@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<title>ks65 3d background</title>
+<style>html,body{margin:0;background:#120c09}canvas{display:block}</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script>window.__T0=0.0000; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": {
+  "three": "../../node_modules/three/build/three.module.js",
+  "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+// ks65_3d film A: vertical 1080x1920 background, 6 shots, 59.07 s, no text of any kind.
+import { film } from '../../lib/stage3d.js';
+import { buildShot, DUR } from './ks65lib.js';
+
+film({
+  W: 1080, H: 1920, fadeIn: false,
+  shots: DUR.map((dur, i) => ({ id: 's' + (i + 1), dur, caps: [], build: () => buildShot(i) })),
+});
+</script>
+</html>
