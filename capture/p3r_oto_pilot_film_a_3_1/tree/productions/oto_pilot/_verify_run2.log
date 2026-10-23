@@ -1,0 +1,10 @@
+P1 | CAPTION_SHORT | t=40.5 | s04 | caption on screen 3.4 s (< 4.40 s) (+1 more samples) | Fix: each caption needs >= 4.4 s on screen: lengthen the window or cut words
+P1 | CAPTION_SHORT | t=139.0 | s09 | caption on screen 3.6 s (< 4.40 s) | Fix: each caption needs >= 4.4 s on screen: lengthen the window or cut words
+
+Sheets (CLEAN, safe to Read):
+  beat: C:/projects/_studio-animatzia/productions/oto_pilot/_verify/_view/_verify_beat_sheet_1.jpg
+  seam: C:/projects/_studio-animatzia/productions/oto_pilot/_verify/_view/_verify_seams_1.jpg
+  phone: C:/projects/_studio-animatzia/productions/oto_pilot/_verify/_view/_verify_phone_sheet_1.jpg
+  beat_2: C:/projects/_studio-animatzia/productions/oto_pilot/_verify/_view/_verify_beat_sheet_2.jpg
+  seam_2: C:/projects/_studio-animatzia/productions/oto_pilot/_verify/_view/_verify_seams_2.jpg
+SUMMARY | FAIL | samples=68 | dur=224.8 | P0=0 P1=2 P2=0 | {"ready_s": 21.0, "gates_s": 507.9, "sheets_s": 361.7, "total_s": 891.1}

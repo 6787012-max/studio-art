@@ -1,0 +1,10 @@
+P0 | HERO_TOO_SMALL | t=121.54 | s07 | hero height 20% of frame in the key shot (< 20%) | Fix: dolly in / lower fov so the hero fills at least 35% of the frame height
+P0 | HERO_NOT_VISIBLE | t=130.63 | s08 | hero is outside the frame | Fix: reframe: the hero must be on screen in every shot
+P1 | HERO_SMALL | t=88.14 | s05 | hero height 23% of frame in the key shot (< 35%) | Fix: move the camera closer so the hero reaches 35% of the frame height
+P1 | HERO_SMALL | t=105.0 | s06 | hero height 20% of frame in the key shot (< 35%) | Fix: move the camera closer so the hero reaches 35% of the frame height
+P1 | HERO_SMALL | t=134.48 | s08 | hero height 27% of frame in the key shot (< 35%) | Fix: move the camera closer so the hero reaches 35% of the frame height
+P1 | HERO_SMALL | t=158.72 | s10 | hero height 27% of frame in the key shot (< 35%) | Fix: move the camera closer so the hero reaches 35% of the frame height
+P1 | HERO_SMALL | t=218.77 | s14 | hero height 25% of frame in the key shot (< 35%) | Fix: move the camera closer so the hero reaches 35% of the frame height
+P1 | CAPTION_SHORT | t=40.5 | s04 | caption on screen 3.4 s (< 4.40 s) (+1 more samples) | Fix: each caption needs >= 4.4 s on screen: lengthen the window or cut words
+P1 | CAPTION_SHORT | t=139.0 | s09 | caption on screen 3.6 s (< 4.40 s) | Fix: each caption needs >= 4.4 s on screen: lengthen the window or cut words
+SUMMARY | FAIL | samples=68 | dur=224.8 | P0=2 P1=7 P2=0 | {"ready_s": 18.3, "gates_s": 291.0, "total_s": 316.9}
