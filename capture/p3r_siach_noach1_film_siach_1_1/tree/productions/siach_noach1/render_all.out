@@ -1,0 +1,8 @@
+15:43:13 render_all: production=siach_noach1 films=film_siach part=50s hq=True dry_run=False
+!! BUDGET GUARD FAILED OPEN (render continues): TimeoutExpired: Command '['C:\\Users\\יוסף שניידר\\AppData\\Local\\Programs\\Python\\Python311\\python.exe', 'C:/tools/usage-budget/budget.py']' timed out after 120 seconds
+15:45:20 budget OK: budget unknown (TimeoutExpired: Command '['C:\\Users\\יוסף שניידר\\AppData\\Local\\Programs\\Python\\Python311\\python.exe', 'C:/tools/usage-budget/budget.py']' timed out after 120 seconds)
+15:45:20 verify gate: PASS for film_siach
+15:45:30 film_siach: length 89.0s, rendering (part 50 s, 9 includes)
+16:02:58 film_siach part 2/2 t0=44.5 d=44.5 -> rc=1
+16:20:28 film_siach part 1/2 t0=0.0 d=44.5 -> rc=0
+16:20:28 film_siach: failed parts [1], retry round 1
