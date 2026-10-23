@@ -1,0 +1,18 @@
+{
+ "film": "film_c.html",
+ "status": "PASS",
+ "time": "2026-10-23T17:39:31",
+ "samples": 28,
+ "findings": [],
+ "sheets": {
+  "beat": "C:/projects/_studio-animatzia/productions/odt_haim1/_verify_film_c2/_view/_verify_film_c2_beat_sheet_1.jpg",
+  "seam": "C:/projects/_studio-animatzia/productions/odt_haim1/_verify_film_c2/_view/_verify_film_c2_seams_1.jpg",
+  "phone": "C:/projects/_studio-animatzia/productions/odt_haim1/_verify_film_c2/_view/_verify_film_c2_phone_sheet_1.jpg"
+ },
+ "timing": {
+  "ready_s": 1.8,
+  "gates_s": 229.8,
+  "sheets_s": 49.1,
+  "total_s": 281.0
+ }
+}
