@@ -1,0 +1,26 @@
+{
+ "film": "film_a.html",
+ "status": "FAIL",
+ "time": "2026-10-23T14:23:22",
+ "samples": 0,
+ "findings": [
+  {
+   "sev": "P0",
+   "code": "NOT_READY",
+   "t": null,
+   "shot": null,
+   "detail": "window.__ready never became true: BrowserType.launch: Timeout 180000ms exceeded.\nCall log:\n  - <launching> C:\\Program Files (x86)\\Microsoft\\Edge\\Application\\msedge.exe --disable-field-trial-conf",
+   "fix": "run stills.py on the film, read the page errors, fix the first one"
+  },
+  {
+   "sev": "P0",
+   "code": "NO_SAMPLES",
+   "t": null,
+   "shot": null,
+   "detail": "0 frames sampled",
+   "fix": "a verify with zero samples is a FAIL; resolve the blocking finding"
+  }
+ ],
+ "sheets": null,
+ "timing": {}
+}
