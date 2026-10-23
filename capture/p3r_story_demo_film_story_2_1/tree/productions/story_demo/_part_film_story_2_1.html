@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>Uri and the little robot</title>
+<style>html,body{margin:0;background:#000}canvas{display:block;width:100vw;height:auto}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script>window.__T0=102.3333; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": {
+  "three": "../../node_modules/three/build/three.module.js",
+  "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+// "Uri and the little robot" - 11 shots, children ~10, toon + ink. Deterministic: every motion is a pure function of t.
+import { film, world, person, cloud, THREE, ease, prog, lerp, clamp, orbit, D, box, cyl, mesh, toon, groundTex } from '../../lib/stage3d.js';
+import { preloadGLBs, glbActor } from '../../lib/glb3d.js';
+import * as P from '../../lib/props3d.js';
+import { follow, bob, tween, dolly, crowd } from '../../lib/motion3d.js';
+
+await preloadGLBs({ robot: '../../assets_net/RobotExpressive.glb', fox: '../../assets_net/Fox.glb', truck: '../../assets_net/CesiumMilkTruck.glb' });
+
+// ---------------- shared look constants ----------------
+const BOY = { kind: 'boy', coat: '#2b3a5a', hat: 'kippa', hatColor: '#101014', beardLen: 0, skin: '#f0d2b4', pants: '#1b1d24' };
+const MAN_A = { coat: '#4a3b30', beard: '#3a2618', beardLen: .5, hat: 'kippa', skin: '#efcfb0', pants: '#1f2128' };
+const MAN_B = { coat: '#2f3b4c', beard: '#6b5a48', beardLen: .45, hat: 'kippa', skin: '#e6bf9a', pants: '#1f2128', glasses: true };
+const uri = (Wd, fn) => person(Wd, BOY, t => Object.assign({ scale: .72, smile: .6 }, fn(t)));
+const sky = o => Object.assign({ ground: 'grass', skyTop: 0x4f9fe8, skyBottom: 0xfbe8c4, fogColor: 0xeaeedd, fogNear: 50, fogFar: 220, shadowExt: 30 }, o);
+const mix3 = (a, b, k) => [lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k)];
+const angMix = (a, b, k) => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * k;
+const faceTo = (from, to) => Math.atan2(to[0] - from[0], to[2] - from[2]);
+
+// route: keys [[t,x,z,facing?],...] -> t => {pos, facing, walk?}  (stands when two keys are equal) - same as road.js, ground y = 0
+function route(keys) {
+  const K = keys.map(k => ({ t: k[0], x: k[1], z: k[2], f: k[3] })), n = K.length, seg = []; let ph = 0, head = K[0].f !== undefined ? K[0].f : 0;
+  for (let i = 0; i < n - 1; i++) { const dx = K[i + 1].x - K[i].x, dz = K[i + 1].z - K[i].z, dist = Math.hypot(dx, dz), dt = Math.max(K[i + 1].t - K[i].t, 1e-3), mv = dist > .05, rate = clamp(dist / dt * 6.3, 3, 10);
+    head = mv ? Math.atan2(dx, dz) : (K[i].f !== undefined ? K[i].f : head); seg.push({ mv, h: head, ph0: ph, rate }); if (mv) ph += rate * dt; }
+  return t => { let i = 0; while (i < n - 2 && t > K[i + 1].t) i++; const l = clamp((t - K[i].t) / (K[i + 1].t - K[i].t || 1), 0, 1), s = seg[i]; let h = s.h;
+    if (i > 0) { const hp = seg[i - 1].h, d = Math.atan2(Math.sin(h - hp), Math.cos(h - hp)); h = hp + d * ease.sm(clamp((t - K[i].t) / .5, 0, 1)); }
+    const out = { pos: [lerp(K[i].x, K[i + 1].x, l), 0, lerp(K[i].z, K[i + 1].z, l)], facing: h };
+    if (s.mv && t < K[i + 1].t + 1e-6 && t >= K[0].t) out.walk = s.ph0 + s.rate * (clamp(t, K[i].t, K[i + 1].t) - K[i].t); return out; };
+}
+// cine: camera in polar coordinates around a moving target (monotone Hermite) - same as road.js
+function cine(keys) {
+  const K = keys.map(k => ({ t: k[0], v: [k[1][0], k[1][1], k[1][2], k[2], k[3], k[4], k[5] === undefined ? 45 : k[5], k[6] || 0] })), n = K.length;
+  const dd = (i, j) => (K[i + 1].v[j] - K[i].v[j]) / (K[i + 1].t - K[i].t), tn = K.map((k, i) => k.v.map((_, j) => { if (i === 0 || i === n - 1) return 0; const a = dd(i - 1, j), b = dd(i, j); return a * b > 0 ? 2 * a * b / (a + b) : 0; }));
+  return t => { let i = 0; while (i < n - 2 && t > K[i + 1].t) i++; const dt = K[i + 1].t - K[i].t, s = clamp((t - K[i].t) / dt, 0, 1), s2 = s * s, s3 = s2 * s;
+    const v = K[i].v.map((_, j) => (2 * s3 - 3 * s2 + 1) * K[i].v[j] + (s3 - 2 * s2 + s) * dt * tn[i][j] + (-2 * s3 + 3 * s2) * K[i + 1].v[j] + (s3 - s2) * dt * tn[i + 1][j]), a = v[5] * D;
+    return { pos: [v[0] + Math.sin(a) * v[3], v[1] + v[4], v[2] + Math.cos(a) * v[3]], look: [v[0], v[1] + v[7], v[2]], fov: v[6] }; };
+}
+const mkShot = (dur, caps, build, capAt, wide) => ({ dur, caps, capAt: capAt || caps.map((_, i) => .15 + i * (dur - .45) / caps.length), build, wide: !!wide });
+const clouds = (Wd, list) => list.forEach(([x, y, z, s, sd]) => Wd.add(cloud({ seed: sd, size: s, color: 0xffffff, pos: [x, y, z] })));
+// debug-only tracker (used by the measure tool): registered actors are projected with the camera of the frame that was just rendered
+const TR = (Wd, sid, name, h) => { (window.__ACT = window.__ACT || {})[sid + '.' + name] = h; Wd.on((t, cam) => { window.__CAM = cam; }); };
+window.__trAll = sid => {
+  const cam = window.__CAM, out = {}; if (!cam) return out; cam.updateMatrixWorld(true);
+  for (const [k, h] of Object.entries(window.__ACT || {})) { if (!k.startsWith(sid + '.')) continue; const o = (h.figure && h.figure.group) || h.group || h; o.updateWorldMatrix(true, true);
+    const bx = new THREE.Box3().setFromObject(o, true); if (bx.isEmpty()) continue; let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, front = 0; const v = new THREE.Vector3();
+    for (let m = 0; m < 8; m++) { v.set(m & 1 ? bx.max.x : bx.min.x, m & 2 ? bx.max.y : bx.min.y, m & 4 ? bx.max.z : bx.min.z).applyMatrix4(cam.matrixWorldInverse); if (v.z >= -cam.near) continue; front++; v.applyMatrix4(cam.projectionMatrix);
+      const px = v.x * .5 + .5, py = 1 - (v.y * .5 + .5); x0 = Math.min(x0, px); x1 = Math.max(x1, px); y0 = Math.min(y0, py); y1 = Math.max(y1, py); }
+    out[k] = { x0, x1, y0, y1, h: y1 - y0, front, wmin: bx.min.toArray(), wmax: bx.max.toArray() }; }
+  return out; };
+
+// ---------------- scenery ----------------
+function village(Wd, o) {
+  o = o || {}; const w = o.well || [-6, 0, -5];
+  P.sunDisc(Wd, { pos: [-38, 20, -85], r: 4 });
+  P.house(Wd, { pos: [-11, 0, -9], rot: .35 }); P.house(Wd, { pos: [9, 0, -12], rot: -.4, color: 0xf4dfb4 }); P.house(Wd, { pos: [0, 0, -23], rot: 0, color: 0xe9cf9f });
+  P.house(Wd, { pos: [-21, 0, -18], rot: .6, color: 0xf3dcae }); P.house(Wd, { pos: [20, 0, -21], rot: -.3 });
+  P.well(Wd, { pos: w });
+  P.fence(Wd, { pos: [-8, 0, 3.8], rot: .1, len: 6 }); P.fence(Wd, { pos: [-15, 0, -7], rot: .3, len: 5 });
+  P.tree(Wd, { pos: [-15, 0, -3], kind: 0 }); P.tree(Wd, { pos: [13, 0, -4.5], kind: 1 }); P.tree(Wd, { pos: [-7.5, 0, -15], kind: 1, scale: 1.2 }); P.tree(Wd, { pos: [15, 0, -17], kind: 0, scale: 1.3 });
+  P.tree(Wd, { pos: [5.5, 0, -9], kind: 0 }); P.tree(Wd, { pos: [-18, 0, 6], kind: 1 });
+  P.bush(Wd, { pos: o.bush || [7.6, 0, -1.5], scale: 1.25 }); P.bush(Wd, { pos: [-5, 0, -2.5] }); P.bush(Wd, { pos: [4.5, 0, -6.5], scale: 1.3 });
+  P.rock(Wd, { pos: [9.5, 0, 3], seed: 4 }); P.rock(Wd, { pos: [-12, 0, 4.5], seed: 9, scale: 1.4 });
+  P.flock(Wd, 6, [-4, 0, -14], 8, 12, 5, { scale: 2.2, speed: .15 });
+  clouds(Wd, [[-30, 22, -60, 2.4, 3], [24, 26, -70, 2.8, 5], [-4, 30, -90, 2.2, 8]]);
+}
+
+// =====================================================================
+const SHOTS = [
+  // 1 - sunrise village, Uri walks the stepping stones toward the camera and waves. crane down. (13.8 s: the title card covers the first 4.2 s)
+  mkShot(13.8, ['בבוקר אחד בכפר, אורי יצא לטייל.', 'השמש עלתה, והכול נראה חדש.'], () => {
+    const Wd = world(sky({ skyTop: 0x4f9fe8, skyBottom: 0xffdcae, fogColor: 0xf6e0bb, sunColor: 0xffdfb0, sunPos: [-40, 26, 22] }));
+    village(Wd);
+    const pts = [[-2, -11], [0, -5], [1, .6], [1.4, 2.8]]; P.pathStones(Wd, { pts, step: 1.0 });
+    const f = follow(pts, { speed: 1.2, t0: .3 });
+    const UH = uri(Wd, t => Object.assign({ smile: .85, gesture: t > 9 ? 'wave' : undefined, talk: t > 9 ? .4 + .4 * Math.sin(t * 7) : 0 }, f(t)));
+    TR(Wd, 's01', 'uri', UH);
+    const U = t => f(t).pos;
+    return Object.assign(Wd, { cam: cine([[0, U(0), 6.4, 5.0, 14, 46, .5], [4.5, U(4.5), 4.0, 2.4, 8, 45, .65], [9, U(9), 3.1, 1.4, -4, 43, .65], [13.8, U(13.8), 2.8, 1.0, -9, 42, .5]]) });
+  }, [4.2, 8.85]),
+
+  // 2 - Uri stops, the fox peeks from behind a bush and looks at him, then runs. pushIn on Uri, then pan to the fox
+  mkShot(10, ['פתאום הוא ראה שועל קטן בין האבנים.', 'השועל הסתכל עליו, ורץ.'], () => {
+    const Wd = world(sky({ skyTop: 0x4f9fe8, skyBottom: 0xffe2b8, fogColor: 0xf6e3c0, sunColor: 0xffe0b4, sunPos: [-40, 28, 22] }));
+    village(Wd, { bush: [3.9, 0, -.8] });
+    P.pathStones(Wd, { pts: [[1.4, 2.8], [1.2, 8]], step: 1.0 });
+    const UP = [1.4, 0, 2.8], FP = [3.5, 0, .3];
+    const UH = uri(Wd, t => ({ pos: UP, facing: lerp(0, faceTo(UP, FP), ease.io(prog(t, 1.2, 2.6))), brow: .4 * prog(t, 1.5, 2.6), smile: .5, look: .5 * prog(t, 2.6, 4), gesture: t > 6.2 && t < 9 ? 'point' : undefined }));
+    const fr = follow([[3.5, .3], [8, -1.5], [15, -3.8], [22, -5]], { speed: 3.3, t0: 5.8 });
+    const facePeek = faceTo(FP, UP);
+    const foxFn = t => { const s = fr(t); return { hidden: t < 1.4, pos: t < 5.8 ? FP : s.pos, facing: angMix(facePeek, s.facing, ease.io(prog(t, 5.3, 6.1))), clip: t < 5.8 ? 'Survey' : 'Run' }; };
+    const FH = glbActor(Wd, 'fox', foxFn, { height: .62 });
+    TR(Wd, 's02', 'uri', UH); TR(Wd, 's02', 'fox', FH);
+    const cp = tween([[0, [3.8, 1.3, 6.4]], [3.6, [6.05, 1.0, 4.45]], [5.9, [6.05, 1.0, 4.45]], [10, [4.8, 1.3, 6.4]]]);
+    const cl = tween([[0, [1.9, .8, 2.0]], [3.6, [2.45, .55, 1.55]], [5.9, [2.45, .55, 1.55]], [10, [3.0, .7, 1.2]]]);
+    const cf = tween([[0, 42], [3.6, 36], [5.9, 36], [10, 40]]);
+    return Object.assign(Wd, { cam: t => ({ pos: cp(t), look: cl(t), fov: cf(t) }) });
+  }),
+
+  // 3 - Uri follows the fox along the path past trees and fences. side tracking dolly
+  mkShot(10, ['אורי החליט ללכת אחריו.', 'הדרך עברה בין העצים והגדרות.'], () => {
+    const Wd = world(sky({ skyTop: 0x4f9fe8, skyBottom: 0xfbe6c0, sunColor: 0xfff0d0, sunPos: [-30, 40, 30] }));
+    P.sunDisc(Wd, { pos: [-30, 22, -85], r: 4 });
+    const pts = [[-6, -1], [-1, -2.5], [5, -1.5], [11, -3], [17, -2], [24, -3.5]]; P.pathStones(Wd, { pts, step: 1.05 });
+    for (let x = -12; x <= 28; x += 7) P.tree(Wd, { pos: [x, 0, -8.5 - (x % 3)], kind: (x / 7 | 0) % 2 === 0 ? 0 : 1, scale: 1 + (Math.abs(x) % 3) * .12 });
+    for (let x = -10; x <= 28; x += 6) P.fence(Wd, { pos: [x, 0, -5.4], rot: 0, len: 6 });
+    [[-4, 3.5], [9, 3], [20, 3.8], [-9, -3.2], [14, -6.5]].forEach(([x, z], i) => P.bush(Wd, { pos: [x, 0, z], scale: 1 + (i % 2) * .3 }));
+    [[2, 4], [16, 4.5], [26, 2]].forEach(([x, z], i) => P.rock(Wd, { pos: [x, 0, z], seed: 3 + i }));
+    P.house(Wd, { pos: [3, 0, -17], rot: .1 }); P.house(Wd, { pos: [22, 0, -16], rot: -.3, color: 0xf4dfb4 }); P.house(Wd, { pos: [-14, 0, -15], rot: .4, color: 0xe9cf9f });
+    P.flock(Wd, 6, [8, 0, -12], 10, 11, 7, { scale: 2.2, speed: .12 });
+    clouds(Wd, [[-20, 24, -60, 2.4, 1], [30, 22, -65, 2.6, 4]]);
+    const SF = 1.25, SU = SF * .8;   // Uri walks at 0.8x the fox speed
+    const fU = follow(pts, { speed: SU, t0: 0 }), fF = follow(pts.map(p => [p[0], p[1] + .5]), { speed: SF, t0: .35 });
+    const UH = uri(Wd, t => Object.assign({ smile: .6 }, fU(t)));
+    const FH = glbActor(Wd, 'fox', t => { const s = fF(t); return { pos: s.pos, facing: s.facing, clip: 'Run', speed: .6 }; }, { height: .62 });
+    TR(Wd, 's03', 'uri', UH); TR(Wd, 's03', 'fox', FH);
+    const camFn = t => { const u = fU(t).pos, fx = fF(t).pos, k = ease.io(prog(t, 0, 10)), mx = (u[0] + fx[0]) / 2, mz = (u[2] + fx[2]) / 2, d = lerp(3.25, 3.5, k);
+      return { pos: [mx + .35, lerp(1.1, 1.35, k), mz + d], look: [mx + .35, .72, mz], fov: 44 }; };
+    return Object.assign(Wd, { cam: camFn });
+  }),
+
+  // 4 - at the well: the lost robot (Idle, then Wave); Uri arrives. orbit around the robot, ends on both
+  mkShot(10, ['ליד הבאר עמד רובוט קטן ועצוב.', 'הוא נופף ואמר: שלום, חבר!'], () => {
+    const Wd = world(sky({ skyTop: 0x4f9fe8, skyBottom: 0xfbe6c0, sunColor: 0xfff0d0, sunPos: [-30, 40, 30] }));
+    village(Wd, { well: [-3.4, 0, -5.2], bush: [8.5, 0, -3.2] });
+    const RB = [-2.5, 0, -3.7], UF = [-.2, 0, -3.1], T = [-1.3, 0, -3.4];
+    const ur = route([[0, 4.0, -.4], [4.4, UF[0], UF[2], faceTo(UF, RB)], [10, UF[0], UF[2], faceTo(UF, RB)]]);
+    const UH = uri(Wd, t => Object.assign({ smile: .5 + .3 * prog(t, 5, 6), gesture: t > 6.2 ? 'wave' : undefined, talk: t > 6.4 && t < 9 ? .5 + .5 * Math.sin(t * 8) : 0 }, ur(t)));
+    const RH = glbActor(Wd, 'robot', t => ({ pos: RB, facing: angMix(.15, .75, ease.io(prog(t, 4.4, 5.4))), clip: t < 5.0 ? 'Idle' : 'Wave' }), { height: 1.05 });
+    Wd.hero = RH; TR(Wd, 's04', 'uri', UH); TR(Wd, 's04', 'robot', RH);
+    return Object.assign(Wd, { cam: cine([[0, T, 5.2, 1.4, -58, 46, .7], [5, T, 3.9, 1.2, -28, 45, .75], [10, T, 3.6, 1.1, 8, 43, .75]]) });
+  }),
+
+  // 5 - robot shrugs (No / Yes clips), Uri points, hand on chest. slow pushIn medium two-shot
+  mkShot(10, ['הרובוט לא זכר איפה הבית שלו.', 'אורי אמר: אל תדאג, אני אעזור לך.'], () => {
+    const Wd = world(sky({ skyTop: 0x4f9fe8, skyBottom: 0xfbe6c0, sunColor: 0xfff0d0, sunPos: [-30, 40, 30] }));
+    village(Wd, { well: [-3.4, 0, -5.2], bush: [8.5, 0, -3.2] });
+    const RB = [-2.5, 0, -3.7], UF = [-.2, 0, -3.1], T = [-1.2, 0, -3.4];
+    const UH = uri(Wd, t => ({ pos: UF, facing: faceTo(UF, RB), smile: .6, gesture: t < 3.2 ? 'explain' : t < 5.2 ? 'point' : 'heart', talk: (t > .6 && t < 3.2) || (t > 5.6 && t < 8.6) ? .5 + .5 * Math.sin(t * 8) : 0, brow: t < 3.2 ? .3 : 0 }));
+    const RH = glbActor(Wd, 'robot', t => ({ pos: RB, facing: .75, clip: t < 3.3 ? 'No' : t < 6.2 ? 'Idle' : 'Yes' }), { height: 1.05 });
+    TR(Wd, 's05', 'uri', UH); TR(Wd, 's05', 'robot', RH);
+    return Object.assign(Wd, { cam: cine([[0, T, 4.6, 1.3, 0, 44, .75], [10, T, 3.4, 1.05, 6, 40, .78]]) });
+  }),
+
+  // 6 - town square: fountain, tents, benches, crowd; Uri and the robot ask around. high crane then down
+  mkShot(10, ['בכיכר היו הרבה אנשים.', 'שאלו אותם, אבל אף אחד לא ידע.'], () => {
+    const Wd = world(sky({ ground: 'stone', groundSize: 160, groundRep: [30, 30], skyTop: 0x4f9fe8, skyBottom: 0xfdeccd, sunPos: [-25, 45, 30] }));
+    P.fountain(Wd, { pos: [0, 0, 0] });
+    [[-12, -7, .5, P.PAL.red], [12, -7, -.5, P.PAL.blue], [-13.5, 7, 1.2, P.PAL.yellow], [13.5, 7, -1.2, P.PAL.red]].forEach(([x, z, r, c]) => P.tent(Wd, { pos: [x, 0, z], rot: r, color: c }));
+    [[-7, -10], [7, -10], [-14, -1], [14, -1]].forEach(([x, z], i) => P.banner(Wd, { pos: [x, 0, z], seed: i * 1.7, color: i % 2 ? P.PAL.blue : P.PAL.red }));
+    P.house(Wd, { pos: [-5, 0, -19], rot: .1 }); P.house(Wd, { pos: [7, 0, -20], rot: -.2, color: 0xf3dcae }); P.house(Wd, { pos: [-18, 0, -12], rot: .8 }); P.house(Wd, { pos: [19, 0, -13], rot: -.7, color: 0xe9cf9f });
+    P.house(Wd, { pos: [-6, 0, 24], rot: 3.2 }); P.house(Wd, { pos: [9, 0, 25], rot: 3.0, color: 0xf3dcae });
+    P.tree(Wd, { pos: [-18, 0, 5], kind: 0 }); P.tree(Wd, { pos: [19, 0, 4], kind: 1 }); P.tree(Wd, { pos: [-20, 0, -4], kind: 1 });
+    P.bench(Wd, { pos: [-6, 0, -4.5], rot: .2 }); P.bench(Wd, { pos: [6, 0, -4.5], rot: -.2 }); P.lamp(Wd, { pos: [-9, 0, 2], kind: 'lamp' }); P.lamp(Wd, { pos: [9, 0, 2.5], kind: 'lamp', seed: 2 });
+    P.flock(Wd, 5, [0, 0, -4], 12, 13, 9, { scale: 2.2, speed: .12 });
+    clouds(Wd, [[-26, 24, -45, 2.4, 2], [28, 26, -50, 2.5, 6]]);
+    // the pair stands in the foreground, the man they ask is in the middle ground (head shake), a crowd of ten walks behind
+    const UT = [.7, 0, 4.3];
+    const ur = route([[0, 2.0, 4.5, -1.3], [2.4, UT[0], UT[2], -1.2], [10, UT[0], UT[2], -1.2]]);
+    const rr = route([[0, 2.6, 4.9, -1.3], [2.8, 1.9, 4.7, -1.1], [10, 1.9, 4.7, -1.1]]);
+    const UH = uri(Wd, t => Object.assign({ smile: .5, gesture: t > 2.9 ? 'explain' : undefined, talk: t > 2.9 ? .5 + .5 * Math.sin(t * 8) : 0 }, ur(t)));
+    const MA = [-1.4, 0, 1.9], MB = [-3.2, 0, 1.0];
+    const AH = person(Wd, MAN_A, t => ({ pos: MA, facing: faceTo(MA, UT), gesture: t > 3.8 ? 'finger' : 'rest', look: t > 3.6 ? 2.6 * Math.sin(t * 6.5) : 0, smile: .2, seed: .3 }));
+    person(Wd, MAN_B, t => ({ pos: MB, facing: faceTo(MB, UT), gesture: t > 6.5 ? 'shrug' : 'rest', smile: .3, seed: .7 }));
+    const RH = glbActor(Wd, 'robot', t => { const s = rr(t); return { pos: s.pos, facing: s.facing, clip: s.walk !== undefined ? 'Walking' : 'Idle', speed: 1.2 }; }, { height: 1.05 });
+    crowd(Wd, 4, { x0: -5, x1: -2.9, z0: -6, z1: -1.2 }, { hat: 'kippa' }, 17, { walkers: .8 }); crowd(Wd, 3, { x0: 3.6, x1: 6.2, z0: -6, z1: -1 }, { hat: 'kippa' }, 23, { walkers: .8 }); crowd(Wd, 3, { x0: -2.2, x1: 2.2, z0: -8, z1: -3.4 }, { hat: 'kippa' }, 31, { walkers: .8 });
+    TR(Wd, 's06', 'uri', UH); TR(Wd, 's06', 'robot', RH); TR(Wd, 's06', 'manA', AH);
+    const T = [.9, 0, 4.3];
+    return Object.assign(Wd, { cam: cine([[0, T, 3.6, 1.35, 8, 46, .7], [5, T, 3.5, 1.15, 0, 46, .65], [10, T, 3.4, 1.0, -7, 46, .6]]) });
+  }),
+
+  // 7 - signpost with 3 arrows; Uri thinks, the robot stands scratching its head (Idle). slow orbit
+  mkShot(10, ['ליד השלט הם עצרו וחשבו.', 'מי יכול לעזור להם?'], () => {
+    const Wd = world(sky({ skyTop: 0x5aa5ee, skyBottom: 0xfbeacb, sunColor: 0xfff0d0, sunPos: [-25, 40, 30] }));
+    P.sunDisc(Wd, { pos: [30, 24, -85], r: 4 });
+    // signpost: post + 3 coloured arrow boards pointing different ways (shapes only, no text)
+    const post = new THREE.Group(); post.add(cyl(.07, .1, 2.5, P.PAL.woodD, { pos: [0, 1.25, 0] })); post.add(mesh(new THREE.SphereGeometry(.14, 14, 10), toon(P.PAL.gold), { pos: [0, 2.58, 0] }));
+    const arrow = (col, y, dir, ang) => { const s = new THREE.Shape(); s.moveTo(-.1, -.2); s.lineTo(1.0, -.2); s.lineTo(1.0, -.36); s.lineTo(1.55, 0); s.lineTo(1.0, .36); s.lineTo(1.0, .2); s.lineTo(-.1, .2); s.closePath();
+      const geo = new THREE.ExtrudeGeometry(s, { depth: .1, bevelEnabled: false }); geo.translate(0, 0, -.05); const m = mesh(geo, toon(col), { box: true, inkW: .018 }); const g = new THREE.Group(); g.add(m); g.scale.x = dir; g.position.y = y; g.rotation.y = ang; return g; };
+    post.add(arrow(P.PAL.red, 2.15, 1, .25)); post.add(arrow(P.PAL.blue, 1.65, -1, -.2)); post.add(arrow(P.PAL.yellow, 1.15, 1, -.35));
+    post.rotation.y = .0; Wd.add(post);
+    const dirs = [[-9, -8], [9, -9], [1, -14]]; dirs.forEach(([x, z]) => P.pathStones(Wd, { pts: [[0, .6], [x * .55, z * .55 + .3], [x, z]], step: 1.0, seed: 3 }));
+    P.pathStones(Wd, { pts: [[0, .6], [-.5, 8], [-1, 14]], step: 1.0 });
+    P.tree(Wd, { pos: [-13, 0, -3], kind: 0 }); P.tree(Wd, { pos: [14, 0, -5], kind: 1 }); P.tree(Wd, { pos: [-8, 0, -12], kind: 1, scale: 1.2 }); P.tree(Wd, { pos: [9, 0, 7], kind: 0, scale: 1.2 }); P.tree(Wd, { pos: [-12, 0, 8], kind: 1 });
+    P.bush(Wd, { pos: [-5, 0, -4] }); P.bush(Wd, { pos: [5.5, 0, -3.5], scale: 1.3 }); P.rock(Wd, { pos: [6, 0, 4], seed: 7 }); P.rock(Wd, { pos: [-7, 0, 5.5], seed: 2, scale: 1.2 });
+    P.house(Wd, { pos: [-2, 0, -26], rot: 0 }); P.house(Wd, { pos: [18, 0, -20], rot: -.5, color: 0xf4dfb4 });
+    P.flock(Wd, 6, [0, 0, -10], 9, 10, 11, { scale: 2.2, speed: .14 }); clouds(Wd, [[-24, 22, -55, 2.4, 3], [26, 24, -60, 2.6, 6]]);
+    const UP = [-1.0, 0, 2.2], RP = [1.0, 0, 2.0];
+    const UH = uri(Wd, t => ({ pos: UP, facing: .45, gesture: 'think', smile: .15, brow: .5, look: -1.2 + .8 * Math.sin(t * .6) }));
+    const RH = glbActor(Wd, 'robot', t => ({ pos: RP, facing: -.5 + .1 * Math.sin(t * .5), clip: 'Idle' }), { height: 1.05 });
+    TR(Wd, 's07', 'uri', UH); TR(Wd, 's07', 'robot', RH); TR(Wd, 's07', 'post', post);
+    return Object.assign(Wd, { cam: orbit([0, 1.15, 1.6], 4.1, .5, -26, 6, 0, 10, 46) });
+  }),
+
+  // 8 - the fox returns at the edge of the square, waits, turns, runs toward the sea; camera follows, then reveals the horizon
+  mkShot(10, ['והשועל חזר, כאילו אמר: בואו אחריי!', 'הם רצו אחריו אל הים.'], () => {
+    const Wd = world(sky({ skyTop: 0x4f9fe8, skyBottom: 0xfcecd0, fogColor: 0xe3eadf, fogNear: 140, fogFar: 460, sunColor: 0xfff0d0, sunPos: [-25, 45, 30] }));
+    const sq = new THREE.Mesh(new THREE.PlaneGeometry(36, 30), new THREE.MeshLambertMaterial({ map: groundTex('stone', [8, 7]) })); sq.rotation.x = -Math.PI / 2; sq.position.set(0, .012, 6); sq.receiveShadow = true; Wd.add(sq);
+    const sand = new THREE.Mesh(new THREE.PlaneGeometry(300, 12), new THREE.MeshLambertMaterial({ color: 0xeed8ac })); sand.rotation.x = -Math.PI / 2; sand.position.set(0, .015, -22); Wd.add(sand);
+    const sea = new THREE.Mesh(new THREE.PlaneGeometry(900, 160), new THREE.MeshLambertMaterial({ color: 0x4fa8d8 })); sea.rotation.x = -Math.PI / 2; sea.position.set(0, .03, -108); Wd.add(sea);
+    P.tent(Wd, { pos: [-9, 0, 1.5], rot: .6, color: P.PAL.yellow }); P.tent(Wd, { pos: [10, 0, 0], rot: -.7, color: P.PAL.blue });
+    P.bench(Wd, { pos: [-5, 0, 7.5], rot: Math.PI - .2 }); P.lamp(Wd, { pos: [6, 0, 6], kind: 'lamp' }); P.banner(Wd, { pos: [-13, 0, -3], seed: 2, color: P.PAL.red });
+    P.house(Wd, { pos: [-14, 0, 14], rot: 2.7 }); P.house(Wd, { pos: [14, 0, 15], rot: 3.5, color: 0xf4dfb4 });
+    P.tree(Wd, { pos: [-18, 0, -12], kind: 0 }); P.tree(Wd, { pos: [17, 0, -11], kind: 1 }); P.tree(Wd, { pos: [-9, 0, -24], kind: 1, scale: 1.2 }); P.tree(Wd, { pos: [11, 0, -26], kind: 0, scale: 1.3 });
+    P.bush(Wd, { pos: [-4, 0, -9] }); P.bush(Wd, { pos: [5, 0, -12], scale: 1.3 }); P.rock(Wd, { pos: [3, 0, -18], seed: 4 }); P.rock(Wd, { pos: [-7, 0, -30], seed: 6, scale: 1.4 });
+    P.pathStones(Wd, { pts: [[0, -6], [0, -16], [-1, -18], [0, -27]], step: 1.1 });
+    P.flock(Wd, 6, [0, 0, -40], 14, 12, 13, { scale: 2.4, speed: .12 }); clouds(Wd, [[-26, 22, -80, 2.8, 4], [30, 24, -90, 3, 9]]);
+    // the fox is the star: it runs for the sea, Uri and the robot follow behind it; the camera tracks the fox, then rises to reveal the blue horizon
+    const SPD = 2.6, zf = t => 4.8 - SPD * Math.max(0, t - 1.4);
+    const fr = follow([[.5, 4.8], [.5, -25], [0, -60]], { speed: SPD, t0: 1.4 });
+    const FH = glbActor(Wd, 'fox', t => { const s = fr(t); return { pos: s.pos, facing: s.facing, clip: t < 1.4 ? 'Survey' : 'Run' }; }, { height: .62 });
+    const ur = follow([[0, 6.0], [0, -25], [0, -60]], { speed: SPD, t0: 1.6 }), rr = follow([[-1.0, 6.6], [-1.0, -25], [-.8, -60]], { speed: SPD, t0: 1.6 });
+    const UH = uri(Wd, t => Object.assign({ smile: .6 + .3 * prog(t, 1, 2), gesture: t > .3 && t < 2.2 ? 'point' : undefined }, ur(t)));
+    const RH = glbActor(Wd, 'robot', t => { const s = rr(t); return { pos: s.pos, facing: s.facing, clip: s.walk !== undefined ? 'Running' : 'Idle', speed: .8 }; }, { height: 1.05 });
+    TR(Wd, 's08', 'uri', UH); TR(Wd, 's08', 'robot', RH); TR(Wd, 's08', 'fox', FH);
+    const camFn = t => { const ke = ease.io(prog(t, 5.0, 8.0)), kh = ease.io(prog(t, 6.0, 8.6)), zc = zf(t) + 1.1;
+      return { pos: [lerp(4.3, 1.2, ke), lerp(1.25, 2.8, kh), zc + 9 * ke], look: [0, lerp(.55, .6, ke), zc - 62 * ke], fov: lerp(45, 46, ke) }; };
+    return Object.assign(Wd, { cam: camFn });
+  }, undefined, true),
+
+  // 9 - the beach: sand, sea, boat, flag, the old milk truck. wide establishing, then pushIn to the truck while the robot runs to it
+  mkShot(10, ['על החוף עמדה משאית ישנה.', 'והרובוט צעק: זה הבית שלי!'], () => {
+    const Wd = world(sky({ ground: 'sand', skyTop: 0x4aa0ee, skyBottom: 0xfdf1d6, fogColor: 0xf0eadb, fogNear: 70, fogFar: 300, sunColor: 0xfff2d8, sunPos: [-20, 50, 30] }));
+    const sea = new THREE.Mesh(new THREE.PlaneGeometry(500, 110), new THREE.MeshLambertMaterial({ color: 0x4fa8d8 })); sea.rotation.x = -Math.PI / 2; sea.position.set(0, .03, -60); Wd.add(sea);
+    const foam = new THREE.Mesh(new THREE.PlaneGeometry(500, 1.2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .8 })); foam.rotation.x = -Math.PI / 2; foam.position.set(0, .04, -4.6); Wd.add(foam);
+    Wd.on(t => { foam.position.z = -4.6 + .5 * Math.sin(t * .9); });
+    P.boat(Wd, { pos: [-22, .05, -28], rot: .5, scale: 1.5 }); P.boat(Wd, { pos: [10, .05, -18], rot: -.8, color: P.PAL.red, scale: .9 });
+    P.banner(Wd, { pos: [14, 0, -4.5], rot: Math.PI, seed: 1, color: P.PAL.blue, color2: P.PAL.white });
+    P.rock(Wd, { pos: [-12, 0, 0], seed: 6 }); P.rock(Wd, { pos: [12, 0, -1], seed: 12, scale: 1.3 }); P.bush(Wd, { pos: [14, 0, 5] }); P.bush(Wd, { pos: [-14, 0, 6], scale: 1.2 });
+    P.tree(Wd, { pos: [-18, 0, 4], kind: 0 }); P.tree(Wd, { pos: [19, 0, 2], kind: 1 }); P.house(Wd, { pos: [-22, 0, -4], rot: .9, color: 0xf4dfb4 });
+    P.flock(Wd, 7, [0, 0, -14], 10, 9, 8, { scale: 2.4, speed: .16 }); clouds(Wd, [[-24, 20, -60, 3, 1], [26, 24, -70, 3.2, 5]]);
+    const TP = [4.4, 0, -1.6], TF = -.4;
+    const TH = glbActor(Wd, 'truck', t => ({ pos: TP, facing: TF, clip: 0, speed: 0 }), { height: 2.3 });
+    // the robot walks toward the sea (back to us), stops, its head snaps to the truck, then it runs there and waves
+    const RA = [-5.1, 0, 5.6], RS = [-5.0, 0, 3.0], RT = [1.8, 0, .6], f0 = faceTo(RA, RS), f1 = faceTo(RS, RT);
+    const RH = glbActor(Wd, 'robot', t => {
+      if (t < 3.6) return { pos: [lerp(RA[0], RS[0], t / 3.6), 0, lerp(RA[2], RS[2], t / 3.6)], facing: f0, clip: 'Walking', speed: .8 };
+      if (t < 4.8) return { pos: RS, facing: angMix(f0, f1, ease.io(prog(t, 4.25, 4.55))), clip: 'Idle' };
+      if (t < 7.6) return { pos: mix3(RS, RT, ease.io(prog(t, 4.8, 7.6))), facing: f1, clip: 'Running', speed: .85 };
+      return { pos: RT, facing: faceTo(RT, [-.2, 0, 1.8]), clip: 'Wave' }; }, { height: 1.05 });
+    const ur = route([[0, -7.8, 6.2], [3.2, -6.4, 5.0], [7.8, -.2, 1.8], [10, -.2, 1.8, 1.0]]);
+    const UH = uri(Wd, t => Object.assign({ smile: .7 }, ur(t)));
+    const fxr = route([[0, -7.2, 6.9], [4.6, -4.6, 5.0], [7.6, .8, 2.0], [10, .8, 2.0, .9]]);
+    const FH = glbActor(Wd, 'fox', t => { const s = fxr(t); return { pos: s.pos, facing: s.facing, clip: s.walk !== undefined ? (t < 4.6 ? 'Walk' : 'Run') : 'Survey' }; }, { height: .62 });
+    TR(Wd, 's09', 'uri', UH); TR(Wd, 's09', 'robot', RH); TR(Wd, 's09', 'fox', FH); TR(Wd, 's09', 'truck', TH);
+    Wd.hero = TH;
+    return Object.assign(Wd, { cam: cine([[0, [-2.4, 0, 2.2], 12.5, 3.4, 10, 50, .6], [3.5, [-2.0, 0, 1.8], 11.5, 2.9, 11, 48, .65], [5.5, [-1.2, 0, 1.4], 10.5, 2.4, 12, 46, .7], [7.8, [2.9, 0, .3], 9.5, 1.8, 14, 44, .8], [10, [2.9, 0, .3], 9.5, 1.8, 14, 44, .8]]) });
+  }, undefined, true),
+
+  // 10 - the robot jumps and dances in front of the truck, Uri claps, the fox waits. crane around the group, ends wide
+  mkShot(10, ['הרובוט קפץ משמחה.', 'תודה, אורי! ידעת לעזור לי.'], () => {
+    const Wd = world(sky({ ground: 'sand', skyTop: 0x4aa0ee, skyBottom: 0xfdf1d6, fogColor: 0xf0eadb, fogNear: 70, fogFar: 300, sunColor: 0xfff2d8, sunPos: [-20, 50, 30] }));
+    const sea = new THREE.Mesh(new THREE.PlaneGeometry(500, 110), new THREE.MeshLambertMaterial({ color: 0x4fa8d8 })); sea.rotation.x = -Math.PI / 2; sea.position.set(0, .03, -60); Wd.add(sea);
+    const foam = new THREE.Mesh(new THREE.PlaneGeometry(500, 1.2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .8 })); foam.rotation.x = -Math.PI / 2; foam.position.set(0, .04, -4.6); Wd.add(foam);
+    Wd.on(t => { foam.position.z = -4.6 + .5 * Math.sin(t * .9 + 3); });
+    P.boat(Wd, { pos: [-22, .05, -28], rot: .5, scale: 1.5 }); P.boat(Wd, { pos: [10, .05, -18], rot: -.8, color: P.PAL.red, scale: .9 });
+    P.banner(Wd, { pos: [14, 0, -4.5], rot: Math.PI, seed: 1, color: P.PAL.blue, color2: P.PAL.white });
+    P.rock(Wd, { pos: [-12, 0, 0], seed: 6 }); P.rock(Wd, { pos: [12, 0, -1], seed: 12, scale: 1.3 }); P.bush(Wd, { pos: [14, 0, 5] }); P.bush(Wd, { pos: [-14, 0, 6], scale: 1.2 });
+    P.tree(Wd, { pos: [-18, 0, 4], kind: 0 }); P.tree(Wd, { pos: [19, 0, 2], kind: 1 }); P.house(Wd, { pos: [-22, 0, -4], rot: .9, color: 0xf4dfb4 });
+    P.flock(Wd, 7, [0, 0, -14], 10, 9, 8, { scale: 2.4, speed: .16 }); clouds(Wd, [[-24, 20, -60, 3, 1], [26, 24, -70, 3.2, 5]]);
+    const TP = [4.4, 0, -1.6], TF = -.4, RP = [1.8, 0, .6], RP2 = [2.4, 0, .1], UP = [-.2, 0, 1.8], FXP = [1.2, 0, 2.3];
+    const TH = glbActor(Wd, 'truck', t => ({ pos: TP, facing: TF, clip: 0, speed: 0 }), { height: 2.3 });
+    // joy (jump, then dance, in full view), then a farewell: the robot steps back toward the truck and waves, Uri waves back, the fox sits
+    const RH = glbActor(Wd, 'robot', t => {
+      if (t < 4.4) return { pos: RP, facing: faceTo(RP, UP), clip: 'Jump' };
+      if (t < 7.2) return { pos: RP, facing: faceTo(RP, UP) + .4 * Math.sin(t * 1.3), clip: 'Dance' };
+      if (t < 8.2) return { pos: mix3(RP, RP2, ease.io(prog(t, 7.2, 8.2))), facing: faceTo(RP, RP2), clip: 'Walking', speed: .8 };
+      return { pos: RP2, facing: faceTo(RP2, UP), clip: 'Wave' }; }, { height: 1.05 });
+    const UH = uri(Wd, t => ({ pos: UP, facing: faceTo(UP, RP), smile: .95, gesture: t > 8.0 ? 'wave' : Math.floor(t * 3) % 2 ? 'offer' : 'wide', talk: 0 }));
+    const FH = glbActor(Wd, 'fox', t => ({ pos: FXP, facing: faceTo(FXP, RP) - .3, clip: 'Survey' }), { height: .62 });
+    TR(Wd, 's10', 'uri', UH); TR(Wd, 's10', 'robot', RH); TR(Wd, 's10', 'fox', FH); TR(Wd, 's10', 'truck', TH);
+    return Object.assign(Wd, { cam: cine([[0, [2.9, 0, .3], 9.5, 1.8, 14, 44, .8], [.4, [2.9, 0, .3], 9.5, 1.8, 14, 44, .8], [3.2, [2.8, 0, .5], 5.8, 1.3, 8, 46, .75], [7.2, [2.8, 0, .5], 5.8, 1.3, 8, 46, .75], [9.95, [2.9, 0, .4], 7.4, 1.8, 12, 46, .8], [10.3, [2.9, 0, .4], 7.4, 1.8, 12, 46, 8]]) });
+  }, undefined, true),
+
+  // 11 - sunset, the study room: Uri at the table opens a book, lamp glow, window. slow dolly toward the table
+  mkShot(10, ['בערב חזר אורי הביתה, עייף ומאושר.', 'הוא פתח ספר, וחשב על היום שעבר.'], () => {
+    const Wd = world(sky({ ground: 'grass', skyTop: 0x3f4a98, skyBottom: 0xff9a52, fogColor: 0xf09a68, fogNear: 30, fogFar: 150, hemi: .95, hemiSky: 0xffd9b8, hemiGround: 0x8a6446, sun: 1.15, sunColor: 0xffb070, sunPos: [1, 9, -30], shadowExt: 14 }));
+    P.sunDisc(Wd, { pos: [-3, 4, -70], r: 5 });
+    P.tree(Wd, { pos: [-14, 0, -24], kind: 1, scale: 1.6 }); P.tree(Wd, { pos: [12, 0, -28], kind: 0, scale: 1.6 }); P.house(Wd, { pos: [-22, 0, -40], rot: .3, color: 0xe9cf9f }); P.house(Wd, { pos: [20, 0, -44], rot: -.3, color: 0xf3dcae });
+    P.flock(Wd, 6, [0, 0, -30], 12, 8, 4, { scale: 2.4, speed: .1 });
+    const WALL = 0xf1dfbd, WOOD = 0xb98756, CZ = -3.2;
+    const add = (w, h, d, c, x, y, z, o) => Wd.add(box(w, h, d, c, Object.assign({ pos: [x, y, z] }, o || {})));
+    add(10, .2, 8.4, WOOD, 0, -.07, .6, { ink: false });
+    add(3.6, 3.2, .2, WALL, -2.8, 1.6, CZ); add(3.6, 3.2, .2, WALL, 2.8, 1.6, CZ); add(2.0, 1.0, .2, WALL, 0, .5, CZ); add(2.0, .8, .2, WALL, 0, 2.8, CZ);
+    add(.1, 1.45, .24, 0x7a5232, -1.0, 1.7, CZ + .02); add(.1, 1.45, .24, 0x7a5232, 1.0, 1.7, CZ + .02); add(.1, 1.45, .24, 0x7a5232, 0, 1.7, CZ + .02); add(2.1, .1, .24, 0x7a5232, 0, 1.0, CZ + .02); add(2.1, .1, .24, 0x7a5232, 0, 2.4, CZ + .02);
+    add(.2, 3.2, 8.4, WALL, -4.5, 1.6, .6); add(.2, 3.2, 8.4, WALL, 4.5, 1.6, .6); add(9.2, .2, 8.6, 0xe6d2ac, 0, 3.3, .6, { ink: false });
+    P.bookshelf(Wd, { pos: [-3.6, 0, CZ + .3], seed: 3 }); P.bookshelf(Wd, { pos: [-2.3, 0, CZ + .3], seed: 11 }); P.bookshelf(Wd, { pos: [2.3, 0, CZ + .3], seed: 5 }); P.bookshelf(Wd, { pos: [3.6, 0, CZ + .3], seed: 8 });
+    const FS = .74;
+    P.table(Wd, { pos: [.2, 0, .1], w: 2.0, d: .9, scale: .6 }); P.chair(Wd, { pos: [.2, 0, -.78], rot: 0, scale: FS });
+    const bc = P.bookClosed(Wd, { pos: [.1, .5, .16], rot: .2, color: P.PAL.red, scale: .8 }), bo = P.bookOpen(Wd, { pos: [.1, .5, .16], rot: .2, scale: .8 });
+    Wd.on(t => { bc.visible = t < 3.4; bo.visible = t >= 3.4; const k = ease.out(prog(t, 3.4, 3.9)); bo.scale.setScalar(.8 * (.45 + .55 * k)); });
+    P.bookClosed(Wd, { pos: [.9, .5, -.05], rot: -.4, color: P.PAL.leaf, scale: .8 });
+    P.lamp(Wd, { pos: [-.6, .5, -.1], kind: 'candle', seed: 1, light: true, scale: 1.3 }); P.lamp(Wd, { pos: [3.7, 0, 1.8], kind: 'lamp', seed: 4, light: true });
+    // he reads, then turns toward the window where the sunset glows (a clear rest of 2 s at the end)
+    const UH = uri(Wd, t => ({ pos: [.2, 0, -.76], facing: lerp(0, 2.55, ease.io(prog(t, 6.0, 7.8))), sit: true, groundY: 0, gesture: t > 2.2 && t < 5.4 ? 'offer' : t > 5.6 && t < 7.8 ? 'think' : 'rest', smile: .6, look: t > 7.8 ? .6 : 0 }));
+    TR(Wd, 's11', 'uri', UH);
+    const cp = tween([[0, [1.1, 1.1, 2.0]], [5.5, [.8, 1.05, 1.9]], [8, [1.9, .95, .6]], [10, [1.95, .95, .5]]]);
+    const cl = tween([[0, [.5, 1.0, .3]], [5.5, [.2, .8, -.5]], [8, [.1, .72, -.8]], [10, [.1, .72, -.8]]]);
+    const cf = tween([[0, 46], [5.5, 40], [8, 38], [10, 38]]);
+    return Object.assign(Wd, { cam: t => ({ pos: cp(t), look: cl(t), fov: cf(t) }) });
+  }),
+];
+
+film({
+  title: 'אורי והרובוט הקטן', kicker: 'אורי והרובוט הקטן', W: 1920, H: 1080, xf: .3,
+  recap: ['מי שעוזר לחבר מוצא בדרך גם שמחה', 'כל סימן קטן בדרך יכול להוביל הביתה', 'טוב שיש חברים שלא מוותרים'],
+  shots: SHOTS,
+});
+
+// credits (English, small, bottom-left of the last shot and the recap): drawn on the film canvas after every seek
+{
+  const cv = document.getElementById('c'), seek0 = window.__seek, sumDur = SHOTS.reduce((a, s) => a + s.dur, 0), start = sumDur - 6, end = window.__dur - .6;
+  const lines = ['Fox: PixelMannen (CC0); rig/animation: @tomkranis (CC BY 4.0); glTF conversion: AsoboStudio, scurest (CC BY 4.0)', 'Robot: Tomas Laulhe (CC0) - Truck: Cesium (CC BY 4.0)'];
+  window.__seek = t => { seek0(t); const tt = t + (window.__T0 || 0); if (tt < start || tt > end) return;
+    const g = cv.getContext('2d'), H = cv.height, a = clamp((tt - start) / .6, 0, 1); g.save(); g.globalAlpha = a; g.direction = 'ltr'; g.textAlign = 'left'; g.textBaseline = 'alphabetic'; g.font = `600 ${Math.round(H * .021)}px Assistant, sans-serif`; g.lineJoin = 'round';
+    const lh = H * .028, y0 = H * .075, mw = Math.max(...lines.map(s => g.measureText(s).width)); g.fillStyle = 'rgba(10,8,20,.55)'; g.beginPath(); g.roundRect(H * .012, y0 - lh * .95, mw + H * .02, lines.length * lh + H * .008, H * .008); g.fill(); g.fillStyle = '#fff6dc'; lines.forEach((s, i) => g.fillText(s, H * .022, y0 + i * lh)); g.restore(); };
+}
+</script>
+</html>
