@@ -5,7 +5,7 @@
 הדף חייב לחשוף:  window.__ready (true כשהגופנים והתמונות נטענו)  ו-  window.__seek(שניות).
 זו אותה מוסכמה של מנוע השורטים (anim/build.py), ולכן סצנות עוברות בין השניים.
 
-    python tools/capture.py <scene.html> <out.mp4> --dur 7 [--fps 30] [--size 1280x720] [--audio speech.mp3] [--still 2.5 out.png]
+    python tools/capture.py <scene.html> <out.mp4> --dur 7 [--fps 30] [--size WxH (default 1280x720; auto = canvas size when the page is portrait)] [--audio speech.mp3] [--still 2.5 out.png]
 
 בלי חלון, בלי כרטיס המסך (ציור תוכנה), קידוד libx264 על המעבד.
 """
@@ -27,10 +27,10 @@ NOWIN = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
 ap = argparse.ArgumentParser()
 ap.add_argument('scene'); ap.add_argument('out')
 ap.add_argument('--dur', type=float, required=True); ap.add_argument('--fps', type=int, default=30)
-ap.add_argument('--size', default='1280x720'); ap.add_argument('--audio'); ap.add_argument('--still', nargs=2)
+ap.add_argument('--size', default=None); ap.add_argument('--audio'); ap.add_argument('--still', nargs=2)
 ap.add_argument('--browser', default='msedge')   # בשרת: chromium
 a = ap.parse_args()
-w, h = (int(v) for v in a.size.split('x'))
+w, h = (int(v) for v in a.size.split('x')) if a.size else (1280, 720)
 url = a.scene if '://' in a.scene else 'file:///' + os.path.abspath(a.scene).replace(os.sep, '/')
 errors = []
 
@@ -41,7 +41,11 @@ with sync_playwright() as p:
         pg.on('pageerror', lambda e: errors.append(str(e)[:300]))
         pg.on('console', lambda m: errors.append(m.text[:300]) if m.type == 'error' else None)
         pg.goto(url, wait_until='load')
-        pg.wait_for_function('window.__ready === true', timeout=30000)
+        pg.wait_for_function('window.__ready === true', timeout=240000)
+        if a.size is None:   # portrait-aware: no --size means "match the page canvas" for portrait, 1280x720 for landscape (unchanged)
+            cv = pg.evaluate("(()=>{const c=document.getElementById('c')||document.querySelector('canvas');return c?[c.width,c.height]:[0,0]})()")
+            if cv[1] > cv[0] > 0:
+                w, h = cv[0], cv[1]; pg.set_viewport_size({'width': w, 'height': h})
         if a.still:
             pg.evaluate('window.__seek(%f)' % float(a.still[0]))
             pg.screenshot(path=a.still[1])
