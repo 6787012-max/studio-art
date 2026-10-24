@@ -1,0 +1,28 @@
+[
+ {
+  "name": "mv_s2",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": 319492,
+  "seconds": 41.9
+ },
+ {
+  "name": "mv_s5",
+  "ok": false,
+  "tries": [
+   {
+    "model": "space",
+    "error": "AppError: No GPU was available after 60s. <a style=\"white-space: nowrap;text-underline-offset: 2px;color: var(--body-text-color)\" href=\"https://huggingface.co/join\">Create a free account</a> to get a higher priority in ZeroGPU queues."
+   }
+  ]
+ },
+ {
+  "name": "mv_s7",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": 170553,
+  "seconds": 61.3
+ }
+]
