@@ -1,0 +1,4 @@
+00:35:10 render_all: production=odt_haim2 films=film_a,film_b,film_c,film_d,film_e part=50s hq=True dry_run=False
+00:35:30 budget OK: OVERRIDE present; spent $685 of $2600 (cap $2340), allowed by now $746 (92% of pace) [render]
+00:35:30 verify gate: PASS for film_a, film_b, film_c, film_d, film_e
+00:35:53 film_a: length 41.0s, rendering (part 50 s, 8 includes)

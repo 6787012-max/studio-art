@@ -1,0 +1,22 @@
+{
+ "film": "film_b.html",
+ "status": "PASS",
+ "time": "2026-10-25T00:27:00",
+ "samples": 5,
+ "findings": [],
+ "sheets": {
+  "beat": "C:/projects/_studio-animatzia/productions/odt_haim2/_vb_s08/_view/_vb_s08_beat_sheet_1.jpg",
+  "seam": "C:/projects/_studio-animatzia/productions/odt_haim2/_vb_s08/_view/_vb_s08_seams_1.jpg",
+  "phone": "C:/projects/_studio-animatzia/productions/odt_haim2/_vb_s08/_view/_vb_s08_phone_sheet_1.jpg"
+ },
+ "partial": {
+  "shot": "s08",
+  "note": "one-shot run, NOT a whole-film report"
+ },
+ "timing": {
+  "ready_s": 5.5,
+  "gates_s": 72.9,
+  "sheets_s": 25.5,
+  "total_s": 347.5
+ }
+}
