@@ -1,0 +1,35 @@
+[
+ {
+  "name": "k1",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1344
+  ],
+  "seconds": 24.0
+ },
+ {
+  "name": "k2",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1344
+  ],
+  "seconds": 19.9
+ },
+ {
+  "name": "k3",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1344
+  ],
+  "seconds": 20.2
+ }
+]
