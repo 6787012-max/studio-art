@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>המסך שמסתיר את המלך</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script>window.__T0=247.7300;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import { film, person, cloud, path, seq, orbit, THREE, prog, ease, clamp, lerp, rng, box, cyl, ball, toon, ink, canvasTex } from '../../lib/stage3d.js';
+import * as K from './k11lib.js';
+import { CL, SS, DURS, lt, fw, candle, lantern, aron, clock, hourglass, strata, lightShaft, stageWorld, veil, shadows, gearGeo, gearChain, dominoes, pill, fogBank, dust, shtender, bench, vessel, willow, stairs, PLUM, WALNUT, WALNUT2, CREAM } from './k11fx.js';
+const { RAV, manN, POSES, WAL, WAL2, COP, IVORY, HONEY, PI, sm, fbm, cine, route, glowSprite, motes, innerLight, beam, threadSet, chestPos, seaRoom, shelf, table, stool, sefer, lamp } = K;
+const sin = Math.sin, cos = Math.cos, FL = .012;
+const rig = (Wd, cam) => Object.assign(Wd, { cam });
+const talkF = (t, s) => .5 + .5 * sin(t * 9) * sin(t * 2.3 + (s || 1));
+const pop = (t, a, b, c, d) => sm(prog(t, a, b)) * (1 - sm(prog(t, c, d)));
+const WHITE = i => Object.assign({}, manN(i), { coat: '#efeae0', pants: '#26262c', beard: false, beardLen: 0 });
+// a floating Hebrew label that fades in at a and out at b (local seconds), kept the same size on screen
+const lab = (Wd, text, pos, a, b, o) => fw(Wd, text, t => ({ pos: typeof pos === 'function' ? pos(t) : pos, op: sm(prog(t, a, a + .8)) * (1 - sm(prog(t, b - .8, b))), s: 1 }), Object.assign({ screen: .068, size: 76 }, o || {}));
+const stand = (Wd, look, x, z, f, fn, o) => person(Wd, look, t => Object.assign({ pos: [x, FL, z], facing: f, gesture: 'rest', smile: .3, seed: .1 * x + .2 + .05 * z, groundY: FL }, fn ? fn(t) : {}), o);
+const ravAt = (Wd, x, z, f, s, fn) => stand(Wd, RAV, x, z, f, t => Object.assign({ perform: .8, gesture: undefined, talk: talkF(t, s || 1), smile: .55, seed: s || .3 }, fn ? fn(t) : {}));
+
+// ---------- the stage: veil + backlight ----------
+function stg(o) {
+  o = o || {}; const Wd = stageWorld(o.w), V = veil(Wd, Object.assign({ op: () => .95, glow: () => .4 }, o.v));
+  dust(Wd, 46, [-11, 11, .4, 7.5, -7, 9], o.seed || 3, o.dust); return [Wd, V];
+}
+// a tall light pillar: o.k(t) 0..1.3 strength
+function pillar(Wd, x, z, H, rad, kf, color) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); Wd.add(g); const mk = (r, c, op) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(r * .8, r, H, 24, 1, true), new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false })); m.position.y = H / 2; m.userData.op = op; g.add(m); return m; };
+  const a = mk(rad, color || 0xffcf80, .3), b = mk(rad * .5, 0xfff0c6, .42), base = glowSprite(color || 0xffcf80, rad * 7, 0); base.position.y = .3; g.add(base);
+  Wd.on(t => { const k = kf(t); g.visible = k > .01; for (const m of [a, b]) m.material.opacity = m.userData.op * k * (.9 + .1 * sin(t * 2.2 + x)); base.material.opacity = .7 * k; });
+  return g;
+}
+// radial rays on the cloth
+function rays(Wd, V, opf) {
+  const tx = canvasTex(512, 256, (g, w, h) => { g.translate(w / 2, h * .55); for (let i = 0; i < 28; i++) { const a = i / 28 * PI * 2, wd = .035 + .03 * ((i * 7) % 5) / 5; const gr = g.createLinearGradient(0, 0, Math.cos(a) * w * .6, Math.sin(a) * w * .6); gr.addColorStop(0, 'rgba(255,255,255,.7)'); gr.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = gr; g.beginPath(); g.moveTo(0, 0); g.lineTo(Math.cos(a - wd) * w * .6, Math.sin(a - wd) * w * .6); g.lineTo(Math.cos(a + wd) * w * .6, Math.sin(a + wd) * w * .6); g.fill(); } });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(V.W * 1.05, V.hh * 1.2), new THREE.MeshBasicMaterial({ map: tx, color: 0xffd890, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false })); m.position.set(0, .3 + V.hh * .55, V.frontZ + .05); m.renderOrder = 13; V.g.add(m);
+  Wd.on(t => { m.material.opacity = opf(t); m.visible = m.material.opacity > .01; });
+}
+// the painted world on the cloth (S21)
+function paintDecal(Wd, V, opf) {
+  const tx = canvasTex(1024, 512, (g, w, h) => {
+    const sk = g.createLinearGradient(0, 0, 0, h * .62); sk.addColorStop(0, '#3e2450'); sk.addColorStop(.55, '#9c5a6a'); sk.addColorStop(1, '#f0b078'); g.fillStyle = sk; g.fillRect(0, 0, w, h);
+    g.fillStyle = '#ffe2a8'; g.beginPath(); g.arc(w * .7, h * .52, 70, 0, 7); g.fill(); g.fillStyle = 'rgba(255,226,168,.25)'; g.beginPath(); g.arc(w * .7, h * .52, 130, 0, 7); g.fill();
+    const hill = (y0, amp, col, f, ph) => { g.fillStyle = col; g.beginPath(); g.moveTo(0, h); for (let x = 0; x <= w; x += 8) g.lineTo(x, y0 + amp * Math.sin(x * f + ph) + amp * .5 * Math.sin(x * f * 2.3 + ph * 2)); g.lineTo(w, h); g.fill(); };
+    hill(h * .56, 26, '#6a3f62', .006, 1); hill(h * .66, 22, '#522f50', .008, 3); hill(h * .78, 18, '#3c2240', .01, 5);
+    const r = rng(11); for (let i = 0; i < 16; i++) { const x = 40 + r() * (w - 80), y = h * .68 + r() * h * .2, s = 18 + r() * 14; g.fillStyle = '#2c1a32'; g.fillRect(x, y, s * 1.4, s); g.beginPath(); g.moveTo(x - 4, y); g.lineTo(x + s * .7, y - s * .6); g.lineTo(x + s * 1.4 + 4, y); g.fill(); g.fillStyle = '#ffd08a'; g.fillRect(x + s * .45, y + s * .3, s * .3, s * .3); }
+    for (let i = 0; i < 12; i++) { const x = 30 + r() * (w - 60), y = h * .72 + r() * h * .22; g.fillStyle = '#2c1a32'; g.fillRect(x - 2, y, 4, 22); g.beginPath(); g.arc(x, y - 4, 14, 0, 7); g.fill(); } });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(V.W * .96, V.hh * .96), new THREE.MeshBasicMaterial({ map: tx, transparent: true, opacity: 0, depthWrite: false, fog: false })); m.position.set(0, .3 + V.hh / 2, V.frontZ + .01); m.renderOrder = 11; V.g.add(m);
+  Wd.on(t => { m.material.opacity = opf(t); m.visible = m.material.opacity > .01; });
+}
+// shadow sets
+const SH_MECH = [
+  { kind: 'gear', x: -9, y: 6.6, s: 3.6, spin: .22 }, { kind: 'gear', x: -5.7, y: 4.7, s: 2.4, spin: -.33 }, { kind: 'gear', x: -11.2, y: 3.4, s: 2.6, spin: -.3 }, { kind: 'gear', x: 8.6, y: 6.2, s: 3.1, spin: -.25 }, { kind: 'gear', x: 5.6, y: 4.4, s: 2.2, spin: .34 },
+  { kind: 'house', x: 10.6, y: 2.2, s: 3.0 }, { kind: 'house', x: -2.5, y: 2.0, s: 2.4 }, { kind: 'man', x: 2.4, y: 2.9, s: 3.6 }, { kind: 'man', x: -6.4, y: 2.6, s: 3.2 }, { kind: 'tower', x: 0.6, y: 6.2, s: 4.2, k: .8 }, { kind: 'pipe', x: -3.4, y: 7.8, s: 3.0 }, { kind: 'pipe', x: 3.6, y: 7.9, s: 2.6, rot: PI }];
+const BLOBS = [{ kind: 'blob', x: -10, y: 7.8, s: 4 }, { kind: 'blob', x: 10.5, y: 7.4, s: 3.6 }, { kind: 'blob', x: -2, y: 8.4, s: 3 }, { kind: 'blob', x: 5, y: 8.6, s: 3.2 }];
+
+// ---------- the beit midrash (walnut and plum), used for the opening and the prayer ----------
+function hall(Wd, o) {
+  o = o || {}; const hole = z0 => ({ c0: z0 - 1, c1: z0 + 1, y0: 1.5, y1: 3.6, pane: true });
+  seaRoom(Wd, { W: 11, D: 9, H: 5.2, skip: ['front'], wall: '#6e4a5c', pane: 0xffc890, holes: { left: [hole(-2.2), hole(1.8)], right: [hole(-2.2), hole(1.8)] } });
+  shelf(Wd, -5.22, -.2, PI / 2, 1.5); shelf(Wd, 5.22, -.2, -PI / 2, 1.5);
+  lamp(Wd, -2.6, 3.4, -.6, o.l1 === undefined ? 4 : o.l1, { top: 5.2 }); lamp(Wd, 2.6, 3.4, -.6, o.l2 === undefined ? 4 : o.l2, { top: 5.2 });
+  const A = aron(Wd, 0, -3.95, 0, { k: o.ak || (() => .25) });
+  for (const sx of [-1, 1]) for (const z of [-1.7, 1.5]) { table(Wd, { x: sx * 3.5, z, w: .9, d: 1.8 }); sefer(Wd, [sx * 3.5, .78, z], { ry: PI / 2, w: .5, d: .34, color: ['#7a3a40', '#6a2a30', '#2f5a3a'][(z > 0 ? 1 : 0) + (sx > 0 ? 1 : 0)] }); }
+  return A;
+}
+const hallWorld = () => stageWorld({ pillars: false, fogNear: 60, fogFar: 300, shadowExt: 16, skyR: 900, skyBottom: 0x7a4a48 });
+
+film({ shots: [
+  // ===== 1. (21.45) the rav in the beit midrash; yesterday: the outer preparations; now inward, into the daat =====
+  { dur: DURS[0], caps: [], build() {
+    const Wd = hallWorld(); hall(Wd, { ak: () => .22 }); shtender(Wd, { x: 1.2, z: -.75 }); ravAt(Wd, 1.2, -1.5, .1, .3);
+    for (const [x, z] of [[-3.5, -1.7], [3.5, 1.5]]) candle(Wd, x + .3, .78, z + .35, { h: .24, light: 1.2 });
+    const gl = glowSprite(0xffd890, 1.6, 0); gl.position.set(1.2, 1.12, -.8); Wd.add(gl); Wd.on(t => { gl.material.opacity = .85 * sm(prog(t, 12, 20)); gl.scale.setScalar(.6 + 1.6 * sm(prog(t, 12, 21))); });
+    lab(Wd, 'ההכנות החיצוניות', [1.2, 2.75, -1.4], lt(1, 22.2), lt(1, 25.6)); lab(Wd, 'פנימה, לתוך הדעת', [1.2, 2.75, -1.4], lt(1, 27.0), lt(1, 31.0) + 0);
+    return rig(Wd, path([[0, [-4.4, 2.7, 7.6], [0, 1.6, -1.5], 48], [7, [-1.6, 2.2, 5.0], [.9, 1.5, -1.4], 46], [13, [1.6, 1.8, 2.7], [1.2, 1.4, -1.2], 42], [DURS[0], [1.4, 1.75, .7], [1.2, 1.25, -1.0], 38]]));
+  } },
+  // ===== 2. (22.4) the dark corners of the world: where does this evil sit, who lets it in? =====
+  { dur: DURS[1], caps: [], build() {
+    const [Wd, V] = stg({ v: { op: () => .96, glow: t => .28 + .1 * sin(t * .5) } });
+    stand(Wd, manN(3), 0, 2.4, .1, t => ({ gesture: t > 8 ? 'think' : 'rest', smile: .1, seed: .3 }));
+    fogBank(Wd, { n: 16, area: [-14, -5, 0, 8, -6, 6], seed: 4, size: [5, 9], a: t => .9 * sm(prog(t, 0, 3)), target: () => [0, 2.2, 2.4], pull: t => .55 * sm(prog(t, 7, 20)) });
+    fogBank(Wd, { n: 16, area: [5, 14, 0, 8, -6, 6], seed: 8, size: [5, 9], a: t => .9 * sm(prog(t, 0, 3)), target: () => [0, 2.2, 2.4], pull: t => .55 * sm(prog(t, 7, 20)) });
+    shadows(Wd, V, SH_MECH, t => ({ op: .42 * sm(prog(t, 0, 3)), spinMul: 1 }));
+    fw(Wd, '?', t => ({ pos: [0, 4.4, 2.4], op: pop(t, lt(2, 44.0), lt(2, 44.0) + 1.2, 14, 15.4) * .95, s: 1 }), { screen: .12, size: 150 });
+    return rig(Wd, cine([[0, [0, 2.0, 2.4], 11.5, 1.6, -45, 50, .1], [11, [0, 2.0, 2.4], 9.2, 1.3, 5, 46, .1], [DURS[1], [0, 2.1, 2.4], 6.5, 1.0, 45, 44, .1]]));
+  } },
+  // ===== 3. (23.1) it has no existence of its own: a beam of light sweeps over the fog and the fog melts =====
+  { dur: DURS[2], caps: [], build() {
+    const [Wd, V] = stg({ v: { op: () => .95, glow: t => .3 + .35 * sm(prog(t, 4, 20)) } });
+    const bx = t => lerp(11, -13, sm(prog(t, 3, 19))); const tHit = x => 3 + (11 - x) / 24 * 16;
+    fogBank(Wd, { n: 26, area: [-14, 14, 0, 7, -7, 3], seed: 21, size: [4, 8], a: () => .95, kill: (t, x) => sm(clamp((t - tHit(x) + 1) / 3, 0, 1)) });
+    const pg = pillar(Wd, 0, 0, 12, 1.1, t => .9 * sm(prog(t, 2, 4)), 0xffd890); Wd.on(t => { pg.position.x = bx(t); });
+    stand(Wd, RAV, 0, 4.2, .0, t => ({ perform: .7, gesture: undefined, talk: talkF(t, 3), smile: .4 }));
+    lab(Wd, 'אין לו מציאות מצד עצמו', [0, 3.4, 4.2], lt(3, 64.2), lt(3, 69.6));
+    lab(Wd, 'רק בדעת שלנו', [0, 3.4, 4.2], lt(3, 71.9), lt(3, 78.8)); lab(Wd, 'מציאות נפרדת', [0, 3.4, 4.2], lt(3, 79.6), lt(3, 85.6));
+    return rig(Wd, path([[0, [-8, 2.4, 11], [0, 2.0, -2], 50], [10, [-2, 3.2, 10], [0, 2.4, -2], 48], [DURS[2], [6, 2.0, 8], [-1, 2.4, -3], 46]]));
+  } },
+  // ===== 4. (18.5) how: in our daat we grasp "there is none besides Him": golden writing rises from the open book =====
+  { dur: DURS[3], caps: [], build() {
+    const [Wd, V] = stg({ v: { op: () => .95, glow: t => .35 + .55 * sm(prog(t, lt(4, 93.5), lt(4, 99))) } });
+    shtender(Wd, { x: 0, z: 1.0 }); ravAt(Wd, 0, .2, .0, 4);
+    beam(Wd, () => [0, 0, 1.0], t => .8 * sm(prog(t, lt(4, 92.5), lt(4, 95))), { r: .7, h: 9 });
+    fw(Wd, 'אין עוד מלבדו', t => ({ pos: [0, lerp(1.9, 3.6, sm(prog(t, lt(4, 94.0), lt(4, 98)))), 1.0], op: sm(prog(t, lt(4, 94.0), lt(4, 95.0))) * (1 - sm(prog(t, 16.4, 17.6))), s: 1 }), { screen: .1, size: 90, style: { bg: 'rgba(60,26,48,.9)', color: '#ffd890' } });
+    lab(Wd, 'ר\' חיים מוולוז\'ין', [-2.2, 2.2, 1.0], lt(4, 98.0), lt(4, 101.8), { screen: .055, size: 64 });
+    return rig(Wd, cine([[0, [0, 1.7, .6], 5.0, .5, -50, 46, .2], [9, [0, 1.8, .6], 4.6, .7, 0, 44, .3], [DURS[3], [0, 2.1, .6], 5.6, .6, 40, 46, .5]]));
+  } },
+  // ===== 5. (28.3) two ways of leading the world: the Name Havayah (all of existence at every moment) and Elokim (the forces) =====
+  { dur: DURS[4], caps: [], build() {
+    const [Wd, V] = stg({ v: { op: () => .94, glow: t => .35 + .4 * sm(prog(t, 3, 20)) } });
+    pillar(Wd, -5.5, -2, 13, 1.1, t => 1.2 * sm(prog(t, lt(5, 106.2), lt(5, 110))), 0xfff0c6);
+    pillar(Wd, 5.5, -2, 13, 1.1, t => .95 * sm(prog(t, lt(5, 120.5), lt(5, 123.5))), 0xffb05a);
+    gearChain(Wd, { list: [10, 14, 10, 12], m: .13, start: [4.0, .9, -1.6], dirs: [.9, 0, -.5], depth: .16, speed: .9, c0: 0 }); gearChain(Wd, { list: [12, 16], m: .13, start: [7.3, .9, -1.6], dirs: [.8], depth: .16, speed: -.7, c0: 2 });
+    ravAt(Wd, 0, .4, .0, 5);
+    lab(Wd, 'שם הוי״ה', [-5.5, 6.2, -2], lt(5, 110.4), lt(5, 133.2)); lab(Wd, 'מהווה את הכל', [-5.5, 5.2, -2], lt(5, 118.0), lt(5, 133.2), { screen: .052, size: 60 });
+    lab(Wd, 'אלוקים', [5.5, 6.2, -2], lt(5, 122.6), lt(5, 133.2)); lab(Wd, 'הכוחות', [5.5, 5.2, -2], lt(5, 125.6), lt(5, 133.2), { screen: .052, size: 60 });
+    return rig(Wd, cine([[0, [0, 2.2, 0], 12.5, 1.6, -18, 50, 1.0], [14, [0, 2.4, 0], 11.5, 1.4, 14, 48, 1.1], [DURS[4], [0, 2.4, 0], 9.6, 1.0, -6, 46, 1.2]]));
+  } },
+  // ===== 6. (24.0) the world of mechanisms: a chain of wooden gears, a chain of dominoes: "this happened because of that" =====
+  { dur: DURS[5], caps: [], build() {
+    const [Wd, V] = stg({ v: { op: () => .94, glow: t => .45 + .2 * sm(prog(t, 4, 20)) } });
+    gearChain(Wd, { list: [16, 22, 12, 26, 14, 20, 10, 24], m: .14, start: [-11, 3.4, -3.2], dirs: [.22, -.2, .18, -.22, .2, -.12, .15], depth: .26, speed: .45, ry: 0 });
+    dominoes(Wd, { x0: -8.5, z: 3.0, n: 14, gap: .62, h: 1.1, w: .6, t0: lt(6, 151.7), dt: .3 });
+    shadows(Wd, V, SH_MECH.slice(0, 5), t => ({ op: .75 * sm(prog(t, 3, 11)), spinMul: 1 }));
+    lab(Wd, 'סיבה', [-3.5, 3.0, 3.0], lt(6, 147.0), lt(6, 150.0)); lab(Wd, 'ומסובב', [-1.0, 3.0, 3.0], lt(6, 147.8), lt(6, 150.0));
+    lab(Wd, 'זה קרה בגלל זה', [2.5, 3.0, 3.0], lt(6, 151.9), lt(6, 158.0));
+    return rig(Wd, path([[0, [-11, 2.0, 9], [-9, 2.2, -2], 50], [10, [-4, 2.6, 8.5], [-2, 2.2, 0], 48], [18, [4, 3.6, 8.5], [4, 2.0, 0], 48], [DURS[5], [10, 5.5, 11], [3, 2.6, -1], 50]]));
+  } },
+  // ===== 7. (23.0) an enormous, refined mechanism; tiny people live inside the laws =====
+  { dur: DURS[6], caps: [], build() {
+    const [Wd, V] = stg({ v: { op: () => .93, glow: () => .45 }, w: { fogFar: 150 } });
+    gearChain(Wd, { list: [30, 40, 24, 36], m: .2, start: [-12, 6.2, -3], dirs: [.15, -.2, .25], depth: .5, speed: .13 });
+    gearChain(Wd, { list: [36, 28, 44, 30], m: .2, start: [-4, 3.4, -6.4], dirs: [-.1, .2, -.15], depth: .5, speed: -.1, c0: 2 });
+    gearChain(Wd, { list: [26, 34, 22], m: .2, start: [6, 8.2, -1.8], dirs: [-.3, .1], depth: .5, speed: .17, c0: 1 });
+    Wd.add(box(15, .2, 2.4, WALNUT2, { pos: [0, 2.1, 1.7] })); for (const x of [-7, -3.5, 0, 3.5, 7]) Wd.add(box(.16, 2.1, .16, WALNUT, { pos: [x, 1.05, 2.7], ink: false }));
+    Wd.add(box(15, .08, .08, WALNUT, { pos: [0, 2.85, 2.8], ink: false }));
+    const rA = route([[0, -6.5, 1.7, PI / 2], [11, 6.0, 1.7, PI / 2], [12, 6.0, 1.7, -PI / 2], [23, -6.0, 1.7, -PI / 2]], { y: 2.2 }), rB = route([[0, 5.5, 1.3, -PI / 2], [10, -5.5, 1.3, -PI / 2], [11, -5.5, 1.3, PI / 2], [23, 5.5, 1.3, PI / 2]], { y: 2.2 });
+    person(Wd, manN(2), t => Object.assign({ gesture: 'rest', smile: .3, seed: .2, groundY: 2.2 }, rA(t)), { scale: .45 }); person(Wd, manN(5), t => Object.assign({ gesture: 'rest', smile: .3, seed: .6, groundY: 2.2 }, rB(t)), { scale: .45 });
+    lab(Wd, 'החוקים', [0, 5.2, 1.7], lt(7, 172.2), lt(7, 177.2));
+    return rig(Wd, path([[0, [0, 3.0, 24], [0, 3.8, -3], 52], [9, [-3, 3.6, 13], [0, 3.5, 0], 50], [17, [2.5, 3.0, 7.2], [1, 3.0, 0], 46], [DURS[6], [5, 3.4, 6.2], [4, 3.6, -2], 44]]));
+  } },
+  // ===== 8. (26.0) the laboratory: researchers labour in great wisdom; the pill is made =====
+  { dur: DURS[7], caps: [], build() {
+    const [Wd, V] = stg({ v: { op: () => .95, glow: () => .4 } });
+    bench(Wd, 0, 0, 7.4, 1.7, .9); for (const [x, c] of [[-2.8, 0xe08aa8], [-2.2, 0x8ad0e0], [-1.6, 0xe0c870], [-1.0, 0xa8e090]]) vessel(Wd, [x, .9, -.1], 'tube', c, 1.2);
+    vessel(Wd, [1.0, .9, -.1], 'flask', 0xe0a870, 2.2); vessel(Wd, [2.6, .9, .1], 'flask', 0x90d0c0, 1.8); vessel(Wd, [-3.2, .9, .3], 'cup', 0xe8d8a0, 2);
+    Wd.add(box(.7, .5, .5, WALNUT, { pos: [3.1, 1.15, -.2] })); Wd.add(cyl(.09, .09, .5, '#6a5a44', { pos: [3.1, 1.65, -.2] })); Wd.add(cyl(.05, .05, .4, '#2a2a30', { pos: [3.1, 1.95, -.34], rot: [.5, 0, 0] }));
+    for (const y of [2.1, 3.1]) { Wd.add(box(7.4, .08, .5, WALNUT, { pos: [0, y, -2.6] })); for (let i = 0; i < 12; i++) vessel(Wd, [-3.3 + i * .6, y + .04, -2.6], i % 3 ? 'tube' : 'flask', [0xe08aa8, 0x8ad0e0, 0xe0c870][i % 3], 1.1); }
+    stand(Wd, WHITE(2), -1.5, 1.3, PI + .3, t => ({ gesture: 'think', smile: .15, seed: .3 })); stand(Wd, WHITE(5), 1.2, 1.3, PI - .35, t => ({ gesture: t < 12 ? 'explainA' : 'point', talk: talkF(t, 2), smile: .2, seed: .5 })); stand(Wd, WHITE(8), 3.6, 1.0, PI + .6, t => ({ gesture: 'rest', seed: .8 }));
+    const mt = motes(Wd, 22, { normal: true }); Wd.on(t => { for (let i = 0; i < 22; i++) { const u = (t * .12 + i * .137) % 1, k = sm(prog(t, lt(8, 192.5), lt(8, 195.5))); mt.set(i, -1.0 + .9 * sin(i * 2.3 + t * .4), 1.9 + .6 * sin(i * 1.7 + t * .5), -.1 + .5 * cos(i * 1.1 + t * .3), .2 * k * (.5 + .5 * sin(i)), .24, .08, .3); } mt.done(); });
+    const pl = pill(.035, .13); pl.rotation.z = PI / 2; Wd.add(pl); Wd.on(t => { pl.visible = t > lt(8, 206.3); pl.position.set(.2, .98, .35); pl.scale.setScalar(1 + .6 * (1 - sm(prog(t, lt(8, 206.3), lt(8, 206.3) + .6)))); });
+    lab(Wd, 'בחוכמה עצומה', [0, 3.9, 0], lt(8, 203.8), lt(8, 209.6));
+    return rig(Wd, cine([[0, [0, 1.6, 0], 7.4, 1.2, -45, 50, .2], [13, [0, 1.6, 0], 5.4, .8, 20, 46, .2], [DURS[7], [.3, 1.3, .3], 3.4, .6, -20, 40, .1]]));
+  } },
+  // ===== 9. (14.0) the little pill rides into the machine; "so where is the Holy One?" =====
+  { dur: DURS[8], caps: [], build() {
+    const [Wd, V] = stg({ v: { op: () => .95, glow: t => .35 + .25 * sm(prog(t, 9, 13)) } });
+    Wd.add(box(14, .16, 1.0, WALNUT2, { pos: [-2.5, 1.0, 0] })); for (let i = 0; i < 12; i++) Wd.add(cyl(.1, .1, 1.05, '#3a2a20', { pos: [-9 + i * 1.2, .92, 0], rot: [PI / 2, 0, 0], ink: false }));
+    for (const x of [-8, -3, 2]) Wd.add(box(.2, .9, .2, WALNUT, { pos: [x, .45, .4], ink: false }));
+    Wd.add(box(3.6, 3.4, 2.4, WALNUT, { pos: [6.0, 1.7, 0] })); Wd.add(box(.2, .7, 1.0, '#140a12', { pos: [4.18, 1.4, 0], ink: false }));
+    gearChain(Wd, { list: [12, 18, 12], m: .16, start: [6.0, 2.2, 1.25], dirs: [.2, -.2], depth: .2, speed: 1.2 }); gearChain(Wd, { list: [14, 10], m: .16, start: [6.4, 0.9, 1.25], dirs: [.1], depth: .2, speed: -1.1, c0: 2 });
+    const pl = pill(.09, .34); Wd.add(pl); Wd.on(t => { const u = clamp(t / 7.0, 0, 1), x = lerp(-8.8, 4.3, ease.io(u)); pl.visible = x < 4.2; pl.rotation.z = PI / 2; pl.position.set(x, 1.28, 0); pl.rotation.x = t * 1.6; });
+    lab(Wd, 'אז איפה הקב״ה?', [0, 5.6, 0], lt(9, 217.6), lt(9, 223.9));
+    stand(Wd, manN(4), -5.5, 3.5, PI - .5, t => ({ gesture: 'rest', seed: .7 }));
+    return rig(Wd, path([[0, [-9.5, 2.0, 3.8], [-8, 1.3, 0], 46], [6.5, [0, 2.3, 5.4], [2, 1.7, 0], 44], [DURS[8], [5, 5.2, 10.5], [5, 3.2, 0], 50]]));
+  } },
+  // ===== 10. (16.0) the answer: in the inner side of everything. The light behind the veil shows through the machines =====
+  { dur: DURS[9], caps: [], build() {
+    const [Wd, V] = stg({ v: { op: t => .8 - .42 * sm(prog(t, 2, 12)), glow: t => .6 + .6 * sm(prog(t, 1, 13)) } });
+    gearChain(Wd, { list: [16, 22, 12, 26, 14], m: .16, start: [-8, 3.0, -4.2], dirs: [.2, -.18, .2, -.2], depth: .26, speed: .5 });
+    Wd.add(box(5.8, 3.8, .3, '#8a5a36', { pos: [6.8, 4.6, -2.5], ink: false })); gearChain(Wd, { list: [14, 20], m: .16, start: [5.2, 4.6, -2.0], dirs: [-.2], depth: .2, speed: -.5, c0: 2 });
+    shadows(Wd, V, SH_MECH, t => ({ op: .8 * sm(prog(t, 3, 10)) }));
+    lab(Wd, 'בפנימיות הכל', [0, 8.6, -7.5], lt(10, 227.8), lt(10, 233.6)); lab(Wd, 'הוא יצר את החוקים', [0, 7.6, -7.5], lt(10, 229.5), lt(10, 233.6), { screen: .055, size: 64 }); lab(Wd, 'רק אליו', [0, 6.6, -7.5], lt(10, 237.4), lt(10, 239.9));
+    return rig(Wd, path([[0, [0, 2.6, 14], [0, 4.4, -9], 50], [9, [0, 3.6, 5], [0, 4.8, -9], 48], [DURS[9], [0.6, 4.4, 0.5], [0, 5.0, -9], 52]]));
+  } },
+  // ===== 11. (27.95) a man takes a pill: he stops and says "may it be Your will that this treatment heal"; a thread of light joins the pill to its source =====
+  { dur: DURS[10], caps: [], build() {
+    const [Wd, V] = stg({ v: { op: () => .9, glow: t => .5 + .5 * sm(prog(t, lt(11, 251.5), lt(11, 258))) } });
+    bench(Wd, 0, 1.15, 1.7, .8, .85); vessel(Wd, [-.4, .85, 1.1], 'cup', 0xbfe4f4, 2.4); const dish = cyl(.12, .1, .02, CREAM, { pos: [.25, .87, 1.15] }); Wd.add(dish);
+    const pl = pill(.03, .1); pl.rotation.z = PI / 2; pl.position.set(.25, .93, 1.15); Wd.add(pl);
+    stand(Wd, manN(6), 0, .25, .0, t => ({ gesture: t < lt(11, 244.3) ? 'eat' : t < lt(11, 247.6) ? 'rest' : t < lt(11, 255) ? 'offer' : t < lt(11, 259) ? 'think' : 'rest', talk: t > lt(11, 248.9) && t < lt(11, 254) ? talkF(t, 1.5) : 0, smile: .25, seed: .4 }));
+    const sg = gearChain(Wd, { list: [10, 12], m: .02, start: [.62, 1.0, 1.1], dirs: [.7], depth: .02, speed: 2.2, skipInk: true }); sg.g.scale.setScalar(1); Wd.on(t => { sg.g.visible = t > lt(11, 255.3) && t < lt(11, 262.4); });
+    threadSet(Wd, { n: 3, color: 0xffd890, r: .018, anchor: (i, t) => [-.6 + i * .6, 8.4, -8.6], target: (i, t) => [.25, .95, 1.15], a: (i, t) => sm(prog(t, lt(11, 252.4) + i * .5, lt(11, 257.5) + i * .5)) });
+    lab(Wd, 'יהי רצון מלפניך', [0, 3.0, .3], lt(11, 248.9), lt(11, 252.2)); lab(Wd, 'שיהא עסק זה לרפואה', [0, 3.0, .3], lt(11, 252.4), lt(11, 258.6));
+    lab(Wd, 'זה לא עובד לבד', [0, 3.0, .3], lt(11, 261.8), lt(11, 267.9));
+    return rig(Wd, cine([[0, [0, 1.15, .7], 4.8, .7, -35, 44, .1], [12, [0, 1.2, .8], 4.2, .9, 10, 42, .1], [20, [.1, 1.2, 1.0], 3.2, .8, 35, 38, .0], [DURS[10], [.15, 1.1, 1.1], 3.0, .9, -10, 38, 0]]));
+  } },
+  // ===== 12. (20.2) the Havayah gives life to all; the laws are Elokim: order, choice and illusion. The mechanisms are only shadows on the cloth =====
+  { dur: DURS[11], caps: [], build() {
+    const [Wd, V] = stg({ v: { op: () => .72, glow: () => .95 } });
+    shadows(Wd, V, SH_MECH, t => ({ op: .86, spinMul: 1 }));
+    stand(Wd, manN(6), 0, 4.5, PI, t => ({ gesture: 'rest', seed: .4 }));
+    lab(Wd, 'סדר', [-5, 7.0, -8.4], lt(12, 301.0), lt(12, 309.0)); lab(Wd, 'בחירה', [0, 7.0, -8.4], lt(12, 301.7), lt(12, 309.0)); lab(Wd, 'אשליה', [5, 7.0, -8.4], lt(12, 302.6), lt(12, 309.0));
+    return rig(Wd, path([[0, [-6, 2.6, 12], [0, 4.4, -9], 52], [10, [0, 3.0, 9], [0, 4.6, -9], 50], [DURS[11], [5, 3.4, 8], [0, 4.6, -9], 48]]));
+  } },
+  // ===== 13. (26.0) summary: the whole world seems to run alone; once we take it for independent, the shadows grow and rule =====
+  { dur: DURS[12], caps: [], build() {
+    const [Wd, V] = stg({ v: { op: t => .92 - .18 * sm(prog(t, lt(13, 329.5), lt(13, 336))), glow: t => .6 - .2 * sm(prog(t, lt(13, 329.5), lt(13, 336))) } });
+    gearChain(Wd, { list: [16, 22, 12, 26, 14, 20, 10, 24], m: .14, start: [-11, 2.4, -2.6], dirs: [.22, -.2, .18, -.22, .2, -.12, .15], depth: .26, speed: .45 });
+    dominoes(Wd, { x0: -8.5, z: 2.6, n: 14, gap: .62, h: 1.1, w: .6, t0: -10, dt: .3 });
+    shadows(Wd, V, SH_MECH, t => ({ op: .55 + .3 * sm(prog(t, lt(13, 330), lt(13, 336))), grow: 1 + .5 * sm(prog(t, lt(13, 330.5), lt(13, 337))) }));
+    fogBank(Wd, { n: 12, area: [-24, -14, 0, 7, -7, 5], seed: 40, size: [5, 9], a: t => .8 * sm(prog(t, lt(13, 331), lt(13, 337))) }); fogBank(Wd, { n: 12, area: [14, 24, 0, 7, -7, 5], seed: 41, size: [5, 9], a: t => .8 * sm(prog(t, lt(13, 331), lt(13, 337))) });
+    stand(Wd, manN(6), 2.4, 1.0, PI - .5, t => ({ gesture: 'rest', seed: .4 }));
+    lab(Wd, 'נתנו כוח לכוחות', [0, 7.2, 0], lt(13, 331.0), lt(13, 338.0));
+    return rig(Wd, path([[0, [-3, 2.0, 8], [-2, 2.2, 0], 50], [9, [3, 3.4, 12], [0, 2.8, -2], 52], [18, [0, 5.4, 19], [0, 3.8, -4], 54], [DURS[12], [0, 7.2, 25], [0, 4.0, -4], 56]]));
+  } },
+  // ===== 14. (14.8) he grasps it simply: the shadows shrink and the light grows in his chest =====
+  { dur: DURS[13], caps: [], build() {
+    const [Wd, V] = stg({ v: { op: t => .9 - .35 * sm(prog(t, 6, 13)), glow: t => .45 + .65 * sm(prog(t, 4, 13)) } });
+    shadows(Wd, V, SH_MECH, t => ({ op: .85 * (1 - sm(prog(t, 5, 12))), grow: 1.5 - .6 * sm(prog(t, 3, 12)) }));
+    fogBank(Wd, { n: 14, area: [-22, -12, 0, 7, -7, 5], seed: 50, size: [5, 9], a: t => .7 * (1 - sm(prog(t, 2, 9))) }); fogBank(Wd, { n: 14, area: [12, 22, 0, 7, -7, 5], seed: 51, size: [5, 9], a: t => .7 * (1 - sm(prog(t, 2, 9))) });
+    stand(Wd, manN(6), 0, 3.0, 0, t => ({ gesture: 'heart', smile: .15 + .5 * sm(prog(t, 5, 12)), seed: .4 }));
+    innerLight(Wd, () => chestPos([0, FL, 3.0], 0), t => .1 + 1.3 * sm(prog(t, lt(14, 344.5), lt(14, 351))), { k: 1.1, light: true, power: .8 });
+    lab(Wd, 'אין עוד מלבדו', [0, 3.4, 3.0], lt(14, 345.2), lt(14, 352.4));
+    return rig(Wd, cine([[0, [0, 1.3, 3.0], 6.4, .9, -30, 46, .2], [DURS[13], [0, 1.4, 3.0], 3.6, .5, 20, 40, .2]]));
+  } },
+  // ===== 15. (18.25) "what is the segulah?": not the willow branches; the light is in the mind of the one who grasps =====
+  { dur: DURS[14], caps: [], build() {
+    const [Wd, V] = stg({ v: { op: () => .92, glow: t => .4 + .5 * sm(prog(t, 12, 17)) } });
+    bench(Wd, -1.3, 1.4, 2.0, .9, .85); willow(Wd, [-1.3, .85, 1.4], { rz: 1.5, ry: .4, s: 1 }); willow(Wd, [-1.7, .86, 1.7], { rz: 1.5, ry: 2.0, s: .9 });
+    stand(Wd, manN(6), 1.7, 1.2, -.5, t => ({ gesture: t < lt(15, 366) ? 'shrug' : 'rest', smile: .2 + .4 * sm(prog(t, 13, 17)), seed: .4 }));
+    innerLight(Wd, () => chestPos([1.7, FL, 1.2], -.5), t => .06 + 1.2 * sm(prog(t, lt(15, 372.2), lt(15, 375.8))), { k: 1.0, light: true, power: .8 });
+    lab(Wd, 'סגולה?', [-1.3, 2.2, 1.4], lt(15, 359.0), lt(15, 363.2)); lab(Wd, 'עם הערבה החבוטה', [-1.3, 2.2, 1.4], lt(15, 366.8), lt(15, 370.0)); lab(Wd, 'משיגים את זה בדעתו', [1.7, 3.2, 1.2], lt(15, 372.6), lt(15, 377.0));
+    return rig(Wd, cine([[0, [-.2, 1.2, 1.3], 5.6, .8, -40, 44, .1], [9, [-.2, 1.2, 1.3], 4.6, .6, 10, 42, .1], [DURS[14], [.2, 1.3, 1.3], 4.4, .6, 38, 42, .2]]));
+  } },
+  // ===== 16. (19.6) removing the screen of all the forces: the cloth is drawn aside by the wind; "the opportunity is in prayer" =====
+  { dur: DURS[15], caps: [], build() {
+    const [Wd, V] = stg({ v: { op: t => .9 - .3 * sm(prog(t, 6, 16)), glow: t => .5 + .6 * sm(prog(t, 5, 16)), wave: t => .12 + .3 * sm(prog(t, 4, 9)), lift: t => .8 * sm(prog(t, lt(16, 379.6), lt(16, 392))) } });
+    const mt = motes(Wd, 60); Wd.on(t => { for (let i = 0; i < 60; i++) { const u = (t * .2 + i * .137) % 1; mt.set(i, -9 + u * 20, 1 + 6 * ((i * 7) % 10) / 10 + .4 * sin(t + i), -6 + (i * .71 % 12), .08 * sin(PI * u), 1, .86, .55); } mt.done(); });
+    stand(Wd, manN(6), -1, -3, PI, t => ({ gesture: 'pray', smile: .2, seed: .3 }));
+    shadows(Wd, V, SH_MECH, t => ({ op: .8 * (1 - sm(prog(t, 4, 12))) }));
+    lab(Wd, 'לסלק את המסך', [0, 6.2, -2], lt(16, 379.6), lt(16, 384.2)); lab(Wd, 'ההזדמנות — בתפילה', [0, 6.2, -2], lt(16, 384.4), lt(16, 389.0)); lab(Wd, 'הכל אחד', [0, 6.2, -2], lt(16, 393.6), lt(16, 396.5));
+    return rig(Wd, path([[0, [-6, 1.2, 9], [0, 4.4, -9], 50], [10, [-2, 2.0, 8], [-2, 5.0, -9], 52], [DURS[15], [3, 3.4, 8.5], [-3, 5.6, -9], 54]]));
+  } },
+  // ===== 17. (18.9) all of it is only on our side; when a man reaches this the dark mist withdraws; the shadows crumble to dust =====
+  { dur: DURS[16], caps: [], build() {
+    const [Wd, V] = stg({ v: { op: t => .62 - .0 * t, glow: t => .8 + .3 * sm(prog(t, 8, 15)) } });
+    fogBank(Wd, { n: 22, area: [-20, 20, 0, 7, -7, 6], seed: 60, size: [5, 9], a: t => .9 * (1 - sm(prog(t, lt(17, 405.8), lt(17, 411.5)))) });
+    shadows(Wd, V, SH_MECH.concat(BLOBS), t => ({ op: .85 * (1 - sm(prog(t, lt(17, 407.0), lt(17, 410.5)))), grow: 1 - .2 * sm(prog(t, lt(17, 407), lt(17, 410.5))) }));
+    const dm = motes(Wd, 70, { normal: true }), rr = rng(5), DP = []; for (let i = 0; i < 70; i++) DP.push([rr() * 24 - 12, 1 + rr() * 8, -8.6 + rr() * .5, rr()]);
+    Wd.on(t => { const k = sm(prog(t, lt(17, 407.2), lt(17, 409))) * (1 - sm(prog(t, lt(17, 411.5), lt(17, 415)))); for (let i = 0; i < 70; i++) { const [x, y, z, ph] = DP[i], u = clamp((t - lt(17, 407.2) - ph * 1.6) / 4, 0, 1); dm.set(i, x + 1.5 * u, y - 6 * u * u, z + .6, .13 * k * (1 - u), .17, .08, .22); } dm.done(); });
+    stand(Wd, RAV, 0, 3.6, 0, t => ({ perform: .6, gesture: undefined, talk: talkF(t, 2), smile: .5, seed: .5 }));
+    lab(Wd, 'להעביר גלולים מן הארץ', [0, 4.8, 3.6], lt(17, 410.6), lt(17, 415.4));
+    return rig(Wd, cine([[0, [0, 2.2, 1.0], 11.5, 1.2, -30, 50, 1.4], [10, [0, 2.4, 0.5], 10, 1.4, 12, 48, 1.8], [DURS[16], [0, 2.8, 0], 8.4, 1.2, 38, 46, 2.2]]));
+  } },
+  // ===== 18. (24.5) where does it happen? In our daat, in the time of prayer: "heal us" at the siddur, before the ark =====
+  { dur: DURS[17], caps: [], build() {
+    const Wd = hallWorld(); hall(Wd, { ak: t => .35 + .5 * sm(prog(t, 4, 20)), l1: 5, l2: 5 }); shtender(Wd, { x: 0, z: .4 }); stand(Wd, RAV, 0, -.35, 0, t => ({ gesture: t < 7 ? 'rest' : 'pray', smile: .3, seed: .3 }));
+    sefer(Wd, [0, 1.07, .43], { w: .4, d: .3, color: '#7a3a40', glow: .4 }); const sg = glowSprite(0xffd890, 1.2, 0); sg.position.set(0, 1.12, .45); Wd.add(sg); Wd.on(t => { sg.material.opacity = .7 * sm(prog(t, lt(18, 425.4), lt(18, 428))) * (1 - .4 * sm(prog(t, lt(18, 432), lt(18, 436)))); });
+    lab(Wd, 'בדעת שלנו, בזמן התפילה', [0, 2.8, 0.4], lt(18, 416.3), lt(18, 421.8)); lab(Wd, 'רפאנו', [0, 2.8, 0.4], lt(18, 426.0), lt(18, 430.2));
+    lab(Wd, 'איפה עמידתי לפני המלך?', [0, 2.8, 0.4], lt(18, 433.6), lt(18, 439.9));
+    return rig(Wd, cine([[0, [0, 1.5, -.2], 5.6, .5, 40, 44, .2], [12, [0, 1.6, -.2], 4.4, .4, -10, 42, .2], [DURS[17], [0, 1.9, -1.0], 5.2, .7, -50, 44, .3]]));
+  } },
+  // ===== 19. (23.0) the illnesses and the causes are tied back to the source with threads of light: "so we stand before the King" =====
+  { dur: DURS[18], caps: [], build() {
+    const Wd = hallWorld(); hall(Wd, { ak: t => .55 + .35 * sm(prog(t, 8, 19)), l1: 5, l2: 5 }); stand(Wd, RAV, 0, 0.6, 0, t => ({ gesture: t < lt(19, 450) ? 'rest' : 'offer', smile: .3, seed: .3 }));
+    const N = 9, rr = rng(14), B = []; for (let i = 0; i < N; i++) B.push([(rr() - .5) * 4.2, 1.0 + rr() * 2.0, -.6 + rr() * 2.8, rr()]);
+    const bm = motes(Wd, N, { normal: true }), tA = lt(19, 447.0), tC = lt(19, 450.4), tR = lt(19, 453.6), P = (i, t) => { const [x, y, z, ph] = B[i], u = sm(prog(t, tR + ph * 1.5, tR + ph * 1.5 + 3.4)); return [lerp(x, 0, u) + .2 * sin(t * .8 + i), lerp(y, 4.6, u) + .1 * sin(t + i), lerp(z, -3.5, u)]; };
+    Wd.on(t => { for (let i = 0; i < N; i++) { const p = P(i, t), a = sm(prog(t, tA + B[i][3] * 1.5, tA + B[i][3] * 1.5 + 1)), g = sm(prog(t, tC, tC + 3)); bm.set(i, p[0], p[1], p[2], .36 * a * (1 - .6 * sm(prog(t, tR + 3, tR + 6))), lerp(.2, 1, g), lerp(.08, .78, g), lerp(.3, .4, g)); } bm.done(); });
+    threadSet(Wd, { n: N, color: 0xffd890, r: .014, anchor: (i, t) => [0, 5.0, -3.6], target: (i, t) => P(i, t), a: (i, t) => sm(prog(t, tC + B[i][3], tC + B[i][3] + 1.8)) });
+    const gl = glowSprite(0xffd890, 3.2, 0); gl.position.set(0, 4.9, -3.6); Wd.add(gl); Wd.on(t => { gl.material.opacity = .85 * sm(prog(t, tC, tC + 3)); });
+    lab(Wd, 'סיבות וחיידקים', [0, 4.0, 0.6], lt(19, 446.6), lt(19, 450.0)); lab(Wd, 'חזרה למקור', [0, 4.0, 0.6], lt(19, 451.6), lt(19, 455.6)); lab(Wd, 'עומדים לפני המלך', [0, 4.0, 0.6], lt(19, 455.8), lt(19, 462.6));
+    return rig(Wd, path([[0, [-5, 1.5, 7], [0, 2.4, -1], 52], [11, [0, 1.3, 6.4], [0, 3.0, -1.4], 54], [DURS[18], [4.6, 2.0, 5.8], [0, 3.4, -1.8], 54]]));
+  } },
+  // ===== 20. (22.85) "it is a battle": the cloth trembles, mist against light (no figures fighting) =====
+  { dur: DURS[19], caps: [], build() {
+    const [Wd, V] = stg({ v: { op: () => .85, glow: t => .8 + .2 * sin(t * 2.2), wave: t => .25 + .35 * (.5 + .5 * sin(t * .9)) } });
+    const pull = t => .62 * (.5 + .5 * sin(t * .75 - 1)), ll = t => 1.1 - pull(t) * 1.1 + .1;
+    fogBank(Wd, { n: 20, area: [-24, -10, 0, 8, -6, 6], seed: 70, size: [6, 10], a: () => .9, target: () => [0, 3.0, 1.0], pull }); fogBank(Wd, { n: 20, area: [10, 24, 0, 8, -6, 6], seed: 71, size: [6, 10], a: () => .9, target: () => [0, 3.0, 1.0], pull });
+    pillar(Wd, -3.6, -1, 12, 1.0, t => ll(t) * 1.1, 0xfff0c6); pillar(Wd, 3.6, -1, 12, 1.0, t => ll(t + 2) * 1.1, 0xffcf80);
+    stand(Wd, manN(6), 0, 4.2, PI, t => ({ gesture: 'rest', seed: .4 })); stand(Wd, manN(9), -1.4, 4.4, PI, t => ({ gesture: 'rest', seed: .8 }));
+    lab(Wd, 'קרב', [0, 6.8, -3], lt(20, 484.4), lt(20, 485.85), { screen: .12, size: 130 });
+    return rig(Wd, path([[0, [-7, 2.6, 14], [0, 3.6, -3], 52], [11, [0, 3.0, 11], [0, 4.0, -3], 52], [DURS[19], [6, 2.8, 10], [0, 4.0, -3], 50]]));
+  } },
+  // ===== 21. (26.4) all of reality is one great imagination: a painted world on the cloth; the light breaks through from behind =====
+  { dur: DURS[20], caps: [], build() {
+    const [Wd, V] = stg({ v: { op: t => .94 - .5 * sm(prog(t, lt(21, 514.4), lt(21, 520)) ), glow: t => .45 + .8 * sm(prog(t, lt(21, 514), lt(21, 521))) } });
+    paintDecal(Wd, V, t => .96 * sm(prog(t, 3, 8)) * (1 - .8 * sm(prog(t, lt(21, 514.4), lt(21, 521)))));
+    rays(Wd, V, t => .8 * sm(prog(t, lt(21, 514.4), lt(21, 522))));
+    shadows(Wd, V, SH_MECH, t => ({ op: .42 * (1 - sm(prog(t, 3, 8))), spinMul: 1 }));
+    stand(Wd, RAV, 0, 4.4, PI, t => ({ gesture: 'rest', seed: .3 }));
+    lab(Wd, 'דמיון אחד גדול', [0, 6.6, -3], lt(21, 508.2), lt(21, 513.5)); lab(Wd, 'מי שמסתתר מאחורי כולו', [0, 6.6, -3], lt(21, 514.6), lt(21, 518.9), { screen: .06, size: 66 });
+    return rig(Wd, path([[0, [0, 2.4, 15], [0, 4.6, -9], 54], [13, [0, 3.2, 8.5], [0, 4.8, -9], 50], [DURS[20], [0, 4.4, 1.5], [0, 5.0, -9], 50]]));
+  } },
+  // ===== 22. (16.2) the order of prayer as steps of light =====
+  { dur: DURS[21], caps: [], build() {
+    const tt = [530.06, 531.55, 533.37, 534.74, 535.62, 537.2], names = ['הברכות', 'ברכות השחר', 'קרבנות', 'פסוקי דזמרה', 'קריאת שמע', 'שמונה עשרה'];
+    const [Wd, V] = stg({ v: { op: () => .9, glow: t => .5 + .5 * sm(prog(t, lt(22, 531), lt(22, 538))) } });
+    const S = stairs(Wd, { n: 6, pos: [0, 0, 6.5], w: 6, d: 2.2, h: .46, k: (i, t) => sm(prog(t, lt(22, tt[i]), lt(22, tt[i]) + .9)) });
+    names.forEach((n, i) => lab(Wd, n, [i % 2 ? 2.6 : -2.6, S.topY(i) + 1.2, S.zAt(i)], lt(22, tt[i]), lt(22, 540.5) + 1, { screen: .055, size: 66 }));
+    const r = route([[0, 0, 10.5, PI], [lt(22, 529.0), 0, 10.5, PI], [lt(22, 531.0), 0, S.zAt(0), PI], [lt(22, 533.0), 0, S.zAt(2), PI], [lt(22, 535.4), 0, S.zAt(4), PI], [lt(22, 538.0), 0, S.zAt(5), PI]], { y: 0 });
+    person(Wd, manN(6), t => { const q = r(t), u = clamp((6.5 - q.pos[2]) / 2.2, -1.2, 5), y = Math.max(FL, .46 * (u + 1)); return Object.assign({ gesture: 'rest', smile: .35, seed: .4, groundY: y }, q, { pos: [q.pos[0], y, q.pos[2]] }); });
+    return rig(Wd, path([[0, [-8, 1.5, 12], [0, 1.6, 0], 52], [8, [-6, 2.4, 11], [0, 2.4, -1], 52], [DURS[21], [4.5, 4.4, 10], [0, 3.0, -2], 50]]));
+  } },
+  // ===== 23. (15.2 + 4.8 end card) standing, standing, standing: a hard war; the cloth thickens a little; wide and quiet finish =====
+  { dur: DURS[22], caps: [], build() {
+    const [Wd, V] = stg({ v: { op: t => .8 + .12 * sm(prog(t, lt(23, 551.2), lt(23, 555.5))), glow: t => .95 - .3 * sm(prog(t, lt(23, 551.2), lt(23, 555.5))) } });
+    let n = 0; for (const z of [2.6, 5.0, 7.4]) for (const x of [-6, -3, 0, 3, 6]) { n++; const i = n; stand(Wd, manN(i), x + (z === 5.0 ? 1.5 : 0), z, PI, t => ({ gesture: i % 3 === 0 ? 'pray' : 'rest', smile: .3, seed: .13 * i })); }
+    fogBank(Wd, { n: 12, area: [-24, -14, 0, 7, -7, 5], seed: 90, size: [5, 9], a: t => .55 * sm(prog(t, lt(23, 551.5), lt(23, 556))) }); fogBank(Wd, { n: 12, area: [14, 24, 0, 7, -7, 5], seed: 91, size: [5, 9], a: t => .55 * sm(prog(t, lt(23, 551.5), lt(23, 556))) });
+    lab(Wd, 'עומדים, עומדים, עומדים', [0, 5.4, 4.0], lt(23, 540.8), lt(23, 543.4)); lab(Wd, 'ובדעת שלנו תופסים', [0, 5.4, 4.0], lt(23, 543.5), lt(23, 546.9)); lab(Wd, 'מלחמה קשה', [0, 5.4, 4.0], lt(23, 548.0), lt(23, 551.2));
+    return rig(Wd, path([[0, [0, 2.2, 14], [0, 3.6, -3], 50], [10, [0, 3.4, 18], [0, 3.8, -3], 52], [DURS[22], [0, 6.0, 26], [0, 4.0, -3], 56]]));
+  } },
+] });
+</script>
