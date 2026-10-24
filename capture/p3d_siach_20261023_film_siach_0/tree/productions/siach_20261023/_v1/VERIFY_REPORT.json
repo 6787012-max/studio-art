@@ -1,0 +1,46 @@
+{
+ "film": "film_siach.html",
+ "status": "FAIL",
+ "time": "2026-10-24T08:57:02",
+ "samples": 0,
+ "findings": [
+  {
+   "sev": "P0",
+   "code": "NOT_READY",
+   "t": null,
+   "shot": null,
+   "detail": "window.__ready never became true: Page.wait_for_function: Timeout 600000ms exceeded.",
+   "fix": "run stills.py on the film, read the page errors, fix the first one"
+  },
+  {
+   "sev": "P0",
+   "code": "CONSOLE_ERROR",
+   "t": null,
+   "shot": null,
+   "detail": "console x1: Failed to load resource: net::ERR_FILE_NOT_FOUND",
+   "fix": "fix the first error in the console; failed assets must exist locally"
+  },
+  {
+   "sev": "P0",
+   "code": "NO_SAMPLES",
+   "t": null,
+   "shot": null,
+   "detail": "0 frames sampled",
+   "fix": "a verify with zero samples is a FAIL; resolve the blocking finding"
+  },
+  {
+   "sev": "P1",
+   "code": "REQUEST_FAILED",
+   "t": null,
+   "shot": null,
+   "detail": "requestfailed x1: road.js",
+   "fix": "fix the first error in the console; failed assets must exist locally"
+  }
+ ],
+ "sheets": null,
+ "partial": {
+  "shot": "s01",
+  "note": "one-shot run, NOT a whole-film report"
+ },
+ "timing": {}
+}
