@@ -185,13 +185,13 @@ window.STORY = function (K) {
   // ---------------------------------------------------------------- 3. 28-44: three objects float up in a row: ghost candle (missing), clear bulb, white tube
   function s3(dur) {
     const Wd = skyW(), G = guestRoom(Wd); shabbatTable(Wd, 0, 0, true); sideTable(Wd, LAMP_POS[0], LAMP_POS[2]); tableLamp(Wd, { pos: LAMP_POS, on: () => 0 });
-    const gh = ghostCandle(Wd), bu = clearBulb(Wd), tu = fluoTube(Wd);
+    const gh = ghostCandle(Wd), bu = clearBulb(Wd), tu = fluoTube(Wd); Wd.bulbG = bu.g;
     const X = [-1.05, 0, 1.0], rise = (a, t) => sm(P(a, a + 1.5, t)), Y0 = TY + .2, Y1 = 2.1;
     const sparks = sparkleMotes(Wd, 14, [0, 2.2, 0], 2.2, 0xffe9a8, .16);
     Wd.on(t => { sparks(t);
       const r0 = rise(1.2, t), r1 = rise(3.0, t), r2 = rise(4.8, t), lit = sm(P(6.4, 7.8, t));
       gh.set([X[0], lerp(Y0, 1.2, r0) + .05 * Math.sin(t * 1.5), .55], popE(P(1.2, 2.0, t)) * .85, 1 - .1 * lit);
-      bu.set([X[1], lerp(Y0, 1.16, r1) + .05 * Math.sin(t * 1.4 + 1), .55], popE(P(3.0, 3.8, t)) * .8, .3 * Math.sin(t * .5), lit, 0);
+      bu.set([X[1], lerp(1.6, 1.64, r1) + .04 * Math.sin(t * 1.4 + 1), .55], popE(P(3.0, 3.8, t)) * .55, .3 * Math.sin(t * .5), lit, 0);
       tu.set([X[2], lerp(Y0, 1.55, r2) + .05 * Math.sin(t * 1.3 + 2), .55], popE(P(4.8, 5.6, t)) * .42, .2 * Math.sin(t * .6), lit); });
     seated(Wd, (t, i) => { const up = sm(P(1.4, 2.6, t)); const look = (i ? -.35 : .35) * (.5 + .5 * Math.sin(t * .7)); return { smile: .2 + .5 * sm(P(4, 6, t)), brow: .35 * (1 - sm(P(8, 9.5, t))), perform: i ? .35 : 0, gesture: !i && t > 3.4 && t < 10 ? 'point' : (!i && t >= 10 ? 'thumb' : null), look, talk: .3 * talkAmt(t, i + 4) * sm(P(5, 6, t)), scale: i ? MS : undefined }; });
     Wd.center = [0, 0];
@@ -249,7 +249,7 @@ window.STORY = function (K) {
     Wd.center = [0, 0];
     Wd.cam = seq([0, cine([C0(0, [.6, 1.1, -.5], 4.4, .5, 20), C0(3.6, [1.4, 1.15, -.5], 3.4, .3, 10)])],
       [3.6, cine([C0(3.6, [1.0, 1.15, -.5], 3.0, .2, 14, 42), C0(7.4, [.5, 1.1, -.5], 3.0, .2, -14, 42)])],
-      [7.4, cine([C0(7.4, [0, 1.1, -.6], 3.2, .2, -20, 42), C0(11, [0, 1.1, -.6], 2.8, .15, 16, 40)])],
+      [7.4, cine([C0(7.4, [0, 1.1, -.6], 3.2, .75, -20, 42), C0(11, [0, 1.1, -.6], 2.8, .7, 16, 40)])],
       [11, cine([C0(11, [0, 1.1, -.6], 2.8, .15, 16, 40), C0(14, [0, 1.15, -.5], 4.6, .6, -10, 44)])]);
     return Wd;
   }
@@ -269,7 +269,7 @@ window.STORY = function (K) {
     const gl = glowAt(Wd.scene, 5, 0xffc070, 0); gl.position.set(2.6, 1.1, -1.0); Wd.on(t => gl.material.opacity = .4 * sm(P(8, 10, t)));
     lighting(Wd, t => ({ hemi: lerp(1.1, 1.2, sm(P(7, 10, t))), sun: 1.2, hemiColor: mix(new THREE.Color(0xfff0dc), WARM, sm(P(7, 10, t))) }));
     boyP(Wd, YANKY, t => { const a = sm(P(T1 - .3, T1 + .6, t)); return { pos: [-2.7, 0, -.9], facing: PI / 2, gesture: t < T0 ? 'wide' : (t < T1 + .6 ? 'point' : (t < 6.2 ? 'finger' : 'thumb')), perform: 0, smile: t < T1 ? .3 : .95, brow: t < T1 ? .2 : 0, look: .1 }; });
-    boyP(Wd, MENDY, t => Object.assign({ pos: [2.05, RB, -2.02], facing: 0, scale: MS, smile: .4 + .55 * sm(P(8, 9.5, t)), perform: .3, talk: .3 * talkAmt(t, 6) * sm(P(9, 10, t)), look: .1 * Math.sin(t * .6) }, SIT));
+    boyP(Wd, MENDY, t => Object.assign({ pos: [2.05, t < 6.3 ? -6 : RB, -2.02], facing: 0, scale: MS, smile: .4 + .55 * sm(P(8, 9.5, t)), perform: .3, talk: .3 * talkAmt(t, 6) * sm(P(9, 10, t)), look: .1 * Math.sin(t * .6) }, SIT));
     Wd.center = [0, 0];
     Wd.cam = seq([0, cine([C0(0, [-2.5, .9, -2.2], 5.6, 1.0, 16), C0(4.0, [-2.3, .85, -1.6], 4.6, .6, -8)])],
       [4.0, cine([C0(4.0, [-1.9, .85, -.8], 3.8, .35, -20, 42), C0(6.4, [-1.8, .85, -.8], 3.6, .3, 14, 42)])],
