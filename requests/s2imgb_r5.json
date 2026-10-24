@@ -1,0 +1,18 @@
+{
+ "jobs": [
+  {
+   "name": "k13",
+   "prompt": "early morning at dawn, pink and golden sunrise street in a Jewish neighborhood, a young religious Jewish man in his twenties with a round black velvet kippa skullcap clearly sitting on top of his head, white button-up shirt, short neat trimmed dark beard, friendly expressive face walking out of his front door carrying a large tray full of about twenty white coffee cups with steam, smiling happily, a lit synagogue with a Star of David in the background, friends in kippas and white shirts waiting at the door, warm bright cinematic cartoon-realistic 3D animated film still, soft golden lighting, vertical portrait composition, high quality, no text, no writing, no letters, no crosses",
+   "w": 768,
+   "h": 1344,
+   "seed": 113
+  },
+  {
+   "name": "k14",
+   "prompt": "peaceful sunrise over a Jewish synagogue building with a Star of David, warm golden dawn sky, soft clouds, empty top and bottom area for graphics, no people, warm bright cinematic cartoon-realistic 3D animated film still, soft golden lighting, vertical portrait composition, high quality, no text, no writing, no letters, no crosses",
+   "w": 768,
+   "h": 1344,
+   "seed": 114
+  }
+ ]
+}
