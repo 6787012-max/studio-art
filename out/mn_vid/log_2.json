@@ -1,0 +1,26 @@
+[
+ {
+  "name": "mv_s3",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": 253384,
+  "seconds": 40.9
+ },
+ {
+  "name": "mv_s6",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": 220746,
+  "seconds": 41.1
+ },
+ {
+  "name": "mv_s8",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": 374446,
+  "seconds": 35.3
+ }
+]
