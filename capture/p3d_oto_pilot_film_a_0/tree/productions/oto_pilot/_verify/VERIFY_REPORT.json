@@ -1,20 +1,20 @@
 {
  "film": "film_a.html",
  "status": "PASS",
- "time": "2026-10-23T16:55:47",
+ "time": "2026-10-24T05:32:54",
  "samples": 68,
  "findings": [],
  "sheets": {
-  "beat": null,
+  "beat": "C:/projects/_studio-animatzia/productions/oto_pilot/_verify/_view/_verify_beat_sheet_1.jpg",
   "seam": "C:/projects/_studio-animatzia/productions/oto_pilot/_verify/_view/_verify_seams_1.jpg",
   "phone": "C:/projects/_studio-animatzia/productions/oto_pilot/_verify/_view/_verify_phone_sheet_1.jpg",
   "beat_2": "C:/projects/_studio-animatzia/productions/oto_pilot/_verify/_view/_verify_beat_sheet_2.jpg",
   "seam_2": "C:/projects/_studio-animatzia/productions/oto_pilot/_verify/_view/_verify_seams_2.jpg"
  },
  "timing": {
-  "ready_s": 2.1,
-  "gates_s": 290.1,
-  "sheets_s": 112.8,
-  "total_s": 430.4
+  "ready_s": 4.4,
+  "gates_s": 225.4,
+  "sheets_s": 70.2,
+  "total_s": 300.4
  }
 }
