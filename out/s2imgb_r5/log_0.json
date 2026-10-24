@@ -1,0 +1,24 @@
+[
+ {
+  "name": "k13",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1344
+  ],
+  "seconds": 26.1
+ },
+ {
+  "name": "k14",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1344
+  ],
+  "seconds": 28.9
+ }
+]
