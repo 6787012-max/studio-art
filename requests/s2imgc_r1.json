@@ -1,0 +1,18 @@
+{
+ "jobs": [
+  {
+   "name": "k2",
+   "prompt": "close up over the shoulder from behind of a young religious Jewish man in his twenties with a round black velvet kippa skullcap clearly sitting on top of his head, white button-up shirt, short neat trimmed dark beard, friendly expressive face at a laptop, kippa visible on the back of his head, the screen shows only a colorful abstract calendar grid of colored blocks and small orange cooking pot icons, completely blank headers, no title bar, no words, warm lamp light, a finger pointing at the screen, warm bright cinematic cartoon-realistic 3D animated film still, soft golden lighting, vertical portrait composition, high quality, no text, no writing, no letters, no crosses",
+   "w": 768,
+   "h": 1344,
+   "seed": 302
+  },
+  {
+   "name": "k11",
+   "prompt": "interior of a dark empty Jewish synagogue hall at night, a young religious Jewish man in his twenties with a round black velvet kippa skullcap clearly sitting on top of his head, white button-up shirt, short neat trimmed dark beard, friendly expressive face standing in the doorway out of breath holding an empty pot, looking at his wrist watch, a trail of soup drops on the floor behind him, stacked chairs, a single warm lamp, a tall friend in a grey vest at the far end of the hall locking up, warm bright cinematic cartoon-realistic 3D animated film still, soft golden lighting, vertical portrait composition, high quality, no text, no writing, no letters, no crosses",
+   "w": 768,
+   "h": 1344,
+   "seed": 311
+  }
+ ]
+}
