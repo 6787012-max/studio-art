@@ -1,0 +1,16 @@
+{
+ "jobs": [
+  {
+   "name": "mv_s3_t2",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "k3",
+   "prompt": "the man's eyes go wide, his eyebrows shoot up, his mouth drops open in a gasp, a sweat drop slides down his face, slow zoom in, comedic take, high quality 3D animated film, expressive cartoon acting, smooth natural motion"
+  },
+  {
+   "name": "mv_s4_t2",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "k4",
+   "prompt": "the man lifts the lid of the steaming pot a little, steam bursts out, he grins in surprise, the lid rattles, camera pushes in slightly, high quality 3D animated film, expressive cartoon acting, smooth natural motion"
+  }
+ ]
+}
