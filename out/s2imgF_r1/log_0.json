@@ -1,0 +1,35 @@
+[
+ {
+  "name": "k3f",
+  "ok": true,
+  "tries": [],
+  "model": "kontext",
+  "size": [
+   768,
+   1344
+  ],
+  "seconds": 29.6
+ },
+ {
+  "name": "k1f",
+  "ok": true,
+  "tries": [],
+  "model": "kontext",
+  "size": [
+   768,
+   1344
+  ],
+  "seconds": 28.9
+ },
+ {
+  "name": "k4f",
+  "ok": true,
+  "tries": [],
+  "model": "kontext",
+  "size": [
+   768,
+   1344
+  ],
+  "seconds": 28.6
+ }
+]
