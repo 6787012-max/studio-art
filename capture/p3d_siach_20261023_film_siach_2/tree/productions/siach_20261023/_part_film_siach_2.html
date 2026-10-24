@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>film_siach</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script>window.__T0=94.8000; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import { film, world, path, orbit, cloud, rain, ease, prog, lerp, clamp, rng, THREE, box, cyl, ball, toon, ink } from '../../lib/stage3d.js';
+import * as P from '../../lib/props3d.js';
+import { route } from '../azamra342/road.js';
+import { buildShul } from './shul.js';
+import * as S from './shared.js';
+
+const PI = Math.PI, V3 = (x, y, z) => new THREE.Vector3(x, y, z), C = h => new THREE.Color(h);
+const cap = n => 'CAP_S_' + String(n).padStart(2, '0');
+
+// ---------- helpers ----------
+function clouds(Wd, list) { list.forEach(([x, y, z, s, seed]) => { const c = cloud({ seed, size: s, pos: [x, y, z], puffs: 6, cast: false }); Wd.add(c); Wd.on(t => { c.position.x = x + t * .3; }); }); }
+const skyCol = (Wd, top, bot) => { const u = Wd.sky.material.uniforms; u.top.value.set(top); u.bot.value.set(bot); };
+const skyLerp = (Wd, a, b, k) => { const u = Wd.sky.material.uniforms; u.top.value.copy(C(a[0])).lerp(C(b[0]), k); u.bot.value.copy(C(a[1])).lerp(C(b[1]), k); };
+function trees(Wd, list, apples) { list.forEach(([x, z, k, s], i) => { P.tree(Wd, { pos: [x, 0, z], kind: k || 0, scale: s || 1.1 }); if (apples && (k || 0) === 0) S.applesOn(Wd, [x, 0, z], s || 1.1, 20 + i, 10); }); }
+
+function orchard(Wd) {
+  S.paving(Wd, { x: 0, z: 0, w: 30, d: 26 });
+  P.tree(Wd, { pos: [0, 0, -2.6], kind: 0, scale: 1.5 }); S.applesOn(Wd, [0, 0, -2.6], 1.5, 5, 26);
+  trees(Wd, [[-6.5, -5.5, 0, 1.2], [6.8, -6, 0, 1.3], [-10, -1, 0, 1.2], [10.5, -2, 0, 1.2], [-13, -8, 1, 1.2], [14, -9, 1, 1.3]], true);
+  P.wall(Wd, { pos: [0, 0, -12], len: 30 }); P.house(Wd, { pos: [-8, 0, -17], rot: .2 }); P.house(Wd, { pos: [9, 0, -18], rot: -.3, color: 0xF4DFB4 });
+  P.bush(Wd, { pos: [-4.4, 0, -4.2], scale: 1.2 }); P.bush(Wd, { pos: [4.6, 0, -4.6], scale: 1.3 }); P.bench(Wd, { pos: [-6, 0, 3.5], rot: .5 });
+  clouds(Wd, [[-30, 24, -50, 4, 3], [10, 28, -60, 5, 5], [38, 22, -45, 3.5, 8]]);
+}
+function tableSet(Wd) {
+  P.table(Wd, { pos: [0, 0, 0], w: 2.2, d: 1.0 }); P.chair(Wd, { pos: [0, 0, -.95], rot: 0 }); P.chair(Wd, { pos: [0, 0, .95], rot: PI });
+  Wd.add(cyl(.22, .15, .1, 0xF3E6C8, { pos: [0, .85, 0], inkW: .01 }));
+  [[-.1, .06], [.1, .0], [0, -.1], [.02, .1], [-.12, -.05], [.12, -.1]].forEach(([x, z], i) => { const a = S.appleMesh(1.2); a.position.set(x, .93 + (i > 3 ? .08 : 0), z); Wd.add(a); });
+}
+const rav = (Wd, fn) => S.man(Wd, S.RAV, t => Object.assign({ pos: [0, .1, -.95], facing: 0, sit: true, groundY: 0, smile: .5, seed: .2 }, fn(t)));
+const boySit = (Wd, fn) => S.hero(Wd, t => Object.assign({ pos: [0, .1, .95], facing: PI, sit: true, groundY: 0, smile: .8 }, fn(t)));
+const fwd = (f, d) => [Math.sin(f) * d, Math.cos(f) * d];
+const tmpA = V3(0, 0, 0), tmpH = V3(0, 0, 0), tmpA2 = V3(0, 0, 0), tmpH2 = V3(0, 0, 0);
+
+// garden / path world (B1-B4): house at (-12,0,-4) facing +x, path along +x
+function bWorld(Wd, o) {
+  o = o || {};
+  S.warmHouse(Wd, { pos: [-12, 0, -4], rot: PI / 2, scale: 1.7, glow: o.glow || 9 });
+  S.paving(Wd, { x: 12, z: 0.4, w: 60, d: 2.6, y: .04, tint: 0xE9D3A1 }); S.paving(Wd, { x: -5, z: -4, w: 8, d: 2.6, y: .04, tint: 0xE9D3A1 });
+  S.flowers(Wd, { x0: -8, x1: -1, z0: -8, z1: -1.8, n: 70, seed: 2 }); S.flowers(Wd, { x0: -9, x1: -1, z0: 2.4, z1: 8, n: 60, seed: 5 }); S.flowers(Wd, { x0: 1, x1: 9, z0: -4.5, z1: -2, n: 24, seed: 9 });
+  trees(Wd, [[-3, -9, 0, 1.2], [-2, 9.5, 0, 1.3], [4, -6, 0, 1.1], [7, 6, 1, 1.2], [12, -7, 0, 1.2], [15, 7, 1, 1.3], [21, -6.5, 0, 1.2], [26, 7, 0, 1.3], [32, -7, 1, 1.4], [-16, 6, 0, 1.2], [-17, -10, 1, 1.3]], true);
+  for (const [x, z] of [[1.5, 3.4], [9, -3.4], [18, 3.6], [25, -3.4], [30, 3.6]]) P.bush(Wd, { pos: [x, 0, z], scale: 1.2 });
+  P.fence(Wd, { pos: [-4, 0, -10.5], len: 8 }); P.fence(Wd, { pos: [-4, 0, 11], len: 8 });
+  for (let i = 0; i < 7; i++) P.rock(Wd, { pos: [20 + i * 4, 0, 4.4 + (i % 2) * 1.8], seed: i, scale: .9 });
+  clouds(Wd, [[-30, 24, -50, 4, 3], [10, 28, -60, 5, 5], [38, 22, -45, 3.5, 8], [-6, 30, 40, 4.5, 12]]);
+}
+// shul interior world (C1, C5, D3, D4)
+function shulWorld(Wd) { return buildShul(Wd, {}); }
+function setCeil(sh, op) { sh.ceil.forEach(m => { m.material.transparent = true; m.material.opacity = op; m.visible = op > .02; }); }
+function streetWorld(Wd) {
+  S.road(Wd, [[-40, 0], [140, 0]], 7, 0xD2C7B0);
+  for (const z of [-5.5, 5.5]) Wd.add(box(180, .12, 4.0, 0xE9D3A1, { pos: [45, .06, z], inkW: .01 }));
+  for (let k = 0; k < 8; k++) Wd.add(box(2.8, .012, .5, 0xF8F2E4, { pos: [0, S.ROAD_Y + .01, -3.0 + k * .86], ink: false }));
+  for (let x = -30; x <= 90; x += 9) { P.house(Wd, { pos: [x, 0, 12.5], rot: PI, scale: 1.3, color: [0xEED8AC, 0xF4DFB4, 0xE9CF9F][((x + 30) / 9) % 3] }); P.house(Wd, { pos: [x + 4, 0, -14], rot: 0, scale: 1.2, color: [0xF4DFB4, 0xEED8AC][((x + 30) / 9) % 2] }); }
+  for (const x of [-14, -4, 8, 18, 30, 44, 60]) { P.lamp(Wd, { pos: [x, 0, 4.4], kind: 'lamp', seed: x }); }
+  trees(Wd, [[-20, 8, 0, 1.0], [-8, 7.8, 1, 1.0], [14, 8, 0, 1.0], [24, 7.8, 1, 1.0], [38, 8, 0, 1.0], [-12, -8, 0, 1.0], [12, -8, 1, 1.0]], false);
+  clouds(Wd, [[-30, 24, 40, 4, 3], [20, 28, 55, 5, 5], [60, 22, 45, 3.5, 8]]);
+}
+const carX = tau => tau < 13.8 ? 104.5 - 7 * tau : 7.93 - 5.13 * ease.out(prog(tau, 13.8, 16.0));
+const BS = V3(.7, 0, .6), CPOS = [5, 16, 5];
+function routeBoyStreet() { return route([[0, 0, -4.0, 0], [5.0, 0, -4.0], [13.8, 0, .4]], { y: .1 }); }
+function bookIn(Wd, P0) { const b = new THREE.Group(); b.add(box(.13, .035, .18, 0x5b1f2a, { inkW: .005 })); b.add(box(.12, .03, .17, 0xF4ECD8, { pos: [0, .001, .002], ink: false })); S.holdIn(Wd, P0, 'B', b, [0, -.09, .03], [.9, 0, 0]); return b; }
+
+const CAPS = [['s01', 11.5, [1, 2], [.5, 5.85], 1], ['s02', 11.5, [3, 4], [.5, 5.85]], ['s03', 11.5, [5, 6], [.5, 5.85]], ['s04', 11.4, [7, 8], [.5, 5.8], 1],
+  ['s05', 10, [9, 10], [.5, 5.1]], ['s06', 10, [11, 12], [.5, 5.1], 1], ['s07', 10, [13, 14], [.5, 5.1]], ['s08', 9.9, [15], [.5]],
+  ['s09', 11.2, [16, 17], [.5, 5.7]], ['s10', 11.2, [18, 19], [.5, 5.7], 1], ['s11', 11.2, [20, 21], [.5, 5.7], 1], ['s12', 11.2, [22, 23], [.5, 5.7], 1], ['s13', 11.2, [24, 25], [.5, 5.7]],
+  ['s14', 9.7, [26], [.5]], ['s15', 9.7, [27], [.5], 1], ['s16', 9.7, [28], [.5]], ['s17', 9.7, [29], [.5], 1]];
+const B = {};
+
+// ============================== A1 ==============================
+B.s01 = () => {
+  const Wd = world(S.sky({})); orchard(Wd); tableSet(Wd);
+  rav(Wd, t => ({ gesture: t > 6.2 ? 'explain' : 'rest', talk: t > 6.4 ? .55 : 0 }));
+  const Bp = boySit(Wd, t => ({ gesture: t < .8 ? 'rest' : t < 5.6 ? 'point' : 'rest', smile: .9 }));
+  return Object.assign(Wd, { hero: Bp, cam: path([[0, [2.8, 7.4, 3.8], [0, 1.6, -.6], 52], [5.6, [3.2, 2.6, 2.6], [0, 1.2, 0], 46], [11.5, [2.6, 1.4, 1.5], [0, 1.0, 0], 42]]) });
+};
+// ============================== A2 ==============================
+B.s02 = () => {
+  const Wd = world(S.sky({})); orchard(Wd); tableSet(Wd);
+  rav(Wd, t => ({ gesture: 'rest' }));
+  const Bp = boySit(Wd, t => ({ gesture: t < .9 ? 'rest' : 'think', smile: .9 }));
+  const ap = S.appleMesh(1.3); S.holdIn(Wd, Bp, 'B', ap);
+  const L = S.lightField(Wd, 24, { r: .09 });
+  L.frame((t, cam, L) => {
+    if (!Bp.figure) return; S.wpos(ap, tmpA); S.headPos(Bp, tmpH);
+    const M = V3(tmpH.x, tmpH.y - .07, tmpH.z - .1), top = V3(M.x, M.y + .5, M.z), A = tmpA;
+    const posf = u => u < .4 ? [lerp(M.x, top.x, ease.out(u / .4)), lerp(M.y, top.y, ease.out(u / .4)), lerp(M.z, top.z, ease.out(u / .4)), 1] : (k => [lerp(top.x, A.x, k), lerp(top.y, A.y, k), lerp(top.z, A.z, k), 1 - .3 * k])(ease.in((u - .4) / .6));
+    S.stream(L, t, { t0: 1.8, t1: 3.2, N: 5, life: 1.7, pos: posf, size: 1 }); S.stream(L, t, { t0: 7.2, t1: 8.6, N: 5, life: 1.7, pos: posf, size: 1 });
+    const g = ap.userData.glow; g.material.opacity = .9 * prog(t, 3.0, 3.8) * (.9 + .1 * Math.sin(t * 3)); g.scale.setScalar(.9 + .3 * prog(t, 3, 4));
+  });
+  return Object.assign(Wd, { hero: Bp, cam: path([[0, [2.7, 1.5, -.1], [0, 1.2, .95], 42], [11.5, [1.7, 1.4, .55], [0, 1.25, .95], 32]]) });
+};
+// ============================== A3 ==============================
+B.s03 = () => {
+  const Wd = world(S.sky({})); orchard(Wd); tableSet(Wd);
+  const Rv = rav(Wd, t => ({ gesture: t < 1 ? 'rest' : t < 6 ? 'up' : t < 6.3 ? 'rest' : 'heart', smile: .8 }));
+  boySit(Wd, t => ({ gesture: 'rest', smile: .8 }));
+  const ap = S.appleMesh(1.3); S.holdIn(Wd, Rv, 'B', ap, [0, -.08, .03]);
+  const L = S.lightField(Wd, 56, { r: .1 }), halo = S.glowSp(Wd, 22, 0, 0xFFE9A8);
+  L.frame((t, cam, L) => {
+    if (!Rv.figure) return; S.wpos(ap, tmpA); const A = tmpA;
+    S.stream(L, t, { t0: 1.5, t1: 12, N: 50, life: 3.8, size: 1, pos: (u, i) => [A.x + .16 * Math.sin(i * 2.1 + u * 6) * (.4 + u), A.y + .2 + 8.8 * u, A.z + .16 * Math.cos(i * 1.7 + u * 6) * (.4 + u)] });
+    halo.position.set(A.x, A.y + 9, A.z); halo.material.opacity = .85 * prog(t, 2.2, 5);
+    const k = prog(t, 1.6, 5); skyLerp(Wd, [0x7EC8F0, 0xFFF1C9], [0xBFE6FF, 0xFFFBE0], k);
+    const g = ap.userData.glow; g.material.opacity = .8 * prog(t, 1.5, 2.5); g.scale.setScalar(1);
+  });
+  return Object.assign(Wd, { hero: Rv, cam: orbit([0, 2.5, -.95], 4.6, -1.6, -35, 15, 0, 11.5, 55) });
+};
+// ============================== A4 ==============================
+B.s04 = () => {
+  const Wd = world(S.sky({})); orchard(Wd); tableSet(Wd);
+  const Rv = rav(Wd, t => ({ facing: lerp(.7, 0, ease.io(prog(t, 1.5, 3.8))), gesture: t < 1.5 ? 'rest' : 'explain', talk: t > 4 ? .55 : 0, smile: .8 }));
+  const Bp = boySit(Wd, t => ({ gesture: t < 3 ? 'rest' : 'think', smile: .6 }));
+  const apR = S.appleMesh(1.3), apB = S.appleMesh(1.3); S.holdIn(Wd, Rv, 'B', apR); S.holdIn(Wd, Bp, 'B', apB);
+  const L = S.lightField(Wd, 62, { r: .1 });
+  L.frame((t, cam, L) => {
+    if (!Rv.figure || !Bp.figure) return; S.wpos(apR, tmpA); S.wpos(apB, tmpA2); const A = tmpA, A2 = tmpA2, on = prog(t, .8, 1.6);
+    S.stream(L, t, { t0: 1.0, t1: 12, N: 34, life: 3.6, size: 1, pos: (u, i) => [A.x + .14 * Math.sin(i * 2.1 + u * 6) * (.4 + u), A.y + .2 + 9 * u, A.z + .14 * Math.cos(i * 1.7 + u * 6) * (.4 + u)] });
+    for (let i = 0; i < 12; i++) { const th = (t * .55 + i / 12) * PI * 2; L.put(A2.x, A2.y + .12 + .38 * (1 - Math.cos(th)) * .5 + .02, A2.z + .3 * Math.sin(th), .9 * on); }
+  });
+  return Object.assign(Wd, { hero: Bp, cam: path([[0, [3.0, 1.6, 2.2], [0, 1.2, 0], 44], [5.5, [5.6, 3.8, 5.4], [0, 1.8, -.5], 48], [11.4, [9, 6.5, 10], [0, 2.5, -.5], 50]]) });
+};
+// ============================== B1 ==============================
+B.s05 = () => {
+  const Wd = world(S.sky({ ground: 'sand' })); bWorld(Wd); P.bench(Wd, { pos: [-4.2, 0, 3.2], rot: PI / 2 });
+  const Bp = S.hero(Wd, t => ({ pos: [-4.2, .1, 3.2], facing: PI / 2, sit: true, groundY: 0, gesture: t < 5 ? 'rest' : 'hips', smile: .9 }));
+  return Object.assign(Wd, { hero: Bp, cam: path([[0, [0.2, 1.5, 8.4], [-4.2, 1.0, 3.2], 44], [5, [0.2, 1.4, 3.6], [-4.4, 1.1, 3.2], 38], [10, [0.2, 1.5, -1.6], [-5.5, 1.2, 2.0], 42]]) });
+};
+// ============================== B2 ==============================
+B.s06 = () => {
+  const Wd = world(S.sky({})); bWorld(Wd);
+  const Rb = route([[0, -3, .4, PI / 2], [10, 15, .4]], { y: .04 });
+  const Bp = S.hero(Wd, t => Object.assign(Rb(t), { groundY: .04, smile: .6, gesture: null }));
+  const cam = t => { const b = Rb(t).pos; return { pos: [b[0] + 4.6, 1.5, 3.0], look: [b[0] - 1.0, 1.15, .4], fov: 36 }; };
+  return Object.assign(Wd, { hero: Bp, cam });
+};
+// ============================== B3 ==============================
+B.s07 = () => {
+  const Wd = world(S.sky({})); bWorld(Wd, { glow: 10 }); const bx = t => lerp(14.4, 16, ease.out(prog(t, 0, 2.2)));
+  const Bp = S.hero(Wd, t => ({ pos: [bx(t), .04, .4], groundY: .04, facing: t < 5.8 ? PI / 2 : lerp(PI / 2, -PI / 2, ease.io(prog(t, 5.8, 7.0))), walk: t < 2.2 ? t * 5 : undefined, gesture: t < 2.4 ? null : t < 5.8 ? 'think' : t < 7 ? 'rest' : 'point', smile: t < 2.4 ? .6 : .1, seed: .6 }));
+  const cl = cloud({ seed: 7, size: 3.4, color: 0x8F9AA6, puffs: 7, cast: false }); Wd.add(cl);
+  const cx = t => bx(t) + lerp(-10, .4, ease.out(prog(t, 0, 4.5)));
+  rain(Wd, { x0: -3.4, x1: 3.4, z0: -2.6, z1: 2.8, top: 6.2, count: 800, amount: t => prog(t, 1.4, 3.4), offset: t => [cx(t), .4], opacity: .75 });
+  Wd.on(t => { cl.position.set(cx(t), 6.4, .4); const k = prog(t, .6, 3.2); Wd.hemi.intensity = lerp(1.3, .85, k); Wd.sun.intensity = lerp(2.0, .9, k); skyLerp(Wd, [0x7EC8F0, 0xFFF1C9], [0x93AAC0, 0xD8DCE0], k); });
+  const cam = t => { const k = ease.io(prog(t, 3, 9)), b = bx(t); return { pos: [lerp(b + 3.0, b + 4.4, k), lerp(.9, 1.35, k), lerp(2.2, 2.4, k)], look: [lerp(b, b - 6, k), lerp(1.1, 1.6, k), lerp(.4, -1.2, k)], fov: lerp(40, 44, k) }; };
+  return Object.assign(Wd, { hero: Bp, cam });
+};
+// ============================== B4 ==============================
+B.s08 = () => {
+  const Wd = world(S.sky({})); bWorld(Wd, { glow: 11 });
+  const Rb = route([[0, 7, -.2, -PI / 2], [6.4, -6.5, -4.0]], { y: .04 });
+  const Bp = S.hero(Wd, t => { const o = Rb(t); return Object.assign(o, { groundY: .04, gesture: t > 6.5 ? 'heart' : null, smile: .9, facing: t > 6.5 ? PI / 2 : o.facing }); });
+  S.man(Wd, S.RAV, t => ({ pos: [-8.0, .15, -4.0], groundY: .15, facing: PI / 2, gesture: t < 1.6 ? 'rest' : 'wide', smile: .9, talk: 0, seed: .3 }));
+  const cl = cloud({ seed: 7, size: 3.4, color: 0x8F9AA6, puffs: 7, cast: false }); Wd.add(cl);
+  rain(Wd, { x0: -3.2, x1: 3.2, z0: -2.6, z1: 2.6, top: 6.2, count: 700, amount: t => 1 - prog(t, 0, 2.5), offset: t => [Rb(t).pos[0] + 1, 0] });
+  Wd.on(t => { const k = 1 - prog(t, 0, 4.5); cl.position.set(Rb(t).pos[0] + 2 - t * 1.2, 6.4 + t * .3, 0); cl.scale.setScalar(Math.max(.05, 1 - .95 * prog(t, 0, 4.5))); Wd.hemi.intensity = lerp(1.3, .85, k); Wd.sun.intensity = lerp(2.0, .9, k); skyLerp(Wd, [0x7EC8F0, 0xFFF1C9], [0x93AAC0, 0xD8DCE0], k); });
+  const cam = t => { const b = Rb(t).pos, k = ease.io(prog(t, 5.2, 8.4)); return { pos: [lerp(b[0] + 4.2, -3.2, k), 1.5, lerp(b[2] + 3.2, -.9, k)], look: [lerp(b[0] - 1.6, -7.3, k), lerp(1.1, 1.3, k), lerp(b[2] - .2, -4, k)], fov: lerp(40, 36, k) }; };
+  return Object.assign(Wd, { hero: Bp, cam });
+};
+// ============================== C1 ==============================
+const CYC = [[0, 0xF2B58A, 0xFFE2B0, 0xFFC890, 1.3, 0xFFE0B8], [.3, 0x7EC8F0, 0xFFF1C9, 0xFFF1DC, 2.0, 0xBFE2FA], [.62, 0x2B3F7A, 0xE88A5A, 0xFF9A60, 1.0, 0x8C9CD0], [1, 0xF2B58A, 0xFFE2B0, 0xFFC890, 1.3, 0xFFE0B8]];
+function cycleAt(Wd, u) { let i = 0; while (i < CYC.length - 2 && u > CYC[i + 1][0]) i++; const a = CYC[i], b = CYC[i + 1], k = ease.sm(clamp((u - a[0]) / (b[0] - a[0]), 0, 1));
+  skyLerp(Wd, [a[1], a[2]], [b[1], b[2]], k); Wd.sun.color.copy(C(a[3])).lerp(C(b[3]), k); Wd.sun.intensity = lerp(a[4], b[4], k); Wd.hemi.color.copy(C(a[5])).lerp(C(b[5]), k); Wd.hemi.intensity = lerp(1.1, 1.3, 1 - Math.abs(k - .5) * 2 * .3); }
+B.s09 = () => {
+  const Wd = world(S.sky({ ground: 'grass', fog: false, sun: 1.6, hemi: 1.2 })); const sh = shulWorld(Wd); setCeil(sh, .35);
+  const Op = S.man(Wd, S.OLD, t => ({ pos: [0, 0, -.35], facing: 0, gesture: 'pray', smile: .5, seed: .4, talk: .2 }));
+  S.shtender(Wd, { pos: [0, 0, .5] });
+  const L = S.lightField(Wd, 14, { r: .1 });
+  L.frame((t, cam, L) => { cycleAt(Wd, (t / 5.6) % 1);
+    for (const c of [1.2, 6.8]) for (let j = 0; j < 3; j++) { const u = (t - (c + j * .5)) / 3.0; if (u < 0 || u > 1) continue; L.put(.12 * Math.sin(u * 7 + j * 2), 1.85 + 5.2 * u, -.35 + .1 * Math.cos(u * 6 + j), Math.min(1, u * 8, (1 - u) * 4)); } });
+  return Object.assign(Wd, { hero: Op, cam: orbit([0, 1.3, -.3], 3.4, .4, -35, 55, 0, 11.2, 46) });
+};
+// ============================== C2 ==============================
+B.s10 = () => {
+  const Wd = world(S.sky({ ground: null, skyTop: 0x7EC8F0, skyBottom: 0xFFF1C9, fogNear: 120, fogFar: 400 }));
+  const bl = new THREE.Group(); Wd.add(bl); bl.add(box(14, 6, 11, 0xf3e8cf, { pos: [0, 3, 0], inkW: .03 })); const tri = new THREE.Shape(); tri.moveTo(-7.4, 0); tri.lineTo(7.4, 0); tri.lineTo(0, 3);
+  const rf = new THREE.Mesh(new THREE.ExtrudeGeometry(tri, { depth: 11.8, bevelEnabled: false }), toon(0xC9663C)); rf.position.set(0, 6, -5.9); ink(rf, .03, S.INK); bl.add(rf);
+  const r = rng(11); for (let i = 0; i < 26; i++) { const a = i * 2.4, rr = 17 + r() * 30; const c = cloud({ seed: 30 + i, size: 4 + r() * 4, puffs: 7, cast: false, pos: [Math.sin(a) * rr, 9 + r() * 6, Math.cos(a) * rr] }); Wd.add(c); }
+  const ch = S.chest(Wd, { pos: [0, 46, -4], scale: 1.6, open: .1, glow: .25 }); const NL = 100, st = [];
+  for (let i = 0; i < NL; i++) { const a = i * 2.4 + r(), rr = 36 + (i % 7) * 7, y = 6 + ((i * 37) % 32); st.push([Math.sin(a) * rr, y, Math.cos(a) * rr - 4]); }
+  const tgt = [0, 47.4, -4], L = S.lightField(Wd, NL, { r: .22, glow: 3 });
+  L.frame((t, cam, L) => { let cnt = 0;
+    for (let i = 0; i < NL; i++) { const ar = 1.0 + i * .09, u = (t - (ar - 3.4)) / 3.4; if (t >= ar) { cnt++; continue; } if (u < 0) continue; const e = ease.io(u), s = st[i];
+      L.put(lerp(s[0], tgt[0], e), lerp(s[1], tgt[1], e) + 7 * Math.sin(PI * u), lerp(s[2], tgt[2], e), Math.min(1, u * 6) * 1.1); }
+    ch.set(ease.io(prog(t, 2, 9)) * .55, .25 + .75 * cnt / NL); });
+  return Object.assign(Wd, { hero: ch.g, cam: path([[0, [3, 26, 40], [0, 30, -3], 62], [4, [-16, 28, 32], [0, 36, -3], 55], [8, [8, 38, 22], [0, 45, -4], 48], [11.2, [5, 45, 17], [0, 46, -4], 44]]) });
+};
+// ============================== C3 ==============================
+B.s11 = () => {
+  const Wd = world(S.sky({ ground: 'stone' })); streetWorld(Wd); const Rb = routeBoyStreet();
+  const Bp = S.hero(Wd, t => Object.assign(Rb(t), { groundY: .1, gesture: 'heart', smile: .4, seed: .6 })); bookIn(Wd, Bp);
+  S.carMesh(Wd, t => ({ x: carX(t), z: .6 }));
+  return Object.assign(Wd, { hero: Bp, cam: path([[0, [-4.2, 1.25, -4.9], [.4, 1.1, -2.5], 48], [5.6, [-4.0, 1.25, -4.8], [.8, 1.1, -1.2], 50], [11.2, [-3.6, 1.3, -4.4], [1.2, 1.1, .2], 52]]) });
+};
+// ============================== C4 ==============================
+B.s12 = () => {
+  const Wd = world(S.sky({ ground: 'stone' })); streetWorld(Wd); const Rb0 = routeBoyStreet(), T0 = 11.2, Rb = t => Rb0(t + T0);
+  const Bp = S.hero(Wd, t => { const tau = t + T0, o = Rb(t); return Object.assign(o, { groundY: .1, gesture: tau < 14.4 ? 'heart' : tau < 15.2 ? 'rest' : tau < 20 ? 'shrug' : 'rest', facing: tau < 14.3 ? 0 : lerp(0, PI / 2, ease.io(prog(tau, 14.3, 15.0))), smile: tau < 14.4 ? .4 : tau > 19.5 ? .9 : 0, brow: tau > 14.3 && tau < 19 ? .8 : 0, seed: .6 }); }); bookIn(Wd, Bp);
+  S.carMesh(Wd, t => ({ x: carX(t + T0), z: .6 }));
+  const ch = S.chest(Wd, { pos: CPOS, scale: 1.0, open: 0, glow: .5 });
+  const dir = V3(BS.x - CPOS[0], BS.y - CPOS[1], BS.z - CPOS[2]), Ltot = dir.length(), nd = dir.clone().normalize();
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(.55, .75, 1, 20, 1, true), new THREE.MeshBasicMaterial({ color: 0xFFE27A, transparent: true, opacity: .5, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }));
+  beam.quaternion.setFromUnitVectors(V3(0, -1, 0), nd); Wd.add(beam); const flash = S.glowSp(Wd, 6, 0, 0xFFE27A); flash.position.set(BS.x, .5, BS.z);
+  const L = S.lightField(Wd, 20, { r: .1 });
+  L.frame((t, cam, L) => { ch.set(ease.io(prog(t, .3, 1.8)), .5 + .5 * prog(t, 1, 2.5));
+    const f = ease.in(prog(t, 1.4, 2.5)); beam.visible = f > .01; beam.scale.set(1, Math.max(.01, Ltot * f), 1); beam.position.set(CPOS[0] + dir.x * f / 2, CPOS[1] + dir.y * f / 2, CPOS[2] + dir.z * f / 2);
+    beam.material.opacity = .5 * (1 - .35 * prog(t, 2.6, 8)); flash.material.opacity = prog(t, 2.4, 2.7) * (1 - .5 * prog(t, 2.7, 5)); flash.scale.setScalar(6 + 2 * Math.sin(t * 3));
+    S.stream(L, t, { t0: 2.2, t1: 11, N: 18, life: 2.2, size: 1, pos: (u, i) => [CPOS[0] + dir.x * u + .25 * Math.sin(i + u * 9), CPOS[1] + dir.y * u, CPOS[2] + dir.z * u + .25 * Math.cos(i + u * 9)] }); });
+  const P0 = [-3.6, 1.3, -4.4];
+  return Object.assign(Wd, { hero: Bp, cam: path([[0, P0, [1.5, 4.7, 1.5], 62], [3.5, [-3.5, 1.3, -4.3], [1.2, 2.8, 1.0], 54], [6.2, [-3.4, 1.3, -4.2], [.8, 1.1, .6], 46], [11.2, [-3.2, 1.35, -3.6], [.9, 1.0, .5], 40]]) });
+};
+// ============================== C5 ==============================
+B.s13 = () => {
+  const Wd = world(S.sky({ ground: 'grass', fog: false, sun: 1.7, hemi: 1.25, skyTop: 0xBFE6FF, skyBottom: 0xFFF1C9 })); const sh = shulWorld(Wd); setCeil(sh, 0);
+  const Op = S.man(Wd, S.OLD2, t => ({ pos: [0, 0, -.35], facing: 0, gesture: t < 5.7 ? 'pray' : 'heart', smile: .6, seed: .4, talk: .15 })); S.shtender(Wd, { pos: [0, 0, .5] });
+  const ch = S.chest(Wd, { pos: [0, 6.0, 1.5], scale: .8, open: 1, glow: .8 });
+  const bez = (a, b, c, u) => [0, 1, 2].map(k => (1 - u) * (1 - u) * a[k] + 2 * (1 - u) * u * b[k] + u * u * c[k]);
+  const A = [0, 1.95, -.35], Bz = [2.2, 5.6, .5], Cc = [0, 6.6, 1.5], D2 = [-5, 5.2, 3], E = [-11, 1.4, 3];
+  const L = S.lightField(Wd, 46, { r: .08 });
+  L.frame((t, cam, L) => { for (let i = 0; i < 22; i++) { const u = ((t * .16 + i / 22) % 1), p = bez(A, Bz, Cc, u); L.put(p[0], p[1], p[2], .9 * Math.min(1, u * 6, (1 - u) * 6)); }
+    for (let i = 0; i < 22; i++) { const u = ((t * .16 + i / 22) % 1), p = bez(Cc, D2, E, u); L.put(p[0], p[1], p[2], .8 * Math.min(1, u * 6, (1 - u) * 6)); } });
+  return Object.assign(Wd, { hero: Op, cam: path([[0, [2.8, 2.6, 5.4], [0, 3.6, 0], 60], [5.6, [1.9, 1.95, 2.6], [0, 2.0, -.3], 46], [11.2, [.7, 1.75, 1.3], [0, 1.7, -.35], 36]]) });
+};
+// ============================== D1 ==============================
+B.s14 = () => {
+  const Wd = world(S.sky({ ground: 'paper', skyTop: 0xF2A56A, skyBottom: 0xFFD9A0, fogColor: 0xFFD9A0, fogNear: 60, fogFar: 220, sun: 1.5, sunColor: 0xFFF0DC, sunPos: [-6, 14, 22], hemi: 1.45, hemiSky: 0xF4F8FF, hemiGround: 0xC8B8A0 }));
+  S.roomShell(Wd, { xw: 4, zb: -4.5, zf: 6.5, h: 3.6, floor: 0xD2A66C, rug: 0x9C4A36, rugZ: -1 });
+  const wn = S.windowOn(Wd, { pos: [-3.83, 2.1, -1.5], w: 2.0, h: 1.6, color: 0xFFB060, shaft: 4.4, shaftColor: 0xFFB070 }); wn.rotation.y = PI / 2;
+  S.windowOn(Wd, { pos: [1.6, 2.2, -4.33], w: 1.4, h: 1.2, color: 0xFFA55A });
+  S.bed(Wd, { pos: [.8, 0, -3.2] }); S.bed(Wd, { pos: [-2.2, 0, -3.2], blanket: 0x5CAA4A }); P.table(Wd, { pos: [2.2, 0, -4.0], w: .7, d: .6 });
+  S.alarmClock(Wd, { pos: [2.2, .8, -4.0], ring: t => t > 1.6 && t < 4.4 ? 1 : 0 }); P.bookshelf(Wd, { pos: [3.0, 0, -1.0], seed: 4 });
+  const wk = t => ease.io(prog(t, 2.3, 3.4));
+  const Bp = S.hero(Wd, t => { const k = wk(t); return { pos: [lerp(.2, -.5, k), lerp(.36, .02, k), -2.9], facing: lerp(-PI / 2, 0, k), groundY: 0, sit: t < 2.7, gesture: t < 3.5 ? 'rest' : 'up', smile: t < 3 ? .1 : .8, seed: .6 }; });
+  const gl = S.glowSp(Wd, 5, .22, 0xFFB060); gl.position.set(-3, 2.2, -1.5);
+  return Object.assign(Wd, { hero: Bp, cam: path([[0, [-2.4, .8, .4], [.9, .6, -3.2], 50], [4.85, [-1.5, 1.5, -.4], [1.3, .95, -3.0], 44], [9.7, [-.6, 2.3, .3], [1.3, 1.0, -2.8], 46]]) });
+};
+// ============================== D2 ==============================
+B.s15 = () => {
+  const Wd = world(S.sky({ ground: 'grass', skyTop: 0x7EC8F0, skyBottom: 0xFFD9A0, fogColor: 0xFFE2B0 }));
+  S.paving(Wd, { x: -5, z: 2.2, w: 52, d: 2.8, y: .04, tint: 0xE9D3A1 }); S.paving(Wd, { x: 8, z: 1.0, w: 3.2, d: 4, y: .04, tint: 0xE9D3A1 });
+  Wd.add(box(14, 6.5, 9, 0xf3e8cf, { pos: [8, 3.25, -4], inkW: .03 })); for (const s of [-1, 1]) Wd.add(box(7.7, .35, 10, 0xc4673f, { pos: [8 + s * 3.4, 7.7, -4], rot: [0, 0, -s * .34], inkW: .02 }));
+  Wd.add(box(2.2, 3.3, .25, 0x7a4a2a, { pos: [8, 1.65, .6], inkW: .02 })); Wd.add(box(2.7, .3, .4, 0xd9c08a, { pos: [8, 3.4, .6], inkW: .02 }));
+  for (const x of [3.6, 12.4]) Wd.add(box(1.3, 1.8, .2, 0x4f7aa8, { pos: [x, 3.0, .55], inkW: .02 }));
+  for (let i = 0; i < 3; i++) Wd.add(box(3.4 - i * .3, .16, .5, 0xcdb88e, { pos: [8, .08 + i * .16, 1.2 - i * .4], inkW: .01 }));
+  trees(Wd, [[-6, -3, 0, 1.2], [-14, 6, 1, 1.2], [0, 7, 0, 1.2], [18, 5, 0, 1.2], [20, -2, 1, 1.3], [-20, -3, 0, 1.3]], true);
+  for (const x of [-10, -2, 14]) P.bush(Wd, { pos: [x, 0, 4.4], scale: 1.2 }); P.fence(Wd, { pos: [-4, 0, -4.5], len: 8 });
+  const sun = P.sunDisc(Wd, { pos: [-30, 6, -60], r: 3 }); Wd.on(t => { sun.position.set(-30 + t * 1.3, 6 + t * 1.1, -60); });
+  const Rb = route([[0, -5, 2.2, PI / 2], [6.2, 8, 2.2], [8.2, 8, .7]], { y: .04 });
+  const Bp = S.hero(Wd, t => Object.assign(Rb(t), { groundY: .04, smile: .9, gesture: null }));
+  for (let j = 0; j < 3; j++) { const x0 = -9 - 2.6 * j, R2 = route([[0, x0, 2.5 - .5 * j, PI / 2], [9.7, x0 + 20.4, 2.5 - .5 * j]], { y: .04 }); S.man(Wd, S.boyLook(j + 1), t => Object.assign(R2(t), { groundY: .04, smile: .8, seed: .3 + j * .2 })); }
+  const cam = t => { const b = Rb(t).pos; return { pos: [b[0] + .5, 1.4, 7.2], look: [b[0] + 1.2, 1.15, b[2] - .3], fov: 34 }; };
+  return Object.assign(Wd, { hero: Bp, cam });
+};
+// ============================== D3 / D4 ==============================
+const LCOL = [0xFFD54A, 0xFFA726, 0xF4A99A, 0x9EDCF5, 0xFFE9A0, 0xFF8A65, 0xFFC857, 0xB5E3D0, 0xF7B5D0];
+const posBoys = [[0, 2.6], [-3.6, -.6], [-1.2, -.6], [1.2, -.6], [3.6, -.6], [-3.6, -2.9], [-1.2, -2.9], [1.2, -2.9], [3.6, -2.9]];
+function beitMidrash(Wd, hero) { const sh = shulWorld(Wd); let HP = null;
+  posBoys.forEach(([x, z], i) => { S.shtender(Wd, { pos: [x, 0, z + .55] }); const fn = t => ({ pos: [x, 0, z], facing: 0, gesture: 'pray', smile: .5, seed: .2 + i * .09, talk: .1 }); const pp = i === 0 ? S.hero(Wd, fn) : S.man(Wd, S.boyLook(i), fn); if (i === 0) HP = pp; });
+  return { sh, HP }; }
+B.s16 = () => {
+  const Wd = world(S.sky({ ground: 'grass', fog: false, sun: 1.7, hemi: 1.25, skyTop: 0xBFE6FF, skyBottom: 0xFFF1C9 })); const { sh, HP } = beitMidrash(Wd); setCeil(sh, .4);
+  const L = S.lightField(Wd, 56, { r: .1 });
+  L.frame((t, cam, L) => posBoys.forEach(([x, z], i) => { const c = C(LCOL[i]); S.stream(L, t, { t0: .6 + i * .3, t1: 12, N: 5, life: 4.2, col: c, size: i === 0 ? 1.5 : 1, pos: (u, j) => [x + .12 * Math.sin(u * 7 + j + i), 1.8 + 4.6 * u, z + .1 * Math.cos(u * 6 + j)] }); }));
+  return Object.assign(Wd, { hero: HP, cam: orbit([0, 1.1, 2.6], 3.0, .35, 100, 20, 0, 9.7, 44) });
+};
+B.s17 = () => {
+  const Wd = world(S.sky({ ground: 'grass', fog: false, sun: 1.7, hemi: 1.25, skyTop: 0xBFE6FF, skyBottom: 0xFFF1C9 })); const { sh, HP } = beitMidrash(Wd);
+  const ch = S.chest(Wd, { pos: [0, 34, 6], scale: 1.4, open: 1, glow: .7 }); const CT = [0, 35.5, 6];
+  const L = S.lightField(Wd, 70, { r: .16, glow: 2.2 });
+  L.frame((t, cam, L) => { setCeil(sh, 1 - ease.io(prog(t, 1.2, 4.5)));
+    posBoys.forEach(([x, z], i) => { const c = C(LCOL[i]); S.stream(L, t, { t0: .2 + i * .2, t1: 12, N: 7, life: 8, col: c, size: i === 0 ? 1.3 : 1, pos: (u, j) => { const e = u * u * (3 - 2 * u * .4), y0 = 1.8; return [lerp(x, CT[0], Math.pow(u, 1.8)) + .15 * Math.sin(u * 9 + j), y0 + (CT[1] - y0) * Math.pow(u, 1.25), lerp(z, CT[2], Math.pow(u, 1.8)) + .15 * Math.cos(u * 8 + j)]; } }); }); });
+  return Object.assign(Wd, { hero: HP, cam: path([[0, [0, 3.0, -4.4], [0, 1.8, 2.6], 52], [5, [0, 8.5, -5.6], [0, 4.0, 2.6], 56], [9.7, [0, 19, -27], [0, 18, 6], 60]]) });
+};
+
+film({
+  title: 'TITLE', kicker: 'KICKER', recap: ['RECAP_1', 'RECAP_2', 'RECAP_3'], vault: 'captions_vault.json', recapDur: 9, xf: .3, veilEnd: 1.5,
+  shots: CAPS.map(([id, dur, caps, at, wide]) => ({ id, dur, caps: caps.map(cap), capAt: at, wide: !!wide, build: B[id] })),
+});
+</script>
+</html>
