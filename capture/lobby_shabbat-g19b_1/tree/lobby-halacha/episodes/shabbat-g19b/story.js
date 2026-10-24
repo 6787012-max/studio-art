@@ -262,10 +262,11 @@ window.STORY = function (K) {
     shabbatTable(Wd, 2.6, -1.2, true, true);
     const sc = suitcase(Wd, -1.4, -.9, .25), cb = candleBox(Wd, { empty: false });
     const T0 = 1.0, T1 = 3.6, closeK = t => 1 - sm(P(4.2, 5.6, t));
-    Wd.on(t => { sc.open(closeK(t)); const u = P(T0, T1, t), p = arcPt([-3.6, 1.05, -3.7], [-1.4, .32, -.9], sm(u), 1.4); cb.set(p, .25 + u * .5, 1, 0, sin2(u) * .35); });
+    Wd.on(t => { sc.open(closeK(t)); const u = P(T0, T1, t), p = arcPt([-3.6, 2.0, -3.7], [-1.4, .32, -.9], sm(u), .6); cb.set(p, .25 + u * .5, 1, 0, sin2(u) * .35); });
     const sin2 = u => Math.sin(PI * u);
     const sparks = sparkleMotes(Wd, 10, [-1.4, .8, -.9], .9, 0xffe9a8, .12); Wd.on(t => sparks(t));
-    const cs = [1.6, 3.6].map((x, i) => candle(Wd, { pos: [x, CT, -1.2], h: .3, light: { color: 0xffb35a, i: .7, dist: 7 }, glowSize: 1.3, fs: 2.4, flame: t => sm(P(.9 + i * .4, 1.7 + i * .4, t)), appear: t => P(.3 + i * .2, .9 + i * .2, t) }));
+    const cs = [1.3, 3.9].map((x, i) => candle(Wd, { pos: [x, CT, -1.2], h: .3, light: { color: 0xffb35a, i: .7, dist: 7 }, glowSize: 1.3, fs: 2.4, flame: t => sm(P(.9 + i * .4, 1.7 + i * .4, t)), appear: t => P(.3 + i * .2, .9 + i * .2, t) }));
+    Wd.occ = [cb.g].concat(cs.map(c => c.g));
     const lampOff = (sideTable(Wd, 5.0, -3.4), tableLamp(Wd, { pos: [5.0, .63, -3.4], on: () => 0 }));
     const gl = glowAt(Wd.scene, 5, 0xffc070, 0); gl.position.set(2.6, 1.1, -1.0); Wd.on(t => gl.material.opacity = .12 * sm(P(8, 10, t)));
     lighting(Wd, t => ({ hemi: lerp(.8, .85, sm(P(7, 10, t))), sun: .7, hemiColor: mix(new THREE.Color(0xfff0dc), WARM, sm(P(7, 10, t))) }));
