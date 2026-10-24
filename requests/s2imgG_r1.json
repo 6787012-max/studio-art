@@ -1,0 +1,25 @@
+{
+ "jobs": [
+  {
+   "name": "k3g",
+   "model": "kontext",
+   "ref": "k3",
+   "prompt": "recolor the small dark skullcap that sits on the crown of his head to a bright royal blue knitted kippah with a white pattern, keep its small size and flat round shape exactly, do not make it bigger, do not turn it into a hat, keep everything else identical",
+   "seed": 93
+  },
+  {
+   "name": "k1g",
+   "model": "kontext",
+   "ref": "k1",
+   "prompt": "recolor the small dark skullcap that sits on the crown of his head to a bright royal blue knitted kippah with a white pattern, keep its small size and flat round shape exactly, do not make it bigger, do not turn it into a hat, keep everything else identical",
+   "seed": 91
+  },
+  {
+   "name": "k4g",
+   "model": "kontext",
+   "ref": "k4",
+   "prompt": "recolor the small dark skullcap that sits on the crown of his head to a bright royal blue knitted kippah with a white pattern, keep its small size and flat round shape exactly, do not make it bigger, do not turn it into a hat, keep everything else identical",
+   "seed": 94
+  }
+ ]
+}
