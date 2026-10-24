@@ -1,0 +1,25 @@
+{
+ "jobs": [
+  {
+   "name": "k10",
+   "prompt": "comedic cartoon crash, a small colorful car stopped against an orange traffic cone, cone flying in the air, soup splashing up from a pot in the back seat, night street, a young religious Jewish man in his twenties with a round black velvet kippa skullcap clearly sitting on top of his head, white button-up shirt, short neat trimmed dark beard, friendly expressive face with wide eyes at the wheel, big dramatic moment, warm bright cinematic cartoon-realistic 3D animated film still, soft golden lighting, vertical portrait composition, high quality, no text, no writing, no letters, no crosses",
+   "w": 768,
+   "h": 1344,
+   "seed": 110
+  },
+  {
+   "name": "k11",
+   "prompt": "interior of an empty Jewish synagogue hall at night, a young religious Jewish man in his twenties with a round black velvet kippa skullcap clearly sitting on top of his head, white button-up shirt, short neat trimmed dark beard, friendly expressive face standing in the doorway out of breath looking at his wrist watch, empty chairs and tables, a single lamp, lonely mood, warm bright cinematic cartoon-realistic 3D animated film still, soft golden lighting, vertical portrait composition, high quality, no text, no writing, no letters, no crosses",
+   "w": 768,
+   "h": 1344,
+   "seed": 111
+  },
+  {
+   "name": "k12",
+   "prompt": "flat bold design on dark navy blue background, a big golden alarm clock in the center ringing with small motion lines, a tray of white coffee cups next to it, clean simple illustration, warm bright cinematic cartoon-realistic 3D animated film still, soft golden lighting, vertical portrait composition, high quality, no text, no writing, no letters, no crosses",
+   "w": 768,
+   "h": 1344,
+   "seed": 112
+  }
+ ]
+}
