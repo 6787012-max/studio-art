@@ -1,0 +1,28 @@
+[
+ {
+  "name": "mv_s1",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": 201275,
+  "seconds": 35.7
+ },
+ {
+  "name": "mv_s4",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": 251400,
+  "seconds": 34.5
+ },
+ {
+  "name": "mv_s6b",
+  "ok": false,
+  "tries": [
+   {
+    "model": "space",
+    "error": "AppError: No GPU was available after 60s. <a style=\"white-space: nowrap;text-underline-offset: 2px;color: var(--body-text-color)\" href=\"https://huggingface.co/join\">Create a free account</a> to get a higher priority in ZeroGPU queues."
+   }
+  ]
+ }
+]
