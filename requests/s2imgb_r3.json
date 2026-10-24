@@ -1,0 +1,25 @@
+{
+ "jobs": [
+  {
+   "name": "k7",
+   "prompt": "inside a Jewish synagogue hall in the evening, men in kippas and white shirts at long tables closing big books, a blank cream banner hanging on the wall at the top, round wall clock showing almost ten, a young religious Jewish man in his twenties with a round black velvet kippa skullcap clearly sitting on top of his head, white button-up shirt, short neat trimmed dark beard, friendly expressive face standing in the doorway holding a big pot, wide shot, warm bright cinematic cartoon-realistic 3D animated film still, soft golden lighting, vertical portrait composition, high quality, no text, no writing, no letters, no crosses",
+   "w": 768,
+   "h": 1344,
+   "seed": 107
+  },
+  {
+   "name": "k8",
+   "prompt": "close up of a young religious Jewish man in his twenties with a round black velvet kippa skullcap clearly sitting on top of his head, white button-up shirt, short neat trimmed dark beard, friendly expressive face with drooping shoulders and a sad face, a friend in a kippa and white shirt patting his shoulder, a small cute gray rain cloud above his head, a closed big book on the table, warm bright cinematic cartoon-realistic 3D animated film still, soft golden lighting, vertical portrait composition, high quality, no text, no writing, no letters, no crosses",
+   "w": 768,
+   "h": 1344,
+   "seed": 108
+  },
+  {
+   "name": "k9",
+   "prompt": "dramatic night drive, a small colorful cartoon car speeding fast on a city road at night, headlights streaking, a young religious Jewish man in his twenties with a round black velvet kippa skullcap clearly sitting on top of his head, white button-up shirt, short neat trimmed dark beard, friendly expressive face visible gripping the steering wheel with wide worried eyes, wrist watch on his hand, motion blur lines, warm bright cinematic cartoon-realistic 3D animated film still, soft golden lighting, vertical portrait composition, high quality, no text, no writing, no letters, no crosses",
+   "w": 768,
+   "h": 1344,
+   "seed": 109
+  }
+ ]
+}
