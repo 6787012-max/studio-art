@@ -1,0 +1,18 @@
+{
+ "jobs": [
+  {
+   "name": "k13a",
+   "prompt": "early morning at dawn, golden sunrise over a quiet Jerusalem-stone alley with plain flat roofs and bare walls, a young religious Jewish man in his twenties with a round black velvet kippa skullcap clearly sitting on top of his head, white button-up shirt, short neat trimmed dark beard, friendly expressive face walking out of his front door carrying a large tray full of about twenty white coffee cups with steam, smiling happily, lit doorway of a small synagogue hall with a Star of David glowing on its door in the background, friends in kippas and white shirts waiting at the door, only plain flat rooftops and open sky above, nothing on top of any roof, warm bright cinematic cartoon-realistic 3D animated film still, soft golden lighting, vertical portrait composition, high quality, no text, no writing, no letters, no crosses",
+   "w": 768,
+   "h": 1344,
+   "seed": 411
+  },
+  {
+   "name": "k13b",
+   "prompt": "early morning at dawn, golden sunrise over a quiet Jerusalem-stone alley with plain flat roofs and bare walls, a young religious Jewish man in his twenties with a round black velvet kippa skullcap clearly sitting on top of his head, white button-up shirt, short neat trimmed dark beard, friendly expressive face walking out of his front door carrying a large tray full of about twenty white coffee cups with steam, smiling happily, lit doorway of a small synagogue hall with a Star of David glowing on its door in the background, friends in kippas and white shirts waiting at the door, only plain flat rooftops and open sky above, nothing on top of any roof, warm bright cinematic cartoon-realistic 3D animated film still, soft golden lighting, vertical portrait composition, high quality, no text, no writing, no letters, no crosses",
+   "w": 768,
+   "h": 1344,
+   "seed": 422
+  }
+ ]
+}
