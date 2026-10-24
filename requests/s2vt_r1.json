@@ -1,0 +1,10 @@
+{
+ "jobs": [
+  {
+   "name": "tw_wan",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "k5",
+   "prompt": "the man runs fast along the street carrying the heavy pot with both hands, golden soup splashes out of the pot in arcs behind him, his body bounces, street lamps glide past, smooth tracking camera, high quality 3D animated film, expressive motion"
+  }
+ ]
+}
