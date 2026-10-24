@@ -1,0 +1,13 @@
+[
+ {
+  "name": "mn_s3p2",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1344
+  ],
+  "seconds": 25.6
+ }
+]
