@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>odt_haim2 film_d</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import { film, path } from '../../lib/stage3d.js';
+import { hallWorld, shot, lean, ease, prog, clamp, lerp, THREE } from './hall.js';
+import { INSTR2, GROUP16, NEUTRAL_HALL, men } from './people_v2.js';
+import { D2R, face, angl, hash, hsG, rbG, track, orb, heroProxy, evening, EVE, cornerSheets, SHEETS, rowpos, stopwatch } from './games_d.js';
+
+const mkHall = () => evening(hallWorld(NEUTRAL_HALL(EVE)));
+const sn = Math.sin, cs = Math.cos, PI = Math.PI;
+const HAIM = (Wd, fn) => men(Wd, INSTR2, fn, { tag: false });
+const pump = (t, t0) => .5 + .5 * cs((t - t0) / .5 * 2 * PI + PI);   // 0..1 handshake pump, period .5 s
+const xz = (fns, i, t) => { const p = fns[i](t).pos; return [p[0], 0, p[2]]; };
+// four huddles of four (shared by D2 and D3)
+const HC = [[-7, 3], [0, 0], [7, 3], [1.5, -7.5]];
+const HS = Array.from({ length: 16 }, (_, i) => { const h = i >> 2, k = i & 3, a = (h * 37 + k * 90) * D2R, x = HC[h][0] + sn(a) * .8, z = HC[h][1] + cs(a) * .8; return { x, z, f: face(x, z, HC[h][0], HC[h][1]), h, k }; });
+
+film({
+  title: 'TITLE_D', kicker: 'KICKER_D', vault: 'captions_vault.json',
+  shots: [
+    // D1 - evening: the group comes back in as two wings; Haim stands between them (camera in the gap) and counts 1-2-3 on his fingers.
+    shot(13, ['CAP_D_01', 'CAP_D_02'], [0.5, 6.6], () => {
+      const Wd = mkHall();
+      const H = { x: 0, z: -2.5 };
+      const AZ1 = [38, 52, 66, 80], AZ2 = [44, 58, 72, 86];
+      let late = 0;
+      for (let i = 0; i < 16; i++) {
+        const row = i < 8 ? 0 : 1, k = i % 8, side = k < 4 ? -1 : 1, j = k % 4, a = side * (row ? AZ2[j] : AZ1[j]) * D2R, r = row ? 5.6 : 4.2;
+        const x = H.x + sn(a) * r, z = H.z + cs(a) * r, f = face(x, z, H.x, H.z), enter = i % 3 === 2;
+        let fn;
+        if (enter) {
+          const jj = late++, sx = side > 0 ? 13 - jj * .9 : -13 + jj * .9, sz = 11.3, t1 = 3.6 + jj * 1.2;
+          fn = track([[0, sx, sz, face(sx, sz, x, z)], [t1, x, z, f], [14, x, z, f]], [], () => ({ smile: .6, gesture: 'rest', talk: 0 }));
+        } else fn = t => ({ pos: [x, 0, z], facing: f + .06 * sn(t * .5 + i), gesture: 'rest', smile: .5, look: .4 * sn(t * .3 + i) });
+        const P = men(Wd, GROUP16[i], fn);
+        if (!enter) lean(Wd, P, t => ({ facing: f, ang: -(t > 4 ? .04 * (.5 + .5 * sn(t * 1.9 + i)) : 0) }));
+      }
+      const hm = HAIM(Wd, t => {
+        const g = t < 1.5 ? 'rest' : t < 4 ? 'wide' : t < 5.4 ? 'c1' : t < 6.8 ? 'c2' : t < 8.4 ? 'c3' : 'offer';
+        return { pos: [H.x, 0, H.z], facing: .08 * sn(t * .4), gesture: g, smile: .9, talk: t > 1.5 ? .5 + .3 * sn(t * 6) : 0 };
+      });
+      Wd.hero = hm;
+      const cam = path([[0, [0, 1.65, 2.7], [0, 1.45, -2.5], 44], [6.5, [0.2, 1.65, 2.5], [0, 1.45, -2.5], 42], [13, [0.5, 1.65, 2.0], [0, 1.5, -2.5], 40]]);
+      return Object.assign(Wd, { cam });
+    }),
+
+    // D2 - POINTS: huddles of four, everybody counts on his fingers, then the group nods together. Medium orbit on one huddle.
+    shot(13, ['CAP_D_03', 'CAP_D_04'], [0.5, 6.6], () => {
+      const Wd = mkHall();
+      HS.forEach((s, i) => {
+        const P = men(Wd, GROUP16[i], t => {
+          const cnt = t < 6.4;
+          const g = cnt ? ['c1', 'c2', 'c3'][Math.floor((t * .55 + s.k * .8 + s.h * .3) % 3)] : 'rest';
+          return { pos: [s.x, 0, s.z], facing: s.f + .05 * sn(t * .6 + i), gesture: g, talk: cnt ? .5 : 0, smile: cnt ? .4 : .8, look: .5 * sn(t * .5 + i * 2) };
+        });
+        lean(Wd, P, t => ({ facing: s.f, ang: -(t > 6.8 && t < 11.8 ? .1 * Math.max(0, sn((t - 6.8) * 3.4)) : 0) }));
+      });
+      heroProxy(Wd, () => [HS[5].x, 0, HS[5].z]);
+      return Object.assign(Wd, { cam: orb(HC[1], 4.2, 1.9, -30, 30, 13, 34, 1.3) });
+    }),
+
+    // D3 - COMMON DENOMINATOR: a man points at his shoe, another at the buttons of his coat, Haim steps in front, everybody laughs.
+    shot(13, ['CAP_D_05', 'CAP_D_06'], [0.5, 6.6], () => {
+      const Wd = mkHall();
+      const HE = [3.5, 1.5], FA = HC[1], FB = HC[2];
+      HS.forEach((s, i) => {
+        const laugh = t => (s.h === 1 && s.k !== 1 && t > 2.2 && t < 5.6) || (s.h === 2 && s.k !== 1 && t > 6.0 && t < 9.6) || t > 10.2;
+        const P = men(Wd, GROUP16[i], t => {
+          let g = 'rest', talk = .3, sm = .5, f = s.f;
+          const shoe = i === 5 && t > 1.2 && t < 5.2, btn = i === 9 && t > 5.2 && t < 9.2;
+          if (shoe) { g = 'shoe'; talk = .4; sm = .8; } else if (btn) { g = 'btn'; talk = .4; sm = .8; }
+          else if (t < 9.4) g = ['explainA', 'rest', 'explain', 'rest'][Math.floor((t * .4 + i * .3) % 4)];
+          if (laugh(t)) { sm = 1; talk = .6; if (t > 10.2) g = 'rest'; }
+          if (t > 9.4) f = angl(s.f, face(s.x, s.z, HE[0], HE[1]), ease.io(prog(t, 9.4, 10.6)));
+          return { pos: [s.x, 0, s.z], facing: f, gesture: g, talk, smile: sm, look: .4 * sn(t * .5 + i * 2) };
+        });
+        lean(Wd, P, t => ({ facing: s.f, ang: laugh(t) ? .05 * sn(t * 13 + i) + .03 : 0 }));
+      });
+      HAIM(Wd, t => {
+        const u = ease.io(prog(t, 8.0, 10.4)), z = lerp(-5.5, HE[1], u), mv = u > 0 && u < 1;
+        return { pos: [HE[0], 0, z], facing: 0, walk: mv ? (t - 8.0) * 7 : undefined, stride: .8, gesture: t > 10.4 ? 'wide' : 'rest', smile: 1, talk: t > 10.4 ? .5 : 0 };
+      });
+      heroProxy(Wd, t => t < 5.4 ? [HS[5].x, 0, HS[5].z] : t < 9.4 ? [HS[9].x, 0, HS[9].z] : [HE[0], 0, lerp(-5.5, HE[1], 1)]);
+      const cam = t => {
+        const u1 = ease.io(prog(t, 5.0, 6.3)), u2 = ease.io(prog(t, 9.0, 10.3));
+        const fx = lerp(lerp(FA[0], FB[0], u1), HE[0], u2), fz = lerp(lerp(FA[1], FB[1], u1), HE[1], u2);
+        const az = (t < 5 ? lerp(15, -15, prog(t, 0, 5)) : t < 9.2 ? -10 : 0) * D2R;
+        return { pos: [fx + sn(az) * 4.6, 1.8, fz + cs(az) * 4.6], look: [fx, 1.3, fz], fov: 36 };
+      };
+      return Object.assign(Wd, { cam });
+    }),
+
+    // D4 - GROUP DOUBLE: one pair close (fist bounce x3, shape, loser steps behind and cheers), then the crowds grow, ending on the face-off.
+    shot(18, ['CAP_D_07', 'CAP_D_08', 'CAP_D_09'], [0.5, 6.23, 11.97], () => {
+      const Wd = mkHall();
+      const T0 = [.8, 4.9, 9.0, 13.1], AX = [[1, 0], [0, 1], [1, 0], [1, 0]];
+      const M = [[[-8, -3], [-4, -3], [-8, 3], [-4, 3], [4, -3], [8, -3], [4, 3], [8, 3]], [[-6, -3], [-6, 3], [6, -3], [6, 3]], [[-6, 0], [6, 0]], [[0, 0]]];
+      const keys = Array.from({ length: 16 }, () => []), info = Array.from({ length: 16 }, () => ({ joinT: 1e9, lead: [] })), LEAD = [];
+      const last = i => keys[i][keys[i].length - 1];
+      const place = (s, ci, j) => {
+        const m = ci >> 1, side = ci & 1, ax = AX[s], c = M[s][m], fx = side ? -ax[0] : ax[0], fz = side ? -ax[1] : ax[1], f = Math.atan2(fx, fz);
+        const A = [c[0] - fx * .65, c[1] - fz * .65], p = rowpos(A, f, j); return [p[0], p[1], f];
+      };
+      let crowds = Array.from({ length: 16 }, (_, i) => [i]);
+      crowds.forEach((c, ci) => c.forEach((man, j) => { const p = place(0, ci, j); keys[man].push([0, p[0], p[1], p[2]]); }));
+      for (let s = 0; s < 4; s++) {
+        const Ts = T0[s], next = []; LEAD.push(crowds[0][0]);
+        for (let m = 0; m < crowds.length / 2; m++) {
+          const ca = crowds[2 * m], cb = crowds[2 * m + 1], aWin = ((m * 7 + s * 5) >> 1) % 2 === 0;
+          const final = s === 3, W = aWin ? ca : cb, Lc = aWin ? cb : ca, wi = aWin ? 2 * m : 2 * m + 1;
+          [ca, cb].forEach(c => c.forEach(man => { const k = last(man); keys[man].push([Ts + 2.0, k[1], k[2], k[3]]); }));
+          info[ca[0]].lead.push({ Ts, s, won: final ? null : aWin }); info[cb[0]].lead.push({ Ts, s, won: final ? null : !aWin });
+          if (final) { next.push(ca.concat(cb)); continue; }
+          const wp = place(s, wi, 0), A = [wp[0], wp[1]], f = wp[2];
+          Lc.forEach((man, k) => { const p = rowpos(A, f, W.length + k); keys[man].push([Ts + 2.9, p[0], p[1], f]); info[man].joinT = Ts + 2.2; });
+          W.forEach(man => { const k = last(man); keys[man].push([Ts + 2.9, k[1], k[2], k[3]]); });
+          next.push(W.concat(Lc));
+        }
+        if (s < 3) {
+          crowds = next;
+          crowds.forEach((c, ci) => c.forEach((man, j) => { const k = last(man), p = place(s + 1, ci, j); keys[man].push([Ts + 3.2, k[1], k[2], k[3]]); keys[man].push([Ts + 4.1, p[0], p[1], p[2]]); }));
+        }
+      }
+      const fns = [];
+      for (let i = 0; i < 16; i++) { const k = last(i); keys[i].push([19, k[1], k[2], k[3]]); }
+      for (let i = 0; i < 16; i++) {
+        const inf = info[i];
+        const st = (t, b) => {
+          if (t >= inf.joinT) return { gesture: 'up', hop: .06, hopPh: i, smile: 1, talk: .4 };
+          for (const L of inf.lead) {
+            const Ts = L.Ts, pre = L.s === 0 ? .8 : 0;
+            if (t >= Ts - pre && t < Ts + 1.7) return { gesture: rbG(t, Ts, .55), smile: .7 };
+            if (t >= Ts + 1.7 && (L.won === null)) return { gesture: 'up', hop: .07, hopPh: i, smile: 1, talk: .5 };
+            if (t >= Ts + 1.7 && t < Ts + 3.2) return L.won ? { gesture: 'wave', smile: 1 } : { gesture: 'rest', smile: .3 };
+          }
+          return { gesture: 'rest', smile: .5 };
+        };
+        fns[i] = track(keys[i], [[0, 99, st]]);
+        men(Wd, GROUP16[i], fns[i]);
+      }
+      HAIM(Wd, t => ({ pos: [0, 0, -9], facing: 0, gesture: t > 13 ? 'up' : 'rest', smile: 1 }));
+      heroProxy(Wd, t => t < 6 ? xz(fns, 0, t) : t < 12.9 ? xz(fns, LEAD[2], t) : xz(fns, LEAD[3], t));
+      const cam = path([[0, [-8.5, 1.8, -7.6], [-8, 1.3, -3], 34], [4.2, [-8.4, 1.9, -7.0], [-8, 1.3, -3], 34], [5.4, [-12.0, 2.4, -6.5], [-8, 1.2, -1], 40], [7.0, [-12.8, 3.0, 0.5], [-7, 1.2, 0], 44],
+        [9.0, [-8.8, 1.9, 4.2], [-6.3, 1.3, 0], 44], [12.8, [-4, 2.2, 6.0], [-1, 1.3, 0], 48], [13.6, [0, 2.4, 6.2], [0, 1.3, 0], 52], [18, [0, 8.5, 10.8], [0, 0.2, -0.5], 56]]);
+      return Object.assign(Wd, { cam });
+    }),
+
+    // D5 - HANDSHAKE GROUPS: a pair pumps three times (close), the matched men walk on together, groups join, four groups form (wide at the end).
+    shot(14, ['CAP_D_10', 'CAP_D_11'], [0.5, 7.1], () => {
+      const Wd = mkHall();
+      const MP = [[-6, -2.5], [-2, -2.5], [2, -2.5], [6, -2.5], [-6, 2.5], [-2, 2.5], [2, 2.5], [6, 2.5]];
+      const pairPos = (c, th, a) => { const u = [cs(th), sn(th)], q = a ? 1 : -1; return [c[0] + u[0] * .55 * q, c[1] + u[1] * .55 * q, Math.atan2(-u[0] * q, -u[1] * q)]; };
+      const R1 = [], R2 = {}, RING = {}, keys = Array.from({ length: 16 }, () => []), fns = [];
+      for (let p = 0; p < 8; p++) for (let a = 0; a < 2; a++) R1[2 * p + a] = pairPos(MP[p], (p * 37 + 20) * D2R, a);
+      const Q = [[3, 4, [0, -2.5], 0], [2, 10, [-3.5, 0], 90 * D2R], [5, 13, [3.5, 0], 90 * D2R], [11, 12, [0, 2.5], 0]];
+      Q.forEach(([a, b, c, th]) => { R2[a] = pairPos(c, th, 0); R2[b] = pairPos(c, th, 1); });
+      const G = [{ F: [-6.5, -1.5], m: [0, 1, 8, 9], a0: 40 }, { F: [6.5, 1.5], m: [6, 7, 14, 15], a0: 200 }, { F: [-2, -2], m: [3, 4, 2, 10], a0: 120 }, { F: [2, 2], m: [5, 13, 11, 12], a0: 300 }];
+      const slot = (g, k, r) => { const a = (g.a0 + 90 * k) * D2R; return [g.F[0] + sn(a) * r, g.F[1] + cs(a) * r]; };
+      const lead = {};
+      G.forEach(g => {
+        const [l0, p0, l1, p1] = g.m, order = [l0, l1, p1, p0];
+        order.forEach((man, k) => { const q = slot(g, k, .7), q2 = slot(g, k, .95); RING[man] = { q, q2, f: face(q[0], q[1], g.F[0], g.F[1]), k, g }; });
+        lead[l0] = l1; lead[l1] = l0;
+      });
+      const split = new Set([2, 3, 4, 5, 10, 11, 12, 13]);
+      for (let i = 0; i < 16; i++) {
+        const p = i >> 1, r1 = R1[i], phi = i * 2.4 + .7, sx = clamp(MP[p][0] + 3.6 * cs(phi), -9, 9), sz = clamp(MP[p][1] + 3.2 * sn(phi), -4.5, 6.5), K = keys[i], rg = RING[i];
+        K.push([0, sx, sz, Math.atan2(r1[0] - sx, r1[1] - sz)], [1.8, r1[0], r1[1], r1[2]], [3.4, r1[0], r1[1], r1[2]]);
+        if (split.has(i)) { const r2 = R2[i]; K.push([5.0, r2[0], r2[1], r2[2]], [6.6, r2[0], r2[1], r2[2]]); } else K.push([6.7, r1[0], r1[1], r1[2]]);
+        K.push([8.6, rg.q[0], rg.q[1], rg.f], [10.4, rg.q[0], rg.q[1], rg.f], [11.6, rg.q2[0], rg.q2[1], rg.f], [15, rg.q2[0], rg.q2[1], rg.f]);
+        const pairWin = [[1.9, 3.4]]; if (split.has(i)) pairWin.push([5.1, 6.6]);
+        const segs = pairWin.map(([a, b]) => [a, b, t => ({ gesture: hsG(pump(t, a)), smile: 1, talk: .3 })]);
+        if (lead[i] !== undefined) { const opp = RING[lead[i]]; segs.push([8.7, 10.3, t => ({ gesture: hsG(pump(t, 8.7)), smile: 1, talk: .3, facing: face(rg.q[0], rg.q[1], opp.q[0], opp.q[1]) })]); }
+        segs.push([3.4, 5.6, () => ({ gesture: 'rest', smile: 1, talk: split.has(i) ? 0 : .4 })]);
+        segs.push([10.6, 15, t => ({ gesture: ['explain', 'rest', 'explainA', 'rest'][Math.floor((t * .35 + i * .4) % 4)], smile: .8, talk: .4, look: .4 * sn(t * .6 + i) })]);
+        fns[i] = track(K, segs, () => ({ gesture: 'rest', smile: .5 }));
+        const P = men(Wd, GROUP16[i], fns[i]);
+        lean(Wd, P, t => ({ facing: rg.f, ang: -(t > 11.8 ? .06 * Math.max(0, sn((t - 11.8) * 3 + i)) : 0) }));
+      }
+      HAIM(Wd, () => ({ pos: [0, 0, -8.5], facing: 0, gesture: 'rest', smile: .9 }));
+      heroProxy(Wd, t => xz(fns, 0, t));
+      const cam = path([[0, [-6, 1.8, -7.6], [-6, 1.3, -2.5], 34], [3.8, [-5.8, 1.8, -7.3], [-6, 1.3, -2.5], 34], [5.8, [-12, 2.6, -5.0], [-6.5, 1.2, -1.5], 40], [7.0, [-10.2, 2.0, -5.0], [-6.5, 1.2, -1.5], 40],
+        [9.5, [-9.5, 2.0, -4.8], [-6.5, 1.2, -1.5], 40], [11.5, [-12.5, 3.0, 2.0], [-5, 1.1, 0], 44], [14, [-3, 4.2, 9.5], [0, 1.0, 0], 52]]);
+      return Object.assign(Wd, { cam });
+    }),
+
+    // D6 - THE FIRST TRY THAT FAILED: Haim holds up a stopwatch, a messy silent crowd, he stops them with a raised palm.
+    shot(14, ['CAP_D_12', 'CAP_D_13'], [0.5, 7.1], () => {
+      const Wd = mkHall();
+      const HP = [-6, 0.3], hf = PI / 2;
+      const hm = HAIM(Wd, t => ({ pos: [HP[0], 0, HP[1]], facing: hf + .08 * sn(t * .5), gesture: t < 1.5 ? 'rest' : t < 8.4 ? 'swatch' : t < 11 ? 'palm' : 'explain', smile: .8, talk: (t > 2 && t < 8) || t > 11.2 ? .5 : 0 }));
+      stopwatch(Wd, hm); Wd.hero = hm;
+      const bump = { 3: [2, 1.5], 7: [2, 1.5], 4: [4, -1.2], 11: [4, -1.2], 8: [1.5, -1.8], 12: [1.5, -1.8] };
+      const WP = (i, k) => (bump[i] && k === 3) ? [bump[i][0] + ((i === 3 || i === 4 || i === 8) ? -.3 : .3), bump[i][1]] : [0.5 + 8.5 * hash(i, k), -2.2 + 6.7 * hash(i + 31, k)];
+      const tk = [0, 1.7, 3.4, 5.1, 6.8, 8.5, 9.6];
+      const gl = ['finger', 'point', 'c2', 'shrug', 'c1', 'explainA'];
+      for (let i = 0; i < 16; i++) {
+        const K = tk.map((tt, k) => { const w = WP(i, k < 6 ? k : 5); return [tt, w[0], w[1], hash(i, k + 20) * 6.28]; });
+        const segs = [[0, 8.6, t => ({ gesture: gl[Math.floor((t * .7 + i * 1.3) % 6)], smile: .2, brow: .4, talk: 0, look: .8 * sn(t * 1.3 + i) })], [8.6, 14, t => ({ gesture: ['think', 'shrug', 'think', 'rest'][i % 4], smile: .3, brow: .3, look: .9 * sn(t * .7 + i * 1.7) })]];
+        men(Wd, GROUP16[i], track(K, segs));
+      }
+      const cam = path([[0, [-3.5, 1.7, -4.2], [-4, 1.4, 0.5], 38], [7, [-4, 1.8, -4.6], [-4, 1.4, 0.5], 40], [14, [-4.5, 2.0, -5.8], [-2.5, 1.3, 0.5], 52]]);
+      return Object.assign(Wd, { cam });
+    }),
+
+    // D7 - FOUR CORNERS: a participant raises his hand and points to the corners (medium), two argue (medium), the sheets appear, the group walks to the corners (wide).
+    shot(15, ['CAP_D_14', 'CAP_D_15'], [0.5, 7.6], () => {
+      const Wd = mkHall();
+      cornerSheets(Wd, (t, i) => prog(t, 8.6 + i * .15, 9.2 + i * .15));
+      const NRM = [[0, 1], [0, 1], [1, 0], [-1, 0]], PIDX = 5, fns = [];
+      const cornerDir = (x, z, c) => face(x, z, SHEETS[c].x, SHEETS[c].z);
+      for (let i = 0; i < 16; i++) {
+        const c = i % 4, r = (i / 4) | 0, sh = SHEETS[c], n = NRM[c], l = [-n[1], n[0]];
+        let sx = 2.8 * Math.sqrt(hash(i, 7)) * cs(hash(i, 2) * 6.28), sz = .5 + 2.8 * Math.sqrt(hash(i, 7)) * sn(hash(i, 2) * 6.28);
+        if (i === 5) { sx = 1.2; sz = 2.6; } if (i === 2) { sx = -.6; sz = 1.6; } if (i === 9) { sx = .8; sz = 1.6; }
+        const bx = sh.x + n[0] * (1.35 + (r % 2) * .7) + l[0] * (r - 1.5) * .85, bz = sh.z + n[1] * (1.35 + (r % 2) * .7) + l[1] * (r - 1.5) * .85;
+        const dl = hash(i, 5) * .6, ts = 9.5 + dl, te = ts + 4.3, f0 = face(sx, sz, 1.2, 1.6), fz = face(bx, bz, sh.x, sh.z);
+        const K = [[0, sx, sz, f0], [ts, sx, sz, f0], [te, bx, bz, fz], [16, bx, bz, fz]], segs = [];
+        if (i === PIDX) {
+          segs.push([1.4, 2.6, () => ({ gesture: 'hand', smile: .5, facing: cornerDir(sx, sz, 0) + .8 })]);
+          [0, 1, 3, 2].forEach((cc, q) => segs.push([2.6 + q * .8, 3.4 + q * .8, () => ({ gesture: 'pt2', talk: .5, smile: .4, facing: cornerDir(sx, sz, cc) })]));
+          segs.push([5.8, 9.4, () => ({ gesture: 'explain', talk: .4, smile: .4, facing: face(sx, sz, 6, 3.8) - .5 })]);
+        } else if (i === 2 || i === 9) {
+          segs.push([5.4, 9.4, t => ({ gesture: sn(t * 2.2 + i) > -.2 ? 'finger' : 'explain', talk: .6, smile: 0, brow: .5, look: sn(t * 6.5 + i), facing: i === 2 ? PI / 2 : -PI / 2 })]);
+        }
+        segs.push([0, 9.5, t => ({ gesture: t > 1.5 && t < 7 ? ['rest', 'think', 'rest', 'shrug'][i % 4] : 'think', smile: .25, look: .9 * sn(t * .8 + i), brow: .3 })]);
+        segs.push([ts, te, () => ({ gesture: 'rest', smile: .6 })]);
+        segs.push([te, 16, t => ({ gesture: 'rest', smile: .8, talk: .3, look: .5 * sn(t + i) })]);
+        fns[i] = track(K, segs); men(Wd, GROUP16[i], fns[i]);
+      }
+      heroProxy(Wd, t => xz(fns, PIDX, t));
+      const cam = path([[0, [6.0, 1.7, 3.8], [1.0, 1.4, 2.0], 38], [7.8, [6.2, 1.8, 3.9], [0.8, 1.4, 2.0], 38], [10.8, [0, 6.4, 10.8], [0, .8, -4], 66], [15, [0, 6.6, 10.6], [0, .5, -6], 74]]);
+      return Object.assign(Wd, { cam });
+    }),
+
+    // D8 - FINGERS: one pair close - fists bounce on a beat, fingers thrown out (2 against 4), the winner raises his other hand first and walks to a new partner.
+    shot(16, ['CAP_D_16', 'CAP_D_17'], [0.5, 8.1], () => {
+      const Wd = mkHall();
+      const SL = [[-7.5, -2.5], [-2.5, -2.5], [2.5, -2.5], [7.5, -2.5], [7.5, 2.5], [2.5, 2.5], [-2.5, 2.5], [-7.5, 2.5]];
+      const U = [cs(15 * D2R), sn(15 * D2R)], TR = [.6, 7.3, 13.4];
+      const sp = (p, side) => { const q = side ? 1 : -1; return [SL[p][0] + U[0] * .6 * q, SL[p][1] + U[1] * .6 * q, Math.atan2(-U[0] * q, -U[1] * q)]; };
+      let occ = SL.map((_, p) => [2 * p, 2 * p + 1]);
+      const keys = Array.from({ length: 16 }, () => []), ev = Array.from({ length: 16 }, () => []);
+      occ.forEach((o, p) => o.forEach((man, s) => { const q = sp(p, s); keys[man].push([0, q[0], q[1], q[2]]); }));
+      TR.forEach((Tr, r) => {
+        const ws = Array.from({ length: 8 }, (_, p) => (p + r) % 2), nocc = SL.map(() => [0, 0]);
+        for (let p = 0; p < 8; p++) {
+          const w = occ[p][ws[p]];
+          occ[p].forEach((man, s) => ev[man].push({ Tr, side: s, win: s === ws[p] }));
+          const q = (p + 1) % 8; nocc[q][1 - ws[q]] = occ[q][1 - ws[q]]; nocc[q][ws[q]] = w;
+        }
+        for (let p = 0; p < 8; p++) occ[p].forEach(man => { const k = keys[man][keys[man].length - 1]; keys[man].push([Tr + 3.5, k[1], k[2], k[3]]); });
+        if (r < 2) for (let p = 0; p < 8; p++) {
+          const w = occ[p][ws[p]], q = (p + 1) % 8, dest = sp(q, ws[q]), lp = sp(q, 1 - ws[q]);
+          keys[w].push([Tr + 5.6, dest[0], dest[1], face(dest[0], dest[1], lp[0], lp[1])]);
+        }
+        if (r < 2) occ = nocc;
+      });
+      const fns = [];
+      for (let i = 0; i < 16; i++) {
+        const E = ev[i];
+        const st = t => {
+          for (const e of E) {
+            const Tr = e.Tr;
+            if (t >= Tr && t < Tr + 1.75) return { gesture: rbG(t, Tr, .55), smile: .8, talk: .2 };
+            if (t >= Tr + 1.75 && t < Tr + 3.4) {
+              if (e.win && t > Tr + 2.4) return { gesture: e.side ? 'wP' : 'wS', smile: 1, talk: .4 };
+              return { gesture: e.side ? 'shP' : 'shS', smile: .8 };
+            }
+            if (t >= Tr + 3.4 && t < Tr + 3.7) return { gesture: e.win ? 'rest' : 'shrug', smile: 1, talk: .4 };
+          }
+          return { gesture: 'rest', smile: .6 };
+        };
+        const lastK = keys[i][keys[i].length - 1]; keys[i].push([17, lastK[1], lastK[2], lastK[3]]);
+        fns[i] = track(keys[i], [[0, 99, st]]); men(Wd, GROUP16[i], fns[i]);
+      }
+      HAIM(Wd, () => ({ pos: [11, 0, -6], facing: -PI / 2, gesture: 'rest', smile: .9 }));
+      const HERO = 3;   // winner of the pair at slot 1 in round one
+      heroProxy(Wd, t => xz(fns, HERO, t));
+      const cam = t => {
+        const p = fns[HERO](t).pos;
+        return { pos: [p[0] - 1.4, 1.7, p[2] - 3.7], look: [p[0] - .2, 1.2, p[2]], fov: 32 };
+      };
+      return Object.assign(Wd, { cam });
+    }),
+
+    // D9 - WHY DID YOU CHOOSE: the four corner groups; in each one man speaks with a hand on his chest, the others listen and nod. Medium sweep from group to group.
+    shot(14, ['CAP_D_18', 'CAP_D_19'], [0.5, 7.1], () => {
+      const Wd = mkHall();
+      cornerSheets(Wd);
+      const NRM = [[0, 1], [0, 1], [1, 0], [-1, 0]], ORDER = [2, 0, 1, 3], WIN = [[0.3, 4.4], [4.0, 8.0], [7.6, 11.4], [11.0, 14.2]], OFF = [0, 55, -55, 110];
+      const CEN = SHEETS.map((s, c) => [s.x + NRM[c][0] * 2.4, s.z + NRM[c][1] * 2.4]);
+      const slotOf = (c, k) => { const n = NRM[c], a = Math.atan2(-n[0], -n[1]) + OFF[k] * D2R; return { x: CEN[c][0] + sn(a) * .85, z: CEN[c][1] + cs(a) * .85, a }; };
+      ORDER.forEach((c, gi) => {
+        for (let k = 0; k < 4; k++) {
+          const man = c * 4 + k, s = slotOf(c, k), f = face(s.x, s.z, CEN[c][0], CEN[c][1]), w = WIN[gi];
+          const P = men(Wd, GROUP16[man], t => {
+            const spk = k === 0 && t > w[0] && t < w[1];
+            return { pos: [s.x, 0, s.z], facing: f + .05 * sn(t * .6 + man), gesture: spk ? (sn(t * .9) > .6 ? 'explain' : 'heart') : 'rest', talk: spk ? .6 + .3 * sn(t * 7) : 0, smile: .6, look: .4 * sn(t * .5 + man) };
+          });
+          lean(Wd, P, t => ({ facing: f, ang: -(k !== 0 && t > w[0] + .8 && t < w[1] ? .09 * Math.max(0, sn((t - w[0]) * 2.6 + k * 1.7)) : 0) }));
+        }
+      });
+      const cp = c => [CEN[c][0] + NRM[c][0] * 5.6, 1.9, CEN[c][1] + NRM[c][1] * 5.6];
+      const cl = c => [CEN[c][0] - NRM[c][0] * .6, 1.3, CEN[c][1] - NRM[c][1] * .6];
+      const cam = path([[0, cp(2), cl(2), 36], [3.4, [cp(2)[0] + .3, 1.9, cp(2)[2] + .3], cl(2), 36], [7.2, cp(0), cl(0), 36], [10.8, cp(1), cl(1), 36], [14, cp(3), cl(3), 36]]);
+      heroProxy(Wd, t => { const gi = t < WIN[1][0] ? 0 : t < WIN[2][0] ? 1 : t < WIN[3][0] ? 2 : 3, s = slotOf(ORDER[gi], 0); return [s.x, 0, s.z]; });
+      return Object.assign(Wd, { cam });
+    }),
+  ],
+});
+</script>
+</html>

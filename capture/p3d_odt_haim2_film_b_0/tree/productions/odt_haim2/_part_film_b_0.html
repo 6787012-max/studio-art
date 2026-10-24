@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>odt_haim2 film_b</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script>window.__T0=0.0000; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import { film, path } from '../../lib/stage3d.js';
+import { hallWorld, walkTo, shot, ease, prog, clamp, lerp, rng, THREE } from './hall.js';
+import { INSTR2, GROUP16, NEUTRAL_HALL, circleSpots } from './people_v2.js';
+import { actor, bodyPt, lerp3, polar, fcg, bump, shuffle, heroProxy, rodProp, chickenProp, holdSheet, footSheet } from './games_b.js';
+
+const PI = Math.PI, D2R = PI / 180;
+const HAIM = Object.assign({}, INSTR2, { tag: false });
+const ALL = [...Array(16).keys()];
+const angLerp = (a, b, u) => a + Math.atan2(Math.sin(b - a), Math.cos(b - a)) * u;
+const wide = s => Object.assign(s, { wide: true });
+const chat = (s, t, i) => { s.smile = .6; s.talk = ((t * .6 + i * .31) % 1) < .3 ? .5 : 0; if (s.walk === undefined) s.gesture = ((t * .35 + i * .37) % 1) < .5 ? 'rest' : 'explainA'; return s; };
+const hangL = side => [side === 'A' ? -.33 : .33, .93, .06];
+
+film({
+  title: 'TITLE_B', kicker: 'KICKER_B', vault: 'captions_vault.json',
+  shots: [
+    // ============ B1 - LINE-UP: clump -> one straight line, people swap places; Haim points to one end. Crane rises.
+    wide(shot(13, ['CAP_B_01', 'CAP_B_02'], [0.5, 6.6], () => {
+      const Wd = hallWorld(NEUTRAL_HALL()), r = rng(11);
+      const perm = shuffle(ALL, 5), slot = []; perm.forEach((m, k) => slot[m] = k);
+      const xs = k => -7.5 + k, swaps = [[1, 4], [6, 9], [10, 13], [3, 12]], to2 = slot.slice();
+      swaps.forEach(([a, b]) => { to2[perm[a]] = b; to2[perm[b]] = a; });
+      ALL.forEach(i => {
+        const cx = -1.5 + ((i % 4) - 1.5) * .85 + (r() - .5) * .5, cz = -3.6 + ((i >> 2) - 1.5) * .85 + (r() - .5) * .5, fc = fcg(cx, cz, -1.5, -3.6);
+        const ts = 1.0 + (i % 6) * .15, ta = ts + 3.0 + (i % 5) * .2, s0 = slot[i], s1 = to2[i];
+        const keys = [[0, cx, cz, fc], [ts, cx, cz, fc], [ta, xs(s0), 0, 0], [7.4, xs(s0), 0, 0]];
+        if (s1 !== s0) { const sg = s0 < s1 ? 1 : -1; keys.push([8.5, (xs(s0) + xs(s1)) / 2, .95 * sg, 0], [9.6, xs(s1), 0, 0], [13, xs(s1), 0, 0]); } else keys.push([13, xs(s0), 0, 0]);
+        const rt = walkTo(keys);
+        actor(Wd, GROUP16[i], t => chat(rt(t), t, i));
+      });
+      const H = actor(Wd, HAIM, t => ({ pos: [9.8, 0, 0], facing: -PI / 2, gesture: t < 1.2 ? 'rest' : t < 6.8 ? 'point' : 'explain', smile: .9, talk: t > 1.5 && t < 9 ? .4 : 0 }));
+      Wd.hero = H; // Haim is the hero
+      heroProxy(Wd, [0, 1, 0], [17, 2.2, 8]);
+      const cam = path([[0, [-7, 2.2, 8.5], [0, 1.2, -1.0], 56], [5, [-2, 3.2, 10], [0, 1.0, -0.5], 52], [13, [3, 9.5, 11.5], [0, 0.4, 0], 50]]);
+      return Object.assign(Wd, { cam });
+    })),
+
+    // ============ B2 - the line breaks and re-forms in a different order twice. Side dolly along the line.
+    wide(shot(13, ['CAP_B_03', 'CAP_B_04'], [0.5, 6.6], () => {
+      const Wd = hallWorld(NEUTRAL_HALL()), r = rng(23);
+      const P0 = shuffle(ALL, 7), P1 = shuffle(ALL, 8), P2 = shuffle(ALL, 9), sl = P => { const a = []; P.forEach((m, k) => a[m] = k); return a; };
+      const S0 = sl(P0), S1 = sl(P1), S2 = sl(P2), xs = k => -7.5 + k;
+      ALL.forEach(i => {
+        const jx = (r() - .5) * 2.4, sg = i % 2 ? 1 : -1;
+        const keys = [[0, xs(S0[i]), 0, 0], [1.0, xs(S0[i]), 0, 0], [2.5, xs(S0[i]) + jx, 1.7 * sg, 0], [5.0, xs(S1[i]), 0, 0], [7.0, xs(S1[i]), 0, 0],
+          [8.5, xs(S1[i]) - jx, -1.7 * sg, 0], [11.0, xs(S2[i]), 0, 0], [13, xs(S2[i]), 0, 0]];
+        const rt = walkTo(keys);
+        actor(Wd, GROUP16[i], t => chat(rt(t), t, i));
+      });
+      const H = actor(Wd, HAIM, t => ({ pos: [9.8, 0, 3.0], facing: -PI / 2.5, gesture: 'explain', smile: .9, talk: .4 }));
+      heroProxy(Wd, [0, 1, 0], [17, 2.2, 5]);
+      const cam = path([[0, [-8.5, 1.7, 6.6], [-5.5, 1.25, 0], 52], [6.5, [0, 1.9, 7.2], [3.0, 1.25, 0], 52], [13, [8.5, 1.7, 6.6], [5.5, 1.25, 0], 52]]);
+      return Object.assign(Wd, { cam });
+    })),
+
+    // ============ B3 - LOCATION WHEEL: six small circles in a ring; in each one man walks to the NEXT circle, twice.
+    wide(shot(19, ['CAP_B_05', 'CAP_B_06', 'CAP_B_07'], [0.5, 6.57, 12.63], () => {
+      const Wd = hallWorld(NEUTRAL_HALL());
+      const Cc = k => polar(6.4, ((k % 6) + 6) % 6 * 60), cnt = [3, 3, 3, 3, 2, 2];
+      const slotPos = (k, s) => { const [cx, cz] = Cc(k), [nx, nz] = Cc(k + 1), [px, pz] = Cc(k + 5);
+        const d = { N: [nx - cx, nz - cz], P: [px - cx, pz - cz], I: [-cx, -cz], O: [cx, cz] }[s], L = Math.hypot(d[0], d[1]);
+        return [cx + d[0] / L * .75, cz + d[1] / L * .75]; };
+      let id = 0;
+      for (let k = 0; k < 6; k++) {
+        const [cx, cz] = Cc(k);
+        ['N', 'I', 'O'].slice(0, cnt[k]).forEach(sn => {
+          const i = id++, [x, z] = slotPos(k, sn), f = fcg(x, z, cx, cz);
+          let keys;
+          if (sn === 'N') { const T1 = 4.2 + .12 * k, [ax, az] = slotPos(k + 1, 'P'), [bx, bz] = Cc(k + 1), f2 = fcg(ax, az, bx, bz); keys = [[0, x, z, f], [T1, x, z, f], [T1 + 3.8, ax, az, f2], [19, ax, az, f2]]; }
+          else if (sn === 'I') { const T2 = 10.8 + .12 * k, [ax, az] = slotPos(k + 1, 'N'), [bx, bz] = Cc(k + 1), f2 = fcg(ax, az, bx, bz); keys = [[0, x, z, f], [T2, x, z, f], [T2 + 3.8, ax, az, f2], [19, ax, az, f2]]; }
+          else keys = [[0, x, z, f], [19, x, z, f]];
+          const rt = walkTo(keys);
+          actor(Wd, GROUP16[i], t => chat(rt(t), t, i));
+        });
+      }
+      const H = actor(Wd, HAIM, t => ({ pos: [0, 0, 0], facing: 1.2 + .6 * Math.sin(t * .3), gesture: (t > 2.6 && t < 4.8) || (t > 9.2 && t < 11.4) ? 'finger' : 'explain', smile: .9, talk: .4 }));
+      Wd.hero = H;
+      const cam = t => { const a = (-20 + 140 * ease.io(prog(t, 0, 19))) * D2R; return { pos: [10 * Math.sin(a), 6.2, 10 * Math.cos(a)], look: [0, .8, 0], fov: 50 }; };
+      return Object.assign(Wd, { cam });
+    })),
+
+    // ============ B4 - SKIP CIRCLE: hands of the man two places away (past the neighbour), then three places away.
+    shot(14, ['CAP_B_08', 'CAP_B_09'], [0.5, 7.1], () => {
+      const Wd = hallWorld(NEUTRAL_HALL());
+      const R1 = 1.8, R2 = 1.1, Rt = t => lerp(R1, R2, ease.io(prog(t, 6.0, 7.4)));
+      const st = (i, t) => { const [x, z] = polar(Rt(t), 30 * i + 7); return { pos: [x, 0, z], facing: fcg(x, z, 0, 0) }; };
+      const sideOf = d => { const a = st(0, 0), b = st(((d % 12) + 12) % 12, 0), f = a.facing; const lat = (b.pos[0] - a.pos[0]) * Math.cos(f) - (b.pos[2] - a.pos[2]) * Math.sin(f); return lat < 0 ? 'A' : 'B'; };
+      const sd = { 2: sideOf(2), '-2': sideOf(-2), 3: sideOf(3), '-3': sideOf(-3) };
+      let hero = null;
+      for (let i = 0; i < 12; i++) {
+        const P = actor(Wd, GROUP16[i], t => {
+          const s0 = st(i, t), w1 = ease.sm(prog(t, .4, 1.6)) * (1 - ease.sm(prog(t, 5.6, 6.4))), w2 = ease.sm(prog(t, 7.2, 8.6));
+          const w = Math.max(w1, w2), ds = w2 > 0 ? [3, -3] : [2, -2], s = { pos: s0.pos, facing: s0.facing, smile: .5 + .5 * w2, talk: w2 > .5 ? (((t * 1.3 + i * .37) % 1) < .5 ? .7 : 0) : 0 };
+          if (w > 0) {
+            s.ik = {};
+            for (const d of ds) { const j = st(((i + d) % 12 + 12) % 12, t), side = sd[d], mid = [(s0.pos[0] + j.pos[0]) / 2, 1.12, (s0.pos[2] + j.pos[2]) / 2];
+              s.ik[side] = lerp3(bodyPt(s0, side === 'A' ? -.33 : .33, .93, .08), mid, w); }
+            s.pose = { hips: [.3 * w1 + .45 * w2, 0, 0] };
+          } else s.gesture = 'rest';
+          return s;
+        });
+        if (i === 0) hero = P;
+      }
+      Wd.hero = hero; heroProxy(Wd, [0, 1, 0], [3.4, 2.2, 3.4]);
+      const cam = t => { const a = (0 + 200 * ease.io(prog(t, 0, 14))) * D2R; return { pos: [4.4 * Math.sin(a), 4.2, 4.4 * Math.cos(a)], look: [0, .9, 0], fov: 42 }; };
+      return Object.assign(Wd, { cam });
+    }),
+
+    // ============ B5 - THUMB SQUEEZE -> mingling pairs -> the hands-on-shoulders train
+    wide(shot(24, ['CAP_B_10', 'CAP_B_11', 'CAP_B_12', 'CAP_B_13'], [0.5, 6.3, 12.1, 17.9], () => {
+      const Wd = hallWorld(NEUTRAL_HALL());
+      const R5 = 2.8, C = 5, aC = 22.5 * C, TRAIN = [13, 5, 4, 6, 12, 9];
+      const spot = i => polar(R5, 22.5 * i), fcirc = i => { const [x, z] = spot(i); return fcg(x, z, 0, 0); };
+      // train geometry
+      const TR = 3.0, a0 = 200 * D2R, W = .30, t0 = 12.4, DEL = .52 / TR, G0 = .8 / TR;
+      const tj = { 4: 14.6, 6: 16.6, 12: 18.4, 9: 21.8 }, tsj = { 4: 12.8, 6: 14.8, 12: 16.6, 9: 19.2 };
+      const theta = t => a0 + W * (Math.max(t, t0) - t0), arcPos = a => [TR * Math.sin(a), TR * Math.cos(a)], head = a => Math.atan2(Math.cos(a), -Math.sin(a));
+      const g1 = t => lerp(G0, DEL, ease.sm(prog(t, 12.0, 12.6)));
+      const aK = (k, t) => k === 0 ? theta(t) : theta(t) - g1(t) - (k - 1) * DEL;
+      // mingling rounds
+      const masks = [1, 3, 8], Dr = [6.3, 8.4, 10.4], Ar = [7.5, 9.5, 11.3], Er = [8.3, 10.2, 11.9];
+      const meet = (i, r) => {
+        const pr = i ^ masks[r], pid = Math.min(i, pr);
+        if (r === 2 && pid === 5) { if (i === 13) { const p = arcPos(a0); return { x: p[0], z: p[1], f: head(a0) + PI }; } const p = arcPos(a0 - G0); return { x: p[0], z: p[1], f: head(a0 - G0) }; }
+        const rad = r < 2 ? 1.0 + ((pid * 7 + r * 5) % 9) / 9 * 1.4 : 4.4, ang = (pid * 53 + r * 117 + 20) % 360, c = polar(rad, ang), th = (ang + 90) * D2R, u = [Math.sin(th), Math.cos(th)], sg = i < pr ? 1 : -1;
+        const x = c[0] + u[0] * .45 * sg, z = c[1] + u[1] * .45 * sg; return { x, z, f: fcg(x, z, c[0] - u[0] * .45 * sg, c[1] - u[1] * .45 * sg) };
+      };
+      const watchers = ALL.filter(i => !TRAIN.includes(i));
+      const ringSpot = i => { const idx = watchers.indexOf(i); return polar(5.6, 10 + idx * (320 / watchers.length) ); };
+      const baseKeys = i => { const [x, z] = spot(i), f = fcirc(i), m0 = meet(i, 0), m1 = meet(i, 1), m2 = meet(i, 2);
+        return [[0, x, z, f], [6.3, x, z, f], [7.5, m0.x, m0.z, m0.f], [8.3, m0.x, m0.z, m0.f], [9.5, m1.x, m1.z, m1.f], [10.2, m1.x, m1.z, m1.f], [11.3, m2.x, m2.z, m2.f], [11.9, m2.x, m2.z, m2.f]]; };
+      const askWin = t => Ar.some((a, r) => t > a + .15 && t < Er[r] - .1);
+      const stC = t => { const [x, z] = spot(C); return { pos: [x, 0, z], facing: fcirc(C) }; };
+      // Haim's walk
+      const gap = polar(2.75, aC - 11.25), side = (() => { const f = fcg(gap[0], gap[1], 0, 0), cp = spot(C); return ((cp[0] - gap[0]) * Math.cos(f) - (cp[1] - gap[1]) * Math.sin(f)) < 0 ? 'A' : 'B'; })();
+      const hs = polar(6.4, 250), hRt = walkTo([[0, ...polar(3.8, aC - 62), 0], [1.5, ...polar(3.6, aC - 38)], [3.0, ...polar(3.5, aC - 20)], [3.9, gap[0], gap[1], fcg(gap[0], gap[1], 0, 0)], [5.6, gap[0], gap[1], fcg(gap[0], gap[1], 0, 0)], [8.5, hs[0], hs[1], fcg(hs[0], hs[1], 0, 0)], [24, hs[0], hs[1], 0]]);
+      actor(Wd, HAIM, t => {
+        const s = hRt(t), w = bump(t, 4.0, 4.5, 5.5, 6.0);
+        s.smile = .8; s.talk = t > 6.5 ? .4 : 0;
+        if (w > 0) { s.ik = { [side]: lerp3(bodyPt(s, side === 'A' ? -.33 : .33, .93, .08), bodyPt(stC(t), -.19, 1.25, .56), w) }; s.pose = { hips: [.45 * w, 0, 0], fist: { [side]: bump(t, 4.8, 5.0, 5.4, 5.6) } }; }
+        else if (t > 6.5 && s.walk === undefined) s.gesture = 'explain';
+        return s;
+      });
+      // train state of member k at t
+      const trainSt = (k, t) => {
+        const m = TRAIN[k];
+        if (k <= 1) { const a = aK(k, t), p = arcPos(a); let f = head(a); if (k === 0) f += PI * (1 - ease.sm(prog(t, 11.7, 12.3))); return { pos: [p[0], 0, p[1]], facing: f, walk: t > t0 ? 5.7 * t : undefined }; }
+        const a = aK(k, t), tp = arcPos(aK(k, tj[m])), sp = meet(m, 2), u = ease.sm(prog(t, tsj[m], tj[m]));
+        const x = lerp(sp.x, tp[0], u), z = lerp(sp.z, tp[1], u), tf = Math.atan2(tp[0] - sp.x, tp[1] - sp.z);
+        if (t >= tj[m]) { const p = arcPos(a); return { pos: [p[0], 0, p[1]], facing: head(a), walk: 5.7 * t }; }
+        return { pos: [x, 0, z], facing: angLerp(tf, head(aK(k, tj[m])), ease.sm(prog(t, tj[m] - .6, tj[m]))), walk: u > 0 && u < 1 ? 8 * t : undefined };
+      };
+      ALL.forEach(i => {
+        const k = TRAIN.indexOf(i), rt = walkTo(k >= 0 ? baseKeys(i).concat([[24, meet(i, 2).x, meet(i, 2).z, meet(i, 2).f]]) : baseKeys(i).concat([[14.5, ...ringSpot(i), fcg(...ringSpot(i), 0, 0)], [24, ...ringSpot(i), fcg(...ringSpot(i), 0, 0)]]));
+        actor(Wd, GROUP16[i], t => {
+          const m = k >= 0 ? (k <= 1 ? t >= 11.3 : t >= tsj[i]) : false;
+          if (m) {
+            const s = trainSt(k, t); s.smile = .5;
+            if (k >= 1) { const wj = k === 1 ? ease.sm(prog(t, 11.9, 12.5)) : ease.sm(prog(t, tj[i] - .6, tj[i])); const fr = trainSt(k - 1, t);
+              if (wj > 0) { s.ik = {}; for (const sd of ['A', 'B']) s.ik[sd] = lerp3(bodyPt(s, sd === 'A' ? -.33 : .33, .93, .08), bodyPt(fr, sd === 'A' ? -.2 : .2, 1.38, 0), wj); s.pose = { hips: [.15 * wj, 0, 0] }; } }
+            if (k === 3 && s.walk === undefined) s.gesture = 'rest';
+            return s;
+          }
+          const s = rt(t);
+          if (t < 6.7) { const u = ease.sm(prog(t, 6.0, 6.6)); s.smile = .1; if (u < 1) { s.ikL = { A: lerp3([-.19, 1.25, .56], hangL('A'), u) }; s.pose = { head: [.35 * (1 - u), 0, 0] }; } return s; }
+          if (s.walk === undefined) s.gesture = askWin(t) ? 'shrug' : (t > 12.4 ? ((t * .35 + i * .37) % 1 < .5 ? 'rest' : 'explainA') : 'rest');
+          s.smile = .7; s.talk = (askWin(t) || t > 12.4) && ((t * .6 + i * .31) % 1) < .3 ? .5 : 0;
+          return s;
+        });
+      });
+      heroProxy(Wd, [0, 1, 0], [9, 2.2, 9]);
+      const c1 = t => { const ang = aC - 70 + 70 * ease.io(prog(t, .2, 4.6)), p = polar(R5, ang); return { pos: [.3, 1.5, .5], look: [p[0], 1.25, p[1]], fov: 58 }; };
+      const c1e = c1(5.6), c2 = path([[5.6, c1e.pos, c1e.look, 58], [9.5, [0, 6, 6], [0, .8, 0], 52], [12.4, [0, 8.8, 9.8], [0, .8, 0], 50]]);
+      const c2e = c2(12.4), c3 = t => { const w = ease.sm(prog(t, 12.4, 15.5)), ac = theta(t) + .9, la = arcPos(theta(t) - .45), tp = [7.2 * Math.sin(ac), 2.4, 7.2 * Math.cos(ac)];
+        return { pos: lerp3(c2e.pos, tp, w), look: lerp3(c2e.look, [la[0], 1.15, la[1]], w), fov: lerp(c2e.fov, 46, w) }; };
+      const cam = t => t < 5.6 ? c1(t) : t < 12.4 ? c2(t) : c3(t);
+      return Object.assign(Wd, { cam });
+    })),
+
+    // ============ B6 - HELIUM STICK: two teams STANDING, index fingers under a thick light-grey rod between two facing rows
+    shot(20, ['CAP_B_14', 'CAP_B_15', 'CAP_B_16'], [0.5, 6.9, 13.3], () => {
+      const Wd = hallWorld(NEUTRAL_HALL());
+      const hA = t => 1.15 + .4 * ease.io(prog(t, 1.5, 8)) - 1.30 * ease.io(prog(t, 9.4, 17.6)) + .012 * Math.sin(t * 3.1) * (t < 9.4 ? 1 : 0);
+      const hB = t => 1.15 + .4 * ease.io(prog(t, 2.0, 8.8)) - 1.0 * ease.io(prog(t, 10.4, 19.4)) + .012 * Math.sin(t * 2.7) * (t < 10.4 ? 1 : 0);
+      const teams = [{ zc: 0, h: hA }, { zc: -4.4, h: hB }], SZ = [-.83, -.28, .28, .83];
+      teams.forEach((T, ti) => {
+        rodProp(Wd, t => ({ c: [0, T.h(t), T.zc], yaw: 0 }), .02);
+        for (let n = 0; n < 8; n++) {
+          const row = n >> 2, j = n & 3, i = ti * 8 + n, x = SZ[j], z = T.zc + (row ? .4 : -.4), f = row ? PI : 0;
+          actor(Wd, GROUP16[i], t => {
+            const h = T.h(t), c = clamp((1.15 - h) / .85, 0, 1), al = 1.6 * c, k = 2.3 * c, lean = .9 * c, y = .45 * Math.cos(al) + .415 * Math.cos(al - k) + .085 - .95;
+            const laugh = t > 3 && t < 11 ? Math.sin(t * 7 + i) * .5 + .5 : 0;
+            const wz = T.zc + (row ? .04 : -.04), s = { pos: [x, 0, z], facing: f, smile: 1, talk: laugh > .6 ? .5 : 0 }, ik = {};
+            for (const sd of ['A', 'B']) { const sx = sd === 'A' ? -1 : 1; ik[sd] = [x + sx * .1 * Math.cos(f), h - .13, wz]; }
+            s.ik = ik;
+            s.pose = { y, hips: [lean, 0, 0], thighA: [-al - lean, 0, 0], thighB: [-al - lean, 0, 0], shinA: [k, 0, 0], shinB: [k, 0, 0], footA: [al - k, 0, 0], footB: [al - k, 0, 0],
+              point: { A: 1, B: 1 }, fist: { A: 1, B: 1 }, head: [-lean * .8 - .25 * laugh, 0, .08 * Math.sin(t * 5 + i) * laugh] };
+            return s;
+          });
+        }
+      });
+      heroProxy(Wd, [0, 1, -2.2], [3, 2.2, 6.4]);
+      const cam = t => ({ pos: [lerp(-4.4, -3.3, ease.io(prog(t, 0, 20))), 1.05 + .15 * prog(t, 0, 20), lerp(2.2, 2.9, ease.io(prog(t, 0, 20)))], look: [.4, 1.0, lerp(-.3, -1.0, prog(t, 0, 20))], fov: 50 });
+      return Object.assign(Wd, { cam });
+    }),
+
+    // ============ B7 - CHICKEN THROW: 6 throws across a circle of 12, faster in the second half
+    shot(14, ['CAP_B_17', 'CAP_B_18'], [0.5, 7.1], () => {
+      const Wd = hallWorld(NEUTRAL_HALL());
+      const hold = [0, 6, 2, 9, 4, 10, 3], T = [1.2, 3.6, 6.0, 8.2, 9.4, 10.6], Dd = [1.5, 1.5, 1.5, .75, .7, .65], Hh = [.9, .9, .9, .5, .5, .45];
+      const stOf = i => { const [x, z] = polar(3.0, 30 * i); return { pos: [x, 0, z], facing: fcg(x, z, 0, 0) }; };
+      const Hp = m => bodyPt(stOf(m), 0, 1.12, .42), Pa = m => bodyPt(stOf(m), 0, 1.32, .5);
+      const HOLD = { A: [-.1, 1.1, .38], B: [.1, 1.1, .38] }, CATCH = { A: [-.13, 1.34, .52], B: [.13, 1.34, .52] }, THROW = { A: [-.1, 1.3, .68], B: [.1, 1.3, .68] }, REST = { A: [-.3, .95, .1], B: [.3, .95, .1] };
+      const kfOf = m => {
+        const p = hold.indexOf(m); if (p < 0) return null; const kf = [[0, REST]];
+        if (p >= 1) { const k = p - 1; kf.push([T[k] + .05, REST], [T[k] + .05 + Math.min(.6, Dd[k] * .5), CATCH], [T[k] + Dd[k] + .1, CATCH], [T[k] + Dd[k] + .45, HOLD]); }
+        if (p < 6) { if (p === 0) kf.push([T[0] - .9, REST], [T[0] - .4, HOLD]); kf.push([T[p] - .15, HOLD], [T[p] + .15, THROW], [T[p] + .7, REST]); }
+        return kf.sort((a, b) => a[0] - b[0]);
+      };
+      const sample = (kf, t) => { let i = 0; while (i < kf.length - 2 && t > kf[i + 1][0]) i++; if (t <= kf[0][0]) return kf[0][1]; if (t >= kf[kf.length - 1][0]) return kf[kf.length - 1][1];
+        const u = ease.sm(prog(t, kf[i][0], kf[i + 1][0])); return { A: lerp3(kf[i][1].A, kf[i + 1][1].A, u), B: lerp3(kf[i][1].B, kf[i + 1][1].B, u) }; };
+      for (let i = 0; i < 12; i++) {
+        const kf = kfOf(i);
+        actor(Wd, GROUP16[i], t => { const s = Object.assign(stOf(i), { smile: .7, talk: ((t * .6 + i * .31) % 1) < .25 ? .4 : 0 }); if (kf) s.ikL = sample(kf, t); else s.gesture = ((t * .35 + i * .37) % 1) < .6 ? 'rest' : 'explainA'; return s; });
+      }
+      chickenProp(Wd, t => {
+        let pos = Hp(hold[0]), yaw = 0, pitch = 0, roll = 0;
+        for (let k = 0; k < 6; k++) {
+          const A = Hp(hold[k]), B = Pa(hold[k + 1]);
+          if (t >= T[k] && t <= T[k] + Dd[k]) { const u = (t - T[k]) / Dd[k]; pos = lerp3(A, B, u); pos[1] += 4 * Hh[k] * u * (1 - u); yaw = Math.atan2(B[0] - A[0], B[2] - A[2]); pitch = .5 * Math.sin(u * PI * 2); roll = u * 4; break; }
+          if (t > T[k] + Dd[k] && (k === 5 || t < T[k + 1])) { pos = lerp3(B, Hp(hold[k + 1]), ease.sm(prog(t, T[k] + Dd[k], T[k] + Dd[k] + .3))); yaw = Math.atan2(-B[0], -B[2]); }
+          else if (t < T[k]) break;
+        }
+        return { pos, yaw, pitch, roll };
+      });
+      heroProxy(Wd, [0, 1, 0], [6.4, 2.2, 6.4]);
+      const cam = t => { const a = (20 + 180 * ease.io(prog(t, 0, 14))) * D2R; return { pos: [1.2 * Math.sin(a), 1.6, 1.2 * Math.cos(a)], look: [-3.0 * Math.sin(a), 1.2, -3.0 * Math.cos(a)], fov: 64 }; };
+      return Object.assign(Wd, { cam });
+    }),
+
+    // ============ B8 - MOLECULES: coloured paper in hands and under feet; the called colour goes into the middle
+    wide(shot(16, ['CAP_B_19', 'CAP_B_20'], [0.5, 8.1], () => {
+      const Wd = hallWorld(NEUTRAL_HALL());
+      const GC = [[-3.4, -2.6], [3.4, -2.6], [-3.4, 2.6], [3.4, 2.6]], th0 = [0, 0, 0, 54], RC = [.85, .85, 1.0, .85], GOF = [0, 4, 8, 13];
+      const COL = ['red', 'blue', 'green', 'yellow'], CALL = ['red', 'blue', 'yellow', 'green'], TC = [2.4, 5.2, 8.0, 11.0], WALKER = 9;
+      const ord = i => [0, 1, 2, 3].map(k => COL[(k + i) % 4]);   // [handA, handB, footA, footB]
+      const sp = (g, s) => { const [x, z] = polar(RC[g], th0[g] + 72 * s, GC[g][0], GC[g][1]); return [x, z, fcg(x, z, GC[g][0], GC[g][1])]; };
+      for (let i = 0; i < 16; i++) {
+        const g = GOF.filter(o => o <= i).length - 1, s = i - GOF[g], [x, z, f] = sp(g, s), o = ord(i), cen = GC[g];
+        let rt = null;
+        if (i === WALKER) { const [dx, dz, df] = sp(3, 3); rt = walkTo([[0, x, z, f], [10.2, x, z, f], [13.6, dx, dz, df], [16, dx, dz, df]]); }
+        const P = actor(Wd, GROUP16[i], t => {
+          const s0 = rt ? rt(t) : { pos: [x, 0, z], facing: f }, moving = s0.walk !== undefined;
+          const st = { pos: s0.pos, facing: s0.facing, walk: s0.walk, smile: .7, talk: ((t * .6 + i * .31) % 1) < .2 ? .4 : 0 };
+          if (i === WALKER && t > 8.6) { st.smile = 1; st.talk = .6; }
+          let limb = -1, u = 0;
+          for (let c = 0; c < 4; c++) { const uu = bump(t, TC[c] + .35, TC[c] + .8, TC[c] + 1.6, TC[c] + 2.0); if (uu > 0) { limb = o.indexOf(CALL[c]); if (i === WALKER && c === 2) limb = (limb + 1) % 4; u = uu; } }
+          if (moving) { limb = -1; u = 0; }
+          const restL = { A: [-.26, 1.0, .3], B: [.26, 1.0, .3] };
+          if (!moving) {
+            st.ikL = { A: restL.A, B: restL.B };
+            if (limb >= 0 && limb < 2 && u > 0) { const sd = limb === 0 ? 'A' : 'B', cx = cen[0], cz = cen[1], dd = Math.hypot(s0.pos[0] - cx, s0.pos[2] - cz) || 1, tg = [cx + (s0.pos[0] - cx) / dd * .12, 1.1, cz + (s0.pos[2] - cz) / dd * .12];
+              st.ik = { [sd]: lerp3(bodyPt(s0, restL[sd][0], restL[sd][1], restL[sd][2]), tg, u) }; delete st.ikL[sd]; }
+            if (limb >= 2 && u > 0) { const lean = -.15 * u, fa = limb === 2; st.pose = { hips: [lean, 0, 0], [fa ? 'thighA' : 'thighB']: [-1.0 * u - lean, 0, 0], [fa ? 'thighB' : 'thighA']: [-lean, 0, 0], [fa ? 'shinA' : 'shinB']: [.5 * u, 0, 0] }; }
+          }
+          return st;
+        });
+        holdSheet(Wd, P, 'A', o[0]); holdSheet(Wd, P, 'B', o[1]); footSheet(Wd, P, 'A', o[2]); footSheet(Wd, P, 'B', o[3]);
+      }
+      actor(Wd, HAIM, t => { const s = { pos: [0, 0, 0], facing: 0, smile: .9, talk: .3 }; let w = 0; TC.forEach(c => { w = Math.max(w, bump(t, c - .5, c - .1, c + .6, c + 1.0)); });
+        if (w > 0) s.ikL = { B: lerp3(hangL('B'), [.22, 1.95, .05], w) }; else s.gesture = 'explain'; return s; });
+      heroProxy(Wd, [-3.4, 1, 2.6], [3, 2.2, 3]);
+      const wideC = t => { const a = (10 + 40 * ease.io(prog(t, 0, 8))) * D2R; return { pos: [8.4 * Math.sin(a), 4.4, 8.4 * Math.cos(a)], look: [-1.5, 1.0, 1.0] }; };
+      const closeC = t => { const a = (150 + 120 * ease.io(prog(t, 4, 16))) * D2R; return { pos: [-3.4 + 3.5 * Math.sin(a), 1.8, 2.6 + 3.5 * Math.cos(a)], look: [-3.4, .85, 2.6] }; };
+      const cam = t => { const w = ease.io(prog(t, 3.0, 6.0)), a = wideC(t), b = closeC(t); return { pos: lerp3(a.pos, b.pos, w), look: lerp3(a.look, b.look, w), fov: lerp(46, 52, w) }; };
+      return Object.assign(Wd, { cam });
+    })),
+  ],
+});
+</script>
+</html>
