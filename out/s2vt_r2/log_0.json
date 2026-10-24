@@ -1,0 +1,12 @@
+[
+ {
+  "name": "tw_ltx",
+  "ok": false,
+  "tries": [
+   {
+    "model": "space",
+    "error": "ValueError: max() arg is an empty sequence"
+   }
+  ]
+ }
+]
