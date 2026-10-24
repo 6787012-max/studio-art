@@ -1,0 +1,256 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>לפני מי אני עומד</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script>window.__T0=448.4288;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import { film, person, cloud, path, seq, orbit, THREE, prog, ease, clamp, lerp, rng, box, cyl, ball, toon, ink, canvasTex } from '../../lib/stage3d.js';
+import * as K from './k10lib.js';
+import { glowSprite as _gs } from './k10lib.js';
+import { CL, SS, lt, fw, candle, lantern, aron, clock, hourglass, lake, spring, strata, lightShaft } from './k10fx.js';
+const { RAV, manN, POSES, SR, SR2, TQ, TQ2, WAL, WAL2, COP, IVORY, HONEY, INDIGO, PI, sm, fbm, cine, route, sunWorld, dawnCfg, sunGlow, glowSprite, motes, innerLight, beam, terrain, groundPlane, house8, townOn, ridge, trees8, lamp, seaRoom, shelf, table, stool, sefer, chestPos, lbl, skyClouds } = K;
+const sin = Math.sin, cos = Math.cos, FL = .012;
+const rig = (Wd, cam) => Object.assign(Wd, { cam });
+const talkF = (t, s) => .5 + .5 * sin(t * 9) * sin(t * 2.3 + (s || 1));
+const pop = (t, a, b, c, d) => sm(prog(t, a, b)) * (1 - sm(prog(t, c, d)));   // fade in a..b, out c..d
+
+// ---------- worlds ----------
+function dawnW(p, o) {   // outdoors at dawn phase p (0 indigo .. 1 golden sunrise)
+  const Wd = sunWorld(dawnCfg(p, o)), d = Wd.dir; const c = new THREE.Color(0x8e9cf0).lerp(new THREE.Color(0xffc79a), clamp(p * 1.3, 0, 1)).getHex();
+  sunGlow(Wd, [d.x * 900, Math.max(30, d.y * 900), d.z * 900], 1100, .22 + .5 * p, c); return Wd;
+}
+function phaseAnim(Wd, pf, o) {   // the sky brightens over the shot: pf(t) -> phase
+  const top = Wd.sky.material.uniforms.top.value, bot = Wd.sky.material.uniforms.bot.value;
+  Wd.sunFn = (t, W) => { const c = dawnCfg(pf(t), o); top.set(c.skyTop); bot.set(c.skyBottom); W.scene.fog.color.set(c.skyBottom); W.hemi.color.set(c.hemiSky); W.hemi.groundColor.set(c.hemiGround); W.hemi.intensity = c.hemi; W.sun.color.set(c.sunColor); W.sun.intensity = c.sun; W.dir.set(...c.sunPos).normalize(); };
+}
+const inW = (p, o) => dawnW(p, Object.assign({ fogNear: 60, fogFar: 300, shadowExt: 16, skyR: 900, hemi: 1.6 }, o));
+
+// the beit midrash (indigo plaster, olive wood). x in [-5.5,5.5], z in [-4.5,4.5], front open. aron on the back wall.
+function hall(Wd, p, o) {
+  o = o || {}; if (o.ground !== false) groundPlane(Wd, 0x2c3050, -.03);
+  const hole = z0 => ({ c0: z0 - 1, c1: z0 + 1, y0: 1.5, y1: 3.6, pane: true });
+  seaRoom(Wd, { W: 11, D: 9, H: 5.2, skip: ['front'], pane: dawnCfg(p).paneColor, ceil: o.ceil, holes: { left: [hole(-2.2), hole(1.8)], right: [hole(-2.2), hole(1.8)] } });
+  shelf(Wd, -5.22, -.2, PI / 2, 1.5); shelf(Wd, 5.22, -.2, -PI / 2, 1.5);
+  lamp(Wd, -2.6, 3.4, -.6, o.l1 === undefined ? 4 : o.l1, { top: 5.2 }); lamp(Wd, 2.6, 3.4, -.6, o.l2 === undefined ? 4 : o.l2, { top: 5.2 }); lamp(Wd, 0, 3.5, 2.4, 0, { top: 5.2 });
+  const A = o.aron === false ? null : aron(Wd, 0, -3.95, 0, { k: o.ak || (() => .25) });
+  if (o.tables !== false) for (const sx of [-1, 1]) for (const z of [-1.7, 1.5]) { table(Wd, { x: sx * 3.5, z, w: .9, d: 1.8 }); sefer(Wd, [sx * 3.5, .78, z], { ry: PI / 2, w: .5, d: .34, color: ['#3a4a7a', '#6a2a30', '#2f5a3a'][(z > 0 ? 1 : 0) + (sx > 0 ? 1 : 0)] }); }
+  return A;
+}
+function shtender(Wd, o) {
+  const g = new THREE.Group(); g.position.set(o.x || 0, FL, o.z || 0); Wd.add(g); g.add(box(.56, .04, .5, WAL, { pos: [0, .02, 0] })); g.add(box(.1, .9, .1, WAL, { pos: [0, .47, 0], ink: false }));
+  g.add(box(.62, .05, .46, WAL2, { pos: [0, 1.0, 0], rot: [-.42, 0, 0] })); g.add(box(.5, .02, .38, '#f6ecd4', { pos: [0, 1.04, -.005], rot: [-.42, 0, 0], ink: false })); g.add(box(.62, .34, .04, WAL2, { pos: [0, .83, .22] })); return g;
+}
+function rav(Wd, x, z, o) { o = o || {}; shtender(Wd, { x, z: z + .75 }); return person(Wd, RAV, t => ({ pos: [x, FL, z], facing: o.f === undefined ? .15 : o.f, perform: .8, talk: talkF(t, o.s || 1), smile: .55, seed: o.s || .3, groundY: FL })); }
+const sitting = (Wd, look, pos, facing, fn) => person(Wd, look, t => Object.assign({ pos, facing, sit: true, gesture: 'rest', smile: .4, seed: .3, groundY: pos[1] }, fn ? fn(t) : {}));
+const standing = (Wd, look, x, z, f, fn) => person(Wd, look, t => Object.assign({ pos: [x, FL, z], facing: f, gesture: 'rest', smile: .3, seed: .1 * x + .2, groundY: FL }, fn ? fn(t) : {}));
+// the central table with a lantern; k(t) = flame level
+function lampTable(Wd, k, o) {
+  o = o || {}; table(Wd, { x: 0, z: -1.0, w: 1.8, d: 1.0 }); sefer(Wd, [-.45, .78, -1.0], { w: .5, d: .34, color: '#3a4a7a' }); sefer(Wd, [.55, .78, -1.0], { w: .5, d: .34, color: '#6a2a30' });
+  lantern(Wd, [0, .78, -1.0], Object.assign({ s: o.s || 1.4, k, light: o.light || 7 }, o.halo ? { halo: o.halo } : {}));
+}
+// a seated man with a small inner light in the chest
+function seatedMan(Wd, i, x, z, f, kf) {
+  const pos = [x, FL, z]; stool(Wd, x, z, .46); sitting(Wd, manN(i), pos, f, t => ({ gesture: 'read', seed: .17 * i }));
+  innerLight(Wd, () => chestPos(pos, f, { sit: true }), kf || (t => .4 + .05 * sin(t * 1.3 + i)), { k: 1.2, seed: i }); }
+const FADEIN = 0;
+
+film({ shots: [
+  // ===== 1. (29.3) the rav in the beit midrash before sunrise; "chiddushim" float up from the open books =====
+  { dur: 29.3, caps: [], build() {
+    const Wd = inW(.04); hall(Wd, .04, { ak: () => .22 }); rav(Wd, 1.2, -1.5, { f: .1 }); shtender(Wd, { x: -3.3, z: -3.0 });
+    for (const [x, z] of [[-3.5, -1.7], [3.5, 1.5]]) candle(Wd, x + .3, .78, z + .35, { h: .24, light: 1.2 });
+    const words = [['חידושים', 6, -3.5, -1.7], ['בסידור', lt(1, 35.0), -.4, -1.3], ['חידושים', 9, 3.5, 1.5], ['פשט', lt(1, 37.6), -3.5, 1.5], ['פלפול', lt(1, 40.3), 3.5, -1.7], ['הברכות', lt(1, 43.6), -3.5, -1.7], ['חידושים', 21, 3.2, 1.2]];
+    words.forEach(([w, t0, x, z], i) => fw(Wd, w, t => { const u = t - t0; return { pos: [x + .25 * sin(u * .7 + i), 1.2 + .38 * u, z], op: u < 0 ? 0 : sm(prog(u, 0, .8)) * (1 - sm(prog(u, 4.2, 6.2))), s: 1 }; }, { h: .42, size: 64 }));
+    return rig(Wd, path([[0, [-4.2, 2.6, 7.4], [0, 1.6, -1.5], 48], [8, [-1.5, 2.0, 5.2], [.8, 1.5, -1.4], 46], [18, [1.8, 1.7, 3.3], [1.2, 1.5, -1.45], 42], [29.3, [2.1, 1.62, 1.35], [1.2, 1.5, -1.5], 36]]));
+  } },
+  // ===== 2. (22.0) light rises from the aron kodesh; "to feel as standing before a king" =====
+  { dur: 22.0, caps: [], build() {
+    const Wd = inW(.1); const kf = t => .22 + .78 * sm(prog(t, 2, 11)); hall(Wd, .1, { ak: kf, l1: 3, l2: 3 }); standing(Wd, RAV, -2.7, -2.0, .75, t => ({ perform: .6, gesture: undefined, talk: talkF(t, 2), smile: .5 }));
+    fw(Wd, 'להרגיש כעומד לפני מלך', t => ({ pos: [0, 2.6, -2.3 + .15 * sin(t * .8)], op: pop(t, lt(2, 58.1), lt(2, 58.1) + 1.2, 20.5, 21.7), s: 1 + .04 * sin(t * 1.4) }), { h: .75, size: 76 });
+    return rig(Wd, path([[0, [-1.5, 2.2, 7.5], [0, 2.0, -3], 46], [8, [-.6, 1.9, 4.6], [0, 2.1, -3.3], 44], [15, [.3, 1.8, 1.6], [0, 2.2, -3.4], 42], [22, [.8, 2.4, .2], [0, 2.4, -3.5], 44]]));
+  } },
+  // ===== 3. (25.0) two columns of light: "the meaning of the words" and "standing before the King" =====
+  { dur: 25.0, caps: [], build() {
+    const Wd = inW(.13); hall(Wd, .13, { ak: () => .3 }); standing(Wd, RAV, 0, -2.6, .0, t => ({ perform: .7, gesture: undefined, talk: talkF(t, 3), smile: .5 }));
+    const t1 = lt(3, 96.9), t2 = lt(3, 99.9);
+    const cl = (x, t0) => { lightShaft(Wd, x, -.8, 5.1, 0, .7, t => .35 + .65 * sm(prog(t, t0 - 12, t0 + 1.5)), {}); const gp = glowSprite(0xffd890, 3.4, 0); gp.position.set(x, .35, -.8); Wd.add(gp); const gp2 = glowSprite(0xfff0c6, 1.6, 0); gp2.position.set(x, .6, -.8); Wd.add(gp2); Wd.on(t => { const k = .35 + .65 * sm(prog(t, t0 - 12, t0 + 1.5)); gp.material.opacity = .7 * k; gp2.material.opacity = .8 * k; }); };
+    cl(-2.5, t1); cl(2.5, t2);
+    fw(Wd, 'פירוש המילים', t => ({ pos: [-2.5, 3.0, -.8], op: sm(prog(t, t1 - 5, t1 - 4)), s: 1 }), { screen: .075, size: 70 }); fw(Wd, 'עומד לפני המלך', t => ({ pos: [2.5, 3.0, -.8], op: sm(prog(t, t2 - 2, t2 - 1)), s: 1 }), { screen: .075, size: 70 });
+    return rig(Wd, cine([[0, [0, 1.8, -1.2], 7.6, .9, 10, 46, .1], [12, [0, 2.0, -1.2], 7.0, 1.0, -25, 48, .1], [25, [0, 2.0, -1.2], 7.4, 1.0, 22, 48, .1]]));
+  } },
+  // ===== 4. (16.0) one who lacks the second: mumbles the words, looks out of the window ("mit'asek") =====
+  { dur: 16.0, caps: [], build() {
+    const Wd = inW(.16); hall(Wd, .16, { ak: () => .12 });
+    stool(Wd, -3.0, 0.1, .46); sitting(Wd, manN(2), [-3.0, FL, 0.1], -PI / 2 + .25, t => ({ gesture: 'rest', talk: .5 + .5 * sin(t * 8) * sin(t * 1.9), look: 1, brow: .15, smile: .1, seed: .6 }));
+    beam(Wd, () => [-2.5, 0, -2.6], t => .8, { r: .6, h: 6 }); fw(Wd, 'פירוש המילים', t => ({ pos: [-2.5, 2.6, -2.6], op: .95, s: 1 }), { screen: .06, size: 70 });
+    fw(Wd, 'עומד לפני המלך', t => ({ pos: [-.2, 2.6, -2.6], op: .7, s: 1, }), { screen: .06, size: 70, style: { color: '#9aa0c0', bg: 'rgba(40,44,70,.8)' } });
+    fw(Wd, 'מתעסק', t => ({ pos: [-3.0, 1.85, 0.1], op: sm(prog(t, lt(4, 105.8), lt(4, 105.8) + 1)), s: 1 }), { screen: .06, size: 70, style: { color: '#d5d8f0', bg: 'rgba(48,52,88,.85)' } });
+    return rig(Wd, cine([[0, [-1.8, 1.5, -.9], 5.6, .9, 40, 46, 0], [8, [-2.0, 1.5, -.7], 5.0, .7, 10, 46, 0], [16, [-2.2, 1.5, -.7], 4.8, .6, -25, 46, 0]]));
+  } },
+  // ===== 5. (28.2) the Chazon Ish: a dim candle in a lantern =====
+  { dur: 28.2, caps: [], build() {
+    const Wd = inW(.19); hall(Wd, .19, { ak: () => .15 }); lampTable(Wd, t => .26 + .03 * sin(t * 2));
+    standing(Wd, manN(5), -1.5, -1.7, .7, t => ({ gesture: 'pray', smile: .2, seed: .4 }));
+    const T = [0, 1.25, -1.0];
+    return rig(Wd, cine([[0, T, 4.6, .7, 25, 42, 0], [14, T, 3.0, .3, -20, 38, 0], [28.2, T, 1.9, .05, -50, 34, 0]]));
+  } },
+  // ===== 6. (26.9) "everyone knows he stands before the Holy One": the small flame holds =====
+  { dur: 26.9, caps: [], build() {
+    const Wd = inW(.23); hall(Wd, .23, { ak: () => .18 }); lampTable(Wd, t => .3 + .04 * sin(t * 2.4));
+    standing(Wd, manN(8), -1.5, -1.7, .7, t => ({ gesture: 'rest', smile: .25, seed: .7 })); seatedMan(Wd, 3, -2.5, 1.5, -PI / 2); seatedMan(Wd, 4, 2.5, -1.7, PI / 2);
+    const T = [0, 1.3, -1.4];
+    return rig(Wd, cine([[0, T, 3.4, .2, 25, 42, 0], [13, T, 3.8, .4, 5, 42, 0], [26.9, T, 4.4, .6, -45, 44, 0]]));
+  } },
+  // ===== 7. (33.0) the beit midrash: everyone knows, but the heart is not awake (dim lights in every chest) =====
+  { dur: 33.0, caps: [], build() {
+    const Wd = inW(.27); hall(Wd, .27, { ak: () => .2 }); rav(Wd, 0, -2.3, { f: .0, s: 4 });
+    [[-2.45, -1.7, -PI / 2, 1], [-2.45, 1.5, -PI / 2, 2], [2.45, -1.7, PI / 2, 3], [2.45, 1.5, PI / 2, 4], [-4.1, 1.5, PI / 2, 6], [4.1, -1.7, -PI / 2, 7]].forEach(([x, z, f, i]) => seatedMan(Wd, i, x, z, f, t => .3 + .05 * sin(t * 1.2 + i)));
+    fw(Wd, 'לב ער?', t => ({ pos: [0, 3.5, -1.0], op: pop(t, lt(7, 196.4) - 1, lt(7, 196.4) + .4, 19, 21), s: 1 }), { h: .6, size: 72 });
+    return rig(Wd, cine([[0, [0, 1.3, -1.0], 5.6, 1.2, -40, 46, .1], [16, [0, 1.4, -1.0], 5.2, 1.5, 5, 46, .1], [33, [0, 1.4, -1.0], 5.0, 1.6, 50, 46, .1]]));
+  } },
+  // ===== 8. (15.5) "to awaken the heart": the flame flares, the room fills with warm light =====
+  { dur: 15.5, caps: [], build() {
+    const Wd = inW(.31); const tf = lt(8, 218.4); hall(Wd, .31, { ak: t => .2 + .3 * sm(prog(t, tf + 1.5, tf + 5)) });
+    const kf = t => .25 + .6 * sm(prog(t, tf + .3, tf + 2.6)) + .04 * sin(t * 3); lampTable(Wd, kf, { light: 5, halo: .8 });
+    standing(Wd, manN(5), -1.5, -1.7, .7, t => ({ gesture: 'pray', smile: .35 + .3 * sm(prog(t, tf + 1, tf + 4)), seed: .4 }));
+    const mt = motes(Wd, 36); Wd.on(t => { for (let i = 0; i < 36; i++) { const u = clamp((t - (tf - 1.2 + i * .05)) / 1.8, 0, 1); mt.set(i, lerp(-2.6, 0, u) + .3 * sin(i * 2), lerp(1.1 + .4 * sin(i), 1.15, u), -1.0 + .5 * cos(i * 3) * (1 - u), (u > 0 && u < 1) ? .09 : 0, .8, .9, 1); } mt.done(); });
+    fw(Wd, 'לב ער', t => ({ pos: [0, 2.7, -1.0], op: sm(prog(t, lt(8, 227.0), lt(8, 227.0) + 1)), s: 1 }), { h: .6, size: 76 });
+    const T = [0, 1.3, -1.0];
+    return rig(Wd, cine([[0, T, 3.6, .3, 50, 40, 0], [tf + 3, T, 2.8, .2, 45, 38, 0], [15.5, T, 6.0, .9, 35, 44, .1]]));
+  } },
+  // ===== 9. (22.5) the simple outer conditions: the rav enumerates =====
+  { dur: 22.5, caps: [], build() {
+    const Wd = inW(.35); hall(Wd, .35, { ak: () => .3 }); rav(Wd, -.8, -1.8, { f: .3, s: 5 }); seatedMan(Wd, 9, 2.45, 1.5, PI / 2, t => .5); seatedMan(Wd, 10, -2.45, 1.5, -PI / 2, t => .5);
+    fw(Wd, 'התנאים החיצוניים', t => ({ pos: [1.2, 2.8, -2.0], op: pop(t, lt(9, 246.3), lt(9, 246.3) + 1, 21, 22.3), s: 1 }), { h: .6, size: 72 });
+    clock(Wd, [-3.6, 3.7, -4.5], 0, { a: t => .05 + t * .05, r: .5 });
+    return rig(Wd, path([[0, [-3.8, 1.8, 4.0], [-.5, 1.5, -1.8], 44], [11, [-1.0, 2.0, 3.6], [.2, 1.7, -2.0], 44], [22.5, [2.6, 2.2, 3.4], [.4, 1.7, -2.0], 42]]));
+  } },
+  // ===== 10. (15.5) on time: he arrives early, stands with dignity, bows his head, closes his eyes =====
+  { dur: 15.5, caps: [], build() {
+    const Wd = inW(.39); hall(Wd, .39, { ak: t => .3 + .3 * sm(prog(t, 9, 14)) }); clock(Wd, [-3.6, 3.7, -4.5], 0, { a: t => 0.1 + .0 * t, r: .5 });
+    const r = route([[0, 3.6, 7.5, PI], [5.2, 1.0, 1.6, PI], [7.5, 0, .1, PI]], { y: FL });
+    person(Wd, manN(1), t => Object.assign({ gesture: 'bow' + Math.round(8 * sm(prog(t, 9, 11.5))), smile: .35, seed: .3, groundY: FL }, r(t)));
+    seatedMan(Wd, 3, -2.45, 1.5, -PI / 2, t => .5); seatedMan(Wd, 4, 2.45, -1.7, PI / 2, t => .5);
+    return rig(Wd, path([[0, [-2.0, 1.7, 8.8], [1.5, 1.3, 3.0], 46], [6, [-1.2, 1.7, 4.2], [.4, 1.35, .4], 44], [11, [-1.0, 1.55, 2.4], [0, 1.45, -.6], 40], [15.5, [-.5, 1.5, 1.7], [0, 1.45, -.6], 36]]));
+  } },
+  // ===== 11. (16.0) the contrast: bursting in, hurried; the clock races =====
+  { dur: 16.0, caps: [], build() {
+    const Wd = inW(.42); hall(Wd, .42, { ak: () => .2 }); clock(Wd, [-3.6, 3.7, -4.5], 0, { a: t => t * 2.2, r: .5 });
+    const r = route([[0, -4.8, 7.8, 2.6], [3.0, 3.8, 2.2, 2.6], [4.4, 3.8, .4, 3.0], [9, 3.8, .4, PI]], { y: FL });
+    person(Wd, manN(7), t => Object.assign({ gesture: 'rest', brow: .3, smile: .05, seed: .8, groundY: FL }, r(t), (r(t).walk !== undefined) ? { walk: r(t).walk * 1.6 } : {}));
+    standing(Wd, manN(2), -1.4, -3.0, 0, t => ({ gesture: 'rest', talk: talkF(t, 5), smile: .2 }));
+    seatedMan(Wd, 3, -2.45, 1.5, -PI / 2, t => .4); seatedMan(Wd, 4, 2.45, -1.7, PI / 2, t => .4);
+    const mt = motes(Wd, 30); Wd.on(t => { const p = r(t).pos; for (let i = 0; i < 30; i++) { const u = (t * 1.4 + i / 30) % 1, mv = t < 4.4 && t > .2; mt.set(i, p[0] - 1.2 * u * (p[0] > 0 ? 1 : -1) + .2 * sin(i), .5 + 1.4 * ((i * 7) % 10) / 10, p[2] + 1.6 * u, mv ? .1 * (1 - u) : 0, 1, .9, .7); } mt.done(); });
+    return rig(Wd, path([[0, [-2.0, 1.6, 9.6], [-1.5, 1.2, 4.5], 52], [3, [1.2, 1.5, 6.0], [3.2, 1.2, 2.0], 50], [6.5, [-0.6, 1.8, 3.6], [3.2, 1.3, .2], 44], [16, [1.0, 2.0, 3.2], [3.0, 1.3, .0], 40]]));
+  } },
+  // ===== 12. (24.0) restless water settles into a still lake: "settled mind, rest of the soul" =====
+  { dur: 24.0, caps: [], build() {
+    const Wd = dawnW(.45); const amp = t => 1.5 * (1 - sm(prog(t, 5, 15)));
+    lake(Wd, { z0: -150, w: 600, d: 400, amp, sx: -22, glow: t => .45 + .5 * sm(prog(t, 8, 18)) }); groundPlane(Wd, 0x3a3a60, -.2);
+    Wd.add(box(120, .5, 12, '#6a6a46', { pos: [0, -.1, 13], inkW: .02 })); for (let i = 0; i < 8; i++) Wd.add(ball(.8 + (i % 3) * .3, '#7c7a8c', { pos: [-14 + i * 3.7, .1, 7.5 + (i % 2) * 1.4], scale: [1, .6, 1] }));
+    ridge(Wd, { x0: -300, x1: 300, z0: -330, z1: -340, n: 18, h: 60, seed: 3 });
+    standing(Wd, manN(6), -1.2, 9.2, PI * .8, t => ({ pos: [-1.2, .15, 9.2], gesture: 'rest', smile: .2 + .4 * sm(prog(t, 12, 20)), seed: .5, groundY: .15 }));
+    fw(Wd, 'ישוב הדעת', t => ({ pos: [-4.0, 2.8, 5.0], op: pop(t, lt(12, 296.7), lt(12, 296.7) + 1, 22, 23.4), s: 1 }), { h: 1.0, size: 76 }); fw(Wd, 'מנוחת הנפש', t => ({ pos: [4.0, 2.8, 5.0], op: pop(t, lt(12, 299.0), lt(12, 299.0) + 1, 22, 23.4), s: 1 }), { h: 1.0, size: 76 });
+    return rig(Wd, path([[0, [-6, 1.2, 14], [-5, .5, 0], 52], [10, [-3, 1.8, 12], [0, 1.0, 0], 48], [24, [0.5, 6.5, 17], [-2, 1.0, -8], 50]]));
+  } },
+  // ===== 13. (22.0) late: dressing while the shaliach tzibur has begun; the clock races; "perhaps in the middle he will remember" =====
+  { dur: 22.0, caps: [], build() {
+    const Wd = inW(.48); const tr = lt(13, 322.9); const kf = t => .15 + .85 * sm(prog(t, 13.5, 18)); hall(Wd, .48, { ak: kf }); clock(Wd, [-3.6, 3.7, -4.5], 0, { a: t => t * (t < 14 ? 1.6 : 1.6 * (1 - sm(prog(t, 14, 16)))), r: .5 });
+    const r = route([[0, 4.4, 8.0, PI], [4.5, 2.2, 1.0, PI], [5.2, 2.2, .2, PI], [22, 2.2, .2, PI]], { y: FL });
+    const fc = t => lerp(PI, .5, sm(prog(t, 12.5, 15)));
+    person(Wd, manN(7), t => Object.assign({ gesture: t < 12 ? 'hips' : 'rest', brow: t < 12 ? .3 : 0, smile: .05 + .35 * sm(prog(t, 15, 19)), seed: .8, groundY: FL }, r(t), { facing: fc(t) }));
+    innerLight(Wd, t => chestPos(r(t).pos, fc(t)), t => .05 + .9 * sm(prog(t, 14, 18)), { k: 1.2 });
+    standing(Wd, manN(2), -1.4, -3.0, 0, t => ({ gesture: 'rest', talk: talkF(t, 6), smile: .2 })); seatedMan(Wd, 3, -2.45, 1.5, -PI / 2, t => .45); seatedMan(Wd, 4, -2.45, -1.7, -PI / 2, t => .45);
+    return rig(Wd, path([[0, [5.5, 2.2, 9.4], [2.4, 1.3, 3.0], 52], [7, [4.8, 1.7, 4.4], [2.2, 1.4, .4], 44], [15, [3.9, 1.6, 2.8], [2.2, 1.45, .2], 40], [22, [3.4, 1.6, 2.3], [2.2, 1.5, .2], 34]]));
+  } },
+  // ===== 14. (27.0) "a legion of the King": rows of young men standing in order =====
+  { dur: 27.0, caps: [], build() {
+    const Wd = inW(.52); hall(Wd, .52, { ak: () => .5, tables: false, l1: 5, l2: 5 });
+    let n = 0; for (const z of [-0.6, 1.2, 3.0]) for (const x of [-3.6, -1.8, 0, 1.8, 3.6]) { n++; standing(Wd, manN(n), x, z, PI, t => ({ gesture: 'rest', smile: .3, seed: .13 * n })); }
+    fw(Wd, 'לגיונו של מלך', t => ({ pos: [0, 3.3, 2.6], op: pop(t, lt(14, 341.7), lt(14, 341.7) + 1.1, 25, 26.4), s: 1 }), { h: .75, size: 78 });
+    return rig(Wd, path([[0, [0, 1.4, -3.0], [0, 1.4, 1.0], 50], [9, [0, 2.0, -3.1], [0, 1.3, 2.0], 46], [19, [0, 3.0, -3.2], [0, 1.0, 2.5], 46], [27, [0, 3.7, -3.4], [0, .9, 2.6], 46]]));
+  } },
+  // ===== 15. (23.5) thirty seconds: an hourglass by the entrance; he pauses before "Ashrei" =====
+  { dur: 23.5, caps: [], build() {
+    const Wd = inW(.56); const th = lt(15, 374.4); hall(Wd, .56, { ak: t => .3 + .6 * sm(prog(t, th, th + 3)) });
+    table(Wd, { x: 1.3, z: 1.4, w: .8, d: .6, h: .78 }); hourglass(Wd, [1.3, .78, 1.4], { s: 1.5, f: t => prog(t, lt(15, 358.5), lt(15, 358.5) + 11) });
+    fw(Wd, '30 שניות', t => ({ pos: [1.3, 2.3, 1.4], op: pop(t, lt(15, 358.4), lt(15, 358.4) + .9, 11, 12.4), s: 1 }), { h: .55, size: 72 });
+    standing(Wd, manN(1), -.1, 1.0, PI, t => ({ gesture: 'bow' + Math.round(6 * sm(prog(t, th - 1, th + 1.5))), smile: .3, seed: .3 }));
+    return rig(Wd, cine([[0, [.6, 1.1, 1.3], 4.2, .7, 20, 42, 0], [12, [.6, 1.2, 1.3], 2.8, .3, -30, 38, 0], [23.5, [-.1, 1.4, 1.0], 3.2, .15, 10, 34, 0]]));
+  } },
+  // ===== 16. (24.3) "before whom am I standing?": a great question mark in the middle of the hall =====
+  { dur: 24.3, caps: [], build() {
+    const Wd = inW(.6); hall(Wd, .6, { ak: t => .4 + .3 * sm(prog(t, 9, 20)) });
+    standing(Wd, manN(1), 0, 0.6, PI, t => ({ gesture: 'think', smile: .1, seed: .3 })); seatedMan(Wd, 3, -2.45, 1.5, -PI / 2, t => .5); seatedMan(Wd, 4, 2.45, -1.7, PI / 2, t => .5);
+    const tq = lt(16, 402.4);
+    fw(Wd, '?', t => ({ pos: [0, 2.9 + .12 * sin(t * 1.3), -1.2], op: sm(prog(t, tq, tq + 1.4)), s: .55 + .6 * sm(prog(t, tq, tq + 4)) }), { h: 1.1, size: 150, style: { bg: 'rgba(244,232,204,.93)', color: '#2a3470' } });
+    const gl = glowSprite(0xffd890, 5, 0); gl.position.set(0, 2.9, -1.3); Wd.add(gl); Wd.on(t => { gl.material.opacity = .45 * sm(prog(t, tq, tq + 3)); });
+    fw(Wd, 'מי זה המלך?', t => ({ pos: [0, 1.75, -1.2], op: sm(prog(t, lt(16, 411.0), lt(16, 411.0) + 1)), s: 1 }), { h: .6, size: 72 });
+    return rig(Wd, cine([[0, [0, 1.5, -.3], 6.4, .9, 25, 46, .1], [12, [0, 1.8, -1.0], 5.4, .7, -15, 44, .1], [24.3, [0, 2.2, -1.2], 4.6, .4, 20, 42, .1]]));
+  } },
+  // ===== 17. (19.5) the whole beit midrash is alive: every chest glows and breathes =====
+  { dur: 19.5, caps: [], build() {
+    const Wd = inW(.64); hall(Wd, .64, { ak: () => .55, l1: 5, l2: 5 });
+    [[-2.45, -1.7, -PI / 2, 1], [-2.45, 1.5, -PI / 2, 2], [2.45, -1.7, PI / 2, 3], [2.45, 1.5, PI / 2, 4], [-4.1, 1.5, PI / 2, 6], [4.1, -1.7, -PI / 2, 7]].forEach(([x, z, f, i]) => seatedMan(Wd, i, x, z, f, t => .85 + .2 * sin(t * 1.5 + i)));
+    [[0, -.3, 9], [-1.4, 2.8, 11], [1.4, 2.8, 12]].forEach(([x, z, i]) => { standing(Wd, manN(i), x, z, PI, t => ({ gesture: 'rest', smile: .5, seed: .2 * i })); innerLight(Wd, () => chestPos([x, FL, z], PI), t => .9 + .2 * sin(t * 1.5 + i), { k: 1.2 }); });
+    const mt = motes(Wd, 60); Wd.on(t => { for (let i = 0; i < 60; i++) { const u = (t * .22 + i * .137) % 1; mt.set(i, -4 + (i * 1.13 % 8), .6 + u * 4, -3 + (i * .71 % 7), .09 * sin(PI * u), 1, .86, .55); } mt.done(); });
+    fw(Wd, 'מחיה', t => ({ pos: [0, 4.0, -.5], op: pop(t, lt(17, 419.4), lt(17, 419.4) + 1, 17, 18.4), s: 1 }), { h: .65, size: 76 });
+    return rig(Wd, cine([[0, [0, 1.2, -.5], 5.2, .5, -35, 48, .1], [10, [0, 1.5, -.5], 5.4, 1.8, 10, 48, .1], [19.5, [0, 1.8, -.5], 5.4, 2.6, 45, 50, .1]]));
+  } },
+  // ===== 18. (26.0) it penetrates much deeper: a shaft of light sinks through the layers of the earth =====
+  { dur: 26.0, caps: [], build() {
+    const Wd = dawnW(.68); groundPlane(Wd, 0x5a5a40, -.03); const S = strata(Wd, 0, 0, 9, { d: 2.6 }); const TOP = S.top;
+    const tD = lt(18, 437.7), tS = lt(18, 441.4);
+    lightShaft(Wd, 2.2, 0, TOP + 7, TOP, .55, t => sm(prog(t, tD, tD + 1.5)), {}); lightShaft(Wd, 2.2, 1.34, TOP, .5, .5, t => sm(prog(t, tD + 1, tD + 7)), { flat: true }); lightShaft(Wd, -2.2, 0, TOP + 7, TOP, .55, t => .8 * sm(prog(t, tS, tS + 1.5)), {}); lightShaft(Wd, -2.2, 1.34, TOP, TOP - .6, .5, t => .8 * sm(prog(t, tS + 1, tS + 3)), { flat: true });
+    const core = glowSprite(0xffe0a0, 3.2, 0); core.position.set(2.2, .7, 1.45); Wd.add(core); Wd.on(t => { core.material.opacity = .85 * sm(prog(t, tD + 6, tD + 9)); });
+    for (const sx of [-1, 1]) Wd.add(cyl(.5, .6, .25, SR2, { pos: [sx * 2.2, TOP + .1, 0], ink: false }));
+    fw(Wd, 'ר\' חצקל לוינשטיין', t => ({ pos: [0, TOP + 1.7, 1.6], op: pop(t, .2, 1.1, 5.3, 6.4), s: 1 }), { h: .9, size: 70 });
+    fw(Wd, 'עמוק', t => ({ pos: [2.2, TOP + 1.6, 1.6], op: sm(prog(t, tD + 2, tD + 3.2)), s: 1 }), { h: .55, size: 72 }); fw(Wd, 'רק על פני השטח', t => ({ pos: [-2.2, TOP + 1.6, 1.6], op: sm(prog(t, tS + 1, tS + 2.2)), s: 1 }), { h: .5, size: 64 });
+    return rig(Wd, path([[0, [-1, TOP + 1.8, 9.2], [0, TOP - .6, 0], 46], [9, [2.0, TOP - .6, 8.6], [1.6, TOP - 2.0, 0], 44], [19, [1.0, 2.4, 7.2], [2.0, 1.8, 0], 42], [26, [-.5, 3.0, 11.5], [0, 2.4, 0], 46]]));
+  } },
+  // ===== 19. (18.0) the inner spring of the mind bursts from the depths =====
+  { dur: 18.0, caps: [], build() {
+    const Wd = dawnW(.74); const hAt = (x, z) => .6 * fbm(x * .06, z * .06) + sm(clamp((-z - 4) / 30, 0, 1)) * 5;
+    terrain(Wd, { size: 260, N: 120, cz: -30, h: hAt, A: [.5, .52, .34], B: [.42, .44, .3], C: [.55, .55, .38] }); trees8(Wd, hAt, { seed: 7, n: 22, area: [-30, 30, -30, -8] });
+    spring(Wd, [0, 0, -2], { a: t => sm(prog(t, 2.5, 6.5)), h: 3.4 });
+    standing(Wd, manN(6), -3.2, 2.2, -2.6, t => ({ pos: [-3.2, 0, 2.2], gesture: 'lookup', smile: .5, seed: .4, groundY: 0 }));
+    fw(Wd, 'המעיין הפנימי של הדעת', t => ({ pos: [0, 4.9, -2], op: sm(prog(t, .5, .8)) * (1 - sm(prog(t, 17.2, 17.6))), s: 1 }), { screen: .075, size: 72 });
+    return rig(Wd, path([[0, [-5.5, .9, 8], [0, 1.0, -2], 50], [7, [-3.0, 1.7, 6.0], [0, 2.0, -2], 46], [13, [2.5, 3.0, 8.0], [0, 2.4, -2], 46], [18, [6, 7.5, 13], [0, 2.2, -3], 50]]));
+  } },
+  // ===== 20. (29.7) each answers himself: "He sustains me, I survived this day": full sunrise over the village =====
+  { dur: 29.7, caps: [], build() {
+    const Wd = dawnW(.7, { az: -2.5 }); phaseAnim(Wd, t => .7 + .27 * sm(prog(t, 2, 26)), { az: -2.5 });
+    const hAt = (x, z) => { const d = Math.max(Math.abs(x) - 11, Math.abs(z) - 8.5, 0), k = sm(clamp(d / 16, 0, 1)); const back = sm(clamp((-z - 10) / 55, 0, 1)) * (18 + 10 * fbm(x * .03 + 1, z * .03 + 2)), side = sm(clamp((Math.abs(x) - 14) / 45, 0, 1)) * (9 + 7 * fbm(x * .025 + 5, z * .03 + 1)), val = sm(clamp((z - 9) / 70, 0, 1)) * 14; return k * (back + side - val); };
+    terrain(Wd, { size: 760, N: 150, cz: -60, h: hAt, A: [.5, .52, .34], B: [.42, .44, .3], C: [.55, .55, .38] });
+    townOn(Wd, hAt, { seed: 11, n: 46, area: [-70, 70, -80, -14], skip: (x, z) => Math.abs(x) < 13 && z > -14 }); townOn(Wd, hAt, { seed: 12, n: 14, area: [-95, -16, -14, 16] }); townOn(Wd, hAt, { seed: 13, n: 14, area: [16, 95, -14, 16] }); trees8(Wd, hAt, { seed: 15, n: 30, area: [-80, 80, -30, 70], skip: (x, z) => Math.abs(x) < 13 && z > -12 && z < 10 });
+    skyClouds(Wd, 8, 3);
+    Wd.add(box(18, .3, 12, SR, { pos: [0, .15, 0], inkW: .02 })); for (const sx of [-1, 1]) Wd.add(box(.4, 1.0, 12, SR2, { pos: [sx * 9, .8, 0] })); Wd.add(box(18, 1.0, .4, SR2, { pos: [0, .8, -6] }));
+    [[-3.6, -3.5, -2.2, 1], [-1.2, -4.2, -2.5, 2], [1.4, -3.6, -2.4, 3], [3.8, -2.9, -2.1, 4]].forEach(([x, z, f, i]) => { standing(Wd, manN(i + 2), x, z + .3, f, t => ({ pos: [x, .3, z + .3], gesture: 'rest', smile: .2 + .6 * sm(prog(t, 6 + i * 3, 12 + i * 3)), seed: .3 * i, groundY: .3 })); innerLight(Wd, () => chestPos([x, .3, z + .3], f), t => .5 + .9 * sm(prog(t, 8 + i * 3, 14 + i * 3)), { k: 1.2 }); });
+    return rig(Wd, path([[0, [-1, .9, 8.5], [-2, 1.6, -4], 52], [10, [2, 2.3, 9.0], [-3, 2.2, -8], 50], [20, [4, 6.0, 15], [-10, 6, -22], 52], [29.7, [8, 15, 30], [-14, 8, -32], 56]]));
+  } },
+  // ===== 21. (23.97) standing before the King needs great preparation: candles are lit, men take their places =====
+  { dur: 23.97, caps: [], build() {
+    const Wd = inW(.82); hall(Wd, .82, { ak: t => .55 + .2 * sm(prog(t, 10, 20)), l1: 6, l2: 6 }); rav(Wd, 0, -2.4, { f: 0, s: 7 });
+    const R = [[-2.45, -1.7, -PI / 2, 1, -4.8, 2], [-2.45, 1.5, -PI / 2, 2, -4.8, 6.5], [2.45, -1.7, PI / 2, 3, 4.8, 2], [2.45, 1.5, PI / 2, 4, 4.8, 6.5]];
+    R.forEach(([x, z, f, i, x0, z0], k) => { stool(Wd, x, z, .46); const rt = route([[0, x0, z0 + 2.6, 0], [3 + k * 1.4, x * 1.2, z + 1.4, 0], [6 + k * 1.4, x, z, f]], { y: FL }); person(Wd, manN(i), t => Object.assign({ gesture: 'rest', smile: .4, seed: .2 * i, groundY: FL }, rt(t), t > 6 + k * 1.4 ? { sit: true, gesture: 'read' } : {})); });
+    [[-3.5, -1.7], [-3.5, 1.5], [3.5, -1.7], [3.5, 1.5]].forEach(([x, z], k) => candle(Wd, x + .3, .78, z + .35, { h: .24, light: 1.4, k: t => 1.2 * sm(prog(t, 2 + k * 2.5, 3.3 + k * 2.5)) }));
+    fw(Wd, 'הכנה רבה', t => ({ pos: [0, 3.2, -1.4], op: pop(t, lt(21, 516.8), lt(21, 516.8) + 1.2, 20, 21.4), s: 1 }), { h: .7, size: 76 });
+    return rig(Wd, path([[0, [-1.8, 1.9, 7.2], [0, 1.5, -1.5], 50], [10, [0, 1.7, 4.4], [.2, 1.5, -2.0], 46], [18, [1.8, 1.8, 3.0], [0, 1.5, -2.2], 42], [23.97, [1.4, 1.7, 2.1], [0, 1.5, -2.3], 38]]));
+  } },
+  // ===== 22. (24.62) the finale: the hall is full of light, the flame burns strong; a wide, quiet pull-back over the village at sunrise =====
+  { dur: 24.62, caps: [], build() {
+    const Wd = dawnW(.97, { az: -2.5 }); const hAt = (x, z) => { const d = Math.max(Math.abs(x) - 11, Math.abs(z) - 8.5, 0), k = sm(clamp(d / 16, 0, 1)); const back = sm(clamp((-z - 10) / 55, 0, 1)) * (18 + 10 * fbm(x * .03 + 1, z * .03 + 2)), side = sm(clamp((Math.abs(x) - 14) / 45, 0, 1)) * (9 + 7 * fbm(x * .025 + 5, z * .03 + 1)), val = sm(clamp((z - 9) / 70, 0, 1)) * 14; return k * (back + side - val); };
+    terrain(Wd, { size: 760, N: 150, cz: -60, h: hAt, A: [.5, .52, .34], B: [.42, .44, .3], C: [.55, .55, .38] });
+    townOn(Wd, hAt, { seed: 11, n: 46, area: [-70, 70, -80, -14], skip: (x, z) => Math.abs(x) < 13 && z > -14 }); townOn(Wd, hAt, { seed: 12, n: 14, area: [-95, -16, -14, 16] }); townOn(Wd, hAt, { seed: 13, n: 14, area: [16, 95, -14, 16] }); townOn(Wd, hAt, { seed: 14, n: 26, area: [-50, 50, 22, 75], glow: 1 }); trees8(Wd, hAt, { seed: 15, n: 30, area: [-80, 80, -30, 70], skip: (x, z) => Math.abs(x) < 13 && z > -12 && z < 10 }); skyClouds(Wd, 8, 3);
+    hall(Wd, .97, { ground: false, ak: () => 1, l1: 6, l2: 6, tables: true }); lampTable(Wd, t => 1.3 + .08 * sin(t * 2.3), { light: 12 }); rav(Wd, -1.7, -2.2, { f: .5, s: 8 });
+    [[-2.45, -1.7, -PI / 2, 1], [-2.45, 1.5, -PI / 2, 2], [2.45, -1.7, PI / 2, 3], [2.45, 1.5, PI / 2, 4]].forEach(([x, z, f, i]) => seatedMan(Wd, i, x, z, f, t => 1.0 + .1 * sin(t * 1.5 + i)));
+    const T = [0, 1.3, -1.0];
+    return rig(Wd, seq([0, cine([[0, T, 2.8, .2, 30, 40, 0], [7, T, 4.4, .8, 15, 42, 0]])], [7, path([[7, [1.0, 2.0, 4.6], [0, 1.3, -1.0], 42], [14, [3, 5.5, 16], [0, 2.5, -4], 46], [24.62, [4, 24, 62], [-2, 8, -20], 54]])]));
+  } },
+] });
+</script>
