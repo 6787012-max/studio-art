@@ -12,7 +12,7 @@ const lerp = (a, b, t) => a + (b - a) * t, clamp = (v, a, b) => Math.max(a, Math
 export function figure(THREE, o) {
   o = Object.assign({ kind: 'rav', hat: 'kippa', glasses: true, beard: true, coatColor: '#1e1e22', vestColor: '#6e6f74', pantsColor: '#18181c',
     shirtColor: '#f7f6f2', skin: '#f2c49e', beardColor: '#3a2618', hairColor: '#2a1a10', hatColor: '#141416', buckle: '#d9a63a' }, o || {});
-  const boy = o.kind === 'boy', S = boy ? .8 : 1, Q = o.lite ? .5 : 1;   // lite: פחות פוליגונים לדמויות רקע (כיתה שלמה) if (boy && !(arguments[1] || {}).hairColor) o.hairColor = '#4a2c18';   // ילד: נמוך יותר, ראש גדול יחסית
+  const boy = o.kind === 'boy', S = boy ? .8 : 1, Q = (o.lite && !window.__HQ) ? .5 : 1;   // lite: פחות פוליגונים לדמויות רקע (כיתה שלמה) if (boy && !(arguments[1] || {}).hairColor) o.hairColor = '#4a2c18';   // ילד: נמוך יותר, ראש גדול יחסית
   const HS = o.headScale || (boy ? 1.36 : 1.32);   // headScale: ראש קטן יותר = נראה מבוגר יותר                     // ראש גדול כמו באיור (לילד עוד יותר)
   // ---------- חומרים: צביעה בשני גוונים (כמו איור) ----------
   const gd = new Uint8Array(o.depth ? [125, 125, 125, 255, 195, 195, 195, 255, 255, 255, 255, 255] : [165, 165, 165, 255, 255, 255, 255, 255]), grad = new THREE.DataTexture(gd, o.depth ? 3 : 2, 1, THREE.RGBAFormat);
@@ -399,6 +399,18 @@ export const POSES = {
   shrug: { armA: [.05, 0, -.25], foreA: [-1.0, 0, -.7], armB: [.05, 0, .25], foreB: [-1.0, 0, .7], head: [0, 0, .12] },
   sit: { thighA: [-1.5, 0, 0], thighB: [-1.5, 0, 0], shinA: [1.5, 0, 0], shinB: [1.5, 0, 0], y: -.43 },
 };
+// legacy / alternative gesture names -> canonical POSES keys
+export const GESTURE_ALIAS = { pointFwd: 'point', pointA: 'explainA', bless: 'offer', stop: 'up', cross: 'rest' };
+const _badGestures = new Set(), _own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
+export function resolveGesture(name) {
+  if (typeof name === 'string') {
+    if (_own(POSES, name)) return name;
+    if (_own(GESTURE_ALIAS, name)) return GESTURE_ALIAS[name];
+  }
+  const key = String(name);
+  if (!_badGestures.has(key)) { _badGestures.add(key); console.error('[STAGE3D_ERROR] Unknown gesture: ' + key); }
+  return 'rest';
+}
 export function mixPose(a, b, u) {
   const out = {}; const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
   for (const k of keys) { const x = a[k], y = b[k];
