@@ -148,9 +148,9 @@ window.STORY = function (K) {
       if (G < 13) return Object.assign(base, { gesture: G > 2.5 ? 'explain' : 'lean', talk: .5 * talkAmt(t, 1), brow: .3, perform: 0 });
       if (G < 30) return Object.assign(base, { gesture: null, talk: 0, brow: .5, perform: .3, facing: face(HV[0] - SH[0], HV[2] - SH[2]) + .1 });
       return Object.assign(base, { gesture: up(G, 0) ? 'bothup' : null, talk: up(G, 0) ? .6 * talkAmt(t, 4) : 0, brow: .5, perform: .25 }); });
-    boyP(Wd, 3, t => { const G = Gf(t), base = { pos: AV, facing: G < 30 ? face(SH[0] - AV[0], SH[2] - AV[2]) : face(TW[0] - AV[0], TW[2] - AV[2]) + .1, smile: 0 };
+    boyP(Wd, 3, t => { const G = Gf(t), base = { pos: AV, facing: G < 30 ? -.3 : face(TW[0] - AV[0], TW[2] - AV[2]) + .1, smile: 0 };
       if (G < 14) return Object.assign(base, { gesture: G < 9 ? 'lean' : 'think', brow: .3, perform: 0, talk: 0 });
-      if (G < 30) return Object.assign(base, { gesture: 'think', brow: .5, perform: 0, facing: face(HV[0] - AV[0], HV[2] - AV[2]) - .1 });
+      if (G < 30) return Object.assign(base, { gesture: 'think', brow: .5, perform: 0, facing: -.3 });
       return Object.assign(base, { gesture: up(G, 1) ? 'bothup' : null, talk: up(G, 1) ? .6 * talkAmt(t, 5) : 0, brow: .5, perform: .25 }); });
     [[4, EXA], [5, EXB], [6, EXC]].forEach(([id, p], j) => boyP(Wd, id, t => { const G = Gf(t), looking = G > 14 && G < 31 ? face(HV[0] - p[0], HV[2] - p[2]) : G >= 31 ? face(TW[0] - p[0], TW[2] - p[2]) : face(SH[0] - p[0], SH[2] - p[2]) + .3 * (j - 1);
       const u = up(G, 2 + j); return { pos: p, facing: looking, gesture: u ? 'bothup' : (G > 14 && G < 31 ? 'think' : null), perform: u ? .2 : .4, smile: G < 14 ? .4 : 0, brow: G < 14 ? 0 : .45, talk: u ? .6 * talkAmt(t, 6 + j) : (G < 14 ? .25 * talkAmt(t, 6 + j) : 0) }; }));
