@@ -1,0 +1,16 @@
+{
+ "jobs": [
+  {
+   "name": "mv_s8_t1",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "k8",
+   "prompt": "his smile fades into a sad face, the friend pats his back, the tiny rain cloud drizzles over his head, rain drops fall, slow push-in, high quality 3D animated film, expressive cartoon acting, smooth natural motion"
+  },
+  {
+   "name": "mv_s11_t1",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "k11",
+   "prompt": "the man looks around the empty dark hall, his shoulders slump, he sighs, camera slowly pushes in, high quality 3D animated film, expressive cartoon acting, smooth natural motion"
+  }
+ ]
+}
