@@ -1,0 +1,25 @@
+{
+ "jobs": [
+  {
+   "name": "k5e",
+   "model": "kontext",
+   "ref": "k5",
+   "prompt": "add a clearly visible round black velvet kippah yarmulke skullcap sitting on the crown of his head, keep the face, beard, white shirt, pose, background and lighting exactly identical",
+   "seed": 55
+  },
+  {
+   "name": "k8e",
+   "model": "kontext",
+   "ref": "k8",
+   "prompt": "add a clearly visible round black velvet kippah yarmulke skullcap sitting on the crown of his head, keep the face, beard, white shirt, pose, background and lighting exactly identical",
+   "seed": 58
+  },
+  {
+   "name": "k13e",
+   "model": "kontext",
+   "ref": "k13",
+   "prompt": "add a clearly visible round black velvet kippah yarmulke skullcap sitting on the crown of his head, keep the face, beard, white shirt, pose, background and lighting exactly identical, and remove the star emblem from the top of the building so the roof is plain",
+   "seed": 63
+  }
+ ]
+}
