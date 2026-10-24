@@ -1,0 +1,786 @@
+{
+ "fps": 30,
+ "films": {
+  "film_a": {
+   "titleDur": 4.2,
+   "recapDur": 0,
+   "shots": [
+    {
+     "id": "s01",
+     "brief": "A1",
+     "dur": 13.0,
+     "briefDur": 13.0,
+     "captions": [
+      {
+       "id": "CAP_A_01",
+       "at": 0.5,
+       "until": 6.6
+      },
+      {
+       "id": "CAP_A_02",
+       "at": 6.6,
+       "until": 12.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      6.6
+     ],
+     "words": []
+    },
+    {
+     "id": "s02",
+     "brief": "A2",
+     "dur": 14.0,
+     "briefDur": 14.0,
+     "captions": [
+      {
+       "id": "CAP_A_03",
+       "at": 0.5,
+       "until": 7.1
+      },
+      {
+       "id": "CAP_A_04",
+       "at": 7.1,
+       "until": 13.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      7.1
+     ],
+     "words": []
+    },
+    {
+     "id": "s03",
+     "brief": "A3",
+     "dur": 14.0,
+     "briefDur": 14.0,
+     "captions": [
+      {
+       "id": "CAP_A_05",
+       "at": 0.5,
+       "until": 7.1
+      },
+      {
+       "id": "CAP_A_06",
+       "at": 7.1,
+       "until": 13.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      7.1
+     ],
+     "words": []
+    }
+   ],
+   "audio": {
+    "narration": null,
+    "music": null
+   }
+  },
+  "film_b": {
+   "titleDur": 4.2,
+   "recapDur": 0,
+   "shots": [
+    {
+     "id": "s01",
+     "brief": "B1",
+     "dur": 13.0,
+     "briefDur": 13.0,
+     "captions": [
+      {
+       "id": "CAP_B_01",
+       "at": 0.5,
+       "until": 6.6
+      },
+      {
+       "id": "CAP_B_02",
+       "at": 6.6,
+       "until": 12.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      6.6
+     ],
+     "words": []
+    },
+    {
+     "id": "s02",
+     "brief": "B2",
+     "dur": 13.0,
+     "briefDur": 13.0,
+     "captions": [
+      {
+       "id": "CAP_B_03",
+       "at": 0.5,
+       "until": 6.6
+      },
+      {
+       "id": "CAP_B_04",
+       "at": 6.6,
+       "until": 12.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      6.6
+     ],
+     "words": []
+    },
+    {
+     "id": "s03",
+     "brief": "B3",
+     "dur": 19.0,
+     "briefDur": 19.0,
+     "captions": [
+      {
+       "id": "CAP_B_05",
+       "at": 0.5,
+       "until": 6.57
+      },
+      {
+       "id": "CAP_B_06",
+       "at": 6.57,
+       "until": 12.64
+      },
+      {
+       "id": "CAP_B_07",
+       "at": 12.63,
+       "until": 18.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      6.57,
+      12.63
+     ],
+     "words": []
+    },
+    {
+     "id": "s04",
+     "brief": "B4",
+     "dur": 14.0,
+     "briefDur": 14.0,
+     "captions": [
+      {
+       "id": "CAP_B_08",
+       "at": 0.5,
+       "until": 7.1
+      },
+      {
+       "id": "CAP_B_09",
+       "at": 7.1,
+       "until": 13.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      7.1
+     ],
+     "words": []
+    },
+    {
+     "id": "s05",
+     "brief": "B5",
+     "dur": 24.0,
+     "briefDur": 24.0,
+     "captions": [
+      {
+       "id": "CAP_B_10",
+       "at": 0.5,
+       "until": 6.3
+      },
+      {
+       "id": "CAP_B_11",
+       "at": 6.3,
+       "until": 12.1
+      },
+      {
+       "id": "CAP_B_12",
+       "at": 12.1,
+       "until": 17.9
+      },
+      {
+       "id": "CAP_B_13",
+       "at": 17.9,
+       "until": 23.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      6.3,
+      12.1,
+      17.9
+     ],
+     "words": []
+    },
+    {
+     "id": "s06",
+     "brief": "B6",
+     "dur": 20.0,
+     "briefDur": 20.0,
+     "captions": [
+      {
+       "id": "CAP_B_14",
+       "at": 0.5,
+       "until": 6.9
+      },
+      {
+       "id": "CAP_B_15",
+       "at": 6.9,
+       "until": 13.3
+      },
+      {
+       "id": "CAP_B_16",
+       "at": 13.3,
+       "until": 19.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      6.9,
+      13.3
+     ],
+     "words": []
+    },
+    {
+     "id": "s07",
+     "brief": "B7",
+     "dur": 14.0,
+     "briefDur": 14.0,
+     "captions": [
+      {
+       "id": "CAP_B_17",
+       "at": 0.5,
+       "until": 7.1
+      },
+      {
+       "id": "CAP_B_18",
+       "at": 7.1,
+       "until": 13.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      7.1
+     ],
+     "words": []
+    },
+    {
+     "id": "s08",
+     "brief": "B8",
+     "dur": 16.0,
+     "briefDur": 16.0,
+     "captions": [
+      {
+       "id": "CAP_B_19",
+       "at": 0.5,
+       "until": 8.1
+      },
+      {
+       "id": "CAP_B_20",
+       "at": 8.1,
+       "until": 15.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      8.1
+     ],
+     "words": []
+    }
+   ],
+   "audio": {
+    "narration": null,
+    "music": null
+   }
+  },
+  "film_c": {
+   "titleDur": 4.2,
+   "recapDur": 0,
+   "shots": [
+    {
+     "id": "s01",
+     "brief": "C1",
+     "dur": 11.0,
+     "briefDur": 11.0,
+     "captions": [
+      {
+       "id": "CAP_C_01",
+       "at": 0.5,
+       "until": 5.6
+      },
+      {
+       "id": "CAP_C_02",
+       "at": 5.6,
+       "until": 10.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      5.6
+     ],
+     "words": []
+    },
+    {
+     "id": "s02",
+     "brief": "C2",
+     "dur": 13.0,
+     "briefDur": 13.0,
+     "captions": [
+      {
+       "id": "CAP_C_03",
+       "at": 0.5,
+       "until": 6.6
+      },
+      {
+       "id": "CAP_C_04",
+       "at": 6.6,
+       "until": 12.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      6.6
+     ],
+     "words": []
+    },
+    {
+     "id": "s03",
+     "brief": "C3",
+     "dur": 13.0,
+     "briefDur": 13.0,
+     "captions": [
+      {
+       "id": "CAP_C_05",
+       "at": 0.5,
+       "until": 6.6
+      },
+      {
+       "id": "CAP_C_06",
+       "at": 6.6,
+       "until": 12.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      6.6
+     ],
+     "words": []
+    },
+    {
+     "id": "s04",
+     "brief": "C4",
+     "dur": 13.0,
+     "briefDur": 13.0,
+     "captions": [
+      {
+       "id": "CAP_C_07",
+       "at": 0.5,
+       "until": 6.6
+      },
+      {
+       "id": "CAP_C_08",
+       "at": 6.6,
+       "until": 12.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      6.6
+     ],
+     "words": []
+    },
+    {
+     "id": "s05",
+     "brief": "C5",
+     "dur": 13.0,
+     "briefDur": 13.0,
+     "captions": [
+      {
+       "id": "CAP_C_09",
+       "at": 0.5,
+       "until": 6.6
+      },
+      {
+       "id": "CAP_C_10",
+       "at": 6.6,
+       "until": 12.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      6.6
+     ],
+     "words": []
+    },
+    {
+     "id": "s06",
+     "brief": "C6",
+     "dur": 13.0,
+     "briefDur": 13.0,
+     "captions": [
+      {
+       "id": "CAP_C_11",
+       "at": 0.5,
+       "until": 6.6
+      },
+      {
+       "id": "CAP_C_12",
+       "at": 6.6,
+       "until": 12.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      6.6
+     ],
+     "words": []
+    },
+    {
+     "id": "s07",
+     "brief": "C7",
+     "dur": 13.0,
+     "briefDur": 13.0,
+     "captions": [
+      {
+       "id": "CAP_C_13",
+       "at": 0.5,
+       "until": 6.6
+      },
+      {
+       "id": "CAP_C_14",
+       "at": 6.6,
+       "until": 12.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      6.6
+     ],
+     "words": []
+    },
+    {
+     "id": "s08",
+     "brief": "C8",
+     "dur": 13.0,
+     "briefDur": 13.0,
+     "captions": [
+      {
+       "id": "CAP_C_15",
+       "at": 0.5,
+       "until": 6.6
+      },
+      {
+       "id": "CAP_C_16",
+       "at": 6.6,
+       "until": 12.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      6.6
+     ],
+     "words": []
+    },
+    {
+     "id": "s09",
+     "brief": "C9",
+     "dur": 10.0,
+     "briefDur": 10.0,
+     "captions": [
+      {
+       "id": "CAP_C_17",
+       "at": 0.5,
+       "until": 9.7
+      }
+     ],
+     "capAt": [
+      0.5
+     ],
+     "words": []
+    }
+   ],
+   "audio": {
+    "narration": null,
+    "music": null
+   }
+  },
+  "film_d": {
+   "titleDur": 4.2,
+   "recapDur": 0,
+   "shots": [
+    {
+     "id": "s01",
+     "brief": "D1",
+     "dur": 13.0,
+     "briefDur": 13.0,
+     "captions": [
+      {
+       "id": "CAP_D_01",
+       "at": 0.5,
+       "until": 6.6
+      },
+      {
+       "id": "CAP_D_02",
+       "at": 6.6,
+       "until": 12.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      6.6
+     ],
+     "words": []
+    },
+    {
+     "id": "s02",
+     "brief": "D2",
+     "dur": 13.0,
+     "briefDur": 13.0,
+     "captions": [
+      {
+       "id": "CAP_D_03",
+       "at": 0.5,
+       "until": 6.6
+      },
+      {
+       "id": "CAP_D_04",
+       "at": 6.6,
+       "until": 12.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      6.6
+     ],
+     "words": []
+    },
+    {
+     "id": "s03",
+     "brief": "D3",
+     "dur": 13.0,
+     "briefDur": 13.0,
+     "captions": [
+      {
+       "id": "CAP_D_05",
+       "at": 0.5,
+       "until": 6.6
+      },
+      {
+       "id": "CAP_D_06",
+       "at": 6.6,
+       "until": 12.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      6.6
+     ],
+     "words": []
+    },
+    {
+     "id": "s04",
+     "brief": "D4",
+     "dur": 18.0,
+     "briefDur": 18.0,
+     "captions": [
+      {
+       "id": "CAP_D_07",
+       "at": 0.5,
+       "until": 6.23
+      },
+      {
+       "id": "CAP_D_08",
+       "at": 6.23,
+       "until": 11.96
+      },
+      {
+       "id": "CAP_D_09",
+       "at": 11.97,
+       "until": 17.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      6.23,
+      11.97
+     ],
+     "words": []
+    },
+    {
+     "id": "s05",
+     "brief": "D5",
+     "dur": 14.0,
+     "briefDur": 14.0,
+     "captions": [
+      {
+       "id": "CAP_D_10",
+       "at": 0.5,
+       "until": 7.1
+      },
+      {
+       "id": "CAP_D_11",
+       "at": 7.1,
+       "until": 13.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      7.1
+     ],
+     "words": []
+    },
+    {
+     "id": "s06",
+     "brief": "D6",
+     "dur": 14.0,
+     "briefDur": 14.0,
+     "captions": [
+      {
+       "id": "CAP_D_12",
+       "at": 0.5,
+       "until": 7.1
+      },
+      {
+       "id": "CAP_D_13",
+       "at": 7.1,
+       "until": 13.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      7.1
+     ],
+     "words": []
+    },
+    {
+     "id": "s07",
+     "brief": "D7",
+     "dur": 15.0,
+     "briefDur": 15.0,
+     "captions": [
+      {
+       "id": "CAP_D_14",
+       "at": 0.5,
+       "until": 7.6
+      },
+      {
+       "id": "CAP_D_15",
+       "at": 7.6,
+       "until": 14.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      7.6
+     ],
+     "words": []
+    },
+    {
+     "id": "s08",
+     "brief": "D8",
+     "dur": 16.0,
+     "briefDur": 16.0,
+     "captions": [
+      {
+       "id": "CAP_D_16",
+       "at": 0.5,
+       "until": 8.1
+      },
+      {
+       "id": "CAP_D_17",
+       "at": 8.1,
+       "until": 15.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      8.1
+     ],
+     "words": []
+    },
+    {
+     "id": "s09",
+     "brief": "D9",
+     "dur": 14.0,
+     "briefDur": 14.0,
+     "captions": [
+      {
+       "id": "CAP_D_18",
+       "at": 0.5,
+       "until": 7.1
+      },
+      {
+       "id": "CAP_D_19",
+       "at": 7.1,
+       "until": 13.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      7.1
+     ],
+     "words": []
+    }
+   ],
+   "audio": {
+    "narration": null,
+    "music": null
+   }
+  },
+  "film_e": {
+   "titleDur": 4.2,
+   "recapDur": 9.0,
+   "shots": [
+    {
+     "id": "s01",
+     "brief": "E1",
+     "dur": 14.0,
+     "briefDur": 14.0,
+     "captions": [
+      {
+       "id": "CAP_E_01",
+       "at": 0.5,
+       "until": 7.1
+      },
+      {
+       "id": "CAP_E_02",
+       "at": 7.1,
+       "until": 13.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      7.1
+     ],
+     "words": []
+    },
+    {
+     "id": "s02",
+     "brief": "E2",
+     "dur": 12.0,
+     "briefDur": 12.0,
+     "captions": [
+      {
+       "id": "CAP_E_03",
+       "at": 0.5,
+       "until": 11.7
+      }
+     ],
+     "capAt": [
+      0.5
+     ],
+     "words": []
+    }
+   ],
+   "audio": {
+    "narration": null,
+    "music": null
+   }
+  }
+ }
+}
