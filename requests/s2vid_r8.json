@@ -1,0 +1,16 @@
+{
+ "jobs": [
+  {
+   "name": "mv_s5_t2",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "k5",
+   "prompt": "the man runs fast along the street carrying the heavy pot with both hands, golden soup splashes out of the pot in arcs behind him, his body bounces, street lamps glide past, smooth tracking camera, high quality 3D animated film, expressive cartoon acting, smooth natural motion"
+  },
+  {
+   "name": "mv_s6_t2",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "k6",
+   "prompt": "the man stands catching his breath with heaving shoulders, looks into the pot, then his face falls and his head drops sadly, drops of soup fall from the pot, high quality 3D animated film, expressive cartoon acting, smooth natural motion"
+  }
+ ]
+}
