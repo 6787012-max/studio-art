@@ -123,7 +123,8 @@ window.STORY = function (K) {
   }
   const shabbatTable = (Wd, x, z, food, noFront) => { diningTable(Wd, { x, z, len: 2.8, wid: 1.1, food: food !== false }); [-.55, .55].forEach(dx => chair(Wd, x + dx, z - .95, 0, .46)); if (!noFront) [-.55, .55].forEach(dx => chair(Wd, x + dx, z + .95, PI, .46)); };
   const sideTable = (Wd, x, z) => { Wd.add(box(.62, .06, .5, 0x8a5a30, { pos: [x, .6, z] })); for (const dx of [-.26, .26]) for (const dz of [-.2, .2]) Wd.add(box(.05, .6, .05, 0x6a4326, { pos: [x + dx, .3, z + dz], ink: false })); };
-  const seated = (Wd, fn) => { boyP(Wd, YANKY, t => Object.assign({ pos: [-.55, RB, -.82], facing: 0 }, SIT, fn(t, 0))); boyP(Wd, MENDY, t => Object.assign({ pos: [.55, RB, -.82], facing: 0, scale: MS }, SIT, fn(t, 1))); };
+  const boyK = (Wd, i, fn) => { const P = boyP(Wd, i, fn); Wd.on(() => { const k = P.kippa; if (k && !k._rc) { k._rc = 1; k.material = k.material.clone(); k.material.color.set(0x1f2f70); } }); return P; };   // dark navy velvet kippa: contrasts with brown hair and pale skin
+  const seated = (Wd, fn) => { boyK(Wd, YANKY, t => Object.assign({ pos: [-.55, RB, -.82], facing: 0 }, SIT, fn(t, 0))); boyK(Wd, MENDY, t => Object.assign({ pos: [.55, RB, -.82], facing: 0, scale: MS }, SIT, fn(t, 1))); };
   const skyW = (o) => mkWorld(Object.assign({ skyTop: 0x6a7fd8, skyBottom: 0xffb37a, fogColor: 0xffc99a, fogNear: 40, fogFar: 140, hemi: 1.15, hemiSky: 0xfff0dc, hemiGround: 0x9a8660, sun: 1.3, sunColor: 0xffd9a8, sunPos: [-14, 26, 16] }, o || {}));
   const LAMP_POS = [2.3, .63, -.3];
 
@@ -242,7 +243,7 @@ window.STORY = function (K) {
     const Wd = skyW({ hemi: .8, sun: .5 }), G = guestRoom(Wd); shabbatTable(Wd, 0, 0, true); sideTable(Wd, LAMP_POS[0], LAMP_POS[2]);
     const kOn = t => sm(P(3.4, 6.2, t));
     tableLamp(Wd, { pos: LAMP_POS, on: kOn });
-    lighting(Wd, t => { const k = kOn(t); G.dim(k * .55); return { hemi: lerp(.8, 1.2, k), sun: lerp(.5, 1.15, k), hemiColor: mix(DIMC, WARM, k), sunColor: mix(new THREE.Color(0xc8cde8), new THREE.Color(0xfff1dc), k), sky: [mix(new THREE.Color(0x6a7fd8), new THREE.Color(0x4a5ab8), k).getHex(), mix(new THREE.Color(0xffb37a), new THREE.Color(0xe39a72), k).getHex()] }; });
+    lighting(Wd, t => { const k = kOn(t); G.dim(k * .55); return { hemi: lerp(.8, .95, k), sun: lerp(.5, .8, k), hemiColor: mix(DIMC, WARM, k), sunColor: mix(new THREE.Color(0xc8cde8), new THREE.Color(0xfff1dc), k), sky: [mix(new THREE.Color(0x6a7fd8), new THREE.Color(0x4a5ab8), k).getHex(), mix(new THREE.Color(0xffb37a), new THREE.Color(0xe39a72), k).getHex()] }; });
     const gl = glowAt(Wd.scene, 6, 0xffc070, 0); gl.position.set(.4, 1.0, .1); Wd.on(t => gl.material.opacity = .42 * kOn(t));
     const sparks = sparkleMotes(Wd, 12, [.2, 1.3, .1], 1.5, 0xffe9a8, .13); Wd.on(t => sparks(t));
     seated(Wd, (t, i) => { const k = kOn(t); return { smile: .1 + .9 * k, brow: .3 * (1 - k), perform: .25 * k, gesture: null, look: (.5 - k * .5) * (i ? -1 : 1) * .6, talk: k > .8 ? .4 * talkAmt(t, i + 3) : 0, scale: i ? MS : undefined }; });
@@ -264,12 +265,12 @@ window.STORY = function (K) {
     Wd.on(t => { sc.open(closeK(t)); const u = P(T0, T1, t), p = arcPt([-3.6, 1.05, -3.7], [-1.4, .32, -.9], sm(u), 1.4); cb.set(p, .25 + u * .5, 1, 0, sin2(u) * .35); });
     const sin2 = u => Math.sin(PI * u);
     const sparks = sparkleMotes(Wd, 10, [-1.4, .8, -.9], .9, 0xffe9a8, .12); Wd.on(t => sparks(t));
-    const cs = [1.95, 3.25].map((x, i) => candle(Wd, { pos: [x, CT, -1.2], h: .3, light: { color: 0xffb35a, i: 1.4, dist: 7 }, glowSize: 2.4, fs: 3.2, flame: t => sm(P(.9 + i * .4, 1.7 + i * .4, t)), appear: t => P(.3 + i * .2, .9 + i * .2, t) }));
+    const cs = [1.6, 3.6].map((x, i) => candle(Wd, { pos: [x, CT, -1.2], h: .3, light: { color: 0xffb35a, i: .7, dist: 7 }, glowSize: 1.3, fs: 2.4, flame: t => sm(P(.9 + i * .4, 1.7 + i * .4, t)), appear: t => P(.3 + i * .2, .9 + i * .2, t) }));
     const lampOff = (sideTable(Wd, 5.0, -3.4), tableLamp(Wd, { pos: [5.0, .63, -3.4], on: () => 0 }));
-    const gl = glowAt(Wd.scene, 5, 0xffc070, 0); gl.position.set(2.6, 1.1, -1.0); Wd.on(t => gl.material.opacity = .4 * sm(P(8, 10, t)));
-    lighting(Wd, t => ({ hemi: lerp(1.1, 1.2, sm(P(7, 10, t))), sun: 1.2, hemiColor: mix(new THREE.Color(0xfff0dc), WARM, sm(P(7, 10, t))) }));
-    boyP(Wd, YANKY, t => { const a = sm(P(T1 - .3, T1 + .6, t)); return { pos: [-2.7, 0, -.9], facing: PI / 2, gesture: t < T0 ? 'wide' : (t < T1 + .6 ? 'point' : (t < 6.2 ? 'finger' : 'thumb')), perform: 0, smile: t < T1 ? .3 : .95, brow: t < T1 ? .2 : 0, look: .1 }; });
-    boyP(Wd, MENDY, t => Object.assign({ pos: [2.05, t < 6.3 ? -6 : RB, -2.02], facing: 0, scale: MS, smile: .4 + .55 * sm(P(8, 9.5, t)), perform: .3, talk: .3 * talkAmt(t, 6) * sm(P(9, 10, t)), look: .1 * Math.sin(t * .6) }, SIT));
+    const gl = glowAt(Wd.scene, 5, 0xffc070, 0); gl.position.set(2.6, 1.1, -1.0); Wd.on(t => gl.material.opacity = .12 * sm(P(8, 10, t)));
+    lighting(Wd, t => ({ hemi: lerp(.8, .85, sm(P(7, 10, t))), sun: .7, hemiColor: mix(new THREE.Color(0xfff0dc), WARM, sm(P(7, 10, t))) }));
+    boyK(Wd, YANKY, t => { if (t >= 6.4) return Object.assign({ pos: [3.15, RB, -2.02], facing: 0, smile: .9, perform: .3, talk: .25 * talkAmt(t, 7) * sm(P(8, 9, t)), look: -.1 }, SIT); const a = sm(P(T1 - .3, T1 + .6, t)); return { pos: [-2.7, 0, -.9], facing: PI / 2, gesture: t < T0 ? 'wide' : (t < T1 + .6 ? 'point' : (t < 6.2 ? 'finger' : 'thumb')), perform: 0, smile: t < T1 ? .3 : .95, brow: t < T1 ? .2 : 0, look: .1 }; });
+    boyK(Wd, MENDY, t => Object.assign({ pos: [2.05, t < 6.3 ? -6 : RB, -2.02], facing: 0, scale: MS, smile: .4 + .55 * sm(P(8, 9.5, t)), perform: .3, talk: .3 * talkAmt(t, 6) * sm(P(9, 10, t)), look: .1 * Math.sin(t * .6) }, SIT));
     Wd.center = [0, 0];
     Wd.cam = seq([0, cine([C0(0, [-2.5, .9, -2.2], 5.6, 1.0, 16), C0(4.0, [-2.3, .85, -1.6], 4.6, .6, -8)])],
       [4.0, cine([C0(4.0, [-1.9, .85, -.8], 3.8, .35, -20, 42), C0(6.4, [-1.8, .85, -.8], 3.6, .3, 14, 42)])],
