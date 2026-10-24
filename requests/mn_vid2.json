@@ -1,0 +1,10 @@
+{
+ "jobs": [
+  {
+   "name": "mv_s5",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "mn_s5",
+   "prompt": "the sun slowly rises higher over the hills, golden light spreads across the desert, soft clouds drift, static or slow camera, high quality 3D Pixar animation"
+  }
+ ]
+}
