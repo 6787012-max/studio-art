@@ -1,0 +1,10 @@
+{
+ "jobs": [
+  {
+   "name": "mv_s1n",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "mn_s1n",
+   "prompt": "the hand slowly reaches the glowing alarm clock and taps it, soft warm glow, stars twinkle faintly in the window, static camera, high quality 3D Pixar animation"
+  }
+ ]
+}

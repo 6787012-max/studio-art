@@ -1,0 +1,25 @@
+{
+ "jobs": [
+  {
+   "name": "mn_s3p0",
+   "prompt": "a plain low rectangular stone village synagogue with a simple flat roof and a small parapet, one single storey, no tower, no steeple, no dome, no cross, no minaret, two tall arched windows glowing warm gold, a glowing round Star of David window above a wooden front door that is slightly open with warm light spilling onto a stone path, desert village at deep blue pre-dawn, wide front view, Pixar style 3D animated film still, warm cinematic lighting, vertical portrait composition, high quality, no text, no writing",
+   "w": 768,
+   "h": 1344,
+   "seed": 40
+  },
+  {
+   "name": "mn_s3p1",
+   "prompt": "a plain low rectangular stone village synagogue with a simple flat roof and a small parapet, one single storey, no tower, no steeple, no dome, no cross, no minaret, two tall arched windows glowing warm gold, a glowing round Star of David window above a wooden front door that is slightly open with warm light spilling onto a stone path, desert village at deep blue pre-dawn, wide front view, Pixar style 3D animated film still, warm cinematic lighting, vertical portrait composition, high quality, no text, no writing",
+   "w": 768,
+   "h": 1344,
+   "seed": 41
+  },
+  {
+   "name": "mn_s3p2",
+   "prompt": "a plain low rectangular stone village synagogue with a simple flat roof and a small parapet, one single storey, no tower, no steeple, no dome, no cross, no minaret, two tall arched windows glowing warm gold, a glowing round Star of David window above a wooden front door that is slightly open with warm light spilling onto a stone path, desert village at deep blue pre-dawn, wide front view, Pixar style 3D animated film still, warm cinematic lighting, vertical portrait composition, high quality, no text, no writing",
+   "w": 768,
+   "h": 1344,
+   "seed": 42
+  }
+ ]
+}
