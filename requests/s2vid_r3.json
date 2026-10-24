@@ -1,0 +1,16 @@
+{
+ "jobs": [
+  {
+   "name": "mv_s9_t1",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "k9",
+   "prompt": "the car speeds forward fast, headlights streak, the man grips the steering wheel with wide worried eyes, road lights rush past, strong motion, high quality 3D animated film, expressive cartoon acting, smooth natural motion"
+  },
+  {
+   "name": "mv_s10_t1",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "k10",
+   "prompt": "the small car bumps the traffic cone, the cone flips high in the air, the man jolts with wide eyes, comic bounce, dust and sparks, high quality 3D animated film, expressive cartoon acting, smooth natural motion"
+  }
+ ]
+}
