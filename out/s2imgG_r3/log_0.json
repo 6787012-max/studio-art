@@ -1,0 +1,13 @@
+[
+ {
+  "name": "k10g",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1344
+  ],
+  "seconds": 26.1
+ }
+]
