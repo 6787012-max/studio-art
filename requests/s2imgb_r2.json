@@ -1,0 +1,25 @@
+{
+ "jobs": [
+  {
+   "name": "k4",
+   "prompt": "bright home kitchen, a young religious Jewish man in his twenties with a round black velvet kippa skullcap clearly sitting on top of his head, white button-up shirt, short neat trimmed dark beard, friendly expressive face lifting the lid of a huge steaming pot on the stove, pot full to the brim with golden soup, steam rising, comedic surprised smile, chair tipped over behind him, warm bright cinematic cartoon-realistic 3D animated film still, soft golden lighting, vertical portrait composition, high quality, no text, no writing, no letters, no crosses",
+   "w": 768,
+   "h": 1344,
+   "seed": 104
+  },
+  {
+   "name": "k5",
+   "prompt": "Jewish neighborhood street at night with street lamps, a young religious Jewish man in his twenties with a round black velvet kippa skullcap clearly sitting on top of his head, white button-up shirt, short neat trimmed dark beard, friendly expressive face running fast carrying a big heavy pot with both hands, golden soup splashing out of the pot behind him in the air, motion energy, full body, warm bright cinematic cartoon-realistic 3D animated film still, soft golden lighting, vertical portrait composition, high quality, no text, no writing, no letters, no crosses",
+   "w": 768,
+   "h": 1344,
+   "seed": 105
+  },
+  {
+   "name": "k6",
+   "prompt": "entrance of a Jewish synagogue building with a Star of David above the glass door, warm light from the doors, night, a young religious Jewish man in his twenties with a round black velvet kippa skullcap clearly sitting on top of his head, white button-up shirt, short neat trimmed dark beard, friendly expressive face standing and looking sadly into a half-empty pot he holds, drops of soup on the floor, full body, warm bright cinematic cartoon-realistic 3D animated film still, soft golden lighting, vertical portrait composition, high quality, no text, no writing, no letters, no crosses",
+   "w": 768,
+   "h": 1344,
+   "seed": 106
+  }
+ ]
+}
