@@ -1,0 +1,35 @@
+[
+ {
+  "name": "k3g",
+  "ok": true,
+  "tries": [],
+  "model": "kontext",
+  "size": [
+   768,
+   1344
+  ],
+  "seconds": 33.4
+ },
+ {
+  "name": "k1g",
+  "ok": true,
+  "tries": [],
+  "model": "kontext",
+  "size": [
+   768,
+   1344
+  ],
+  "seconds": 28.5
+ },
+ {
+  "name": "k4g",
+  "ok": true,
+  "tries": [],
+  "model": "kontext",
+  "size": [
+   768,
+   1344
+  ],
+  "seconds": 28.5
+ }
+]
