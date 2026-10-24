@@ -1,0 +1,74 @@
+{
+ "jobs": [
+  {
+   "name": "mn_s1",
+   "prompt": "cozy bedroom at night seen from beside the bed, a large window showing a starry night sky and dark blue hills, a small digital alarm clock glowing on the nightstand, a young man's hand reaching to switch it off, blanket, soft blue moonlight with warm lamp glow, Pixar style 3D animated film still, warm cinematic lighting, vertical portrait composition, high quality, no text, no writing",
+   "w": 768,
+   "h": 1344,
+   "seed": 7
+  },
+  {
+   "name": "mn_s2",
+   "prompt": "empty quiet village street before dawn in a small hilltop community in the Judean desert, glowing street lamps, small stone houses, dark blue hills and fading stars, one young religious man in black kippa and white shirt seen walking away carrying a small blue tallit bag, Pixar style 3D animated film still, warm cinematic lighting, vertical portrait composition, high quality, no text, no writing",
+   "w": 768,
+   "h": 1344,
+   "seed": 8
+  },
+  {
+   "name": "mn_s3",
+   "prompt": "small simple synagogue building at dawn in a desert village, all windows glowing warm golden, the front door opening and warm light spilling out onto the stone path, deep blue pre-dawn sky, Pixar style 3D animated film still, warm cinematic lighting, vertical portrait composition, high quality, no text, no writing",
+   "w": 768,
+   "h": 1344,
+   "seed": 9
+  },
+  {
+   "name": "mn_s4",
+   "prompt": "wooden table inside a cozy synagogue study hall, open Talmud volumes, steaming coffee cups, three young Jewish religious men in their twenties wearing black kippot and white button shirts, some with short dark beards, modest sitting and learning together, one pointing a finger at the page, warm golden lamp light, friendly smiles, Pixar style 3D animated film still, warm cinematic lighting, vertical portrait composition, high quality, no text, no writing",
+   "w": 768,
+   "h": 1344,
+   "seed": 10
+  },
+  {
+   "name": "mn_s5",
+   "prompt": "first golden sun rays rising over the Judean desert hills, sky turning from deep blue to gold and orange, wide landscape, peaceful, soft haze in the valleys, a tiny stone village in the foreground, Pixar style 3D animated film still, warm cinematic lighting, vertical portrait composition, high quality, no text, no writing",
+   "w": 768,
+   "h": 1344,
+   "seed": 11
+  },
+  {
+   "name": "mn_s6",
+   "prompt": "interior of a synagogue in morning prayer seen from behind, a row of young Jewish religious men in their twenties wearing black kippot and white button shirts, some with short dark beards, modest wrapped in white and blue striped prayer shawls, praying, morning sunlight beams through the windows, seen from behind so faces are not visible, Pixar style 3D animated film still, warm cinematic lighting, vertical portrait composition, high quality, no text, no writing",
+   "w": 768,
+   "h": 1344,
+   "seed": 12
+  },
+  {
+   "name": "mn_s7",
+   "prompt": "ten wooden chairs in a row in a bright synagogue, the chairs one by one with a warm golden glow of light, empty chairs waiting, morning light, clean composition, no people, Pixar style 3D animated film still, warm cinematic lighting, vertical portrait composition, high quality, no text, no writing",
+   "w": 768,
+   "h": 1344,
+   "seed": 13
+  },
+  {
+   "name": "mn_s8",
+   "prompt": "outside a small synagogue in bright morning, young Jewish religious men in their twenties wearing black kippot and white button shirts, some with short dark beards, modest smiling and shaking hands, one holding a paper coffee cup, friendly warm atmosphere, golden morning sun, blue sky, desert hills behind, Pixar style 3D animated film still, warm cinematic lighting, vertical portrait composition, high quality, no text, no writing",
+   "w": 768,
+   "h": 1344,
+   "seed": 14
+  },
+  {
+   "name": "mn_s6b",
+   "prompt": "close shot from behind of a young religious man in a white prayer shawl with black tefillin straps on his arm, praying by a window in warm morning light, face turned away, Pixar style 3D animated film still, warm cinematic lighting, vertical portrait composition, high quality, no text, no writing",
+   "w": 768,
+   "h": 1344,
+   "seed": 15
+  },
+  {
+   "name": "mn_s4b",
+   "prompt": "two young Jewish religious men in their twenties wearing black kippot and white button shirts, some with short dark beards, modest sitting side by side at a table with an open Talmud and two coffee cups, smiling at each other, warm lamp light, cozy study hall, Pixar style 3D animated film still, warm cinematic lighting, vertical portrait composition, high quality, no text, no writing",
+   "w": 768,
+   "h": 1344,
+   "seed": 16
+  }
+ ]
+}
