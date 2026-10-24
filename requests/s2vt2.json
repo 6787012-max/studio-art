@@ -1,0 +1,19 @@
+{
+ "jobs": [
+  {
+   "name": "tw_ltx2",
+   "space": "Lightricks/ltx-video-distilled",
+   "ref": "k5",
+   "prompt": "the man runs fast along the street carrying the heavy pot with both hands, golden soup splashes out of the pot in arcs behind him, his body bounces, street lamps glide past, smooth tracking camera, high quality 3D animated film, expressive motion",
+   "api": "/image_to_video",
+   "params": {
+    "mode": "image-to-video",
+    "height_ui": 832,
+    "width_ui": 480,
+    "duration_ui": 3.0,
+    "randomize_seed": false,
+    "seed_ui": 7
+   }
+  }
+ ]
+}
