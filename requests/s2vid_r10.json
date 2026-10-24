@@ -1,0 +1,10 @@
+{
+ "jobs": [
+  {
+   "name": "mv_s13_t2",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "k13",
+   "prompt": "the man walks happily forward carrying the tray of steaming coffee cups, smiling, friends at the doorway open the door wide and cheer, warm sunrise light, smooth camera, high quality 3D animated film, expressive cartoon acting, smooth natural motion"
+  }
+ ]
+}
