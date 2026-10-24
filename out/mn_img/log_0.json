@@ -1,0 +1,49 @@
+[
+ {
+  "name": "mn_s1",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1344
+  ],
+  "seconds": 21.4
+ },
+ {
+  "name": "mn_s4",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1344
+  ],
+  "seconds": 20.2
+ },
+ {
+  "name": "mn_s7",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1344
+  ],
+  "seconds": 20.5
+ },
+ {
+  "name": "mn_s4b",
+  "ok": false,
+  "tries": [
+   {
+    "model": "flux-dev",
+    "error": "AppError: You have exceeded your ZeroGPU runs limit. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens"
+   },
+   {
+    "model": "flux-schnell",
+    "error": "AppError: You have exceeded your ZeroGPU quota (90s requested vs. 0s left). Try again in 0:00:00. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens"
+   }
+  ]
+ }
+]
