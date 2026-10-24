@@ -1,0 +1,16 @@
+{
+ "jobs": [
+  {
+   "name": "mv_s2_t1",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "k2",
+   "prompt": "his finger scrolls along the rows on the laptop screen, colorful calendar blocks slide upward, the man leans closer with interest, slow camera, high quality 3D animated film, expressive cartoon acting, smooth natural motion"
+  },
+  {
+   "name": "mv_s7_t1",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "k7",
+   "prompt": "the men at the long tables close their big books one after another in a wave, the man in the doorway watches holding the pot, slow camera, high quality 3D animated film, expressive cartoon acting, smooth natural motion"
+  }
+ ]
+}
