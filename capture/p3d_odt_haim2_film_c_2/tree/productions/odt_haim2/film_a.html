@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>odt_haim2 film_a</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import { film, path } from '../../lib/stage3d.js';
+import { hallWorld, walkTo, shot, lean, ease, prog, clamp, lerp, THREE } from './hall.js';
+import { INSTR2, GROUP16, NEUTRAL_HALL, men, circleSpots } from './people_v2.js';
+
+const D2R = Math.PI / 180;
+const dirv = a => [Math.sin(a), Math.cos(a)];
+const face = (x, z, tx, tz) => Math.atan2(tx - x, tz - z);
+
+film({
+  title: 'TITLE_A', kicker: 'KICKER_A', vault: 'captions_vault.json',
+  shots: [
+    // A1 - the 16 men arrive and stand in loose clusters; Haim by the table greets them with an open hand. Camera glides in low from the door.
+    shot(13, ['CAP_A_01', 'CAP_A_02'], [0.5, 6.6], () => {
+      const Wd = hallWorld(NEUTRAL_HALL());
+      // five loose clusters (3,3,3,3,4 men), everybody faces the middle of his cluster
+      const CL = [[3.2, 0.6, 3], [5.6, -0.6, 3], [0.9, -0.4, 3], [2.8, -3.2, 3], [-3.5, 1.0, 4]];
+      const H = { x: 7.6, z: 2.2 };
+      let idx = 0; const arrive = [];
+      CL.forEach(([cx, cz, n], c) => {
+        for (let k = 0; k < n; k++, idx++) {
+          const a = (k / n * 360 + c * 40) * D2R, r = n === 4 ? 1.0 : .85, fx = cx + Math.sin(a) * r, fz = cz + Math.cos(a) * r, f = face(fx, fz, cx, cz);
+          const late = (idx % 5 === 2) || idx === 7;   // six men walk in from the door during the shot
+          const look = GROUP16[idx]; let fn;
+          if (late) {
+            const j = arrive.length; arrive.push(idx);
+            const sx = -15 + j * .8, sz = 11.3, t1 = 6.0 + j * .85;
+            const rt = walkTo([[0, sx, sz, face(sx, sz, fx, fz)], [t1, fx, fz], [14, fx, fz, f]]);
+            fn = t => Object.assign(rt(t), { smile: .6, gesture: t > 6.0 + j * .85 ? 'explainA' : 'rest', perform: 0 });
+          } else {
+            fn = t => ({ pos: [fx, 0, fz], facing: f + .12 * Math.sin(t * .5 + idx), gesture: ((t * .35 + idx * .37) % 1) < .45 ? 'rest' : 'explainA', talk: ((t * .6 + idx * .31) % 1) < .35 ? .6 : 0, smile: .5 });
+          }
+          men(Wd, look, fn);
+        }
+      });
+      const hf = face(H.x, H.z, 3.0, 6.8) - .25;
+      const Hm = men(Wd, INSTR2, t => ({ pos: [H.x, 0, H.z], facing: hf + .1 * Math.sin(t * .4), gesture: t < 6.5 ? (t < 1 ? 'rest' : 'wave') : 'offer', smile: .9, talk: t > 7 && t < 11 ? .5 : 0 }), { tag: false });
+      Wd.hero = Hm;
+      const cam = path([[0, [-3.5, 1.1, 10.6], [1.0, 1.2, 1.0], 58], [3, [0.6, 1.4, 8.6], [4.2, 1.3, 1.0], 50], [6.5, [3.0, 1.6, 6.8], [6.1, 1.3, 1.7], 40], [13, [3.6, 1.7, 6.0], [6.6, 1.35, 1.6], 36]]);
+      return Object.assign(Wd, { cam });
+    }),
+
+    // A2 - one big stiff circle (16 men + Haim); the turn goes round: three men step in, raise a hand and talk. Camera from the middle follows the turn.
+    shot(14, ['CAP_A_03', 'CAP_A_04'], [0.5, 7.1], () => {
+      const Wd = hallWorld(NEUTRAL_HALL());
+      const C = [0, 0], R = 5.0, S = circleSpots(C[0], C[1], R, 17, 0);   // spot 0 = Haim, 1..16 = the men
+      const SP = { 4: [1.2, 4.8], 9: [5.4, 9.0], 14: [9.6, 13.2] };       // speakers: spot -> [t in, t out]
+      const stiff = ['rest', 'think', 'rest', 'hips'];
+      let heroP = null;
+      S.forEach((s, i) => {
+        const dx = -Math.sin(s.a), dz = -Math.cos(s.a);   // towards the centre
+        if (i === 0) {
+          men(Wd, INSTR2, t => ({ pos: [s.x, 0, s.z], facing: s.f, gesture: 'rest', smile: .7 }), { tag: false }); return;
+        }
+        const sp = SP[i], look = GROUP16[i - 1];
+        const fn = t => {
+          let step = 0, g = stiff[(i * 5) % 4], talk = 0;
+          if (sp) { step = ease.io(prog(t, sp[0], sp[0] + .9)) - ease.io(prog(t, sp[1] - .4, sp[1] + .5)); if (t > sp[0] + .5 && t < sp[1]) { g = 'wave'; talk = .6 + .4 * Math.sin(t * 8); } }
+          const sx = Math.sin(t * .7 + i) * .05;   // small nervous steps
+          return { pos: [s.x + dx * step * 1.0 + sx * dz, 0, s.z + dz * step * 1.0 - sx * dx], facing: s.f, gesture: g, talk, smile: sp ? .5 : .15 };
+        };
+        const P = men(Wd, look, fn); if (i === 9) heroP = P;
+      });
+      const proxy = new THREE.Mesh(new THREE.BoxGeometry(.5, 1.75, .3), new THREE.MeshBasicMaterial()); proxy.material.visible = false; Wd.add(proxy);
+      Wd.on(t => { const i = t < 5.1 ? 4 : t < 9.3 ? 9 : 14; proxy.position.set(S[i].x * .85, .875, S[i].z * .85); });
+      Wd.hero = { group: proxy };
+      // camera angle (from +z towards +x) follows the speaker: a1 -> a2 -> a3
+      const ang = i => S[i].a;
+      const a1 = ang(4), a2 = ang(9), a3 = ang(14);
+      const A = t => a1 - .35 + .35 * ease.io(prog(t, 0, 1.4)) + (a2 - a1) * ease.io(prog(t, 4.8, 5.9)) + (a3 - a2) * ease.io(prog(t, 9.0, 10.1));
+      const cam = t => {
+        const a = A(t), [dx, dz] = dirv(a), h = 1.5 + .1 * Math.sin(t * .4);
+        return { pos: [C[0] - dx * 1.7, h, C[1] - dz * 1.7], look: [C[0] + dx * (R - .9), 1.35, C[1] + dz * (R - .9)], fov: 40 };
+      };
+      return Object.assign(Wd, { cam });
+    }),
+
+    // A3 - Haim in the centre of the circle; slow orbit around him; he opens both hands, the group leans in and nods.
+    shot(14, ['CAP_A_05', 'CAP_A_06'], [0.5, 7.1], () => {
+      const Wd = hallWorld(NEUTRAL_HALL());
+      const R = 4.3, S = circleSpots(0, 0, R, 16, 11);
+      const phi = t => (-30 + 130 * ease.io(prog(t, 0, 14))) * D2R;   // camera angle around Haim
+      const Hm = men(Wd, INSTR2, t => ({ pos: [0, 0, 0], facing: phi(t) + .55 * Math.sin(t * .35), gesture: t < 1.2 ? 'rest' : (t < 7 ? 'wide' : 'offer'), smile: .9, talk: (t > 1.5 && t < 6.5) || t > 8 ? .5 : 0 }), { tag: false });
+      Wd.hero = Hm;
+      S.forEach((s, i) => {
+        const P = men(Wd, GROUP16[i], t => ({ pos: [s.x, 0, s.z], facing: s.f, gesture: 'rest', smile: .25 + .6 * prog(t, 2, 5) }));
+        lean(Wd, P, t => ({ facing: s.f, ang: -(ease.io(prog(t, 1.5, 5)) * .1 + (t > 5 ? .035 * Math.sin(t * 2.6 + i * 1.7) : 0)) }));
+      });
+      const cam = t => {
+        const a = phi(t), [dx, dz] = dirv(a);
+        return { pos: [dx * 3.0, 1.45 + .15 * ease.io(prog(t, 0, 14)), dz * 3.0], look: [0, 1.25, 0], fov: 46 };
+      };
+      return Object.assign(Wd, { cam });
+    }),
+  ],
+});
+</script>
+</html>

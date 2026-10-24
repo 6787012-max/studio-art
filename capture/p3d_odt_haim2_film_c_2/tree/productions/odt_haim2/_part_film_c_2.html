@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>odt_haim2 film_c</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script>window.__T0=74.6667; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import { film, path } from '../../lib/stage3d.js';
+import { hallWorld, shot, lean, ease, prog, clamp, lerp, THREE } from './hall.js';
+import { INSTR2, GROUP16, NEUTRAL_HALL, men, circleSpots } from './people_v2.js';
+import { D2R, angl, face, clapG, rodPose, cuts, S, orb, go, heroProxy, whiteboard, SEAT, chairsAt, rodSpots, rodMesh, chicken } from './games_c.js';
+
+const E = { x: 9, z: 3 };             // staging area of the live examples (east side of the hall)
+const H0 = { x: -0.45, z: -4.7 };     // Haim by the whiteboard
+const NEVER = 999, DONE = -9;
+
+// ------------------------------------------------------------------ common states
+const seatSt = (i, t, o) => { const s = SEAT[i]; return Object.assign({ pos: [s.x, 0, s.z], facing: s.f, sit: true, gesture: 'rest', smile: .4, look: .5 * Math.sin(t * .4 + i * 1.3) }, o || {}); };
+const haimSt = (t, o) => Object.assign({ pos: [H0.x, 0, H0.z], facing: -.4 + .1 * Math.sin(t * .5), gesture: 'explain', smile: .85, talk: .55 * (.5 + .5 * Math.sin(t * 5.5)) }, o || {});
+const ringSt = (sp, R, c, t, o) => Object.assign({ pos: [c.x + Math.sin(sp.a) * R, 0, c.z + Math.cos(sp.a) * R], facing: sp.f, gesture: 'rest', smile: .4 }, o || {});
+const inWin = (t, w) => w.some(([a, b]) => t >= a && t <= b);
+
+function baseWorld(ticks) {
+  const Wd = hallWorld(NEUTRAL_HALL());
+  whiteboard(Wd, ticks); chairsAt(Wd, SEAT);
+  return Wd;
+}
+const addMen = (Wd, f) => GROUP16.map((look, i) => men(Wd, look, f(i)));
+const HAIM = Object.assign({}, INSTR2, { tag: false });
+const addHaim = (Wd, f) => men(Wd, HAIM, f);
+// camera at the board from inside the half circle
+const boardCam = (a, b, T, fov0, fov1) => { const p = path([[0, a[0], a[1], fov0], [T, b[0], b[1], fov1]]); return t => p(t); };
+const BL = [-1.4, 1.55, -5.2];
+
+film({
+  title: 'TITLE_C', kicker: 'KICKER_C', vault: 'captions_vault.json',
+  shots: [
+    // C1 - slow push-in on Haim at the board, group seated
+    shot(11, ['CAP_C_01', 'CAP_C_02'], [0.5, 5.6], () => {
+      const Wd = baseWorld([NEVER, NEVER, NEVER, NEVER, NEVER, NEVER, NEVER, NEVER]);
+      addMen(Wd, i => t => seatSt(i, t, { smile: .3 + .4 * prog(t, 3, 8), gesture: (i % 6 === 2 && t > 5) ? 'think' : 'rest' }));
+      const Hm = addHaim(Wd, t => haimSt(t, { gesture: t < 4 ? 'explain' : t < 8 ? 'wide' : 'offer', facing: -.3 + .1 * Math.sin(t * .5) }));
+      Wd.hero = Hm;
+      const cam = path([[0, [7.6, 2.1, 1.6], [-0.6, 1.45, -4.6], 46], [11, [3.4, 1.7, -1.2], [-0.9, 1.5, -4.8], 30]]);
+      return Object.assign(Wd, { cam });
+    }),
+
+    // C2 - digit 1 ticked; Haim shakes hands with the first row, the group relaxes
+    shot(13, ['CAP_C_03', 'CAP_C_04'], [0.5, 6.6], () => {
+      const Wd = baseWorld([2.0, NEVER, NEVER, NEVER, NEVER, NEVER, NEVER, NEVER]);
+      const tc = 4.6, HX = { x: -.1, z: -2.0 };
+      addMen(Wd, i => S([0, t => seatSt(i, t, { smile: .5, gesture: 'rest' })], [tc, t => {
+        const u = t - tc, shake3 = u > .2 && u < 3.0, shake4 = u > 3.4 && u < 6.4, relax = u > 5.5;
+        const g = ((i === 3 && shake3) || (i === 4 && shake4) || (i === 2 && u > 6.6 && u < 8.4) || (i === 5 && u > 6.6 && u < 8.4)) ? 'offer' : 'rest';
+        return seatSt(i, t, { gesture: g, smile: relax ? 1 : .6, talk: relax && i % 3 === 0 ? .4 : 0 });
+      }]));
+      const Hm = addHaim(Wd, S([0, t => haimSt(t, { gesture: inWin(t, [[1.7, 3.4]]) ? 'point' : 'explain', facing: inWin(t, [[1.7, 3.4]]) ? -.85 : -.4 })], [tc, t => {
+        const u = t - tc, to3 = face(HX.x, HX.z, SEAT[3].x, SEAT[3].z), to4 = face(HX.x, HX.z, SEAT[4].x, SEAT[4].z);
+        const f = u < 3.0 ? to3 : u < 3.5 ? angl(to3, to4, ease.io(prog(u, 3.0, 3.5))) : u < 6.5 ? to4 : angl(to4, 0, ease.io(prog(u, 6.5, 7.2)));
+        const pump = (u > .5 && u < 2.8) || (u > 3.7 && u < 6.2) ? .035 * Math.sin(u * 9) : 0;
+        return { pos: [HX.x, pump, HX.z], facing: f, gesture: u < 6.5 ? 'offer' : 'wide', smile: 1, talk: .5 * (.5 + .5 * Math.sin(t * 5)) };
+      }]), { tag: false });
+      heroProxy(Wd, t => t < tc ? [H0.x, 1, H0.z] : [HX.x, 1, HX.z]);
+      const c1 = boardCam([[1.2, 1.7, -2.7], [-1.4, 1.55, -5.2]], [[.9, 1.7, -2.9], [-1.3, 1.55, -5.2]], tc, 42, 36);
+      const c2 = path([[0, [1.7, 1.6, -3.3], [.1, 1.3, -1.7], 40], [8.4, [1.1, 1.55, -3.6], [.2, 1.3, -1.5], 34]]);
+      return Object.assign(Wd, { cam: cuts([0, c1], [tc, c2]) });
+    }),
+
+    // C3 - digit 2 ticked; skip circle replay (12 men), shoulders drop, laughter
+    shot(13, ['CAP_C_05', 'CAP_C_06'], [0.5, 6.6], () => {
+      const Wd = baseWorld([DONE, 1.5, NEVER, NEVER, NEVER, NEVER, NEVER, NEVER]);
+      const tc = 3.8, ring = circleSpots(E.x, E.z, 2.0, 12, 0);
+      const Ps = addMen(Wd, i => i >= 12 ? (t => seatSt(i, t)) : S([0, t => seatSt(i, t, { smile: .5 })], [tc, t => {
+        const u = t - tc, R = lerp(2.0, 1.72, ease.io(prog(u, .7, 1.9)));
+        return ringSt(ring[i], R, E, t, { gesture: u < .7 ? 'rest' : u < 4.8 ? 'reachC' : 'reachF', smile: u < 2 ? .35 : 1, talk: u > 2.4 ? .6 * (.5 + .5 * Math.sin(u * 9 + i)) : 0 });
+      }]));
+      for (let i = 0; i < 12; i++) lean(Wd, Ps[i], t => ({ facing: ring[i].f, ang: -(prog(t - tc, 4.8, 5.6) * .16) }));
+      const Hm = addHaim(Wd, t => haimSt(t, { gesture: inWin(t, [[1.2, 3.0]]) ? 'point' : 'explain', facing: inWin(t, [[1.2, 3.0]]) ? -.85 : -.4 }));
+      heroProxy(Wd, t => t < tc ? [H0.x, 1, H0.z] : [E.x, 1, E.z]);
+      const c1 = boardCam([[1.3, 1.7, -2.6], [-1.4, 1.55, -5.2]], [[.9, 1.7, -2.9], [-1.4, 1.6, -5.2]], tc, 42, 36);
+      return Object.assign(Wd, { cam: cuts([0, c1], [tc, orb([E.x, E.z], 4.3, 1.5, -55, 35, 9.2, 40, 1.2)]) });
+    }),
+
+    // C4 - digits 3 and 4 ticked; fast chicken throws (12 in a circle), then a helium-stick replay (one team of 8)
+    shot(13, ['CAP_C_07', 'CAP_C_08'], [0.5, 6.6], () => {
+      const Wd = baseWorld([DONE, DONE, 1.0, 2.2, NEVER, NEVER, NEVER, NEVER]);
+      const tc = 3.8, tr = 8.2, ring = circleSpots(E.x, E.z, 2.0, 12, 0), rs = rodSpots(E.x, E.z, 0);
+      const seqs = [0, 6, 3, 9, 1, 7, 4], ts = k => .5 + k * .58, TD = .5;   // throw k: seqs[k] -> seqs[k+1] starting at ts(k) (example time)
+      const hold = j => [E.x + Math.sin(ring[j].a) * 1.75, 1.25, E.z + Math.cos(ring[j].a) * 1.75];
+      const hRod = u => u < 2.6 ? 1.08 + .30 * ease.io(prog(u, .4, 2.0)) : 1.38 - .80 * ease.io(prog(u, 2.6, 4.9));
+      addMen(Wd, i => S([0, t => seatSt(i, t, { smile: .5 })],
+        [tc, t => {
+          if (i >= 12) return seatSt(i, t);
+          const u = t - tc; let g = 'rest';
+          for (let k = 0; k < 6; k++) { if (seqs[k + 1] === i && u > ts(k) + TD - .45 && u < ts(k) + TD + .1) g = 'up'; if (seqs[k] === i && u > ts(k) - .25 && u < ts(k) + .15) g = 'offer'; }
+          return ringSt(ring[i], 2.0, E, t, { gesture: g, smile: .9, talk: .3 });
+        }],
+        [tr, t => {
+          if (i >= 8) return seatSt(i, t);
+          const h = hRod(t - tr), rp = rodPose(h), u = t - tr;
+          return { pos: [rs[i].x, -rp.sink, rs[i].z], facing: rs[i].f, gesture: rp.gesture, sit: rp.sit, smile: 1, talk: u < 2.4 ? .6 * (.5 + .5 * Math.sin(u * 8 + i)) : 0 };
+        }]));
+      chicken(Wd, t => {
+        const u = t - tc; if (t < tc || t >= tr) return { vis: false };
+        let k = -1; for (let q = 0; q < 6; q++) if (u >= ts(q)) k = q;
+        if (k < 0) { const p = hold(0); return { vis: true, x: p[0], y: p[1], z: p[2], yaw: ring[0].f }; }
+        const a = hold(seqs[k]), b = hold(seqs[k + 1]), s = clamp((u - ts(k)) / TD, 0, 1), yaw = Math.atan2(b[0] - a[0], b[2] - a[2]);
+        return { vis: true, x: lerp(a[0], b[0], s), y: lerp(a[1], b[1], s) + .75 * Math.sin(Math.PI * s), z: lerp(a[2], b[2], s), yaw, pitch: .6 * Math.cos(Math.PI * s) };
+      });
+      rodMesh(Wd, t => ({ vis: t >= tr, x: E.x, y: hRod(t - tr), z: E.z, rot: 0 }));
+      addHaim(Wd, t => haimSt(t, { gesture: inWin(t, [[1.0, 3.2]]) ? 'point' : 'explain', facing: inWin(t, [[1.0, 3.2]]) ? -.85 : -.4 }));
+      heroProxy(Wd, t => t < tc ? [H0.x, 1, H0.z] : [E.x, 1, E.z]);
+      const c1 = boardCam([[1.2, 1.7, -2.6], [-1.4, 1.55, -5.2]], [[.8, 1.7, -3.0], [-1.4, 1.6, -5.2]], tc, 42, 36);
+      const c2 = orb([E.x, E.z], 4.4, 1.6, -50, 20, tr - tc, 40, 1.2);
+      const c3 = path([[0, [E.x - 3.2, 1.0, E.z + 4.0], [E.x, 1.15, E.z], 44], [4.8, [E.x + .6, 1.2, E.z + 4.2], [E.x, 1.1, E.z], 36]]);
+      return Object.assign(Wd, { cam: cuts([0, c1], [tc, c2], [tr, c3]) });
+    }),
+
+    // C5 - digits 5 and 6 ticked; small groups working seriously, then everybody laughing together
+    shot(13, ['CAP_C_09', 'CAP_C_10'], [0.5, 6.6], () => {
+      const Wd = baseWorld([DONE, DONE, DONE, DONE, 1.0, 2.2, NEVER, NEVER]);
+      const tc = 3.8, tl = 7.8;
+      const HC = [[E.x - 1.9, E.z - 1.6], [E.x + 1.9, E.z - 1.6], [E.x - 1.9, E.z + 1.6], [E.x + 1.9, E.z + 1.6]];
+      const hud = i => { const g = i >> 2, k = i & 3, a = (k * 90 + g * 25 + 20) * D2R, x = HC[g][0] + Math.sin(a) * .78, z = HC[g][1] + Math.cos(a) * .78; return { x, z, f: face(x, z, HC[g][0], HC[g][1]), a }; };
+      const big = circleSpots(E.x, E.z, 2.7, 16, 10);
+      const GS = ['count', 'explainA', 'think', 'point', 'explain'];
+      addMen(Wd, i => S([0, t => seatSt(i, t, { smile: .5 })],
+        [tc, t => {
+          const u = t - tc, h = hud(i), spk = (Math.floor(u / 1.1) + (i >> 2)) % 4 === (i & 3);
+          return { pos: [h.x, 0, h.z], facing: h.f, gesture: spk ? 'explain' : (Math.floor(u * .5 + i * .7) % 3 === 0 ? 'think' : 'rest'), talk: spk ? .55 : 0, smile: .1, brow: .3 };
+        }],
+        [tl, t => {
+          const u = t - tl, h = hud(i), b = big[i], to = { x: b.x, z: b.z, f: b.f };
+          const m = go({ x: h.x, z: h.z, f: h.f }, to, 0, 1.4, u), done = u >= 1.4;
+          return Object.assign(m, { gesture: ['hips', 'shrug', 'wide', 'heart'][(i + Math.floor(u * .8)) % 4], smile: 1, talk: .75 * (.5 + .5 * Math.sin(u * 9 + i * 1.7)), pos: [m.pos[0], done ? .035 * Math.abs(Math.sin(u * 5 + i)) : 0, m.pos[2]] });
+        }]));
+      addHaim(Wd, t => haimSt(t, { gesture: inWin(t, [[1.0, 3.4]]) ? 'point' : 'explain', facing: inWin(t, [[1.0, 3.4]]) ? -.85 : -.4 }));
+      heroProxy(Wd, t => t < tc ? [H0.x, 1, H0.z] : [E.x, 1, E.z]);
+      const c1 = boardCam([[1.3, 1.7, -2.6], [-1.4, 1.55, -5.2]], [[.9, 1.7, -3.0], [-1.4, 1.6, -5.2]], tc, 42, 36);
+      return Object.assign(Wd, { cam: cuts([0, c1], [tc, orb([E.x, E.z], 5.2, 1.7, -60, -10, tl - tc, 42, 1.2)], [tl, orb([E.x, E.z], 5.0, 2.2, -25, 45, 13 - tl, 42, 1.3)]) });
+    }),
+
+    // C6 - digits 7 and 8 ticked; closed circle of chairs, one man talks, the rest listen and nod
+    shot(13, ['CAP_C_11', 'CAP_C_12'], [0.5, 6.6], () => {
+      const Wd = baseWorld([DONE, DONE, DONE, DONE, DONE, DONE, 1.0, 2.2]);
+      const tc = 3.8, ring = circleSpots(E.x, E.z, 2.5, 16, 0);
+      chairsAt(Wd, ring.map(s => ({ x: E.x + Math.sin(s.a) * 2.5, z: E.z + Math.cos(s.a) * 2.5, f: s.f })));
+      addMen(Wd, i => S([0, t => seatSt(i, t, { smile: .5 })], [tc, t => {
+        const u = t - tc, sp = i === 5, s = ring[i];
+        return { pos: [E.x + Math.sin(s.a) * 2.5, 0, E.z + Math.cos(s.a) * 2.5], facing: s.f + (sp ? 0 : .12 * Math.sin(u * 1.1 + i)), sit: true,
+          gesture: sp ? (['explain', 'explainA', 'explain'][Math.floor(u / 2.2) % 3]) : 'rest', talk: sp ? .6 * (.5 + .5 * Math.sin(u * 7)) : 0, smile: sp ? .7 : .45,
+          look: sp ? 0 : .35 * Math.sin(u * 2.2 + i * 2.1) };
+      }]));
+      addHaim(Wd, t => haimSt(t, { gesture: inWin(t, [[1.0, 3.4]]) ? 'point' : 'explain', facing: inWin(t, [[1.0, 3.4]]) ? -.85 : -.4 }));
+      heroProxy(Wd, t => t < tc ? [H0.x, 1, H0.z] : [E.x + Math.sin(ring[5].a) * 2.0, 1, E.z + Math.cos(ring[5].a) * 2.0]);
+      const c1 = boardCam([[1.3, 1.7, -2.6], [-1.4, 1.55, -5.2]], [[.9, 1.7, -3.0], [-1.4, 1.6, -5.2]], tc, 42, 36);
+      return Object.assign(Wd, { cam: cuts([0, c1], [tc, orb([E.x, E.z], 4.9, 1.6, -75, 5, 9.2, 40, 1.15)]) });
+    }),
+
+    // C7 - the closing clap: hands raised, Haim claps -> all clap; Haim fakes -> nobody claps, laughter
+    shot(13, ['CAP_C_13', 'CAP_C_14'], [0.5, 6.6], () => {
+      const Wd = hallWorld(NEUTRAL_HALL());
+      const F = { x: 10.5, z: -1.5 }, pos = i => i < 8 ? { x: F.x - 3.5 + i, z: F.z + .75 } : { x: F.x - 3.0 + (i - 8), z: F.z - .75 };
+      const lv = (t, off) => { const u = t - 3.9 + off; return 6 * (.5 - .5 * Math.cos(2 * Math.PI * u / .8)); };
+      const Pm = addMen(Wd, i => t => {
+        const p = pos(i), off = (i * .37) % .3, bob = t > 8.7 ? .03 * Math.abs(Math.sin(t * 5 + i)) : 0;
+        let g = 'rest', talk = 0, sm = t < 2 ? .4 : .8;
+        if (t >= 1.8 && t < 3.9 + off) g = 'clap0';
+        else if (t >= 3.9 + off && t < 6.3) g = clapG(lv(t, off) / 6);
+        else if (t >= 6.3 && t < 8.7) g = 'clap0';
+        else if (t >= 8.7) { g = ['hips', 'shrug', 'heart', 'wide'][(i + Math.floor((t - 8.7) * .7)) % 4]; sm = 1; talk = .7 * (.5 + .5 * Math.sin(t * 9 + i * 1.3)); }
+        return { pos: [p.x, bob, p.z], facing: -.5 + .12 * Math.sin(i), gesture: g, smile: sm, talk };
+      });
+      Pm.forEach((P, i) => lean(Wd, P, t => ({ facing: -.5 + .12 * Math.sin(i), ang: t > 8.7 ? .12 * Math.abs(Math.sin((t - 8.7) * 4 + i * 1.3)) * ease.out(prog(t, 8.7, 9.3)) : 0 })));
+      const Hp = { x: F.x - 4.4, z: F.z + 1.7 };
+      const Hm = addHaim(Wd, t => {
+        let g = 'rest', tk = 0; const f = 1.0;
+        if (t < 1.8) { g = 'explain'; tk = .5; } else if (t < 3.9) g = 'clap0';
+        else if (t < 6.3) g = clapG(lv(t, 0) / 6);
+        else if (t < 7.4) g = 'clap0';
+        else if (t < 9.6) g = clapG((3 * ease.io(prog(t, 7.4, 8.2)) * (1 - ease.io(prog(t, 9.0, 9.6)))) / 6);
+        else { g = 'explain'; tk = .4; }
+        return { pos: [Hp.x, 0, Hp.z], facing: f, gesture: g, smile: .9, talk: tk * (.5 + .5 * Math.sin(t * 6)) };
+      });
+      heroProxy(Wd, () => [F.x - 1.5, 1.2, F.z]);
+      const cam = path([[0, [F.x - 1.5, 1.45, 6.0], [F.x - 1.4, 1.4, F.z], 32], [13, [F.x - 1.8, 4.2, 5.2], [F.x - 1.4, 1.3, F.z], 34]]);
+      return Object.assign(Wd, { cam });
+    }),
+
+    // C8 - the cycle of a game: the rod goes up (fail), huddle talk, retry, the rod goes down
+    shot(13, ['CAP_C_15', 'CAP_C_16'], [0.5, 6.6], () => {
+      const Wd = hallWorld(NEUTRAL_HALL());
+      const C1 = { x: E.x - 1.9, z: E.z + 1.2 }, C2 = { x: E.x + 1.9, z: E.z - 1.2 };
+      const sp = [...rodSpots(C1.x, C1.z, Math.PI / 2), ...rodSpots(C2.x, C2.z, Math.PI / 2)];
+      const hu = circleSpots(E.x, E.z, 1.9, 16, 0);
+      const hHand = t => t < 4 ? 1.05 + .33 * ease.io(prog(t, .6, 3.2)) : 1.15 - 1.03 * ease.io(prog(t, 10.2, 12.9));
+      addMen(Wd, i => t => {
+        const a = sp[i], b = { x: hu[i].x, z: hu[i].z, f: hu[i].f };
+        if (t < 4.0 || t >= 9.7) { const rp = rodPose(hHand(t)), laugh = t < 4; return { pos: [a.x, -rp.sink, a.z], facing: a.f, gesture: rp.gesture, sit: rp.sit, smile: laugh ? 1 : .6, talk: laugh ? .5 * (.5 + .5 * Math.sin(t * 8 + i)) : 0 }; }
+        if (t < 5.6) { const m = go(a, b, 4.4, 5.6, t); return Object.assign(m, { gesture: 'shrug', smile: .8 }); }
+        if (t < 8.6) {
+          const u = t - 5.6, spk = (i === 2 && u < 1.6) || (i === 11 && u > 1.3 && u < 3.0), s2 = i === 6 && u > 2.2;
+          return { pos: [b.x, 0, b.z], facing: b.f, gesture: spk ? (u % 1.6 < .8 ? 'explain' : 'explainA') : (s2 ? 'think' : 'rest'), talk: spk ? .65 * (.5 + .5 * Math.sin(t * 8)) : 0, smile: .45, look: spk ? 0 : .3 * Math.sin(t * 1.7 + i) };
+        }
+        const m = go(b, a, 8.6, 9.7, t); return Object.assign(m, { gesture: 'rest', smile: .8 });
+      });
+      [[C1, 0], [C2, 8]].forEach(([c]) => rodMesh(Wd, t => {
+        if (t < 4.0) return { vis: true, x: c.x, y: hHand(t), z: c.z, rot: Math.PI / 2 };
+        if (t < 4.6) return { vis: true, x: c.x, y: lerp(hHand(4), .03, ease.in(prog(t, 4.0, 4.6))), z: c.z, rot: Math.PI / 2 };
+        if (t < 9.7) return { vis: true, x: c.x, y: .03, z: c.z, rot: Math.PI / 2 };
+        return { vis: true, x: c.x, y: lerp(.03, hHand(t), ease.out(prog(t, 9.7, 10.1))), z: c.z, rot: Math.PI / 2 };
+      }));
+      addHaim(Wd, t => ({ pos: [E.x + 6.2, 0, E.z - 3.5], facing: -2.2, gesture: 'rest', smile: .6, hidden: true }));
+      heroProxy(Wd, () => [E.x, 1, E.z]);
+      const cam = path([[0, [E.x - 3.8, 1.15, E.z + 4.4], [E.x, 1.15, E.z], 40], [6.5, [E.x - 2.6, 1.3, E.z + 5.0], [E.x, 1.1, E.z], 38], [13, [E.x - 1.0, 1.2, E.z + 4.6], [E.x, .9, E.z], 36]]);
+      return Object.assign(Wd, { cam });
+    }),
+
+    // C9 - back at the whiteboard: Haim points to digit 2, then 4, then 6 with the same open hand
+    shot(10, ['CAP_C_17'], [0.5], () => {
+      const Wd = baseWorld([DONE, DONE, DONE, DONE, DONE, DONE, DONE, DONE]);
+      addMen(Wd, i => t => seatSt(i, t, { smile: .5 + .3 * prog(t, 1, 5), gesture: 'rest' }));
+      const wins = [[1.5, 3.6], [4.0, 6.1], [6.5, 8.8]];
+      const Hm = addHaim(Wd, t => { const on = inWin(t, wins); return haimSt(t, { gesture: on ? 'point' : 'offer', facing: on ? -.95 : -.35, talk: on ? .35 : .5 * (.5 + .5 * Math.sin(t * 5.5)) }); });
+      Wd.hero = Hm;
+      const cam = path([[0, [1.0, 1.65, -2.4], [-1.2, 1.5, -5.2], 44], [10, [.2, 1.6, -3.2], [-1.2, 1.5, -5.2], 34]]);
+      return Object.assign(Wd, { cam });
+    }),
+  ],
+});
+</script>
+</html>
