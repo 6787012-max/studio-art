@@ -1,0 +1,25 @@
+{
+ "jobs": [
+  {
+   "name": "k1",
+   "prompt": "night, small cozy living room, a young religious Jewish man in his twenties with a round black velvet kippa skullcap clearly sitting on top of his head, white button-up shirt, short neat trimmed dark beard, friendly expressive face sits at a desk looking at an open laptop, a round wall clock behind him, a mail notification glows on the laptop screen, he reaches to click, medium shot, warm bright cinematic cartoon-realistic 3D animated film still, soft golden lighting, vertical portrait composition, high quality, no text, no writing, no letters, no crosses",
+   "w": 768,
+   "h": 1344,
+   "seed": 101
+  },
+  {
+   "name": "k2",
+   "prompt": "close up over the shoulder from behind of a young religious Jewish man in his twenties with a round black velvet kippa skullcap clearly sitting on top of his head, white button-up shirt, short neat trimmed dark beard, friendly expressive face at a laptop, kippa visible on the back of his head, the screen shows a colorful weekly schedule table with rows and columns and small cooking pot icons, a finger pointing at the screen, warm lamp light, warm bright cinematic cartoon-realistic 3D animated film still, soft golden lighting, vertical portrait composition, high quality, no text, no writing, no letters, no crosses",
+   "w": 768,
+   "h": 1344,
+   "seed": 102
+  },
+  {
+   "name": "k3",
+   "prompt": "extreme close up of the face of a young religious Jewish man in his twenties with a round black velvet kippa skullcap clearly sitting on top of his head, white button-up shirt, short neat trimmed dark beard, friendly expressive face, eyes wide open in shock, mouth open in a gasp, the glow of a laptop screen lighting his face, comedic expression, warm bright cinematic cartoon-realistic 3D animated film still, soft golden lighting, vertical portrait composition, high quality, no text, no writing, no letters, no crosses",
+   "w": 768,
+   "h": 1344,
+   "seed": 103
+  }
+ ]
+}
