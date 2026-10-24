@@ -1,0 +1,18 @@
+{
+ "jobs": [
+  {
+   "name": "mn_s3n",
+   "prompt": "small rectangular stone village synagogue building with a simple flat roof and a low pitched red-tile roof, no dome, no tower, no minaret, tall arched windows glowing warm gold, a round Star of David window above the wooden front door, the door slightly open with warm light spilling onto a stone path, desert village at deep blue pre-dawn, Pixar style 3D animated film still, warm cinematic lighting, vertical portrait composition, high quality, no text, no writing",
+   "w": 768,
+   "h": 1344,
+   "seed": 21
+  },
+  {
+   "name": "mn_s1n",
+   "prompt": "close-up of a hand in a white long shirt sleeve reaching toward a glowing digital alarm clock on a wooden nightstand beside a window with a starry night sky and dark blue hills, cozy dim room, only the hand and sleeve visible, no face, no person in bed, Pixar style 3D animated film still, warm cinematic lighting, vertical portrait composition, high quality, no text, no writing",
+   "w": 768,
+   "h": 1344,
+   "seed": 22
+  }
+ ]
+}
