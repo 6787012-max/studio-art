@@ -1,0 +1,58 @@
+{
+ "jobs": [
+  {
+   "name": "mv_s1",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "mn_s1",
+   "prompt": "the man in bed yawns and slowly stretches his arm toward the glowing alarm clock, stars twinkle in the window, static or slow camera, high quality 3D Pixar animation"
+  },
+  {
+   "name": "mv_s2",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "mn_s2",
+   "prompt": "the young man walks slowly away down the street carrying his bag, street lamps glow, slow camera follows from behind, static or slow camera, high quality 3D Pixar animation"
+  },
+  {
+   "name": "mv_s3",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "mn_s3",
+   "prompt": "the warm golden light from the open door glows and gently pulses, slow camera push-in toward the synagogue door, stars twinkle, static or slow camera, high quality 3D Pixar animation"
+  },
+  {
+   "name": "mv_s4",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "mn_s4",
+   "prompt": "the men talk and smile, one moves his finger along the page of the book, steam rises from the coffee cups, static or slow camera, high quality 3D Pixar animation"
+  },
+  {
+   "name": "mv_s5",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "mn_s5",
+   "prompt": "the sun slowly rises higher over the hills, golden light spreads across the desert, soft clouds drift, static or slow camera, high quality 3D Pixar animation"
+  },
+  {
+   "name": "mv_s6",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "mn_s6",
+   "prompt": "the men sway gently in prayer, light beams move softly through the windows, slow camera, static or slow camera, high quality 3D Pixar animation"
+  },
+  {
+   "name": "mv_s6b",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "mn_s6b",
+   "prompt": "the man sways gently in prayer by the window, sunlight glows softly, static or slow camera, high quality 3D Pixar animation"
+  },
+  {
+   "name": "mv_s7",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "mn_s7",
+   "prompt": "warm golden light slowly glows brighter on the wooden chairs one after another, sunbeams shift on the floor, static or slow camera, high quality 3D Pixar animation"
+  },
+  {
+   "name": "mv_s8",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "mn_s8",
+   "prompt": "the friends shake hands and laugh warmly, one lifts his coffee cup, gentle natural movement, static or slow camera, high quality 3D Pixar animation"
+  }
+ ]
+}
