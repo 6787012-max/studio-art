@@ -1,0 +1,23 @@
+{
+ "film": "film_b.html",
+ "status": "PASS",
+ "time": "2026-10-25T00:13:20",
+ "samples": 38,
+ "findings": [
+  {
+   "sev": "P2",
+   "code": "HERO_SMALL",
+   "t": 35.5,
+   "shot": "s03",
+   "detail": "hero height 20% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  }
+ ],
+ "sheets": null,
+ "timing": {
+  "ready_s": 130.9,
+  "gates_s": 858.8,
+  "sheets_s": 139.9,
+  "total_s": 1295.3
+ }
+}
