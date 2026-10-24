@@ -1,0 +1,25 @@
+{
+ "jobs": [
+  {
+   "name": "k5f",
+   "model": "kontext",
+   "ref": "k5",
+   "prompt": "put a small flat round black velvet kippah with a thin gold embroidered border, a palm-sized skullcap lying flat and tight on the crown of his head, clearly visible against his hair, it is NOT a hat and has no brim, keep the face, beard, white shirt, pose, background and lighting exactly identical",
+   "seed": 75
+  },
+  {
+   "name": "k8f",
+   "model": "kontext",
+   "ref": "k8",
+   "prompt": "put a small flat round black velvet kippah with a thin gold embroidered border, a palm-sized skullcap lying flat and tight on the crown of his head, clearly visible against his hair, it is NOT a hat and has no brim, keep the face, beard, white shirt, pose, background and lighting exactly identical",
+   "seed": 78
+  },
+  {
+   "name": "k13f",
+   "model": "kontext",
+   "ref": "k13",
+   "prompt": "put a small flat round black velvet kippah with a thin gold embroidered border, a palm-sized skullcap lying flat and tight on the crown of his head, clearly visible against his hair, it is NOT a hat and has no brim, keep the face, beard, white shirt, pose, background and lighting exactly identical, and remove the star emblem from the top of the building so the roof is plain",
+   "seed": 83
+  }
+ ]
+}
