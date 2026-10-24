@@ -1,0 +1,35 @@
+[
+ {
+  "name": "mn_s3",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1344
+  ],
+  "seconds": 26.1
+ },
+ {
+  "name": "mn_s6",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1344
+  ],
+  "seconds": 26.0
+ },
+ {
+  "name": "mn_s6b",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1344
+  ],
+  "seconds": 19.5
+ }
+]
