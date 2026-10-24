@@ -1,0 +1,16 @@
+{
+ "jobs": [
+  {
+   "name": "mv_s13_t1",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "k13",
+   "prompt": "the man walks happily forward carrying the tray of steaming coffee cups, smiling, friends at the doorway open the door wide and cheer, warm sunrise light, smooth camera, high quality 3D animated film, expressive cartoon acting, smooth natural motion"
+  },
+  {
+   "name": "mv_s1_t1",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "k1",
+   "prompt": "the young man at the laptop looks at the screen, the mail notification glows, he smiles and clicks the trackpad, camera slowly pushes in toward the screen, warm cozy night, high quality 3D animated film, expressive cartoon acting, smooth natural motion"
+  }
+ ]
+}
