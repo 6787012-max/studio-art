@@ -11,11 +11,11 @@ window.STORY = function (K) {
     return k => arr.forEach((m, i) => m.material.opacity = k * (.16 + .06 * Math.sin(i * 2 + k * 3))); };
 
   // ---------------------------------------------------------------- layout (shared by all scenes)
-  const SH = [-1.2, 0, 0], AV = [-.05, 0, .35], CH = [-6.5, 0, -3.3];            // Shmuli, Avi, Chaim (sits on the bench)
-  const EXA = [.6, 0, -2.0], EXB = [1.9, 0, -2.6], EXC = [-1.9, 0, -2.2];       // extra boys
+  const SH = [-1.2, 0, 0], AV = [-.05, 0, .41], CH = [-6.5, 0, -3.3];            // Shmuli, Avi, Chaim (sits on the bench)
+  const EXA = [-3.01, 0, -1.42], EXB = [2.03, 0, -3.37], EXC = [-4.87, 0, -3.07];       // extra boys
   const TW = [3.6, 0, -2.0];                                                      // tower base
   const CP = [-.4, 2.55, -3.7];                                                   // counter centre
-  const mouth = [SH[0] + .1, 1.12, SH[2] + .32], hov = [-.9, 2.25, .2], GP = [.75, .95, .55];
+  const mouth = [SH[0] + .1, 1.12, SH[2] + .32], hov = [-.9, 2.25, .2], HV = [-1.3, 2.85, .3], GP = [-.1, 2.75, .4];   // hov = hook only; HV/GP = bubble hover / sag in the episode (kept above the heads)
   const BK = [-1.9, 3.45, -1.0];
   const N = 26, kindOf = i => ((i * 7 + 2) % 5 < 3) ? 0 : 1;                       // 0 = red lav, 1 = blue asei
 
@@ -79,7 +79,7 @@ window.STORY = function (K) {
   const ATT = i => { if (i === 0) return [.55, .5, .35]; const b = i * 2.4 + .5, r = .5 + .38 * (((i * 5) % 3) / 2); return [Math.cos(b) * r * 1.15, Math.sin(b) * r * .8, .3 + (i % 4) * .05]; };
   const SPAWN = i => { const a = i * 2.399 + .4, R = 7 + ((i * 5) % 4); return [hov[0] + Math.cos(a) * R, 1.0 + ((i * 37) % 7) * .85, hov[2] + Math.sin(a) * R * .55]; };
   const SLOT = i => { const layer = Math.floor(i / 2), side = i % 2; return [TW[0] + (side ? .5 : -.5) + (layer % 2 ? .13 : -.13) + .05 * (rnd(i) - .5), .19 + layer * .375, TW[2] + .05 * (rnd(i + 9) - .5)]; };
-  const bubC = G => lerpV(hov, GP, sm(P(25.5, 29.0, G)));
+  const bubC = G => lerpV(HV, GP, sm(P(25.5, 29.0, G)));
   const bubS = G => 1 + .35 * sm(P(14.5, 25, G));
   const tStart = i => i === 0 ? 5.5 : 14.6 + (i - 1) * .4, tEnd = i => tStart(i) + (i === 0 ? 2.6 : 1.5), tw0 = i => 30.4 + i * .28;
 
@@ -103,7 +103,7 @@ window.STORY = function (K) {
       const bk = popE(P(2.6, 4.2, G)) * (1 - sm(P(11, 12.4, G)));
       book.set([BK[0], BK[1] + .12 * Math.sin(G * 1.2), BK[2]], bk * .6, sm(P(3.6, 5.2, G)) * (1 - sm(P(10.5, 12, G))));
       // bubble: hovers, grows heavier with every tag, sags to the ground (G 25.5-29), is emptied and fades while the tower is built
-      const fade = 1 - sm(P(31, 37.5, G)), bob = .06 * Math.sin(G * 1.4);
+      const fade = 1 - sm(P(30, 32.5, G)), bob = .06 * Math.sin(G * 1.4);
       const bcw = [bc0[0], bc0[1] + bob, bc0[2]], bp = lerpV(mouth, bcw, B);
       bub.set(bp, bs0 * B * (1 + .04 * Math.sin(G * 5)) * (1 + .1 * sm(P(25.5, 29, G))), fade, .2 * sm(P(25.5, 29, G)) + .04 * Math.sin(G * 2));
       // tags
@@ -136,6 +136,7 @@ window.STORY = function (K) {
       clouds[1].set([-2.4, 5.4 + .15 * Math.sin(G), -2.6], sm(P(47, 54, G)) * 1.1, 0);
       clouds[2].set([TW[0] + .3, 6.6 + .15 * Math.sin(G * .9), TW[2]], sm(P(45, 52, G)) * 1.2, 0);
     });
+    Wd.gprops = { bub: bub.g, tags };
     return { cnt };
   }
 
@@ -145,13 +146,13 @@ window.STORY = function (K) {
     const sk = G => sm(P(44.6, 51, G)), up = (G, i) => G > 31 + i * .7 && G < 58.5;
     boyP(Wd, 1, t => { const G = Gf(t), base = { pos: SH, facing: G < 30 ? face(AV[0] - SH[0], AV[2] - SH[2]) : face(TW[0] - SH[0], TW[2] - SH[2]) - .2, smile: 0 };
       if (G < 13) return Object.assign(base, { gesture: G > 2.5 ? 'explain' : 'lean', talk: .5 * talkAmt(t, 1), brow: .3, perform: 0 });
-      if (G < 30) return Object.assign(base, { gesture: null, talk: 0, brow: .5, perform: .3, facing: face(hov[0] - SH[0], hov[2] - SH[2]) + .1 });
+      if (G < 30) return Object.assign(base, { gesture: null, talk: 0, brow: .5, perform: .3, facing: face(HV[0] - SH[0], HV[2] - SH[2]) + .1 });
       return Object.assign(base, { gesture: up(G, 0) ? 'bothup' : null, talk: up(G, 0) ? .6 * talkAmt(t, 4) : 0, brow: .5, perform: .25 }); });
     boyP(Wd, 3, t => { const G = Gf(t), base = { pos: AV, facing: G < 30 ? face(SH[0] - AV[0], SH[2] - AV[2]) : face(TW[0] - AV[0], TW[2] - AV[2]) + .1, smile: 0 };
       if (G < 14) return Object.assign(base, { gesture: G < 9 ? 'lean' : 'think', brow: .3, perform: 0, talk: 0 });
-      if (G < 30) return Object.assign(base, { gesture: 'think', brow: .5, perform: 0, facing: face(hov[0] - AV[0], hov[2] - AV[2]) - .1 });
+      if (G < 30) return Object.assign(base, { gesture: 'think', brow: .5, perform: 0, facing: face(HV[0] - AV[0], HV[2] - AV[2]) - .1 });
       return Object.assign(base, { gesture: up(G, 1) ? 'bothup' : null, talk: up(G, 1) ? .6 * talkAmt(t, 5) : 0, brow: .5, perform: .25 }); });
-    [[4, EXA], [5, EXB], [6, EXC]].forEach(([id, p], j) => boyP(Wd, id, t => { const G = Gf(t), looking = G > 14 && G < 31 ? face(hov[0] - p[0], hov[2] - p[2]) : G >= 31 ? face(TW[0] - p[0], TW[2] - p[2]) : face(SH[0] - p[0], SH[2] - p[2]) + .3 * (j - 1);
+    [[4, EXA], [5, EXB], [6, EXC]].forEach(([id, p], j) => boyP(Wd, id, t => { const G = Gf(t), looking = G > 14 && G < 31 ? face(HV[0] - p[0], HV[2] - p[2]) : G >= 31 ? face(TW[0] - p[0], TW[2] - p[2]) : face(SH[0] - p[0], SH[2] - p[2]) + .3 * (j - 1);
       const u = up(G, 2 + j); return { pos: p, facing: looking, gesture: u ? 'bothup' : (G > 14 && G < 31 ? 'think' : null), perform: u ? .2 : .4, smile: G < 14 ? .4 : 0, brow: G < 14 ? 0 : .45, talk: u ? .6 * talkAmt(t, 6 + j) : (G < 14 ? .25 * talkAmt(t, 6 + j) : 0) }; }));
     boyP(Wd, 2, t => { const G = Gf(t), k = sk(G), o2 = o.chaim ? o.chaim(t, G) : null; if (o2) return Object.assign({ pos: CH, facing: face(1, .6), scale: 1 - .14 * k }, o2, SIT);
       return Object.assign({ pos: CH, facing: face(1, .6), gesture: G > 20 ? 'headdown' : null, scale: 1 - .14 * k, smile: G > 20 ? 0 : .25, brow: .55 * k, perform: .5 }, SIT); });
@@ -181,7 +182,7 @@ window.STORY = function (K) {
   function s2(dur) {
     const Wd = yardWorld({ noBall: true }), Gf = t => t; boysG(Wd, Gf); gossip(Wd, Gf);
     Wd.center = [-1, -1];
-    { const c = Cf(.27); Wd.cam = cine([c(0, [-.9, 2.5, 0], 6.6, 1.2, -20, 46), c(4.5, [-1.3, 3.2, -.4], 7.6, 1.0, 8, 46), c(7.5, [-.9, 2.9, -.2], 5.8, .5, 22, 44), c(10.5, [-.5, 2.6, -2.4], 6.2, .4, -8, 46), c(14, [-.7, 2.4, -1.2], 8.0, 1.4, -20, 46)]); }
+    Wd.cam = cine([C(0, [-1.5, 2.2, 0], 7.2, -.1, -20, 46, -.65), C(4.5, [-1.4, 2.3, -.4], 7.6, -.1, 8, 46, -.65), C(7.5, [-1.2, 2.3, -.2], 7.0, -.1, 22, 46, -.65), C(10.5, [-1.0, 2.3, -.8], 7.2, -.1, -8, 46, -.65), C(14, [-.9, 2.3, -.8], 8.0, -.1, -20, 46, -.65)]);
     return Wd;
   }
 
@@ -189,7 +190,7 @@ window.STORY = function (K) {
   function s3(dur) {
     const Wd = yardWorld({ noBall: true }), Gf = t => 14 + t; boysG(Wd, Gf); gossip(Wd, Gf);
     Wd.center = [-1, -1];
-    Wd.cam = cine([C(0, [-.5, 2.5, -.5], 9.6, 2.2, -24, 46), C(5, [-.3, 2.2, .1], 7.6, 1.6, 10, 46), C(9.5, [-.2, 1.9, .3], 6.4, 1.1, 28, 46), C(12.5, [.4, 1.2, .5], 5.2, .6, 30, 46), C(16, [.5, 1.6, .3], 6.4, 1.3, 6, 46)]);
+    Wd.cam = cine([C(0, [-.9, 2.3, -.5], 8.6, -.1, -24, 46, -.45), C(5, [-.7, 2.2, .1], 7.6, -.1, 10, 46, -.1), C(9.5, [-.6, 2.2, .3], 7.2, -.1, 28, 46, -.1), C(12.5, [-.5, 2.2, .5], 7.0, -.1, 30, 46, -.1), C(16, [-.3, 2.2, .3], 7.2, -.1, 6, 46, -.1)]);
     return Wd;
   }
 
@@ -197,7 +198,7 @@ window.STORY = function (K) {
   function s4(dur) {
     const Wd = yardWorld({ noBall: true }), Gf = t => 30 + t; boysG(Wd, Gf); gossip(Wd, Gf);
     Wd.center = [1, -1];
-    Wd.cam = cine([C(0, [.7, 1.2, .4], 5.8, .6, 26, 48), C(3.5, [1.8, 2.4, -1.6], 7.0, -1.3, -80, 54, -1.0), C(8, [2.4, 2.8, -1.8], 7.6, -1.5, -62, 54, -1.0), C(11, [1.0, 2.5, -1.0], 10.0, .7, -30, 50), C(14, [1.0, 2.4, -1.0], 11.0, 1.3, -10, 50)]);
+    Wd.cam = cine([C(0, [-.3, 2.2, .4], 7.0, -.1, 22, 48, -.1), C(3.5, [1.8, 2.4, -1.6], 7.0, -1.3, -30, 54, -1.0), C(8, [2.4, 2.8, -1.8], 7.6, -1.5, -28, 54, -1.0), C(11, [1.0, 2.5, -1.0], 10.0, .7, -30, 50), C(14, [1.0, 2.4, -1.0], 11.0, 1.3, -10, 50)]);
     return Wd;
   }
 
