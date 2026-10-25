@@ -1,0 +1,13 @@
+11:10:18 render_all: production=toldot07 films=film_b part=50s hq=True dry_run=False
+11:10:23 budget WARN: ahead of pace - continue sparingly: spent $997 of $2600 (cap $2340), allowed by now $908 (110% of pace) [render]
+11:10:23 verify gate: PASS for film_b
+11:10:32 film_b: length 371.0s, rendering (part 50 s, 12 includes)
+11:29:13 film_b part 3/8 t0=92.8 d=46.4 -> rc=0
+11:32:42 film_b part 4/8 t0=139.1 d=46.4 -> rc=0
+11:33:32 film_b part 6/8 t0=231.9 d=46.4 -> rc=0
+11:35:30 film_b part 1/8 t0=0.0 d=46.4 -> rc=0
+11:36:07 film_b part 2/8 t0=46.4 d=46.4 -> rc=1
+11:43:28 film_b part 5/8 t0=185.5 d=46.4 -> rc=0
+11:45:29 film_b part 7/8 t0=278.2 d=46.4 -> rc=0
+11:45:52 film_b part 8/8 t0=324.6 d=46.4 -> rc=0
+11:45:52 film_b: failed parts [1], retry round 1

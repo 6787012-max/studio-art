@@ -1,0 +1,905 @@
+{
+ "fps": 30,
+ "films": {
+  "film_b": {
+   "titleDur": 4.2,
+   "recapDur": 9.0,
+   "shots": [
+    {
+     "id": "s01",
+     "brief": "B1",
+     "dur": 14.0,
+     "briefDur": 14.0,
+     "captions": [
+      {
+       "id": "CAP_B_01",
+       "at": 0.5,
+       "until": 7.1
+      },
+      {
+       "id": "CAP_B_02",
+       "at": 7.1,
+       "until": 13.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      7.1
+     ],
+     "words": []
+    },
+    {
+     "id": "s02",
+     "brief": "B2",
+     "dur": 22.0,
+     "briefDur": 22.0,
+     "captions": [
+      {
+       "id": "CAP_B_03",
+       "at": 0.5,
+       "until": 7.57
+      },
+      {
+       "id": "CAP_B_04",
+       "at": 7.57,
+       "until": 14.64
+      },
+      {
+       "id": "CAP_B_05",
+       "at": 14.63,
+       "until": 21.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      7.57,
+      14.63
+     ],
+     "words": []
+    },
+    {
+     "id": "s03",
+     "brief": "B3",
+     "dur": 27.0,
+     "briefDur": 27.0,
+     "captions": [
+      {
+       "id": "CAP_B_06",
+       "at": 0.5,
+       "until": 9.23
+      },
+      {
+       "id": "CAP_B_07",
+       "at": 9.23,
+       "until": 17.96
+      },
+      {
+       "id": "CAP_B_08",
+       "at": 17.97,
+       "until": 26.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      9.23,
+      17.97
+     ],
+     "words": []
+    },
+    {
+     "id": "s04",
+     "brief": "B4",
+     "dur": 22.0,
+     "briefDur": 22.0,
+     "captions": [
+      {
+       "id": "CAP_B_09",
+       "at": 0.5,
+       "until": 7.57
+      },
+      {
+       "id": "CAP_B_10",
+       "at": 7.57,
+       "until": 14.64
+      },
+      {
+       "id": "CAP_B_11",
+       "at": 14.63,
+       "until": 21.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      7.57,
+      14.63
+     ],
+     "words": []
+    },
+    {
+     "id": "s05",
+     "brief": "B5",
+     "dur": 22.0,
+     "briefDur": 22.0,
+     "captions": [
+      {
+       "id": "CAP_B_12",
+       "at": 0.5,
+       "until": 7.57
+      },
+      {
+       "id": "CAP_B_13",
+       "at": 7.57,
+       "until": 14.64
+      },
+      {
+       "id": "CAP_B_14",
+       "at": 14.63,
+       "until": 21.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      7.57,
+      14.63
+     ],
+     "words": []
+    },
+    {
+     "id": "s06",
+     "brief": "B6",
+     "dur": 20.0,
+     "briefDur": 20.0,
+     "captions": [
+      {
+       "id": "CAP_B_15",
+       "at": 0.5,
+       "until": 6.9
+      },
+      {
+       "id": "CAP_B_16",
+       "at": 6.9,
+       "until": 13.3
+      },
+      {
+       "id": "CAP_B_17",
+       "at": 13.3,
+       "until": 19.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      6.9,
+      13.3
+     ],
+     "words": []
+    },
+    {
+     "id": "s07",
+     "brief": "B7",
+     "dur": 32.0,
+     "briefDur": 32.0,
+     "captions": [
+      {
+       "id": "CAP_B_18",
+       "at": 0.5,
+       "until": 8.3
+      },
+      {
+       "id": "CAP_B_19",
+       "at": 8.3,
+       "until": 16.1
+      },
+      {
+       "id": "CAP_B_20",
+       "at": 16.1,
+       "until": 23.9
+      },
+      {
+       "id": "CAP_B_21",
+       "at": 23.9,
+       "until": 31.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      8.3,
+      16.1,
+      23.9
+     ],
+     "words": []
+    },
+    {
+     "id": "s08",
+     "brief": "B8",
+     "dur": 30.0,
+     "briefDur": 30.0,
+     "captions": [
+      {
+       "id": "CAP_B_22",
+       "at": 0.5,
+       "until": 7.8
+      },
+      {
+       "id": "CAP_B_23",
+       "at": 7.8,
+       "until": 15.1
+      },
+      {
+       "id": "CAP_B_24",
+       "at": 15.1,
+       "until": 22.4
+      },
+      {
+       "id": "CAP_B_25",
+       "at": 22.4,
+       "until": 29.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      7.8,
+      15.1,
+      22.4
+     ],
+     "words": []
+    },
+    {
+     "id": "s09",
+     "brief": "B9",
+     "dur": 23.0,
+     "briefDur": 23.0,
+     "captions": [
+      {
+       "id": "CAP_B_26",
+       "at": 0.5,
+       "until": 7.9
+      },
+      {
+       "id": "CAP_B_27",
+       "at": 7.9,
+       "until": 15.3
+      },
+      {
+       "id": "CAP_B_28",
+       "at": 15.3,
+       "until": 22.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      7.9,
+      15.3
+     ],
+     "words": []
+    },
+    {
+     "id": "s10",
+     "brief": "B10",
+     "dur": 26.0,
+     "briefDur": 26.0,
+     "captions": [
+      {
+       "id": "CAP_B_29",
+       "at": 0.5,
+       "until": 8.9
+      },
+      {
+       "id": "CAP_B_30",
+       "at": 8.9,
+       "until": 17.3
+      },
+      {
+       "id": "CAP_B_31",
+       "at": 17.3,
+       "until": 25.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      8.9,
+      17.3
+     ],
+     "words": []
+    },
+    {
+     "id": "s11",
+     "brief": "B11",
+     "dur": 23.0,
+     "briefDur": 23.0,
+     "captions": [
+      {
+       "id": "CAP_B_32",
+       "at": 0.5,
+       "until": 7.9
+      },
+      {
+       "id": "CAP_B_33",
+       "at": 7.9,
+       "until": 15.3
+      },
+      {
+       "id": "CAP_B_34",
+       "at": 15.3,
+       "until": 22.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      7.9,
+      15.3
+     ],
+     "words": []
+    },
+    {
+     "id": "s12",
+     "brief": "B12",
+     "dur": 14.0,
+     "briefDur": 14.0,
+     "captions": [
+      {
+       "id": "CAP_B_35",
+       "at": 0.5,
+       "until": 7.1
+      },
+      {
+       "id": "CAP_B_36",
+       "at": 7.1,
+       "until": 13.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      7.1
+     ],
+     "words": []
+    },
+    {
+     "id": "s13",
+     "brief": "B13",
+     "dur": 36.0,
+     "briefDur": 36.0,
+     "captions": [
+      {
+       "id": "CAP_B_37",
+       "at": 0.5,
+       "until": 9.3
+      },
+      {
+       "id": "CAP_B_38",
+       "at": 9.3,
+       "until": 18.1
+      },
+      {
+       "id": "CAP_B_39",
+       "at": 18.1,
+       "until": 26.9
+      },
+      {
+       "id": "CAP_B_40",
+       "at": 26.9,
+       "until": 35.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      9.3,
+      18.1,
+      26.9
+     ],
+     "words": []
+    },
+    {
+     "id": "s14",
+     "brief": "B14",
+     "dur": 33.0,
+     "briefDur": 33.0,
+     "captions": [
+      {
+       "id": "CAP_B_41",
+       "at": 0.5,
+       "until": 8.55
+      },
+      {
+       "id": "CAP_B_42",
+       "at": 8.55,
+       "until": 16.6
+      },
+      {
+       "id": "CAP_B_43",
+       "at": 16.6,
+       "until": 24.65
+      },
+      {
+       "id": "CAP_B_44",
+       "at": 24.65,
+       "until": 32.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      8.55,
+      16.6,
+      24.65
+     ],
+     "words": []
+    },
+    {
+     "id": "s15",
+     "brief": "B15",
+     "dur": 18.0,
+     "briefDur": 18.0,
+     "captions": [
+      {
+       "id": "CAP_B_45",
+       "at": 0.5,
+       "until": 9.1
+      },
+      {
+       "id": "CAP_B_46",
+       "at": 9.1,
+       "until": 17.7
+      }
+     ],
+     "capAt": [
+      0.5,
+      9.1
+     ],
+     "words": []
+    }
+   ],
+   "audio": {
+    "narration": null,
+    "music": null
+   }
+  }
+ },
+ "shots": [
+  {
+   "id": "s01",
+   "brief": "B1",
+   "dur": 14.0,
+   "briefDur": 14.0,
+   "captions": [
+    {
+     "id": "CAP_B_01",
+     "at": 0.5,
+     "until": 7.1
+    },
+    {
+     "id": "CAP_B_02",
+     "at": 7.1,
+     "until": 13.7
+    }
+   ],
+   "capAt": [
+    0.5,
+    7.1
+   ],
+   "words": []
+  },
+  {
+   "id": "s02",
+   "brief": "B2",
+   "dur": 22.0,
+   "briefDur": 22.0,
+   "captions": [
+    {
+     "id": "CAP_B_03",
+     "at": 0.5,
+     "until": 7.57
+    },
+    {
+     "id": "CAP_B_04",
+     "at": 7.57,
+     "until": 14.64
+    },
+    {
+     "id": "CAP_B_05",
+     "at": 14.63,
+     "until": 21.7
+    }
+   ],
+   "capAt": [
+    0.5,
+    7.57,
+    14.63
+   ],
+   "words": []
+  },
+  {
+   "id": "s03",
+   "brief": "B3",
+   "dur": 27.0,
+   "briefDur": 27.0,
+   "captions": [
+    {
+     "id": "CAP_B_06",
+     "at": 0.5,
+     "until": 9.23
+    },
+    {
+     "id": "CAP_B_07",
+     "at": 9.23,
+     "until": 17.96
+    },
+    {
+     "id": "CAP_B_08",
+     "at": 17.97,
+     "until": 26.7
+    }
+   ],
+   "capAt": [
+    0.5,
+    9.23,
+    17.97
+   ],
+   "words": []
+  },
+  {
+   "id": "s04",
+   "brief": "B4",
+   "dur": 22.0,
+   "briefDur": 22.0,
+   "captions": [
+    {
+     "id": "CAP_B_09",
+     "at": 0.5,
+     "until": 7.57
+    },
+    {
+     "id": "CAP_B_10",
+     "at": 7.57,
+     "until": 14.64
+    },
+    {
+     "id": "CAP_B_11",
+     "at": 14.63,
+     "until": 21.7
+    }
+   ],
+   "capAt": [
+    0.5,
+    7.57,
+    14.63
+   ],
+   "words": []
+  },
+  {
+   "id": "s05",
+   "brief": "B5",
+   "dur": 22.0,
+   "briefDur": 22.0,
+   "captions": [
+    {
+     "id": "CAP_B_12",
+     "at": 0.5,
+     "until": 7.57
+    },
+    {
+     "id": "CAP_B_13",
+     "at": 7.57,
+     "until": 14.64
+    },
+    {
+     "id": "CAP_B_14",
+     "at": 14.63,
+     "until": 21.7
+    }
+   ],
+   "capAt": [
+    0.5,
+    7.57,
+    14.63
+   ],
+   "words": []
+  },
+  {
+   "id": "s06",
+   "brief": "B6",
+   "dur": 20.0,
+   "briefDur": 20.0,
+   "captions": [
+    {
+     "id": "CAP_B_15",
+     "at": 0.5,
+     "until": 6.9
+    },
+    {
+     "id": "CAP_B_16",
+     "at": 6.9,
+     "until": 13.3
+    },
+    {
+     "id": "CAP_B_17",
+     "at": 13.3,
+     "until": 19.7
+    }
+   ],
+   "capAt": [
+    0.5,
+    6.9,
+    13.3
+   ],
+   "words": []
+  },
+  {
+   "id": "s07",
+   "brief": "B7",
+   "dur": 32.0,
+   "briefDur": 32.0,
+   "captions": [
+    {
+     "id": "CAP_B_18",
+     "at": 0.5,
+     "until": 8.3
+    },
+    {
+     "id": "CAP_B_19",
+     "at": 8.3,
+     "until": 16.1
+    },
+    {
+     "id": "CAP_B_20",
+     "at": 16.1,
+     "until": 23.9
+    },
+    {
+     "id": "CAP_B_21",
+     "at": 23.9,
+     "until": 31.7
+    }
+   ],
+   "capAt": [
+    0.5,
+    8.3,
+    16.1,
+    23.9
+   ],
+   "words": []
+  },
+  {
+   "id": "s08",
+   "brief": "B8",
+   "dur": 30.0,
+   "briefDur": 30.0,
+   "captions": [
+    {
+     "id": "CAP_B_22",
+     "at": 0.5,
+     "until": 7.8
+    },
+    {
+     "id": "CAP_B_23",
+     "at": 7.8,
+     "until": 15.1
+    },
+    {
+     "id": "CAP_B_24",
+     "at": 15.1,
+     "until": 22.4
+    },
+    {
+     "id": "CAP_B_25",
+     "at": 22.4,
+     "until": 29.7
+    }
+   ],
+   "capAt": [
+    0.5,
+    7.8,
+    15.1,
+    22.4
+   ],
+   "words": []
+  },
+  {
+   "id": "s09",
+   "brief": "B9",
+   "dur": 23.0,
+   "briefDur": 23.0,
+   "captions": [
+    {
+     "id": "CAP_B_26",
+     "at": 0.5,
+     "until": 7.9
+    },
+    {
+     "id": "CAP_B_27",
+     "at": 7.9,
+     "until": 15.3
+    },
+    {
+     "id": "CAP_B_28",
+     "at": 15.3,
+     "until": 22.7
+    }
+   ],
+   "capAt": [
+    0.5,
+    7.9,
+    15.3
+   ],
+   "words": []
+  },
+  {
+   "id": "s10",
+   "brief": "B10",
+   "dur": 26.0,
+   "briefDur": 26.0,
+   "captions": [
+    {
+     "id": "CAP_B_29",
+     "at": 0.5,
+     "until": 8.9
+    },
+    {
+     "id": "CAP_B_30",
+     "at": 8.9,
+     "until": 17.3
+    },
+    {
+     "id": "CAP_B_31",
+     "at": 17.3,
+     "until": 25.7
+    }
+   ],
+   "capAt": [
+    0.5,
+    8.9,
+    17.3
+   ],
+   "words": []
+  },
+  {
+   "id": "s11",
+   "brief": "B11",
+   "dur": 23.0,
+   "briefDur": 23.0,
+   "captions": [
+    {
+     "id": "CAP_B_32",
+     "at": 0.5,
+     "until": 7.9
+    },
+    {
+     "id": "CAP_B_33",
+     "at": 7.9,
+     "until": 15.3
+    },
+    {
+     "id": "CAP_B_34",
+     "at": 15.3,
+     "until": 22.7
+    }
+   ],
+   "capAt": [
+    0.5,
+    7.9,
+    15.3
+   ],
+   "words": []
+  },
+  {
+   "id": "s12",
+   "brief": "B12",
+   "dur": 14.0,
+   "briefDur": 14.0,
+   "captions": [
+    {
+     "id": "CAP_B_35",
+     "at": 0.5,
+     "until": 7.1
+    },
+    {
+     "id": "CAP_B_36",
+     "at": 7.1,
+     "until": 13.7
+    }
+   ],
+   "capAt": [
+    0.5,
+    7.1
+   ],
+   "words": []
+  },
+  {
+   "id": "s13",
+   "brief": "B13",
+   "dur": 36.0,
+   "briefDur": 36.0,
+   "captions": [
+    {
+     "id": "CAP_B_37",
+     "at": 0.5,
+     "until": 9.3
+    },
+    {
+     "id": "CAP_B_38",
+     "at": 9.3,
+     "until": 18.1
+    },
+    {
+     "id": "CAP_B_39",
+     "at": 18.1,
+     "until": 26.9
+    },
+    {
+     "id": "CAP_B_40",
+     "at": 26.9,
+     "until": 35.7
+    }
+   ],
+   "capAt": [
+    0.5,
+    9.3,
+    18.1,
+    26.9
+   ],
+   "words": []
+  },
+  {
+   "id": "s14",
+   "brief": "B14",
+   "dur": 33.0,
+   "briefDur": 33.0,
+   "captions": [
+    {
+     "id": "CAP_B_41",
+     "at": 0.5,
+     "until": 8.55
+    },
+    {
+     "id": "CAP_B_42",
+     "at": 8.55,
+     "until": 16.6
+    },
+    {
+     "id": "CAP_B_43",
+     "at": 16.6,
+     "until": 24.65
+    },
+    {
+     "id": "CAP_B_44",
+     "at": 24.65,
+     "until": 32.7
+    }
+   ],
+   "capAt": [
+    0.5,
+    8.55,
+    16.6,
+    24.65
+   ],
+   "words": []
+  },
+  {
+   "id": "s15",
+   "brief": "B15",
+   "dur": 18.0,
+   "briefDur": 18.0,
+   "captions": [
+    {
+     "id": "CAP_B_45",
+     "at": 0.5,
+     "until": 9.1
+    },
+    {
+     "id": "CAP_B_46",
+     "at": 9.1,
+     "until": 17.7
+    }
+   ],
+   "capAt": [
+    0.5,
+    9.1
+   ],
+   "words": []
+  }
+ ],
+ "audio": {
+  "narration": null,
+  "music": null
+ },
+ "titleDur": 4.2,
+ "recapDur": 9.0
+}
