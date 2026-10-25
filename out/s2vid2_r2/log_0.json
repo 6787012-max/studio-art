@@ -1,0 +1,18 @@
+[
+ {
+  "name": "mw_s3_t1",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": 322135,
+  "seconds": 39.1
+ },
+ {
+  "name": "mw_s4_t1",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": 482493,
+  "seconds": 35.3
+ }
+]
