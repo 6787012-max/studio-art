@@ -1,0 +1,18 @@
+{
+ "film": "test_p7.html",
+ "status": "PASS",
+ "time": "2026-10-23T14:23:21",
+ "samples": 8,
+ "findings": [],
+ "sheets": {
+  "beat": "C:/projects/_studio-animatzia/productions/toldot07/_verify_p7/_view/_verify_p7_beat_sheet_1.jpg",
+  "seam": "C:/projects/_studio-animatzia/productions/toldot07/_verify_p7/_view/_verify_p7_seams_1.jpg",
+  "phone": "C:/projects/_studio-animatzia/productions/toldot07/_verify_p7/_view/_verify_p7_phone_sheet_1.jpg"
+ },
+ "timing": {
+  "ready_s": 1.6,
+  "gates_s": 141.2,
+  "sheets_s": 774.4,
+  "total_s": 1137.0
+ }
+}
