@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>toldot07 film b</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script>window.__T0=185.5000; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import { film } from '../../lib/stage3d.js';
+import { shots as p1 } from './b_p1.js';
+import { shots as p2 } from './b_p2.js';
+import { shots as p3 } from './b_p3.js';
+import { shots as p4 } from './b_p4.js';
+import { shots as p5 } from './b_p5.js';
+import { shots as p6 } from './b_p6.js';
+import { shots as p7 } from './b_p7.js';
+import { shots as p8 } from './b_p8.js';
+film({ title: 'TITLE', kicker: 'KICKER', recap: ['RECAP_1', 'RECAP_2', 'RECAP_3'], vault: 'captions_vault.json',
+  shots: [...p1, ...p2, ...p3, ...p4, ...p5, ...p6, ...p7, ...p8] });
+</script>
+</html>

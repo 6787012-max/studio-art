@@ -1,0 +1,9 @@
+heavy_lock: 2 heavy jobs already running, waiting for a slot
+heavy_lock: got slot 0 after 415s
+PASS
+
+Sheets (CLEAN, safe to Read):
+  beat: C:/projects/_studio-animatzia/productions/toldot07/_verify_p8/_view/_verify_p8_beat_sheet_1.jpg
+  seam: C:/projects/_studio-animatzia/productions/toldot07/_verify_p8/_view/_verify_p8_seams_1.jpg
+  phone: C:/projects/_studio-animatzia/productions/toldot07/_verify_p8/_view/_verify_p8_phone_sheet_1.jpg
+SUMMARY | PASS | samples=8 | dur=51.0 | P0=0 P1=0 P2=0 | {"ready_s": 2.7, "gates_s": 160.7, "sheets_s": 20.2, "total_s": 184.2}
