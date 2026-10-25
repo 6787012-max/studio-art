@@ -1,0 +1,16 @@
+{
+ "jobs": [
+  {
+   "name": "mw_s3_t1",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "k3k",
+   "prompt": "the man's eyes go wide, his eyebrows shoot up, his mouth drops open in a gasp, a sweat drop slides down his face, slow zoom in, comedic take, head stays still and upright, the blue knitted kippah stays on top of his head the whole time, high quality 3D animated film, expressive cartoon acting, smooth natural motion"
+  },
+  {
+   "name": "mw_s4_t1",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "k4k",
+   "prompt": "the man lifts the lid of the steaming pot a little, steam bursts out, he grins in surprise, the lid rattles, camera pushes in slightly, the blue knitted kippah stays on top of his head the whole time, high quality 3D animated film, expressive cartoon acting, smooth natural motion"
+  }
+ ]
+}
