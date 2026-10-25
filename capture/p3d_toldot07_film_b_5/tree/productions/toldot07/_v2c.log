@@ -1,0 +1,4 @@
+PARTIAL RUN (shot 1) - not a whole-film report
+PASS
+sheet build failed: Command '['C:\\Users\\יוסף שניידר\\AppData\\Local\\Programs\\Python\\Python311\\python.exe', 'C:\\projects\\_studio-animatzia\\tools\\safe_view.py', '--out', 'C
+SUMMARY | PASS | samples=5 | dur=49.0 | P0=0 P1=0 P2=0 | {"ready_s": 90.5, "gates_s": 306.5, "sheets_s": 972.1, "total_s": 1418.2}
