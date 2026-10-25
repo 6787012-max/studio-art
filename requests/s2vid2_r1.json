@@ -1,0 +1,16 @@
+{
+ "jobs": [
+  {
+   "name": "mw_s10_t1",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "k10k",
+   "prompt": "the car brakes hard, the man jolts forward against his seat belt with wide eyes, the pot lid pops and golden soup splashes onto the windshield, a wiper swipes across the glass, comic bounce, the blue knitted kippah stays on top of his head the whole time, high quality 3D animated film, expressive cartoon acting, smooth natural motion"
+  },
+  {
+   "name": "mw_s13_t1",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "k13k",
+   "prompt": "the man walks happily forward carrying the tray of steaming coffee cups, smiling, a man in a white shirt and kippah at the doorway opens the door wide and cheers with raised arms, only men, warm sunrise light, smooth camera, the blue knitted kippah stays on top of his head the whole time, high quality 3D animated film, expressive cartoon acting, smooth natural motion"
+  }
+ ]
+}
