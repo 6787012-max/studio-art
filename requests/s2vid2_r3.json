@@ -1,0 +1,16 @@
+{
+ "jobs": [
+  {
+   "name": "mw_s5_t1",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "k5k",
+   "prompt": "the man runs fast along the street carrying the heavy pot with both hands, golden soup splashes out of the pot in arcs behind him, his body bounces, street lamps glide past, smooth tracking camera, the blue knitted kippah stays on top of his head the whole time, high quality 3D animated film, expressive cartoon acting, smooth natural motion"
+  },
+  {
+   "name": "mw_s8_t1",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "k8k",
+   "prompt": "his smile fades into a sad face, the friend pats his back, the tiny rain cloud drizzles over his head, rain drops fall, slow push-in, head stays upright, the blue knitted kippah stays on top of his head the whole time, high quality 3D animated film, expressive cartoon acting, smooth natural motion"
+  }
+ ]
+}
