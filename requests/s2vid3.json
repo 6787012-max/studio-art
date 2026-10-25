@@ -1,0 +1,10 @@
+{
+ "jobs": [
+  {
+   "name": "mw_s1_t1",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "k1k",
+   "prompt": "the young man at the laptop looks at the screen, the mail notification glows, he smiles and clicks the trackpad, camera slowly pushes in toward the screen, warm cozy night, the blue knitted kippah stays on top of his head the whole time, high quality 3D animated film, expressive cartoon acting, smooth natural motion"
+  }
+ ]
+}
