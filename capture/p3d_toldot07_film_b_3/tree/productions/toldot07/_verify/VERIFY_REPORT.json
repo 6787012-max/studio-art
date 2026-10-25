@@ -1,0 +1,18 @@
+{
+ "film": "test_p2.html",
+ "status": "PASS",
+ "time": "2026-10-23T14:47:33",
+ "samples": 5,
+ "findings": [],
+ "sheets": null,
+ "partial": {
+  "shot": "1",
+  "note": "one-shot run, NOT a whole-film report"
+ },
+ "timing": {
+  "ready_s": 90.5,
+  "gates_s": 306.5,
+  "sheets_s": 972.1,
+  "total_s": 1418.2
+ }
+}

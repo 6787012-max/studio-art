@@ -1,0 +1,32 @@
+{
+ "film": "test_p6.html",
+ "status": "FAIL",
+ "time": "2026-10-23T14:11:32",
+ "samples": 0,
+ "findings": [
+  {
+   "sev": "P0",
+   "code": "NO_SUCH_SHOT",
+   "t": null,
+   "shot": null,
+   "detail": "shot 's11' not in table (s01,s02)",
+   "fix": "use an existing index or id"
+  },
+  {
+   "sev": "P0",
+   "code": "NO_SAMPLES",
+   "t": null,
+   "shot": null,
+   "detail": "0 frames sampled",
+   "fix": "a verify with zero samples is a FAIL; resolve the blocking finding"
+  }
+ ],
+ "sheets": null,
+ "partial": {
+  "shot": "s11",
+  "note": "one-shot run, NOT a whole-film report"
+ },
+ "timing": {
+  "ready_s": 95.0
+ }
+}
