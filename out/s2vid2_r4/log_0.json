@@ -1,0 +1,20 @@
+[
+ {
+  "name": "mw_s1_t1",
+  "ok": false,
+  "tries": [
+   {
+    "model": "space",
+    "error": "CancelledError: "
+   }
+  ]
+ },
+ {
+  "name": "mw_s10_t2",
+  "ok": true,
+  "tries": [],
+  "model": "space",
+  "size": 607667,
+  "seconds": 43.3
+ }
+]
