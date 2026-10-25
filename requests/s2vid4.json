@@ -1,0 +1,10 @@
+{
+ "jobs": [
+  {
+   "name": "mw_s2_t1",
+   "space": "zerogpu-aoti/wan2-2-fp8da-aoti-faster",
+   "ref": "k2k",
+   "prompt": "his finger scrolls along the rows on the laptop screen, colorful calendar blocks slide upward, the man leans closer with interest, slow camera, head stays turned toward the screen, the blue knitted kippah stays on top of his head the whole time, high quality 3D animated film, smooth natural motion"
+  }
+ ]
+}
