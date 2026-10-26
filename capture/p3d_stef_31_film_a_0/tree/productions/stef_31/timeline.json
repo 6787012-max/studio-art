@@ -1,0 +1,624 @@
+{
+ "fps": 30,
+ "total": 215.74,
+ "shots": [
+  {
+   "id": "s01",
+   "type": "title",
+   "dur": 7.65,
+   "captions": [],
+   "capAt": []
+  },
+  {
+   "id": "s02",
+   "type": "quote",
+   "dur": 9.432,
+   "captions": [
+    {
+     "id": "CAP_s02_1",
+     "at": 0.3
+    }
+   ],
+   "capAt": [
+    0.3
+   ]
+  },
+  {
+   "id": "s03",
+   "type": "card",
+   "dur": 12.07,
+   "captions": [
+    {
+     "id": "CAP_s03_1",
+     "at": 0.3
+    },
+    {
+     "id": "CAP_s03_2",
+     "at": 5.07
+    }
+   ],
+   "capAt": [
+    0.3,
+    5.07
+   ]
+  },
+  {
+   "id": "s04",
+   "type": "card",
+   "dur": 9.371,
+   "captions": [
+    {
+     "id": "CAP_s04_1",
+     "at": 0.3
+    },
+    {
+     "id": "CAP_s04_2",
+     "at": 4.8
+    }
+   ],
+   "capAt": [
+    0.3,
+    4.8
+   ]
+  },
+  {
+   "id": "s05",
+   "type": "clip",
+   "dur": 21.949,
+   "captions": [
+    {
+     "id": "CAP_s05_1",
+     "at": 0.2
+    },
+    {
+     "id": "CAP_s05_2",
+     "at": 10.5
+    }
+   ],
+   "capAt": [
+    0.2,
+    10.5
+   ],
+   "clipWindow": [
+    0.0,
+    21.4
+   ]
+  },
+  {
+   "id": "s06",
+   "type": "card",
+   "dur": 12.07,
+   "captions": [
+    {
+     "id": "CAP_s06_1",
+     "at": 0.3
+    },
+    {
+     "id": "CAP_s06_2",
+     "at": 5.07
+    }
+   ],
+   "capAt": [
+    0.3,
+    5.07
+   ]
+  },
+  {
+   "id": "s07",
+   "type": "clip",
+   "dur": 9.95,
+   "captions": [
+    {
+     "id": "CAP_s07_1",
+     "at": 0.2
+    }
+   ],
+   "capAt": [
+    0.2
+   ],
+   "clipWindow": [
+    0.0,
+    9.4
+   ]
+  },
+  {
+   "id": "s08",
+   "type": "card",
+   "dur": 12.07,
+   "captions": [
+    {
+     "id": "CAP_s08_1",
+     "at": 0.3
+    },
+    {
+     "id": "CAP_s08_2",
+     "at": 5.07
+    }
+   ],
+   "capAt": [
+    0.3,
+    5.07
+   ]
+  },
+  {
+   "id": "s09",
+   "type": "clip",
+   "dur": 10.55,
+   "captions": [
+    {
+     "id": "CAP_s09_1",
+     "at": 0.2
+    }
+   ],
+   "capAt": [
+    0.2
+   ],
+   "clipWindow": [
+    0.0,
+    10.0
+   ]
+  },
+  {
+   "id": "s10",
+   "type": "clip",
+   "dur": 18.05,
+   "captions": [
+    {
+     "id": "CAP_s10_1",
+     "at": 0.2
+    },
+    {
+     "id": "CAP_s10_2",
+     "at": 9.0
+    }
+   ],
+   "capAt": [
+    0.2,
+    9.0
+   ],
+   "clipWindow": [
+    0.0,
+    17.5
+   ]
+  },
+  {
+   "id": "s11",
+   "type": "clip",
+   "dur": 15.551,
+   "captions": [
+    {
+     "id": "CAP_s11_1",
+     "at": 0.2
+    },
+    {
+     "id": "CAP_s11_2",
+     "at": 10.5
+    }
+   ],
+   "capAt": [
+    0.2,
+    10.5
+   ],
+   "clipWindow": [
+    0.0,
+    15.0
+   ]
+  },
+  {
+   "id": "s12",
+   "type": "card",
+   "dur": 11.53,
+   "captions": [
+    {
+     "id": "CAP_s12_1",
+     "at": 0.3
+    },
+    {
+     "id": "CAP_s12_2",
+     "at": 4.84
+    }
+   ],
+   "capAt": [
+    0.3,
+    4.84
+   ]
+  },
+  {
+   "id": "s13",
+   "type": "question",
+   "dur": 17.815,
+   "captions": [
+    {
+     "id": "CAP_s13_1",
+     "at": 0.3
+    },
+    {
+     "id": "CAP_s13_2",
+     "at": 10.27
+    }
+   ],
+   "capAt": [
+    0.3,
+    10.27
+   ],
+   "thinkWindow": [
+    5.26,
+    10.27
+   ]
+  },
+  {
+   "id": "s14",
+   "type": "question",
+   "dur": 18.985,
+   "captions": [
+    {
+     "id": "CAP_s14_1",
+     "at": 0.3
+    },
+    {
+     "id": "CAP_s14_2",
+     "at": 11.89
+    }
+   ],
+   "capAt": [
+    0.3,
+    11.89
+   ],
+   "thinkWindow": [
+    6.89,
+    11.89
+   ]
+  },
+  {
+   "id": "s15",
+   "type": "summary",
+   "dur": 21.25,
+   "captions": [
+    {
+     "id": "CAP_s15_1",
+     "at": 0.3
+    },
+    {
+     "id": "CAP_s15_2",
+     "at": 7.18
+    },
+    {
+     "id": "CAP_s15_3",
+     "at": 14.07
+    }
+   ],
+   "capAt": [
+    0.3,
+    7.18,
+    14.07
+   ]
+  },
+  {
+   "id": "s16",
+   "type": "credits",
+   "dur": 7.447,
+   "captions": [
+    {
+     "id": "CAP_s16_1",
+     "at": 0.3
+    }
+   ],
+   "capAt": [
+    0.3
+   ]
+  }
+ ],
+ "films": {
+  "film_a": {
+   "titleDur": 4.2,
+   "recapDur": 0,
+   "shots": [
+    {
+     "id": "s01",
+     "type": "title",
+     "dur": 7.65,
+     "captions": [],
+     "capAt": []
+    },
+    {
+     "id": "s02",
+     "type": "quote",
+     "dur": 9.432,
+     "captions": [
+      {
+       "id": "CAP_s02_1",
+       "at": 0.3
+      }
+     ],
+     "capAt": [
+      0.3
+     ]
+    },
+    {
+     "id": "s03",
+     "type": "card",
+     "dur": 12.07,
+     "captions": [
+      {
+       "id": "CAP_s03_1",
+       "at": 0.3
+      },
+      {
+       "id": "CAP_s03_2",
+       "at": 5.07
+      }
+     ],
+     "capAt": [
+      0.3,
+      5.07
+     ]
+    },
+    {
+     "id": "s04",
+     "type": "card",
+     "dur": 9.371,
+     "captions": [
+      {
+       "id": "CAP_s04_1",
+       "at": 0.3
+      },
+      {
+       "id": "CAP_s04_2",
+       "at": 4.8
+      }
+     ],
+     "capAt": [
+      0.3,
+      4.8
+     ]
+    },
+    {
+     "id": "s05",
+     "type": "clip",
+     "dur": 21.949,
+     "captions": [
+      {
+       "id": "CAP_s05_1",
+       "at": 0.2
+      },
+      {
+       "id": "CAP_s05_2",
+       "at": 10.5
+      }
+     ],
+     "capAt": [
+      0.2,
+      10.5
+     ],
+     "clipWindow": [
+      0.0,
+      21.4
+     ]
+    },
+    {
+     "id": "s06",
+     "type": "card",
+     "dur": 12.07,
+     "captions": [
+      {
+       "id": "CAP_s06_1",
+       "at": 0.3
+      },
+      {
+       "id": "CAP_s06_2",
+       "at": 5.07
+      }
+     ],
+     "capAt": [
+      0.3,
+      5.07
+     ]
+    },
+    {
+     "id": "s07",
+     "type": "clip",
+     "dur": 9.95,
+     "captions": [
+      {
+       "id": "CAP_s07_1",
+       "at": 0.2
+      }
+     ],
+     "capAt": [
+      0.2
+     ],
+     "clipWindow": [
+      0.0,
+      9.4
+     ]
+    },
+    {
+     "id": "s08",
+     "type": "card",
+     "dur": 12.07,
+     "captions": [
+      {
+       "id": "CAP_s08_1",
+       "at": 0.3
+      },
+      {
+       "id": "CAP_s08_2",
+       "at": 5.07
+      }
+     ],
+     "capAt": [
+      0.3,
+      5.07
+     ]
+    },
+    {
+     "id": "s09",
+     "type": "clip",
+     "dur": 10.55,
+     "captions": [
+      {
+       "id": "CAP_s09_1",
+       "at": 0.2
+      }
+     ],
+     "capAt": [
+      0.2
+     ],
+     "clipWindow": [
+      0.0,
+      10.0
+     ]
+    },
+    {
+     "id": "s10",
+     "type": "clip",
+     "dur": 18.05,
+     "captions": [
+      {
+       "id": "CAP_s10_1",
+       "at": 0.2
+      },
+      {
+       "id": "CAP_s10_2",
+       "at": 9.0
+      }
+     ],
+     "capAt": [
+      0.2,
+      9.0
+     ],
+     "clipWindow": [
+      0.0,
+      17.5
+     ]
+    },
+    {
+     "id": "s11",
+     "type": "clip",
+     "dur": 15.551,
+     "captions": [
+      {
+       "id": "CAP_s11_1",
+       "at": 0.2
+      },
+      {
+       "id": "CAP_s11_2",
+       "at": 10.5
+      }
+     ],
+     "capAt": [
+      0.2,
+      10.5
+     ],
+     "clipWindow": [
+      0.0,
+      15.0
+     ]
+    },
+    {
+     "id": "s12",
+     "type": "card",
+     "dur": 11.53,
+     "captions": [
+      {
+       "id": "CAP_s12_1",
+       "at": 0.3
+      },
+      {
+       "id": "CAP_s12_2",
+       "at": 4.84
+      }
+     ],
+     "capAt": [
+      0.3,
+      4.84
+     ]
+    },
+    {
+     "id": "s13",
+     "type": "question",
+     "dur": 17.815,
+     "captions": [
+      {
+       "id": "CAP_s13_1",
+       "at": 0.3
+      },
+      {
+       "id": "CAP_s13_2",
+       "at": 10.27
+      }
+     ],
+     "capAt": [
+      0.3,
+      10.27
+     ],
+     "thinkWindow": [
+      5.26,
+      10.27
+     ]
+    },
+    {
+     "id": "s14",
+     "type": "question",
+     "dur": 18.985,
+     "captions": [
+      {
+       "id": "CAP_s14_1",
+       "at": 0.3
+      },
+      {
+       "id": "CAP_s14_2",
+       "at": 11.89
+      }
+     ],
+     "capAt": [
+      0.3,
+      11.89
+     ],
+     "thinkWindow": [
+      6.89,
+      11.89
+     ]
+    },
+    {
+     "id": "s15",
+     "type": "summary",
+     "dur": 21.25,
+     "captions": [
+      {
+       "id": "CAP_s15_1",
+       "at": 0.3
+      },
+      {
+       "id": "CAP_s15_2",
+       "at": 7.18
+      },
+      {
+       "id": "CAP_s15_3",
+       "at": 14.07
+      }
+     ],
+     "capAt": [
+      0.3,
+      7.18,
+      14.07
+     ]
+    },
+    {
+     "id": "s16",
+     "type": "credits",
+     "dur": 7.447,
+     "captions": [
+      {
+       "id": "CAP_s16_1",
+       "at": 0.3
+      }
+     ],
+     "capAt": [
+      0.3
+     ]
+    }
+   ]
+  }
+ }
+}
