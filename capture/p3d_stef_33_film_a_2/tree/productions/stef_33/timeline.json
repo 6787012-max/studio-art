@@ -1,0 +1,534 @@
+{
+ "fps": 30,
+ "total": 185.92,
+ "shots": [
+  {
+   "id": "s01",
+   "type": "title",
+   "dur": 7.65,
+   "captions": [],
+   "capAt": []
+  },
+  {
+   "id": "s02",
+   "type": "quote",
+   "dur": 15.508,
+   "captions": [
+    {
+     "id": "CAP_s02_1",
+     "at": 0.3
+    }
+   ],
+   "capAt": [
+    0.3
+   ]
+  },
+  {
+   "id": "s03",
+   "type": "card",
+   "dur": 13.15,
+   "captions": [
+    {
+     "id": "CAP_s03_1",
+     "at": 0.3
+    },
+    {
+     "id": "CAP_s03_2",
+     "at": 5.52
+    }
+   ],
+   "capAt": [
+    0.3,
+    5.52
+   ]
+  },
+  {
+   "id": "s04",
+   "type": "card",
+   "dur": 12.07,
+   "captions": [
+    {
+     "id": "CAP_s04_1",
+     "at": 0.3
+    },
+    {
+     "id": "CAP_s04_2",
+     "at": 5.07
+    }
+   ],
+   "capAt": [
+    0.3,
+    5.07
+   ]
+  },
+  {
+   "id": "s05",
+   "type": "clip",
+   "dur": 12.95,
+   "captions": [
+    {
+     "id": "CAP_s05_1",
+     "at": 0.2
+    },
+    {
+     "id": "CAP_s05_2",
+     "at": 6.4
+    }
+   ],
+   "capAt": [
+    0.2,
+    6.4
+   ],
+   "clipWindow": [
+    0.0,
+    12.4
+   ]
+  },
+  {
+   "id": "s06",
+   "type": "card",
+   "dur": 12.07,
+   "captions": [
+    {
+     "id": "CAP_s06_1",
+     "at": 0.3
+    },
+    {
+     "id": "CAP_s06_2",
+     "at": 5.07
+    }
+   ],
+   "capAt": [
+    0.3,
+    5.07
+   ]
+  },
+  {
+   "id": "s07",
+   "type": "card",
+   "dur": 10.45,
+   "captions": [
+    {
+     "id": "CAP_s07_1",
+     "at": 0.3
+    },
+    {
+     "id": "CAP_s07_2",
+     "at": 4.8
+    }
+   ],
+   "capAt": [
+    0.3,
+    4.8
+   ]
+  },
+  {
+   "id": "s08",
+   "type": "card",
+   "dur": 11.53,
+   "captions": [
+    {
+     "id": "CAP_s08_1",
+     "at": 0.3
+    },
+    {
+     "id": "CAP_s08_2",
+     "at": 4.84
+    }
+   ],
+   "capAt": [
+    0.3,
+    4.84
+   ]
+  },
+  {
+   "id": "s09",
+   "type": "clip",
+   "dur": 12.55,
+   "captions": [
+    {
+     "id": "CAP_s09_1",
+     "at": 0.2
+    },
+    {
+     "id": "CAP_s09_2",
+     "at": 5.6
+    }
+   ],
+   "capAt": [
+    0.2,
+    5.6
+   ],
+   "clipWindow": [
+    0.0,
+    12.0
+   ]
+  },
+  {
+   "id": "s10",
+   "type": "card",
+   "dur": 12.07,
+   "captions": [
+    {
+     "id": "CAP_s10_1",
+     "at": 0.3
+    },
+    {
+     "id": "CAP_s10_2",
+     "at": 5.07
+    }
+   ],
+   "capAt": [
+    0.3,
+    5.07
+   ]
+  },
+  {
+   "id": "s11",
+   "type": "question",
+   "dur": 22.0,
+   "captions": [
+    {
+     "id": "CAP_s11_1",
+     "at": 0.3
+    },
+    {
+     "id": "CAP_s11_2",
+     "at": 13.1
+    }
+   ],
+   "capAt": [
+    0.3,
+    13.1
+   ],
+   "thinkWindow": [
+    8.1,
+    13.1
+   ]
+  },
+  {
+   "id": "s12",
+   "type": "question",
+   "dur": 18.22,
+   "captions": [
+    {
+     "id": "CAP_s12_1",
+     "at": 0.3
+    },
+    {
+     "id": "CAP_s12_2",
+     "at": 10.67
+    }
+   ],
+   "capAt": [
+    0.3,
+    10.67
+   ],
+   "thinkWindow": [
+    5.67,
+    10.67
+   ]
+  },
+  {
+   "id": "s13",
+   "type": "summary",
+   "dur": 18.25,
+   "captions": [
+    {
+     "id": "CAP_s13_1",
+     "at": 0.3
+    },
+    {
+     "id": "CAP_s13_2",
+     "at": 9.12
+    }
+   ],
+   "capAt": [
+    0.3,
+    9.12
+   ]
+  },
+  {
+   "id": "s14",
+   "type": "credits",
+   "dur": 7.452,
+   "captions": [
+    {
+     "id": "CAP_s14_1",
+     "at": 0.3
+    }
+   ],
+   "capAt": [
+    0.3
+   ]
+  }
+ ],
+ "films": {
+  "film_a": {
+   "titleDur": 4.2,
+   "recapDur": 0,
+   "shots": [
+    {
+     "id": "s01",
+     "type": "title",
+     "dur": 7.65,
+     "captions": [],
+     "capAt": []
+    },
+    {
+     "id": "s02",
+     "type": "quote",
+     "dur": 15.508,
+     "captions": [
+      {
+       "id": "CAP_s02_1",
+       "at": 0.3
+      }
+     ],
+     "capAt": [
+      0.3
+     ]
+    },
+    {
+     "id": "s03",
+     "type": "card",
+     "dur": 13.15,
+     "captions": [
+      {
+       "id": "CAP_s03_1",
+       "at": 0.3
+      },
+      {
+       "id": "CAP_s03_2",
+       "at": 5.52
+      }
+     ],
+     "capAt": [
+      0.3,
+      5.52
+     ]
+    },
+    {
+     "id": "s04",
+     "type": "card",
+     "dur": 12.07,
+     "captions": [
+      {
+       "id": "CAP_s04_1",
+       "at": 0.3
+      },
+      {
+       "id": "CAP_s04_2",
+       "at": 5.07
+      }
+     ],
+     "capAt": [
+      0.3,
+      5.07
+     ]
+    },
+    {
+     "id": "s05",
+     "type": "clip",
+     "dur": 12.95,
+     "captions": [
+      {
+       "id": "CAP_s05_1",
+       "at": 0.2
+      },
+      {
+       "id": "CAP_s05_2",
+       "at": 6.4
+      }
+     ],
+     "capAt": [
+      0.2,
+      6.4
+     ],
+     "clipWindow": [
+      0.0,
+      12.4
+     ]
+    },
+    {
+     "id": "s06",
+     "type": "card",
+     "dur": 12.07,
+     "captions": [
+      {
+       "id": "CAP_s06_1",
+       "at": 0.3
+      },
+      {
+       "id": "CAP_s06_2",
+       "at": 5.07
+      }
+     ],
+     "capAt": [
+      0.3,
+      5.07
+     ]
+    },
+    {
+     "id": "s07",
+     "type": "card",
+     "dur": 10.45,
+     "captions": [
+      {
+       "id": "CAP_s07_1",
+       "at": 0.3
+      },
+      {
+       "id": "CAP_s07_2",
+       "at": 4.8
+      }
+     ],
+     "capAt": [
+      0.3,
+      4.8
+     ]
+    },
+    {
+     "id": "s08",
+     "type": "card",
+     "dur": 11.53,
+     "captions": [
+      {
+       "id": "CAP_s08_1",
+       "at": 0.3
+      },
+      {
+       "id": "CAP_s08_2",
+       "at": 4.84
+      }
+     ],
+     "capAt": [
+      0.3,
+      4.84
+     ]
+    },
+    {
+     "id": "s09",
+     "type": "clip",
+     "dur": 12.55,
+     "captions": [
+      {
+       "id": "CAP_s09_1",
+       "at": 0.2
+      },
+      {
+       "id": "CAP_s09_2",
+       "at": 5.6
+      }
+     ],
+     "capAt": [
+      0.2,
+      5.6
+     ],
+     "clipWindow": [
+      0.0,
+      12.0
+     ]
+    },
+    {
+     "id": "s10",
+     "type": "card",
+     "dur": 12.07,
+     "captions": [
+      {
+       "id": "CAP_s10_1",
+       "at": 0.3
+      },
+      {
+       "id": "CAP_s10_2",
+       "at": 5.07
+      }
+     ],
+     "capAt": [
+      0.3,
+      5.07
+     ]
+    },
+    {
+     "id": "s11",
+     "type": "question",
+     "dur": 22.0,
+     "captions": [
+      {
+       "id": "CAP_s11_1",
+       "at": 0.3
+      },
+      {
+       "id": "CAP_s11_2",
+       "at": 13.1
+      }
+     ],
+     "capAt": [
+      0.3,
+      13.1
+     ],
+     "thinkWindow": [
+      8.1,
+      13.1
+     ]
+    },
+    {
+     "id": "s12",
+     "type": "question",
+     "dur": 18.22,
+     "captions": [
+      {
+       "id": "CAP_s12_1",
+       "at": 0.3
+      },
+      {
+       "id": "CAP_s12_2",
+       "at": 10.67
+      }
+     ],
+     "capAt": [
+      0.3,
+      10.67
+     ],
+     "thinkWindow": [
+      5.67,
+      10.67
+     ]
+    },
+    {
+     "id": "s13",
+     "type": "summary",
+     "dur": 18.25,
+     "captions": [
+      {
+       "id": "CAP_s13_1",
+       "at": 0.3
+      },
+      {
+       "id": "CAP_s13_2",
+       "at": 9.12
+      }
+     ],
+     "capAt": [
+      0.3,
+      9.12
+     ]
+    },
+    {
+     "id": "s14",
+     "type": "credits",
+     "dur": 7.452,
+     "captions": [
+      {
+       "id": "CAP_s14_1",
+       "at": 0.3
+      }
+     ],
+     "capAt": [
+      0.3
+     ]
+    }
+   ]
+  }
+ }
+}

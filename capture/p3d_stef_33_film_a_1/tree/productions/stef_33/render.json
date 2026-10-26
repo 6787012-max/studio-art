@@ -1,0 +1,13 @@
+{
+ "render_includes": [
+  "lib/figure3d.js",
+  "lib/geo_eretz.js",
+  "lib/motion3d.js",
+  "lib/people_pro.js",
+  "lib/stage3d.js",
+  "node_modules/three/build/three.module.js",
+  "node_modules/three/build/three.core.js",
+  "node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js",
+  "productions/stef_33/il.js"
+ ]
+}
