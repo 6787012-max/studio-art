@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>stef_31 film A</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script type="importmap">{ "imports": {
+  "three": "../../node_modules/three/build/three.module.js",
+  "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+// stef_31 / film A: the Menorah, graphics layer, 215.74 s, silent. No Hebrew here: captions, title and kicker are vault IDs only.
+import { film, THREE, ease, prog, clamp, lerp, path, orbit, label } from '../../lib/stage3d.js';
+import { pushIn, dolly, crane } from '../../lib/motion3d.js';
+import { PAL, H, LX, sm, glow, mkWorld, motes, makeClock, menorah, goldBlock, hammer, sparks, forge, lampCup, halfMeasure, ghostMenorah, redX, bowl, skyDome, snow } from './mn.js';
+
+const INK = 0x6a4a10;
+const fr = x => ((x % 1) + 1) % 1;
+const ord = i => Math.abs(i - 3);
+const mix = (a, b, k) => new THREE.Color(a).lerp(new THREE.Color(b), clamp(k, 0, 1)).getHex();
+const base = o => { const Wd = mkWorld(o); const M = menorah(); Wd.add(M.g); Wd.hero = M.g; return [Wd, M]; };
+const lampsAll = (M, t, k) => { for (let i = 0; i < 7; i++) M.lamp(i, k, t); };
+const tile = (Wd, txt, pos, h) => { const lb = label(Wd, txt, { size: 110, height: h || .5, bg: 'rgba(255,248,224,.95)', color: '#7a4a10', pos }); lb.userData.s0 = lb.scale.clone(); lb.visible = false; return lb; };
+const pop = (sp, k) => { sp.scale.set(sp.userData.s0.x * Math.max(k, .0001), sp.userData.s0.y * Math.max(k, .0001), 1); sp.visible = k > .01; };
+const setRod = (m, A, B) => { const d = new THREE.Vector3(B[0] - A[0], B[1] - A[1], B[2] - A[2]), L = Math.max(d.length(), 1e-4); m.position.set((A[0] + B[0]) / 2, (A[1] + B[1]) / 2, (A[2] + B[2]) / 2); m.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), d.normalize()); m.scale.set(1, L, 1); };
+
+// ---------- s01 : the block, the Menorah rises out of it ----------
+function s01() {
+  const [Wd, M] = base(); const blk = goldBlock(); Wd.add(blk.g); const hg = new THREE.Group(); Wd.add(hg); hg.add(M.g, blk.g); Wd.hero = hg; motes(Wd, 30, 1);
+  Wd.on(t => {
+    const f = 1 - ease.io(prog(t, 1.0, 5.4)); blk.set(1.0 * f, .9 * f, .7 * f); blk.g.visible = f > .01; blk.glow(f * (.75 + .1 * Math.sin(t * 3)));
+    M.grow(ease.io(prog(t, 1.0, 6.2))); for (let i = 0; i < 7; i++) M.lamp(i, sm(t, 6.0 + ord(i) * .25, 6.3 + ord(i) * .25), t);
+  });
+  return Object.assign(Wd, { cam: crane([0, 0, 0], 5.4, 4.2, 1.7, 30, 8, 0, 7.65, { lookDy: 1.2, fov0: 42, fov1: 38 }) });
+}
+// ---------- s02 : hammered gold, one tap per step ----------
+function s02() {
+  const [Wd, M] = base(); const blk = goldBlock(); Wd.add(blk.g); const ham = hammer(); Wd.add(ham); const sp = sparks(Wd, 8); const hg = new THREE.Group(); Wd.add(hg); hg.add(M.g, blk.g); Wd.hero = hg; motes(Wd, 30, 2);
+  const taps = [1, 2, 3, 4, 5, 6, 7, 8];
+  Wd.on(t => { forge({ M, blk, ham, sp, taps }, t); for (let i = 0; i < 7; i++) M.lamp(i, sm(t, 8.5 + ord(i) * .15, 8.8 + ord(i) * .15), t); });
+  return Object.assign(Wd, { cam: orbit([0, 1.1, 0], 5.2, 1.0, -17.5, 17.5, 0, 9.432, 42) });
+}
+// ---------- s03 : one block, no joined parts ----------
+function s03() {
+  const [Wd, M] = base(); motes(Wd, 30, 3); const gh = ghostMenorah(); Wd.add(gh.g); const xs = redX(); Wd.add(xs.g);
+  Wd.on(t => {
+    lampsAll(M, t, 1);
+    const s = -.3 + 1.6 * fr(t / 2.4); const back = ease.io(prog(t, 10.7, 11.9));
+    M.paint({ sweep: s, w: .09, amt: 1, glow: .3 * sm(t, 10.6, 11.6) }); M.ornSweep(s, .09, 1);
+    M.g.position.x = -1.7 * ease.io(prog(t, 5.1, 6.8)) * (1 - back);
+    gh.g.position.x = lerp(7, 1.9, ease.out(prog(t, 5.1, 6.8))); gh.set(prog(t, 7.6, 9.2), ease.in(prog(t, 9.8, 11.0)));
+    xs.g.position.set(gh.g.position.x, 1.3, 1.0); xs.set(Math.min(prog(t, 8.8, 9.4), 1 - ease.in(prog(t, 10.0, 10.9))));
+  });
+  return Object.assign(Wd, { cam: path([[0, [0, 1.7, 5.8], [0, 1.3, 0], 40], [5, [0, 1.5, 4.4], [0, 1.3, 0], 38], [7.5, [.1, 1.8, 7.6], [.1, 1.3, 0], 42], [12.07, [0, 1.7, 7.0], [0, 1.3, 0], 42]]) });
+}
+// ---------- s04 : seven lamps = 1 + 3 + 3 ----------
+function s04() {
+  const [Wd, M] = base(); motes(Wd, 30, 4);
+  const order = [3, 2, 4, 1, 5, 0, 6], T = [.8, 1.8, 1.8, 2.8, 2.8, 3.8, 3.8], dig = [];
+  order.forEach((li, n) => dig.push(tile(Wd, String(n + 1), [LX[li], H + .95, .2], .5)));
+  const g3a = tile(Wd, '3', [-.8, H + 1.15, .2], .6), g1 = tile(Wd, '1', [0, H + 1.15, .2], .6), g3b = tile(Wd, '3', [.8, H + 1.15, .2], .6);
+  Wd.on(t => {
+    order.forEach((li, n) => { M.lamp(li, sm(t, T[n], T[n] + .3), t); pop(dig[n], ease.out(prog(t, T[n] + .1, T[n] + .5)) * (1 - ease.in(prog(t, 4.7, 5.2)))); });
+    const k = sm(t, 4.8, 6.0); const tint = {}; [0, 1, 2].forEach(i => { tint[i] = mix(PAL.gold, PAL.flame, k); }); [4, 5, 6].forEach(i => { tint[i] = mix(PAL.gold, PAL.oil, k); }); tint[3] = mix(PAL.gold, 0xFFF3B8, k);
+    M.paint({ tint, glow: .12 * k });
+    pop(g3a, ease.out(prog(t, 5.6, 6.2))); pop(g1, ease.out(prog(t, 5.9, 6.5))); pop(g3b, ease.out(prog(t, 6.2, 6.8)));
+  });
+  return Object.assign(Wd, { cam: dolly([0, 1.5, 6.4], [0, 1.7, 5.0], [0, 1.8, 0], 0, 9.371, { fov0: 42, fov1: 40 }) });
+}
+// ---------- calm backdrop under a clip ----------
+function calm(keys, seed) {
+  const [Wd, M] = base(); motes(Wd, 70, seed, { w: 12, z0: -4, z1: 3 });
+  Wd.on(t => { for (let i = 0; i < 7; i++) M.lamp(i, .85, t + i * .3); const s = -.3 + 1.6 * fr(t / 9); M.paint({ sweep: s, w: .12, amt: .45 }); M.ornAll(.1 + .06 * Math.sin(t * .9)); });
+  return Object.assign(Wd, { cam: path(keys) });
+}
+const s05 = () => calm([[0, [2.0, 1.7, 6.6], [0, 1.35, 0], 40], [7, [.3, 1.9, 6.9], [0, 1.4, 0], 40], [14, [-1.8, 1.6, 6.5], [0, 1.35, 0], 40], [21.949, [-.4, 1.8, 6.8], [0, 1.4, 0], 40]], 5);
+const s07 = () => calm([[0, [-1.6, 1.6, 6.5], [0, 1.35, 0], 40], [5, [0, 1.9, 6.9], [0, 1.4, 0], 40], [9.95, [1.7, 1.7, 6.6], [0, 1.35, 0], 40]], 7);
+const s09 = () => calm([[0, [1.4, 1.5, 6.4], [0, 1.35, 0], 40], [5, [-.2, 2.0, 6.8], [0, 1.4, 0], 41], [10.55, [-1.5, 1.6, 6.4], [0, 1.35, 0], 40]], 9);
+const s10 = () => calm([[0, [-2.0, 1.7, 6.7], [0, 1.35, 0], 40], [6, [-.3, 1.5, 6.4], [0, 1.4, 0], 40], [12, [1.8, 1.9, 6.8], [0, 1.35, 0], 40], [18.05, [.2, 1.7, 6.5], [0, 1.4, 0], 41]], 10);
+const s11 = () => calm([[0, [1.6, 1.8, 6.6], [0, 1.4, 0], 40], [5, [-.6, 1.6, 6.9], [0, 1.35, 0], 41], [10, [-1.9, 1.7, 6.5], [0, 1.4, 0], 40], [15.551, [.3, 1.9, 6.7], [0, 1.35, 0], 40]], 11);
+// ---------- s06 : the ornaments, counted, part of the one piece ----------
+function s06() {
+  const [Wd, M] = base(); motes(Wd, 26, 6);
+  const cam = path([[0, [.9, .8, 3.0], [0, .75, 0], 36], [2.5, [.7, 1.2, 3.1], [0, 1.2, 0], 36], [5, [.5, 1.8, 3.3], [0, 1.7, 0], 36], [8.5, [0, 1.6, 6.6], [0, 1.3, 0], 40], [12.07, [0, 1.7, 6.2], [0, 1.4, 0], 40]]);
+  const d22 = tile(Wd, '22', [1.5, 1, .3], .45), d11 = tile(Wd, '11', [1.5, 1, .3], .45), d9 = tile(Wd, '9', [1.5, 1, .3], .45);
+  const ow = M.ornWorld(), fl = ow.map(() => glow(Wd, 0xFFE27A, .4));
+  Wd.on(t => {
+    lampsAll(M, t, 1); const cp = cam(t).look[1];
+    M.orn('cup', sm(t, .5, 1.0) * (1 - sm(t, 2.4, 2.9))); M.orn('knob', sm(t, 2.4, 2.9) * (1 - sm(t, 4.3, 4.8)));
+    M.flowerOpen(.1 + .9 * ease.out(prog(t, 4.2, 5.6))); M.orn('flower', sm(t, 4.2, 4.7) * (1 - sm(t, 5.8, 6.3)));
+    [[d22, .7, 2.6], [d11, 2.6, 4.5], [d9, 4.4, 5.9]].forEach(([d, a, b]) => { d.position.y = cp + .5; pop(d, ease.out(prog(t, a, a + .5)) * (1 - ease.in(prog(t, b, b + .4)))); });
+    ow.forEach((o, i) => { const tI = 6.0 + (i % 14) * .06, u = prog(t, tI, tI + 1.3), e = ease.io(u); fl[i].position.set(lerp(o.x, 0, e), o.y, lerp(o.z, .1, e)); fl[i].set(Math.sin(Math.PI * u) * .9); });
+    const gk = sm(t, 7.2, 8.6); M.paint({ glow: .5 * gk, sweep: gk > .01 ? -.3 + 1.6 * fr((t - 7.2) / 3.2) : undefined, w: .1, amt: .6 * gk }); M.ornAll(.55 * gk * (.9 + .1 * Math.sin(t * 3)));
+  });
+  return Object.assign(Wd, { cam });
+}
+// ---------- wick sequence helper (burnt wick out into the bowl, fresh wick in) ----------
+function wickSeq(M, bw, i, t, o) {
+  const rest = [LX[i], H + .16, 0], tA = o.tA + i * o.gap, tD = o.tD + i * o.gapD, top = [bw.x, bw.y + .12, bw.z];
+  if (t < tA) return { pos: rest, dark: true, vis: o.pre !== false, rot: 0 };
+  const u = prog(t, tA, tA + .9);
+  if (u < 1) { const e = ease.io(u); return { pos: [lerp(rest[0], top[0], e), lerp(rest[1], top[1], e) + Math.sin(Math.PI * u) * .7, lerp(rest[2], top[2], e)], dark: true, vis: true, rot: Math.sin(Math.PI * u) * .9 }; }
+  if (t < tD || !o.fresh) return { pos: rest, dark: true, vis: false, rot: 0 };
+  const v = prog(t, tD, tD + .5); return { pos: [rest[0], rest[1] + .9 * (1 - ease.in(v)), rest[2]], dark: false, vis: true, rot: 0 };
+}
+// ---------- s08 : morning, the lamps are cleaned and prepared ----------
+function s08() {
+  const [Wd, M] = base(); motes(Wd, 24, 8); const sk = skyDome(Wd); const bw = bowl(); bw.g.position.set(2.4, 0, .3); Wd.add(bw.g);
+  const sw = glow(Wd, 0xFFF3B8, .8); const B = { x: 2.4, y: bw.topY, z: .3 };
+  Wd.on(t => {
+    sk.set(2 + ease.io(prog(t, 1.0, 8.0)) + ease.io(prog(t, 8.0, 12.07)), t);
+    for (let i = 0; i < 7; i++) { M.wick(i, wickSeq(M, B, i, t, { tA: .9, gap: .45, tD: 7.6, gapD: .33, fresh: true })); }
+    bw.setPile(clamp((0 + [0, 1, 2, 3, 4, 5, 6].reduce((a, i) => a + sm(t, .9 + i * .45 + .9, .9 + i * .45 + 1.1), 0)) / 7, 0, 1));
+    for (let i = 0; i < 7; i++) M.lampShine(i, sm(t, 5.3 + i * .35, 5.55 + i * .35) * (1 - sm(t, 5.9 + i * .35, 6.4 + i * .35)));
+    sw.position.set(lerp(LX[0], LX[6], prog(t, 5.3, 7.4)), H + .2, .1); sw.set(sm(t, 5.3, 5.6) * (1 - sm(t, 7.2, 7.6)));
+  });
+  return Object.assign(Wd, { cam: orbit([.4, 1.8, 0], 5.4, .4, -25, 25, 0, 12.07, 40) });
+}
+// ---------- s12 : half a log, enough to burn all night ----------
+function s12() {
+  const Wd = mkWorld(); const sk = skyDome(Wd); const lc = lampCup(); lc.g.scale.setScalar(2.2); lc.g.position.set(0, .35, 0); Wd.add(lc.g); Wd.hero = lc.g;
+  const st = new THREE.Group(); Wd.add(st);
+  const stand = new THREE.Mesh(new THREE.CylinderGeometry(.95, 1.15, .35, 40), new THREE.MeshToonMaterial({ color: 0xEFD58A })); stand.position.y = .175; st.add(stand);
+  const sn = snow(Wd, 70, 12); motes(Wd, 26, 12);
+  Wd.on(t => {
+    const mu = prog(t, .8, 10.2); sk.set(1 + ease.io(prog(t, 0, 3.0)) + ease.io(prog(t, 8.0, 11.4)), t, mu > 0 && mu < 1 ? mu : null);
+    sn.update(t, sm(t, 2.5, 3.5) * (1 - sm(t, 8.2, 9.5)));
+    lc.setOil(lerp(.95, .07, prog(t, 0, 11.3))); lc.setFlame(1, t);
+  });
+  return Object.assign(Wd, { cam: pushIn([0, 1.6, 6.6], [0, 1.5, 0], .3, 0, 11.53, { fov0: 44, fov1: 38 }) });
+}
+// ---------- s13 : question 1 - it must be ONE piece; the answer ----------
+function s13() {
+  const [Wd, M] = base(); motes(Wd, 30, 13); const blk = goldBlock(); Wd.add(blk.g); const ham = hammer(); Wd.add(ham); const sp = sparks(Wd, 5); const clock = makeClock(Wd, { pos: [0, 3.5, 0], R: .5 });
+  const taps = [14.2, 14.95, 15.7, 16.45, 17.2];
+  Wd.on(t => {
+    clock.set(prog(t, 5.26, 10.27)); clock.g.position.y = 3.5 + .04 * Math.sin(t * 1.3); clock.fade(ease.out(prog(t, .5, 1.2)) * (1 - sm(t, 10.4, 11.0)));
+    const pop2 = ease.out(prog(t, 13.0, 13.9));
+    if (t < 13.95) { M.grow(1); M.explode(prog(t, 10.6, 11.9)); M.gather(prog(t, 12.9, 13.9)); lampsAll(M, t, 1 - sm(t, 12.7, 13.3)); M.paint({ glow: .2 * sm(t, 10.4, 11)  }); forge({ M, blk, ham, sp, taps, noGrow: true, blkScale: pop2 }, t); }
+    else { M.explode(0); M.gather(0); forge({ M, blk, ham, sp, taps }, t); for (let i = 0; i < 7; i++) M.lamp(i, sm(t, 17.2 + ord(i) * .08, 17.5 + ord(i) * .08), t); }
+  });
+  return Object.assign(Wd, { cam: path([[0, [1.2, 2.0, 6.4], [0, 1.9, 0], 42], [10, [-.5, 1.9, 6.2], [0, 1.9, 0], 42], [17.815, [.6, 1.8, 6.0], [0, 1.5, 0], 42]]) });
+}
+// ---------- s14 : question 2 - seven halves = three and a half ----------
+function s14() {
+  const [Wd, M] = base(); motes(Wd, 30, 14); const clock = makeClock(Wd, { pos: [0, 3.5, 0], R: .5 });
+  const bench = new THREE.Group(); Wd.add(bench); bench.add(new THREE.Mesh(new THREE.BoxGeometry(5.0, .1, .7), new THREE.MeshToonMaterial({ color: PAL.goldD })));
+  bench.position.set(0, .85, 1.2); [-2.3, 2.3].forEach(x => { const l = new THREE.Mesh(new THREE.BoxGeometry(.1, .8, .1), new THREE.MeshToonMaterial({ color: PAL.goldD })); l.position.set(x, -.45, 0); bench.add(l); });
+  const half = [], xs = [-1.8, -1.2, -.6, 0, .6, 1.2, 1.8]; for (let i = 0; i < 7; i++) { const j = halfMeasure({ fill: .5 }); j.g.scale.setScalar(.0001); j.g.visible = false; Wd.add(j.g); half.push(j); }
+  const full = []; [-1.5, -.3, .9].forEach(x => { const j = halfMeasure({ fill: 1 }); j.g.visible = false; Wd.add(j.g); full.push(j); });
+  const d3 = tile(Wd, '3', [-.3, 2.15, 1.3], .6);
+  const mergeX = [-1.5, -.3, .9], tgt = [[-1.0, 3.2, .9], [-.2, 3.2, .9], [.6, 3.2, .9]], lampOf = [[0, 1], [2, 3], [4, 5]];
+  const strm = []; for (let i = 0; i < 7; i++) { const m = new THREE.Mesh(new THREE.CylinderGeometry(.03, .03, 1, 8), new THREE.MeshBasicMaterial({ color: PAL.oil, fog: false })); m.visible = false; Wd.add(m); strm.push(m); }
+  const jugOf = [0, 0, 1, 1, 2, 2, 3], pourT = i => 16.1 + i * .2;
+  Wd.on(t => {
+    clock.set(prog(t, 6.89, 11.89)); clock.g.position.y = 3.5 + .04 * Math.sin(t * 1.3); clock.fade(ease.out(prog(t, .5, 1.2)) * (1 - sm(t, 12.1, 12.7)));
+    // halves appear, pair up, merge
+    for (let i = 0; i < 7; i++) {
+      const j = half[i], ap = ease.out(prog(t, 12.0 + i * .12, 12.6 + i * .12)); let x = xs[i], vis = ap > .01;
+      if (i < 6) { const p = i >> 1, u = ease.io(prog(t, 13.2 + p * .35, 14.2 + p * .35)); x = lerp(xs[i], mergeX[p], u); if (u > .985) vis = false; }
+      j.g.position.set(x, .9, 1.2); j.g.scale.setScalar(Math.max(ap, 1e-4) * 1.7); j.g.visible = vis && (i === 6 ? t < 15.0 + 0 || true : true);
+      if (i === 6) { const lift = ease.io(prog(t, 15.6, 16.2)); j.g.position.set(lerp(xs[6], 1.2, lift), lerp(.9, 3.2, lift), lerp(1.2, .9, lift)); }
+    }
+    full.forEach((f, p) => { const u = ease.out(prog(t, 14.1 + p * .35, 14.6 + p * .35)); const lift = ease.io(prog(t, 15.6, 16.2)); f.g.position.set(lerp(mergeX[p], tgt[p][0], lift), lerp(.9, tgt[p][1], lift), lerp(1.2, tgt[p][2], lift)); f.g.scale.setScalar(Math.max(u, 1e-4) * 2.4); f.g.visible = u > .01; });
+    pop(d3, ease.out(prog(t, 14.4, 14.9)) * (1 - ease.in(prog(t, 15.4, 15.8))));
+    // pour
+    const jugs = [full[0], full[1], full[2], half[6]], jugPos = j => [j.g.position.x, j.g.position.y, j.g.position.z], fills = [0, 0, 0, 0];
+    for (let i = 0; i < 7; i++) {
+      const jg = jugOf[i], J = jugs[jg], u = prog(t, pourT(i), pourT(i) + .9), act = Math.sin(Math.PI * clamp(u, 0, 1)); const sc = jg < 3 ? 2.4 : 1.7;
+      const lx = LX[i], dir = Math.sign(lx - J.g.position.x) || -1;
+      if (act > 0) J.g.rotation.z = -dir * 0.7 * Math.min(1, act * 2.2);
+      const A = [J.g.position.x + dir * Math.sin(.7) * .36 * sc * .9, J.g.position.y + Math.cos(.7) * .36 * sc * .9, J.g.position.z], B = [lx, H + .28, 0];
+      const s1 = ease.out(prog(t, pourT(i), pourT(i) + .35)), s0 = ease.in(prog(t, pourT(i) + .55, pourT(i) + .9));
+      const a2 = [lerp(A[0], B[0], s0), lerp(A[1], B[1], s0), lerp(A[2], B[2], s0)], b2 = [lerp(A[0], B[0], s1), lerp(A[1], B[1], s1), lerp(A[2], B[2], s1)];
+      strm[i].visible = u > 0 && u < 1; if (strm[i].visible) setRod(strm[i], a2, b2);
+      M.lamp(i, sm(t, pourT(i) + .6, pourT(i) + .9), t);
+      fills[jg] += sm(t, pourT(i), pourT(i) + .9) * (jg < 3 ? .5 : 1);
+    }
+    jugs.forEach((J, k) => { J.setFill(1 - fills[k]); if (t < 15.6) J.g.rotation.z = 0; if (k < 3) { const last = lampOf[k][1]; if (t > pourT(last) + .9) J.g.rotation.z = 0; } else if (t > pourT(6) + .9) J.g.rotation.z = 0; });
+  });
+  return Object.assign(Wd, { cam: path([[0, [0, 1.0, 6.0], [0, 1.6, 0], 44], [10, [-.3, 1.4, 6.0], [0, 1.8, 0], 44], [18.985, [.2, 2.0, 6.2], [0, 1.9, 0], 43]]) });
+}
+// ---------- s15 : summary glide ----------
+function s15() {
+  const [Wd, M] = base(); motes(Wd, 30, 15); const sk = skyDome(Wd); const blk = goldBlock(); Wd.add(blk.g); const ham = hammer(); Wd.add(ham); const sp = sparks(Wd, 5);
+  const bw = bowl(); bw.g.position.set(2.5, 0, .3); Wd.add(bw.g); const B = { x: 2.5, y: bw.topY, z: .3 };
+  const lc = lampCup(); lc.g.scale.setScalar(1.1); lc.g.position.set(-2.7, 0, .4); Wd.add(lc.g); const taps = [.9, 1.7, 2.5, 3.3, 4.1];
+  Wd.on(t => {
+    sk.set(2 * ease.io(prog(t, 8.5, 11.5)) + ease.io(prog(t, 14.0, 17.0)) + ease.io(prog(t, 17.0, 21.0)), t);
+    forge({ M, blk, ham, sp, taps }, t);
+    const done = t > 4.6;
+    for (let i = 0; i < 7; i++) {
+      const on = sm(t, 7.3 + ord(i) * .4, 7.6 + ord(i) * .4) * (1 - sm(t, 14.4 + i * .4 - .25, 14.4 + i * .4 + .1)); M.lamp(i, on, t);
+      if (t > 13) M.wick(i, wickSeq(M, B, i, t, { tA: 14.4, gap: .4, tD: 99, gapD: 0, fresh: false })); }
+    M.ornAll(0); M.orn('cup', sm(t, 9.6, 10.0) * (1 - sm(t, 10.7, 11.1))); M.orn('knob', sm(t, 10.8, 11.2) * (1 - sm(t, 11.9, 12.3))); M.orn('flower', sm(t, 12.0, 12.4) * (1 - sm(t, 13.1, 13.5)));
+    if (done) M.paint({ glow: .1 * sm(t, 7, 9) });
+    bw.setPile(clamp([0, 1, 2, 3, 4, 5, 6].reduce((a, i) => a + sm(t, 14.4 + i * .4 + .9, 14.4 + i * .4 + 1.1), 0) / 7, 0, 1));
+    const cp = ease.out(prog(t, 17.4, 18.4)); lc.g.scale.setScalar(Math.max(cp, 1e-4) * 1.1); lc.g.visible = cp > .01; lc.setOil(.97); lc.setFlame(sm(t, 18.4, 18.9), t);
+  });
+  return Object.assign(Wd, { cam: path([[0, [-1.8, 1.8, 6.2], [0, 1.0, 0], 40], [4, [.6, 1.6, 5.6], [0, 1.2, 0], 40], [7.5, [0, 1.8, 5.4], [0, 1.7, 0], 38], [11, [0, 1.6, 4.4], [0, 1.8, 0], 38], [14.5, [1.0, 1.7, 6.4], [.5, 1.4, 0], 40], [18, [-.1, 1.7, 7.0], [-.1, 1.3, 0], 42], [21.25, [0, 1.7, 7.0], [0, 1.4, 0], 42]]) });
+}
+// ---------- s16 : credits, calm wide, the light dims ----------
+function s16() {
+  const [Wd, M] = base(); motes(Wd, 60, 16, { w: 12, z0: -4, z1: 3 });
+  Wd.on(t => { for (let i = 0; i < 7; i++) M.lamp(i, 1, t + i * .3); const s = -.3 + 1.6 * fr(t / 5); M.paint({ sweep: s, w: .12, amt: .4, glow: .1 }); const d = sm(t, .5, 7.2); Wd.hemi.intensity = lerp(1.1, .55, d); Wd.sun.intensity = lerp(1.05, .35, d); });
+  return Object.assign(Wd, { cam: dolly([0, 1.6, 5.6], [0, 1.9, 7.4], [0, 1.5, 0], 0, 7.447, { fov0: 40, fov1: 41 }) });
+}
+
+film({
+  title: 'TITLE', kicker: 'KICKER', vault: 'captions_vault.json',
+  shots: [
+    { id: 's01', dur: 7.65, caps: [], build: s01 },
+    { id: 's02', dur: 9.432, caps: ['CAP_s02_1'], capAt: [0.3], build: s02 },
+    { id: 's03', dur: 12.07, caps: ['CAP_s03_1', 'CAP_s03_2'], capAt: [0.3, 5.07], build: s03 },
+    { id: 's04', dur: 9.371, caps: ['CAP_s04_1', 'CAP_s04_2'], capAt: [0.2, 4.64], build: s04 },
+    { id: 's05', dur: 21.949, caps: ['CAP_s05_1', 'CAP_s05_2'], capAt: [0.2, 10.5], build: s05 },
+    { id: 's06', dur: 12.07, caps: ['CAP_s06_1', 'CAP_s06_2'], capAt: [0.3, 5.07], build: s06 },
+    { id: 's07', dur: 9.95, caps: ['CAP_s07_1'], capAt: [0.2], build: s07 },
+    { id: 's08', dur: 12.07, caps: ['CAP_s08_1', 'CAP_s08_2'], capAt: [0.3, 5.07], build: s08 },
+    { id: 's09', dur: 10.55, caps: ['CAP_s09_1'], capAt: [0.2], build: s09 },
+    { id: 's10', dur: 18.05, caps: ['CAP_s10_1', 'CAP_s10_2'], capAt: [0.2, 9.0], build: s10 },
+    { id: 's11', dur: 15.551, caps: ['CAP_s11_1', 'CAP_s11_2'], capAt: [0.2, 10.5], build: s11 },
+    { id: 's12', dur: 11.53, caps: ['CAP_s12_1', 'CAP_s12_2'], capAt: [0.3, 4.84], build: s12 },
+    { id: 's13', dur: 17.815, caps: ['CAP_s13_1', 'CAP_s13_2'], capAt: [0.3, 10.27], build: s13 },
+    { id: 's14', dur: 18.985, caps: ['CAP_s14_1', 'CAP_s14_2'], capAt: [0.3, 11.89], build: s14 },
+    { id: 's15', dur: 21.25, caps: ['CAP_s15_1', 'CAP_s15_2', 'CAP_s15_3'], capAt: [0.3, 7.18, 14.07], build: s15 },
+    { id: 's16', dur: 7.447, caps: ['CAP_s16_1'], capAt: [0.3], build: s16 },
+  ],
+});
+</script>
+</html>

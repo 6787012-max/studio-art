@@ -1,0 +1,4 @@
+16:09:33 render_all: production=stef_31 films=film_a part=50s hq=True dry_run=False
+16:09:37 budget WARN: ahead of pace - continue sparingly: spent $1581 of $2600 (cap $2340), allowed by now $1312 (121% of pace) [render]
+16:09:37 verify gate: PASS for film_a
+16:09:41 film_a: length 215.7s, rendering (part 50 s, 8 includes)
