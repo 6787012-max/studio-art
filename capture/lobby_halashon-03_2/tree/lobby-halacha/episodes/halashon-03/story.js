@@ -11,7 +11,7 @@ window.STORY = function (K) {
 
   // extra head pose (look up) registered into the shared pose table from here (the engine file itself is not modified); falls back to 'point'
   let LOOKUP = false;
-  try { import(new URL('../../_studio-animatzia/lib/figure3d.js', location.href).href).then(m => { if (m && m.POSES) { m.POSES.lookup = { head: [-.5, 0, 0], chest: [-.06, 0, 0] }; m.POSES.lookupw = { head: [-.5, 0, 0], chest: [-.06, 0, 0], armA: [-.3, 0, -.5], armB: [-.3, 0, .5], foreA: [-.5, 0, 0], foreB: [-.5, 0, 0] }; LOOKUP = true; } }).catch(() => {}); } catch (e) {}
+  try { import(new URL('../../_studio-animatzia/lib/figure3d.js', location.href).href).then(m => { if (m && m.POSES) { m.POSES.lookup = { head: [-.5, 0, 0], chest: [-.06, 0, 0] }; m.POSES.lookupw = { head: [-.5, 0, 0], chest: [-.06, 0, 0], armA: [-.45, 0, .08], armB: [-.45, 0, -.08], foreA: [-.95, 0, .3], foreB: [-.95, 0, -.3] }; LOOKUP = true; } }).catch(() => {}); } catch (e) {}
 
   const rays = Wd => { const arr = []; for (let i = 0; i < 6; i++) { const m = new THREE.Mesh(new THREE.PlaneGeometry(.9, 12), new THREE.MeshBasicMaterial({ color: 0xfff0b0, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false })); m.position.set(-8 + i * 2.8, 5, -4 + (i % 2)); m.rotation.z = .4; Wd.add(m); arr.push(m); }
     return k => arr.forEach((m, i) => m.material.opacity = k * (.16 + .06 * Math.sin(i * 2 + k * 3))); };
@@ -28,7 +28,7 @@ window.STORY = function (K) {
   const SCP = [-1.0, 0, -1.8], YKS = [2.9, 0, -1.0];                                                         // balance scale base
 
   // ---------------------------------------------------------------- boys
-  const boyK = (Wd, i, fn) => { const Pp = boyP(Wd, i, fn); Wd.on(() => { const k = Pp.kippa; if (k && !k._rc) { k._rc = 1; k.material = k.material.clone(); k.material.color.set(0x1f2f70); } }); return Pp; };   // dark navy velvet kippa
+  const boyK = (Wd, i, fn) => { const Pp = boyP(Wd, i, fn); Wd.on(() => { const k = Pp.kippa; if (k && !k._rc) { k._rc = 1; k.material = k.material.clone(); k.material.color.set(0x1f2f70); if (BID.includes(i)) { k.scale.multiplyScalar(1.2); } } }); return Pp; };   // dark navy velvet kippa
   const benchBoys = (Wd, fn) => BB.forEach((p, j) => boyK(Wd, BID[j], t => Object.assign({ pos: p, facing: .35 - .3 * j }, SIT, fn(t, j))));
   const chat = (t, j) => ({ perform: .7, talk: .75 * talkAmt(t, j + 2), smile: .25, brow: .2 });
   const standBy = (Wd, fn) => boyK(Wd, 1, t => Object.assign({ pos: YK, facing: face(-.6, .8) }, fn(t)));
@@ -205,7 +205,7 @@ window.STORY = function (K) {
       mt(t, [BB[1][0], SY + .2, SZ], 2.3, L); ring.set([BB[1][0], SY, SZ + .3], P(4.1, 5.3, t) * (t > 4.1 ? 1 : 0), 4.5); });
     Wd.center = [-6.5, -3];
     Wd.cam = seq([0, cine([C(0, [-6.2, 2.6, -3.4], 10.4, 1.0, 20, 46, -.7), C(5, [-6.3, 2.7, -3.4], 9.4, .8, 4, 46, -.7), C(8, [-6.4, 2.7, -3.4], 8.8, .5, -18, 46, -.7)])],
-      [8, cine([C(8, [-6.5, 2.3, -3.4], 7.4, .4, 24, 44, -.7), C(14, [-6.5, 2.5, -3.4], 9.6, 1.2, -6, 46, -.7)])]);
+      [8, cine([C(8, [-6.5, 2.3, -3.4], 6.4, .4, 24, 44, -.7), C(14, [-6.5, 2.4, -3.4], 6.6, .6, -6, 44, -.7)])]);
     return Wd;
   }
 
