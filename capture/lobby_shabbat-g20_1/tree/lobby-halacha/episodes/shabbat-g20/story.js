@@ -23,6 +23,7 @@ window.STORY = function (K) {
     Wd.on(darkKippa(Pn)); return Pn;
   };
   const SABA = { beardLen: 1.2, beard: '#d9d6cf', skin: SKIN[1], glasses: true, pants: '#1b1d24', coat: '#23252e' };
+  const LIFTER = { beardLen: .3, beard: '#8a8a8a', skin: SKIN[3], pants: '#1b1d24', coat: '#4a3a30' };
   const UNCLE = { beardLen: .7, beard: '#4a2c18', skin: SKIN[2], pants: '#1b1d24', coat: '#2a2d3a' };
 
   // ---------------------------------------------------------------- room + props
@@ -174,7 +175,7 @@ window.STORY = function (K) {
     Wd.occ = cd.occ.concat([cn.g, tag.g]); Wd.center = [0, 0];
     Wd.cam = seq([0, cine([C0(0, [0, 1.1, -.9], 6.4, 1.2, 14), C0(3.6, [0, 1.1, -.9], 4.2, .8, -6)])],
       [3.6, cine([C0(3.6, [.1, 1.0, -1.2], 3.4, .9, -10, 42), C0(8.5, [.1, 1.0, -1.2], 3.0, .8, 12, 42)])],
-      [8.5, cine([C0(8.5, [.1, 1.15, -1.0], 3.6, .8, 12, 44), C0(14, [0, 1.15, -.8], 6.0, 1.4, -12, 44)])]);
+      [8.5, cine([C0(8.5, [.1, 1.15, -1.0], 3.6, .8, 12, 44), C0(14, [0, 1.15, -.8], 6.0, 1.4, -12, 44), C0(dur, [0, 1.15, -.8], 6.7, 1.45, -2, 44)])]);
     return Wd;
   }
 
@@ -202,13 +203,15 @@ window.STORY = function (K) {
     const cd = candles(Wd, 0, () => 0), BZ = -1.0, TZ = CZ;
     const tray = box(1.6, .03, .34, 0xd8dde6, { pos: [0, TY + .06, TZ] }); Wd.add(tray);
     const bub = speech(Wd, 'זוכה עבורם', 2.6, 1.2), th = [0, 1, 2, 3].map(() => thread(Wd));
-    const BX = [-1.8, 1.8], lift = t => sm(P(2.2, 3.8, t)) * (1 - sm(P(8.4, 9.8, t))), sp = sparks(Wd, 12, [0, 1.3, TZ], 1.4, 0xffe9a8, .13);
+    const BX = [-1.8, 1.8], lift = t => sm(P(2.4, 3.9, t)) * (1 - sm(P(8.4, 9.8, t))), sp = sparks(Wd, 12, [0, 1.3, TZ], 1.4, 0xffe9a8, .13);
     Wd.on(t => { sp(t); const l = lift(t) * .28; tray.position.set(0, TY + .06 + l, TZ); cd.cs.forEach((c, i) => c.g.position.set((i ? 1 : -1) * CX, CY + l, TZ));
-      bub.set([1.9, 2.15, BZ + .3], popE(P(4.2, 5.2, t)) * .7 * (1 - P(8.6, 9.6, t)), undefined);
+      bub.set([1.0, 2.55, BZ + .3], popE(P(4.2, 5.2, t)) * .7 * (1 - P(8.6, 9.6, t)), undefined);
       let n = 0; BX.forEach(x => [-1, 1].forEach(s => { th[n].set([x, .95, BZ + .3], [s * CX, CY + .15 + l, TZ], sm(P(9.2 + n * .25, 10.4 + n * .25, t)), t, n); n++; })); });
     boyK(Wd, YANKY, t => ({ pos: [BX[0], 0, BZ], facing: face(.6, 1), gesture: null, perform: .4, smile: .5 + .4 * sm(P(9, 11, t)), look: .3 }));
     boyK(Wd, MENDY, t => ({ pos: [BX[1], 0, BZ], facing: face(-.6, 1), scale: MS, perform: .4, smile: .5 + .4 * sm(P(9, 11, t)), look: -.3 }));
-    manK(Wd, UNCLE, t => ({ pos: [0, 0, BZ + .2], facing: 0, gesture: t < 1.8 ? 'rest' : (t < 10 ? 'offer' : 'thumb'), perform: 0, smile: .6, talk: t > 4.2 && t < 8 ? .45 * talkAmt(t, 3) : 0 }), .2);
+    // the host (UNCLE look) stands beside and gestures toward the boys; ANOTHER man (grey short beard) walks to the table and lifts the tray
+    manK(Wd, UNCLE, t => ({ pos: [-1.0, 0, BZ + .2], facing: face(-.45, 1), gesture: t > 2.6 && t < 9.8 ? 'point' : 'rest', perform: t > 2.6 && t < 9.8 ? 0 : .3, smile: .6, look: -.2, talk: t > 2.6 && t < 4.2 ? .3 * talkAmt(t, 5) : 0 }), .4);
+    manK(Wd, LIFTER, t => { const x = Math.max(0, 1.0 - .8 * t), mv = x > .001; return { pos: [x, 0, BZ + .2], facing: mv ? face(-1, 0) : face(0, 1), walk: mv ? t * 6 : undefined, gesture: mv ? null : (t < 10 ? 'offer' : 'thumb'), perform: 0, smile: .6, talk: t > 4.2 && t < 8 ? .45 * talkAmt(t, 3) : 0 }; }, .2);
     Wd.occ = cd.occ.concat([tray, bub.g]); Wd.center = [0, 0];
     Wd.cam = seq([0, cine([C0(0, [0, 1.15, -.5], 6.4, 1.4, -16), C0(3.5, [0, 1.1, -.5], 4.6, 1.0, 8)])],
       [3.5, cine([C0(3.5, [0, 1.15, -.5], 4.4, 1.3, 10, 44), C0(8.5, [0, 1.2, -.5], 4.8, 1.4, -12, 44)])],
