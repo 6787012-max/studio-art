@@ -1,0 +1,8 @@
+P1 | HERO_SMALL | t=3.83 | s01 | hero height 31% of frame in the key shot (< 35%) | Fix: move the camera closer so the hero reaches 35% of the frame height
+P1 | HERO_SMALL | t=42.34 | s04 | hero height 33% of frame in the key shot (< 35%) | Fix: move the camera closer so the hero reaches 35% of the frame height
+P1 | HERO_SMALL | t=54.85 | s05 | hero height 35% of frame in the key shot (< 35%) | Fix: move the camera closer so the hero reaches 35% of the frame height
+P1 | EMPTY_VOID | t=95.28 | s08 | 73% of the frame is one colour (+1 more samples) | Fix: fill the frame: closer camera or more set pieces
+P1 | HERO_SMALL | t=101.65 | s09 | hero height 33% of frame in the key shot (< 35%) | Fix: move the camera closer so the hero reaches 35% of the frame height
+P1 | HERO_SMALL | t=151.11 | s12 | hero height 29% of frame in the key shot (< 35%) | Fix: move the camera closer so the hero reaches 35% of the frame height
+P1 | HERO_SMALL | t=182.19 | s14 | hero height 32% of frame in the key shot (< 35%) | Fix: move the camera closer so the hero reaches 35% of the frame height
+SUMMARY | FAIL | samples=68 | dur=185.9 | P0=0 P1=7 P2=0 | {"ready_s": 2.5, "gates_s": 153.3, "total_s": 156.5}
