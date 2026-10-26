@@ -185,10 +185,10 @@ window.STORY = function (K) {
     const cu = cutter(Wd, { xb: -2.25, y: YL, z: BZc, r: .05, n: 8, th: .055, col: CUC[0], core: CUC[1], times: ct, bowl: () => bowlP, appear: t => P(.3, 1.0, t), seed: 3 });
     const to = cutter(Wd, { xb: -2.5, y: CT + .04 + .085, z: BZc, r: .085, n: 4, th: .0425, shape: 'ball', col: TOM[0], times: tt, bowl: () => bowlP, rank0: 8, appear: t => P(6.4, 7.1, t), seed: 8 });
     const kn = mkKnife(Wd), ck = mark3d(Wd, 'check', 1.0), sk = shock(Wd, 0x6dff9a), gl = glowAt(Wd.scene, 2.2, 0x9dffb0, 0);
-    Wd.occ = [kn, ck.g];
+    Wd.occ = [kn, ck.g, sk.g];
     Wd.on(t => { const useT = t < 6.8, kx = useT ? cu.knifeX(t) : to.knifeX(t), hp = useT ? cu.hump(t) : to.hump(t), a = popE(P(.6, 1.4, t)) * (1 - sm(P(11.2, 11.9, t)));
       kn.visible = a > .01; kn.scale.setScalar(Math.max(.01, a)); kn.position.set(kx + .11, lerp(YL + .26, YL - .03, hp), BZc + .1 + .02 * Math.sin(t * 3)); kn.rotation.z = .12 - .2 * hp;
-      const ok = popE(P(10.6, 11.5, t)); ck.set([bowlP[0], 1.3 + .05 * Math.sin(t * 3), bowlP[2]], ok * .85, .05 * Math.sin(t * 3)); sk.set([bowlP[0], 1.3, bowlP[2]], P(10.6, 11.5, t), 1.5);
+      const ok = popE(P(10.6, 11.5, t)); ck.set([bowlP[0], 1.3 + .05 * Math.sin(t * 3), bowlP[2]], ok * .85, .05 * Math.sin(t * 3)); sk.set([bowlP[0], 1.3, bowlP[2]], P(10.6, 11.5, t), .5);
       gl.position.set(bowlP[0], CT + .25, bowlP[2]); gl.material.opacity = .5 * sm(P(10.6, 11.6, t)); });
     moishy(Wd, t => ({ pos: [-3.95, 0, -1.75], facing: .85, gesture: t > 11 ? 'thumb' : null, perform: t > 11 ? 0 : .5, smile: .5 + .4 * sm(P(10.5, 11.5, t)), look: .3 * Math.sin(t * .9), talk: t > 11 ? .3 * talkAmt(t, 3) : 0 }));
     dudi(Wd, t => ({ pos: [-.1, 0, -1.75], facing: -.85, gesture: t > 11 ? 'cheer' : null, perform: t > 11 ? 0 : .45, smile: .5 + .4 * sm(P(10.5, 11.5, t)), look: -.3 * Math.sin(t * .8) }));
@@ -239,8 +239,8 @@ window.STORY = function (K) {
     // shreds start at the grater face (follow the grater position at t0)
     const shMs = chips(Wd, specs.map(s => Object.assign({}, s, { from: addV(gpos(s.t0), [s._s[0], s._s[1], .05]) })));
     const lamp = bb(Wd, .55, .55, drawLamp, 256), lg = lampGlow(Wd), tag = bb(Wd, .95, .4, drawChange, 512), ck = mark3d(Wd, 'check', 1.0), sk = shock(Wd, 0x6dff9a), sk2 = shock(Wd, 0xfff0a0), gl = glowAt(Wd.scene, 2.6, 0x9dffb0, 0);
-    const arcP = [0, .2, .4, .6, .8, 1].map(u => addV(arcPt(G0, G1, u, .32), [0, .42, .2])), dp = dotPath(Wd, arcP, { color: 0xffd166, r: .06, step: .3 });
-    Wd.occ = [pl, gr, ca, lamp.g, tag.g, ck.g];
+    const arcP = [0, .2, .4, .6, .8, 1].map(u => addV(arcPt(G0, G1, u, .06), [0, .08, .32])), nd0 = Wd.scene.children.length, dp = dotPath(Wd, arcP, { color: 0xffd166, r: .05, step: .3 });   // low arc just above the counter/table: never at head height
+    Wd.occ = [pl, gr, ca, lamp.g, tag.g, ck.g, sk.g, sk2.g].concat(Wd.scene.children.slice(nd0));
     Wd.on(t => { const p = gpos(t); pl.position.set(p[0], p[1], p[2]); gr.position.set(p[0], p[1] + .03, p[2] - .12);
       // carrot strokes (only while grating)
       const g1 = t > 1.0 && t < 4.4, g2 = t > 9.9, ing = g1 || g2, ph = ((t - (g1 ? 1.0 : 9.9)) * 1.25) % 1, stroke = ing ? (ph < .6 ? 1 - ph / .6 : (ph - .6) / .4) : 1, ap = popE(P(.2, .9, t)) * (1 - sm(P(11.6, 12.2, t)) * 0);
@@ -250,7 +250,7 @@ window.STORY = function (K) {
       const la = popE(P(4.3, 5.1, t)) * (1 - sm(P(11.2, 11.9, t))); lamp.set([p[0], p[1] + 1.0 + .05 * Math.sin(t * 3), p[2] - .05], la * 1.0, .06 * Math.sin(t * 5)); lg.position.set(p[0], p[1] + 1.0, p[2] - .1); lg.material.opacity = .55 * la;
       const tg = popE(P(5.0, 5.8, t)) * (1 - sm(P(9.2, 9.9, t))); const mid = arcPt(G0, G1, .5, .32); tag.set([mid[0], mid[1] + .95, mid[2] - .1], tg * 1.0, .03 * Math.sin(t * 3));
       dp.set(t < 9.4 ? P(4.9, 6.6, t) : 1 - P(9.4, 10.3, t), t);
-      const ok = popE(P(12.0, 13.0, t)); ck.set([G1[0], 1.35 + .06 * Math.sin(t * 3), G1[2] - .1], ok * 1.0, .05 * Math.sin(t * 3)); sk.set([G1[0], 1.35, G1[2] - .1], P(12.0, 13.0, t), 2.0); sk2.set([G1[0], 1.35, G1[2] - .1], P(12.3, 13.4, t), 2.6);
+      const ok = popE(P(12.0, 13.0, t)); ck.set([G1[0], 1.35 + .06 * Math.sin(t * 3), G1[2] - .1], ok * 1.0, .05 * Math.sin(t * 3)); sk.set([G1[0], 1.35, G1[2] - .1], P(12.0, 13.0, t), .55); sk2.set([G1[0], 1.35, G1[2] - .1], P(12.3, 13.4, t), .75);
       gl.position.set(G1[0], TT + .3, G1[2]); gl.material.opacity = .75 * sm(P(12.0, 13.0, t)); });
     moishy(Wd, t => { const w = strollX(t, 5.0, 9.4, -3.95, 1.05, -1.75, TZ, .85, .85); return Object.assign(w, { gesture: t > 13 ? 'thumb' : null, perform: (t > 13 || t > 5.0 && t < 9.4) ? 0 : .4, smile: .5 + .4 * sm(P(12, 13, t)), look: .2 * Math.sin(t * .8) }); });
     dudi(Wd, t => { const w = strollX(t, 5.3, 9.7, -.45, 4.95, -1.75, TZ, -.85, -.85); return Object.assign(w, { gesture: t > 13 ? 'cheer' : null, perform: (t > 13 || t > 5.3 && t < 9.7) ? 0 : .4, smile: .5 + .4 * sm(P(12, 13, t)) }); });
