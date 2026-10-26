@@ -1,0 +1,20 @@
+{
+ "film": "film_a.html",
+ "status": "PASS",
+ "time": "2026-10-26T16:07:58",
+ "samples": 78,
+ "findings": [],
+ "sheets": {
+  "beat": "C:/projects/_studio-animatzia/productions/stef_31/_verify/_view/_verify_beat_sheet_1.jpg",
+  "seam": "C:/projects/_studio-animatzia/productions/stef_31/_verify/_view/_verify_seams_1.jpg",
+  "phone": "C:/projects/_studio-animatzia/productions/stef_31/_verify/_view/_verify_phone_sheet_1.jpg",
+  "beat_2": "C:/projects/_studio-animatzia/productions/stef_31/_verify/_view/_verify_beat_sheet_2.jpg",
+  "seam_2": "C:/projects/_studio-animatzia/productions/stef_31/_verify/_view/_verify_seams_2.jpg"
+ },
+ "timing": {
+  "ready_s": 1.4,
+  "gates_s": 137.6,
+  "sheets_s": 63.3,
+  "total_s": 202.6
+ }
+}
