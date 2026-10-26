@@ -1,0 +1,46 @@
+{
+ "film": "film_a.html",
+ "status": "PASS",
+ "time": "2026-10-26T15:50:27",
+ "samples": 118,
+ "findings": [
+  {
+   "sev": "P2",
+   "code": "HERO_SMALL",
+   "t": 49.58,
+   "shot": "s04",
+   "detail": "hero height 27% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  },
+  {
+   "sev": "P2",
+   "code": "HERO_SMALL",
+   "t": 386.18,
+   "shot": "s20",
+   "detail": "hero height 15% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  },
+  {
+   "sev": "P2",
+   "code": "HERO_SMALL",
+   "t": 404.55,
+   "shot": "s21",
+   "detail": "hero height 22% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  }
+ ],
+ "sheets": {
+  "beat": "D:/video-projects/kolhalashon-avshalom-schneider/_shorts_tools/ketzarim/k12_review/verify/_view/verify_beat_sheet_1.jpg",
+  "seam": "D:/video-projects/kolhalashon-avshalom-schneider/_shorts_tools/ketzarim/k12_review/verify/_view/verify_seams_1.jpg",
+  "phone": "D:/video-projects/kolhalashon-avshalom-schneider/_shorts_tools/ketzarim/k12_review/verify/_view/verify_phone_sheet_1.jpg",
+  "beat_2": "D:/video-projects/kolhalashon-avshalom-schneider/_shorts_tools/ketzarim/k12_review/verify/_view/verify_beat_sheet_2.jpg",
+  "seam_2": "D:/video-projects/kolhalashon-avshalom-schneider/_shorts_tools/ketzarim/k12_review/verify/_view/verify_seams_2.jpg",
+  "seam_3": "D:/video-projects/kolhalashon-avshalom-schneider/_shorts_tools/ketzarim/k12_review/verify/_view/verify_seams_3.jpg"
+ },
+ "timing": {
+  "ready_s": 4.3,
+  "gates_s": 318.7,
+  "sheets_s": 173.8,
+  "total_s": 498.1
+ }
+}
