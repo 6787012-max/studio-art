@@ -1,0 +1,151 @@
+{
+ "clip": 449.11,
+ "total": 453.91,
+ "shots": [
+  {
+   "id": "s01",
+   "src_from": 12.45,
+   "clip_from": 0.0,
+   "dur": 12.05
+  },
+  {
+   "id": "s02",
+   "src_from": 24.3,
+   "clip_from": 12.05,
+   "dur": 8.53
+  },
+  {
+   "id": "s03",
+   "src_from": 37.65,
+   "clip_from": 20.58,
+   "dur": 23.65
+  },
+  {
+   "id": "s04",
+   "src_from": 61.3,
+   "clip_from": 44.23,
+   "dur": 10.7
+  },
+  {
+   "id": "s05",
+   "src_from": 72.0,
+   "clip_from": 54.93,
+   "dur": 25.5
+  },
+  {
+   "id": "s06",
+   "src_from": 97.5,
+   "clip_from": 80.43,
+   "dur": 17.0
+  },
+  {
+   "id": "s07",
+   "src_from": 114.5,
+   "clip_from": 97.43,
+   "dur": 15.4
+  },
+  {
+   "id": "s08",
+   "src_from": 129.9,
+   "clip_from": 112.83,
+   "dur": 15.1
+  },
+  {
+   "id": "s09",
+   "src_from": 145.0,
+   "clip_from": 127.93,
+   "dur": 16.0
+  },
+  {
+   "id": "s10",
+   "src_from": 161.0,
+   "clip_from": 143.93,
+   "dur": 16.5
+  },
+  {
+   "id": "s11",
+   "src_from": 177.5,
+   "clip_from": 160.43,
+   "dur": 13.0
+  },
+  {
+   "id": "s12",
+   "src_from": 190.5,
+   "clip_from": 173.43,
+   "dur": 27.5
+  },
+  {
+   "id": "s13",
+   "src_from": 218.0,
+   "clip_from": 200.93,
+   "dur": 35.0
+  },
+  {
+   "id": "s14",
+   "src_from": 253.0,
+   "clip_from": 235.93,
+   "dur": 10.5
+  },
+  {
+   "id": "s15",
+   "src_from": 263.5,
+   "clip_from": 246.43,
+   "dur": 33.0
+  },
+  {
+   "id": "s16",
+   "src_from": 296.5,
+   "clip_from": 279.43,
+   "dur": 22.0
+  },
+  {
+   "id": "s17",
+   "src_from": 318.5,
+   "clip_from": 301.43,
+   "dur": 28.75
+  },
+  {
+   "id": "s18",
+   "src_from": 365.5,
+   "clip_from": 330.18,
+   "dur": 24.52
+  },
+  {
+   "id": "s19",
+   "src_from": 390.3,
+   "clip_from": 354.7,
+   "dur": 23.01
+  },
+  {
+   "id": "s20",
+   "src_from": 418.7,
+   "clip_from": 377.71,
+   "dur": 16.94
+  },
+  {
+   "id": "s21",
+   "src_from": 442.0,
+   "clip_from": 394.65,
+   "dur": 19.8
+  },
+  {
+   "id": "s22",
+   "src_from": 461.8,
+   "clip_from": 414.45,
+   "dur": 25.8
+  },
+  {
+   "id": "s23",
+   "src_from": 487.6,
+   "clip_from": 440.25,
+   "dur": 8.86
+  },
+  {
+   "id": "s24",
+   "src_from": null,
+   "clip_from": 449.11,
+   "dur": 4.8,
+   "note": "end card shot"
+  }
+ ]
+}
