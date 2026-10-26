@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>k12</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>window.__T0=272.3460; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import { film } from '../../lib/stage3d.js';
+import * as K from './k12lib.js';
+import * as X from './k12fx.js';
+const { THREE, COL, PI, sm, sin, cos, bx, cy, bl, mm, grp, put, rng, clamp, lerp, ease, prog, stageWorld, scatter, glowSprite, sparkle, confetti, lightLine, table, roomBack,
+  bread, fruitBowl, bookStack, cup, vase, honeyJar, candle, slipper, shoe, glove, speechBubble, fridge, eyeLamp, earShell, heart, coinStack, digitDisc, chest, lantern, house, bookStand,
+  scrollObj, questionMark, stormCloud, gauge, glasses, fadeRec, setFade, lensFader, cm, orb, pop, elastic, rain, cloud } = K;
+const DURS = [12.05, 8.53, 23.65, 10.7, 25.5, 17.0, 15.4, 15.1, 16.0, 16.5, 13.0, 27.5, 35.0, 10.5, 33.0, 22.0, 28.75, 24.52, 23.01, 16.94, 19.8, 25.8, 8.86, 4.8];
+const V3 = THREE.Vector3, W = (Wd, H) => { Wd.hero = H; return Wd; };
+const rig = (Wd, cam, H) => { Wd.hero = H; return Object.assign(Wd, { cam }); };
+const place = (H, o, x, y, z, s, ry) => { o.position.set(x, y, z); if (s) o.scale.setScalar(s); if (ry) o.rotation.y = ry; H.add(o); return o; };
+// slider: smooth 0..1 between fractions of the shot duration
+const fr = (t, d, a, b) => sm(prog(t, a * d, b * d));
+
+// ----- shared scene pieces -----
+function pie(Wd) {
+  const g = grp(Wd), S = [], F = []; g.add(cy(1.9, 1.95, .08, COL.cream, { pos: [0, .04, 0] }));
+  for (let i = 0; i < 6; i++) {
+    const a0 = i * PI / 3 + .04, a1 = (i + 1) * PI / 3 - .04, sh = new THREE.Shape(); sh.moveTo(0, 0); sh.absarc(0, 0, 1.5, a0, a1, false); sh.lineTo(0, 0);
+    const geo = new THREE.ExtrudeGeometry(sh, { depth: .38, bevelEnabled: false, curveSegments: 14 }); geo.rotateX(-PI / 2);
+    const m = mm(geo, i === 0 ? COL.honey : '#F2DDB0', { box: true, inkW: .018 }), sg = new THREE.Group(); const b = (a0 + a1) / 2; sg.userData.dir = [cos(b), -sin(b)]; sg.position.y = .08; sg.add(m); g.add(sg); S.push(sg); F.push(fadeRec(sg));
+  }
+  return { g, S, F, plate: g };
+}
+function mound() {
+  const g = new THREE.Group(), r = rng(21), cs = [COL.honey, '#F0A93A', '#FFD27A'];
+  for (let i = 0; i < 12; i++) { const rad = 3.4 * Math.pow(1 - i / 13, .85); g.add(cy(rad * .98, rad * 1.04, .38, cs[i % 3], { pos: [0, .19 + i * .36, 0], inkW: .02 })); }
+  for (let i = 0; i < 90; i++) { const k = Math.floor(r() * 11), rad = 3.4 * Math.pow(1 - k / 13, .85), a = r() * PI * 2; g.add(cy(.3, .3, .05, cs[(i + 1) % 3], { pos: [Math.sin(a) * rad * .9, .4 + k * .36, Math.cos(a) * rad * .9], rot: [(r() - .5) * 1.1, r() * 3, (r() - .5) * 1.1], inkW: .008 })); }
+  return g;
+}
+function treeObj() {
+  const g = new THREE.Group(), tr = new THREE.Group(), trunk = cy(.1, .14, 1, COL.woodD, { pos: [0, .5, 0], inkW: .02 }); tr.add(trunk); g.add(tr);
+  const can = new THREE.Group(); g.add(can); [[0, 1.0, 0, 1.3, COL.sageD], [.95, .4, .2, .95, COL.sage], [-.9, .3, -.2, 1.0, '#86BC96'], [.1, 1.9, .1, .9, COL.sageL]].forEach(([x, y, z, r, c]) => can.add(bl(r, c, { pos: [x, y, z], inkW: .03 })));
+  g.userData.set = k => { k = clamp(k, 0, 1); const H = lerp(.5, 4.8, ease.out(k)); tr.scale.set(lerp(.7, 2.2, k), H, lerp(.7, 2.2, k)); can.position.y = H - .2; can.scale.setScalar(Math.max(.001, lerp(.14, 1, ease.io(k)))); g.visible = k > 0.001; };
+  return g;
+}
+
+film({ shots: [
+  // ===== s01: the scroll unrolls, paper confetti, warm light, crane down =====
+  { id: 's01', dur: DURS[0], build() {
+    const d = DURS[0], Wd = stageWorld({ kind: 'meadow', seed: 1 }), H = grp(Wd); H.add(table({ w: 3.6, d: 1.8, cloth: COL.cream }));
+    const sc = scrollObj({ k: 0 }); sc.g.position.set(0, .84, 0); H.add(sc.g); place(H, vase(), 1.3, .83, .4, 1.5); place(H, cup(), -1.3, .83, .5, 1.6); place(H, bread(), -1.2, .83, -.4, 1.4);
+    const gl = glowSprite(0xFFD27A, 6, 0); gl.position.set(0, 1.3, 0); Wd.add(gl); scatter(Wd, { n: 50, area: [-9, 9, -7, 7], avoid: [0, 0, 2.4], seed: 2 });
+    confetti(Wd, { pos: [0, 1, 0], n: 38, t0: .3 * d, life: 5, rise: 3.6, spread: 3.4, stagger: 3.5, seed: 4 });
+    Wd.on(t => { sc.set(ease.io(prog(t, .1 * d, .5 * d))); Wd.hemi.intensity = 1.15 + .5 * fr(t, d, .2, .75); gl.material.opacity = .65 * fr(t, d, .25, .7); });
+    return rig(Wd, cm(d, [[0, [.8, 5.8, 2.6], [0, .8, 0], 40], [.5, [1.3, 3.5, 3.8], [0, 1, 0], 40], [1, [2.4, 1.9, 3.5], [0, 1.05, 0], 40]]), H);
+  } },
+  // ===== s02: the old book opens on its lectern, pages flip, a line of light lifts off =====
+  { id: 's02', dur: DURS[1], build() {
+    const d = DURS[1], Wd = stageWorld({ kind: 'meadow', seed: 2 }), H = grp(Wd), bk = bookStand({ scale: 1.1 }); H.add(bk); const U = bk.userData;
+    scatter(Wd, { n: 40, area: [-8, 8, -6, 6], avoid: [0, 0, 1.5], seed: 3 });
+    lightLine(Wd, { n: 20, r: .06, pt: (t, u) => [-.55 + 1.1 * u, 1.45 + 1.9 * fr(t, d, .55, .92) * (.6 + .4 * sin(u * 3)) + .08 * sin(u * 7 + t * 3), .1 - .3 * fr(t, d, .55, .92)], range: t => [0, 1], a: t => fr(t, d, .45, .55) });
+    Wd.on(t => { U.setOpen(ease.io(prog(t, .04 * d, .3 * d))); for (let i = 0; i < 5; i++) U.setFlip(i, ease.io(prog(t, (.32 + .07 * i) * d, (.32 + .07 * i) * d + .1 * d))); U.glow.material.opacity = .7 * fr(t, d, .4, .8); });
+    return rig(Wd, cm(d, [[0, [.4, 2.4, 4.8], [0, 1.2, 0], 44], [1, [.1, 1.9, 2.8], [0, 1.2, 0], 40]]), H);
+  } },
+  // ===== s03: jar of honey marbles (my portion) / cloud of outline marbles (wanting more) / a turning question mark =====
+  { id: 's03', dur: DURS[2], build() {
+    const d = DURS[2], Wd = stageWorld({ kind: 'meadow', seed: 5 }), H = grp(Wd); H.add(cy(4.2, 4.4, .3, COL.sageL, { pos: [0, .15, 0], inkW: .02 }));
+    const jar = grp(null, [-1.9, .3, 0]); H.add(jar); jar.add(mm(new THREE.CylinderGeometry(.66, .66, 1.5, 28, 1, true), COL.sky, { mat: { transparent: true, opacity: .3, side: THREE.DoubleSide }, pos: [0, .75, 0], inkW: .02 })); jar.add(cy(.7, .7, .06, COL.skyD, { pos: [0, .03, 0], inkW: .01 }));
+    const marb = []; for (let j = 0; j < 5; j++) for (let k = 0; k < 9; k++) { const a = k * 2.4 + j, rr = k === 0 ? 0 : (k < 4 ? .22 : .42); const m = bl(.12, j % 2 ? COL.honey : '#F7C766', { pos: [Math.sin(a) * rr, .14 + j * .2, Math.cos(a) * rr], inkW: .007 }); jar.add(m); marb.push(m); }
+    const jg = glowSprite(0xFFD27A, 3.6, 0); jg.position.set(0, .8, .2); jar.add(jg);
+    const cl = cloud({ seed: 4, size: 1.1, puffs: 5, color: 0xffffff, inkColor: 0xb8c2cc, cast: false }); cl.position.set(1.8, 3.1, 0); cl.scale.setScalar(1.5); Wd.add(cl); const cf = fadeRec(cl); cf.op = .5; setFade(cf, .35);
+    const gm = []; for (let i = 0; i < 12; i++) { const m = bl(.14, '#F5EBD8', { pos: [0, 0, 0], inkW: .008 }); Wd.add(m); gm.push(m); } const gf = gm.map(m => { const f = fadeRec(m); f.op = .55; setFade(f, .85); return f; });
+    const q = questionMark(COL.coral); q.position.set(0, .3, 0); q.scale.setScalar(.01); H.add(q);
+    Wd.on((t, cam) => { q.scale.setScalar(Math.max(.01, 1.25 * elastic(prog(t, .1 * d, .3 * d)))); q.rotation.y = Math.atan2(cam.position.x - q.position.x, cam.position.z - q.position.z) + .2 * sin(t * 1.3); q.position.y = .6 + .12 * sin(t * 1.4);
+      jg.material.opacity = .5 * fr(t, d, .25, .7) * (.8 + .2 * sin(t * 2)); marb.forEach((m, i) => { m.position.y += 0; const s = 1 + .06 * Math.max(0, sin(t * 3 - i * .7)); m.scale.setScalar(s); });
+      gm.forEach((m, i) => { const a = i * 0.9 + t * .25, up = fr(t, d, .55 + i * .02, .95); m.position.set(1.8 + cos(a) * (.9 + .15 * (i % 3)), 2.45 + .12 * sin(t * 1.3 + i) + 1.3 * up + .3 * (i % 3), sin(a) * .5); m.scale.setScalar(1 - .5 * up); }); });
+    scatter(Wd, { n: 40, area: [-10, 10, -8, 8], avoid: [0, 0, 4.6], seed: 6 });
+    H.add(cl); H.add(jar);
+    return rig(Wd, orb([0, 1.4, 0], 7.0, [1.2, 2.0], -28, 30, d, 42, 0), H);
+  } },
+  // ===== s04: the line of light travels from the book across the room and touches the scroll =====
+  { id: 's04', dur: DURS[3], wide: true, build() {
+    const d = DURS[3], Wd = stageWorld({ kind: 'meadow', seed: 7 }), H = grp(Wd), bk = bookStand({ scale: 1.1 }); bk.position.set(-6, 0, 0); bk.rotation.y = .3; bk.userData.setOpen(1); H.add(bk);
+    const tb = table({ w: 3.2, d: 1.6, cloth: COL.cream }); tb.position.set(6, 0, 0); H.add(tb); const sc = scrollObj({ k: 1 }); sc.g.position.set(6, .84, 0); H.add(sc.g);
+    const A = [-6, 1.5, .2], B = [6, 1.15, 0], pt = (t, u) => [lerp(A[0], B[0], u), lerp(A[1], B[1], u) + 2.0 * sin(PI * u) + .1 * sin(u * 14 + t * 4), lerp(A[2], B[2], u) + .9 * sin(PI * 2 * u) * .6];
+    const hu = t => ease.io(prog(t, .04 * d, .62 * d));
+    lightLine(Wd, { n: 46, r: .08, pt, range: t => [Math.max(0, hu(t) - .4), hu(t)], a: t => 1 });
+    const gl = glowSprite(0xFFD27A, 6, 0); gl.position.set(6, 1.1, 0); Wd.add(gl); confetti(Wd, { pos: [6, 1, 0], n: 22, t0: .62 * d, life: 4, rise: 2.4, spread: 2.6, stagger: .8, seed: 9 });
+    scatter(Wd, { n: 70, area: [-12, 12, -6, 6], seed: 8 });
+    Wd.on(t => { gl.material.opacity = .8 * fr(t, d, .6, .8); sc.set(1); });
+    return rig(Wd, t => { const u = hu(t), h = pt(t, u); return { pos: [lerp(-8.8, 3.3, ease.io(prog(t, 0, d))), 2.7, 6.2 - 1.2 * prog(t, 0, d)], look: [h[0] + 1.0, h[1] - .4, 0], fov: 46 }; }, H);
+  } },
+  // ===== s05: the glasses enter, the haze fills the lenses, what is seen through them turns pale =====
+  { id: 's05', dur: DURS[4], build() {
+    const d = DURS[4], Wd = stageWorld({ kind: 'meadow', seed: 9 }), H = grp(Wd); H.add(table({ w: 6.2, d: 2.2, cloth: COL.cream, top: COL.woodL }));
+    const items = [[bread(), -2.4, .3], [fruitBowl(), -1.3, -.2], [bookStack(3, 4), -.2, .1], [cup(), .8, .45], [honeyJar(), 1.5, -.2], [bread(), 2.4, .3], [vase(), -.2, -.6]], FI = [];
+    items.forEach(([o, x, z], i) => { place(H, o, x, .83, z, 2.2); FI.push({ f: fadeRec(o), obj: o, dy: .35 }); });
+    const gl = glasses(Wd, { haze: t => .06 + .88 * fr(t, d, .2, .6) });
+    const f = new V3(), rt = new V3(), up = new V3(), dv = new V3(0, 1, 0);
+    Wd.on((t, cam) => { cam.getWorldDirection(f); rt.crossVectors(f, dv).normalize(); up.crossVectors(rt, f).normalize(); const ox = lerp(-4.6, 0, ease.out(prog(t, 0, .14 * d))) + .9 * sin(prog(t, .14, 1) * 6 * (t / d)), oy = -.1 + .15 * sin(t * .5);
+      gl.g.position.copy(cam.position).addScaledVector(f, 3.0).addScaledVector(rt, ox).addScaledVector(up, oy); gl.g.quaternion.copy(cam.quaternion); });
+    lensFader(Wd, gl, FI); scatter(Wd, { n: 40, area: [-10, 10, -8, 8], avoid: [0, 0, 3.5], seed: 10 });
+    return rig(Wd, cm(d, [[0, [.5, 2.3, 7.6], [0, .95, 0], 45], [.5, [0, 2.1, 6.6], [0, .95, 0], 45], [1, [-.4, 1.9, 5.7], [0, .95, 0], 45]]), H);
+  } },
+  // ===== s06: slippers beside an empty bed rise and stand upright; burst of warm light =====
+  { id: 's06', dur: DURS[5], build() {
+    const d = DURS[5], Wd = stageWorld({ kind: 'room', seed: 11, backdrop: false, w: { skyTop: 0xFFF4E0, skyBottom: 0xFFF4E0, fogColor: 0xFFF4E0 } }), H = grp(Wd); roomBack(Wd, -4.2, 30);
+    const bed = grp(null, [0, 0, -2.4]); H.add(bed); bed.add(bx(2.6, .4, 1.4, COL.wood, { pos: [0, .3, 0] })); bed.add(bx(.2, 1.1, 1.4, COL.woodD, { pos: [-1.3, .7, 0] })); bed.add(bx(.2, .7, 1.4, COL.woodD, { pos: [1.3, .5, 0] })); bed.add(bx(2.4, .22, 1.25, COL.cream, { pos: [0, .6, 0] }));
+    bed.add(bl(.4, COL.white, { scale: [1.2, .4, 1], pos: [-.85, .85, 0] })); for (let i = 0; i < 3; i++) bed.add(bx(1.0, .1, 1.2 - i * .02, i === 1 ? COL.coral : COL.sage, { pos: [.65, .78 + i * .1, 0] }));
+    H.add(cy(2.2, 2.2, .03, '#F6C7B0', { pos: [0, .02, .2], scale: [1, 1, .7], inkW: .008 })); const sp = grp(null, [0, 0, .4]); H.add(sp); const L = slipper(COL.coral), R = slipper(COL.coral); L.position.x = -.3; R.position.x = .3; sp.add(L); sp.add(R); sp.scale.setScalar(2.2);
+    const gl = glowSprite(0xFFC860, 6, 0); gl.position.set(0, .8, .4); Wd.add(gl); confetti(Wd, { pos: [0, .4, .4], n: 34, t0: .5 * d, life: 5, rise: 3.4, spread: 3.0, stagger: 1.2, seed: 12 });
+    Wd.on(t => { const u1 = prog(t, .22 * d, .46 * d), ang = (1 - sm(u1)) * 1.15, hop = .55 * sin(PI * sm(u1)) + .22 * sin(PI * prog(t, .62 * d, .78 * d)) * sm(u1);
+      sp.position.y = .3 * sin(ang) + hop; L.rotation.z = ang; R.rotation.z = -ang; sp.rotation.y = .5 * sin(PI * sm(u1)) * 0 + .3 * sin(PI * prog(t, .62 * d, .78 * d));
+      gl.material.opacity = .9 * pop(t, .46 * d, .54 * d, .62 * d, .95 * d); Wd.hemi.intensity = 1.3 + .5 * pop(t, .46 * d, .52 * d, .6 * d, .9 * d); });
+    return rig(Wd, cm(d, [[0, [-2.4, 1.8, 3.6], [0, .3, -.2], 44], [.5, [-1.4, 1.7, 3.0], [0, .3, 0], 42], [1, [.9, 1.8, 3.4], [0, .4, -.3], 44]]), H);
+  } },
+  // ===== s07: the slippers walk, day-cards flip past, colour dulls to grey, then a spotlight: full colour and larger =====
+  { id: 's07', dur: DURS[6], build() {
+    const d = DURS[6], Wd = stageWorld({ kind: 'meadow', seed: 13 }), H = grp(Wd); H.add(bx(15, .04, 1.7, '#EFE6D0', { pos: [0, .02, 0], inkW: .008 }));
+    const r = rng(5); for (let i = 0; i < 18; i++) H.add(cy(.3, .32, .05, i % 2 ? '#E4D9BF' : '#F4EBD6', { pos: [-7 + i * .85, .05, (r() - .5) * .7], inkW: .008 }));
+    const cards = []; for (let i = 0; i < 12; i++) { const x = -5.5 + i, c = grp(null, [x, 1.0, -1.4]); c.add(bx(.04, 1.0, .04, COL.woodD, { pos: [0, -.5, 0], ink: false }));
+      const body = new THREE.Group(); body.position.y = .1; c.add(body); body.add(bx(.75, .95, .05, COL.cream, { pos: [0, 0, 0] })); body.add(bx(.75, .16, .06, i % 2 ? COL.coral : COL.sky, { pos: [0, .39, 0], inkW: .008 }));
+      for (const [s, n] of [[1, i + 1], [-1, i + 2]]) { const tx = K.canvasTex(128, 128, (cc, w, h) => { cc.fillStyle = '#3A2E28'; cc.font = '900 78px Arial'; cc.textAlign = 'center'; cc.textBaseline = 'middle'; cc.fillText(String(n), w / 2, h / 2 + 4); }); const p = new THREE.Mesh(new THREE.PlaneGeometry(.5, .5), new THREE.MeshBasicMaterial({ map: tx, transparent: true })); p.position.set(0, -.1, s * .04); if (s < 0) p.rotation.y = PI; body.add(p); }
+      H.add(c); cards.push([x, body]); }
+    const pr = grp(null, [0, .0, 0]); H.add(pr); const L = slipper(COL.coral), R = slipper(COL.coral); pr.add(L); pr.add(R); pr.rotation.y = PI / 2; const fL = fadeRec(pr, ['#DAD6DA', '#A9A4AA']); fL.op = 0;
+    const sx = t => lerp(-5.4, 5.4, ease.io(prog(t, .03 * d, .93 * d))), S = t => lerp(2.8, 4.0, fr(t, d, .62, .74));
+    const cone = new THREE.Mesh(new THREE.CylinderGeometry(2.0, 2.6, 9, 24, 1, true), new THREE.MeshBasicMaterial({ color: 0xFFE9A8, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide, fog: false })); cone.userData.keep = true; Wd.add(cone);
+    const gl = glowSprite(0xFFD27A, 4, 0); Wd.add(gl); scatter(Wd, { n: 60, area: [-12, 12, -8, 8], avoid: [0, 0, 2.2], seed: 14 });
+    Wd.on(t => { const x = sx(t), s = S(t), ph = t * 3.6; pr.position.set(x, 0, 0); pr.scale.setScalar(s); const moving = prog(t, .03 * d, .93 * d) < 1;
+      L.position.set(0, (moving ? Math.max(0, sin(ph)) * .16 : 0), .22); R.position.set(0, (moving ? Math.max(0, -sin(ph)) * .16 : 0), -.22); L.position.x = (moving ? .1 * sin(ph) : 0); R.position.x = (moving ? -.1 * sin(ph) : 0);
+      setFade(fL, .8 * fr(t, d, .08, .5) * (1 - fr(t, d, .64, .7))); cone.position.set(x, 4.5, 0); cone.material.opacity = .14 * fr(t, d, .62, .7); gl.position.set(x, .5, 0); gl.material.opacity = .35 * fr(t, d, .62, .72);
+      for (const [cx, b] of cards) b.rotation.y = PI * sm(prog(x, cx - .5, cx + .4)); });
+    return rig(Wd, t => { const x = sx(t), u = fr(t, d, .55, 1); return { pos: [x - 1.2, lerp(2.0, 1.5, u), lerp(3.6, 3.0, u)], look: [x + .5, .6, 0], fov: 42 }; }, H);
+  } },
+  // ===== s08: a shelf builds up (eye, ear, children's shoes, heart); then the glasses slide in and fog them =====
+  { id: 's08', dur: DURS[7], wide: true, build() {
+    const d = DURS[7], Wd = stageWorld({ kind: 'meadow', seed: 15 }), H = grp(Wd);
+    H.add(bx(6.4, 5.2, .16, '#F8EAD0', { pos: [0, 2.6, -.5] })); for (const x of [-3.1, 3.1]) H.add(bx(.2, 5.2, .9, COL.wood, { pos: [x, 2.6, -.2] })); for (const y of [.1, 1.8, 3.5]) H.add(bx(6.4, .14, .9, COL.woodL, { pos: [0, y, -.2] })); H.add(bx(6.6, .16, .98, COL.wood, { pos: [0, 5.2, -.2] }));
+    const eye = eyeLamp(), ear = earShell(), hrt = heart(), sh = [0, 1, 2].map(i => { const g = grp(null); const a = shoe([COL.coral, COL.sky, COL.honey][i], COL.cream), b = shoe([COL.coral, COL.sky, COL.honey][i], COL.cream); a.position.x = -.12; b.position.x = .12; a.rotation.y = .15; b.rotation.y = -.1; g.add(a); g.add(b); return g; });
+    const tops = 1.87, up = 3.57, items = [[eye, -1.9, up, 1.5, .08], [ear, 0, up, 1.5, .2], [hrt, 1.9, up, 1.6, .52], [sh[0], -1.9, tops, 2.3, .32], [sh[1], 0, tops, 2.3, .38], [sh[2], 1.9, tops, 2.3, .44], [bookStack(4, 3), -1.9, .17, 2.4, .14], [bread(), -.2, .17, 2.8, .26], [fruitBowl(), 1.9, .17, 2.2, .46]], FI = [];
+    for (const [o, x, y, s, a] of items) { place(H, o, x, y, -.15, s); o.userData.s0 = s; o.userData.a = a; FI.push({ f: fadeRec(o), obj: o, dy: y > 3 ? .45 : .3 }); }
+    const gx = t => lerp(8, 0, ease.out(prog(t, .6 * d, .76 * d))) + 1.2 * sin(prog(t, .76 * d, d) * PI * 2), gl = glasses(Wd, { haze: t => .92 * fr(t, d, .68, .95), pos: [8, 3.0, 2.2], scale: 2.6 });
+    Wd.on(t => { gl.g.position.set(gx(t), 3.0 + .08 * sin(t), 2.2); for (const [o] of items) o.scale.setScalar(Math.max(.001, o.userData.s0 * elastic(prog(t, o.userData.a * d, o.userData.a * d + 1.0)))); hrt.userData.h.scale.setScalar(1 + .06 * Math.max(0, sin(t * 4)) ); });
+    lensFader(Wd, gl, FI); scatter(Wd, { n: 40, area: [-10, 10, -2, 8], seed: 16 });
+    return rig(Wd, cm(d, [[0, [0, 2.8, 8.0], [0, 2.6, 0], 44], [.6, [.4, 3.0, 10.0], [0, 2.6, 0], 44], [1, [.8, 3.3, 13.0], [0, 2.6, 0], 46]]), H);
+  } },
+  // ===== s09: solid 100 stack greys out and turns see-through while a ghost 200 stack hovers above; camera rises =====
+  { id: 's09', dur: DURS[8], build() {
+    const d = DURS[8], Wd = stageWorld({ kind: 'meadow', seed: 17 }), H = grp(Wd); H.add(cy(1.5, 1.6, .3, COL.cream, { pos: [0, .15, 0], inkW: .02 }));
+    const s1 = grp(null, [0, .3, 0]); H.add(s1); s1.add(coinStack(15, COL.honey)); const d1 = digitDisc('100', COL.coralD); d1.position.set(0, .7, .75); d1.scale.setScalar(1.3); s1.add(d1); const f1 = fadeRec(s1, [COL.grey, COL.greyD]); f1.op = .7;
+    const s2 = grp(null, [0, 3.4, 0]); H.add(s2); s2.add(coinStack(26, COL.honey)); const d2 = digitDisc('200', COL.coralD); d2.position.set(0, 1.1, .75); d2.scale.setScalar(1.5); s2.add(d2); const f2 = fadeRec(s2); f2.op = .62; setFade(f2, .85);
+    Wd.on(t => { setFade(f1, .98 * fr(t, d, .45, .9) * 0 + fr(t, d, .45, .9) * .95); s2.position.y = 3.4 + .1 * sin(t * 1.2); });
+    scatter(Wd, { n: 40, area: [-10, 10, -8, 8], avoid: [0, 0, 2.4], seed: 18 });
+    return rig(Wd, cm(d, [[0, [0, 1.6, 7.0], [0, 1.4, 0], 44], [.5, [.8, 3.2, 10.2], [0, 3.0, 0], 44], [1, [.3, 5.3, 8.0], [0, 4.6, 0], 44]]), H);
+  } },
+  // ===== s10: pie of six: one solid glowing slice, five outlines; orbit =====
+  { id: 's10', dur: DURS[9], build() {
+    const d = DURS[9], Wd = stageWorld({ kind: 'meadow', seed: 19 }), H = grp(Wd); const t0 = table({ w: 6, d: 4, cloth: COL.sageL, round: true }); H.add(t0); const P = pie(Wd); P.g.position.y = .83; H.add(P.g);
+    P.F.forEach((f, i) => { if (i) { f.op = .6; setFade(f, 1); } }); const sg = glowSprite(0xFFD27A, 4, 0); const s0 = P.S[0]; s0.add(sg); sg.position.set(.8, .8, -.3);
+    const spk = []; for (let i = 0; i < 7; i++) { const s = sparkle(i % 2 ? 0xFFD266 : 0xFFFFFF, .5, 0); P.g.add(s); spk.push(s); }
+    Wd.on(t => { const k = fr(t, d, .15, .7); s0.children[0].material.emissive && s0.children[0].material.emissive.setRGB(.55 * k, .35 * k, .05 * k); sg.material.opacity = .85 * k; sg.scale.setScalar(2 + 2.4 * k);
+      spk.forEach((s, i) => { const a = i / 7 * PI * 2 + t * .7, rr = .7 + .45 * sin(t + i); s.position.set(.8 + cos(a) * rr, 1.1 + .35 * sin(t * 2 + i * 1.7), -.3 + sin(a) * rr * .8); s.material.opacity = k * (.5 + .5 * sin(t * 5 + i * 2)); s.scale.setScalar(.25 + .35 * k); s.visible = k > .02; }); });
+    scatter(Wd, { n: 40, area: [-10, 10, -8, 8], avoid: [0, 0, 3.4], seed: 20 });
+    return rig(Wd, orb([0, .85, 0], 5.2, [3.0, 3.6], 120, 220, d, 40, 0), H);
+  } },
+  // ===== s11: the slice lifts, shrinks and becomes a wooden treasure chest that opens with warm light =====
+  { id: 's11', dur: DURS[10], build() {
+    const d = DURS[10], Wd = stageWorld({ kind: 'meadow', seed: 19 }), H = grp(Wd); H.add(table({ w: 6, d: 4, cloth: COL.sageL, round: true })); const P = pie(Wd); P.g.position.y = .83; H.add(P.g);
+    P.F.forEach((f, i) => { if (i) { f.op = .6; setFade(f, 1); } }); const s0 = P.S[0]; s0.children[0].material.emissive.setRGB(.55, .35, .05);
+    const ch = chest(); ch.position.set(0, .9, 0); ch.scale.setScalar(.01); H.add(ch); const lid = ch.userData.lid;
+    const gl = glowSprite(0xFFD27A, 5, 0); gl.position.set(0, 1.6, 0); Wd.add(gl); const beam = new THREE.Mesh(new THREE.ConeGeometry(.9, 4, 20, 1, true), new THREE.MeshBasicMaterial({ color: 0xFFE3A0, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide, fog: false })); beam.position.set(0, 3.0, 0); beam.rotation.x = PI; beam.userData.keep = true; Wd.add(beam);
+    const spk = []; for (let i = 0; i < 8; i++) { const s = sparkle(i % 2 ? 0xFFD266 : 0xFFFFFF, .4, 0); Wd.add(s); spk.push(s); }
+    Wd.on(t => { const lift = ease.io(prog(t, .06 * d, .4 * d)), shr = fr(t, d, .3, .5); const dir = s0.userData.dir;
+      s0.position.set(dir[0] * .06 * (1 - lift) - dir[0] * .6 * lift, .08 + 1.5 * lift, dir[1] * .06 * (1 - lift) - dir[1] * .6 * lift); s0.scale.setScalar(Math.max(.001, 1 - .95 * shr)); s0.visible = shr < .99;
+      P.F.forEach((f, i) => { if (i) setFade(f, 1); }); P.S.forEach((s, i) => { if (i) s.scale.setScalar(Math.max(.001, 1 - .5 * fr(t, d, .5, .8))); });
+      ch.scale.setScalar(Math.max(.01, 1.5 * elastic(prog(t, .42 * d, .56 * d)))); lid.rotation.x = -1.9 * ease.io(prog(t, .6 * d, .82 * d)); const o = fr(t, d, .62, .9);
+      gl.material.opacity = .9 * o; beam.material.opacity = .28 * o; beam.scale.y = .2 + o; beam.position.y = .9 + 2 * o;
+      spk.forEach((s, i) => { const u = ((t / d * 2 + i * .13) % 1); s.position.set(sin(i * 2.1) * .5 * u, 1.2 + 2.2 * u, cos(i * 1.7) * .4 * u); s.material.opacity = o * (1 - u); s.scale.setScalar(.3 + .2 * (1 - u)); s.visible = o > .05; }); });
+    scatter(Wd, { n: 40, area: [-10, 10, -8, 8], avoid: [0, 0, 3.4], seed: 20 });
+    return rig(Wd, cm(d, [[0, [-1.2, 3.6, 5.6], [0, 1.0, 0], 42], [1, [.4, 1.9, 3.2], [0, 1.15, 0], 40]]), H);
+  } },
+  // ===== s12: the gold mountain keeps growing, fogged glasses on top, the gauge needle stays at zero =====
+  { id: 's12', dur: DURS[11], wide: true, build() {
+    const d = DURS[11], Wd = stageWorld({ kind: 'meadow', seed: 23, shadowExt: 24 }), H = grp(Wd), m = mound(); H.add(m); const S = t => lerp(.3, 1, ease.out(prog(t, 0, .92 * d)));
+    const gl = glasses(Wd, { haze: t => .93 + .04 * sin(t * .8), scale: 1.5 }); const ga = gauge(); ga.position.set(5.6, 0, 1.6); ga.scale.setScalar(1.35); ga.rotation.y = -.5; H.add(ga);
+    scatter(Wd, { n: 50, area: [-12, 12, -9, 9], avoid: [0, 0, 4.4], seed: 24 });
+    Wd.on(t => { const s = S(t); m.scale.setScalar(s); gl.g.position.set(0, 4.3 * s + .55, .6); gl.g.rotation.set(-.3, 0, 0); ga.userData.needle.rotation.z = PI * .3 + .035 * sin(t * 9) + .02 * sin(t * 23); });
+    return rig(Wd, t => { const u = ease.io(clamp(t / d, 0, 1)), a = lerp(-20, 22, u) * K.D; return { pos: [sin(a) * lerp(13, 10.5, u) + 1, lerp(1.4, 7.8, u), cos(a) * lerp(13, 10.5, u)], look: [1.6, lerp(1.5, 3.6, u), 0], fov: 46 }; }, H);
+  } },
+  // ===== s13: five beats of thanks; the glasses clear in steps =====
+  { id: 's13', dur: DURS[12], wide: true, build() {
+    const d = DURS[12], Wd = stageWorld({ kind: 'room', seed: 25, backdrop: false, w: { skyTop: 0xA8D8F0, skyBottom: 0xFFF4E0 } }); roomBack(Wd, -7.5, 40); const B = { bubble: .2, spark: .35, slippers: .45, fridge: .6, gloves: .72 };
+    const haze = t => .95 - .17 * fr(t, d, B.bubble, B.bubble + .04) - .18 * fr(t, d, B.spark, B.spark + .04) - .15 * fr(t, d, B.slippers, B.slippers + .04) - .17 * fr(t, d, B.fridge, B.fridge + .04) - .16 * fr(t, d, B.gloves, B.gloves + .04) - .12 * fr(t, d, .78, .85);
+    const S = X.thanksSet(Wd, { haze, lit: (k, t) => fr(t, d, B[k], B[k] + .05), spark: t => fr(t, d, B.spark, B.spark + .03), sparkRing: t => prog(t, B.spark * d, B.spark * d + 1.6), fridgeOpen: t => 1.7 * fr(t, d, B.fridge, B.fridge + .05) });
+    scatter(Wd, { n: 40, area: [-9, 9, -5, 6], avoid: [0, 0, 3.8], seed: 26 });
+    return rig(Wd, orb([0, 0, 0], 8.4, 3.6, -26, 26, d, 40, 1.2), S.g);
+  } },
+  // ===== s14: back to the scroll, the question mark returns and turns; the scroll rolls up =====
+  { id: 's14', dur: DURS[13], build() {
+    const d = DURS[13], Wd = stageWorld({ kind: 'meadow', seed: 27 }), H = grp(Wd); H.add(table({ w: 3.6, d: 1.8, cloth: COL.cream })); const sc = scrollObj({ k: 1 }); sc.g.position.set(0, .84, 0); H.add(sc.g);
+    const q = questionMark(COL.coral); q.scale.setScalar(1.3); H.add(q); place(H, vase(), 1.3, .83, .4, 1.5); place(H, cup(), -1.3, .83, .5, 1.6);
+    Wd.on((t, cam) => { q.rotation.y = Math.atan2(cam.position.x - q.position.x, cam.position.z - q.position.z) + .2 * sin(t * 1.3); q.position.set(0, 1.35 + .06 * sin(t * 1.4), 0); q.scale.setScalar(Math.max(.01, .8 * elastic(prog(t, 0, .2 * d)) * (1 - .4 * fr(t, d, .7, .95)))); sc.set(1 - ease.io(prog(t, .5 * d, .95 * d))); });
+    scatter(Wd, { n: 50, area: [-9, 9, -7, 7], avoid: [0, 0, 2.4], seed: 28 });
+    return rig(Wd, cm(d, [[0, [2.8, 2.6, 5.8], [0, 1.6, 0], 44], [1, [1.2, 2.0, 4.4], [0, 1.5, 0], 42]]), H);
+  } },
+  // ===== s15: lanterns on the blue plain; a heavy cloud presses down and dims them; it lifts and dissolves; they glow =====
+  { id: 's15', dur: DURS[14], build() {
+    const d = DURS[14], Wd = stageWorld({ kind: 'purim', seed: 29, shadowExt: 14 }), H = grp(Wd), F = X.lanternField(Wd, { n: 30, c: [0, 0, 0], R: 3.8, seed: 12 }); H.add(F.g);
+    const sc = scrollObj({ k: 0 }); sc.g.position.set(-2.0, .16, 3.9); sc.g.rotation.y = .5; sc.g.scale.setScalar(1.7); H.add(sc.g);
+    const cl = stormCloud({ size: 2.4, n: 11, col: '#B2AEB8' }); cl.scale.set(1.5, .6, 1.5); Wd.add(cl); const P = cl.userData.P;
+    const press = t => pop(t, .13 * d, .4 * d, .62 * d, .76 * d);
+    Wd.on(t => { const p = press(t); cl.position.set(0, lerp(9, 2.9, sm(prog(t, .1 * d, .4 * d))) + 5 * fr(t, d, .62, .85), 0); P.forEach((b, i) => { const k = 1 - sm(prog(t, (.62 + i * .012) * d, (.82 + i * .012) * d)); b.scale.setScalar(Math.max(.001, k) * 1); b.visible = k > .01; });
+      Wd.hemi.intensity = 1.15 - .35 * p; const base = .85 - .8 * p + .5 * fr(t, d, .68, .92);
+      F.L.forEach((l, i) => { l.userData.set(Math.max(.05, base * (.92 + .08 * sin(t * 5 + i)))); l.scale.set(l.userData.s0 * 1.5, l.userData.s0 * 1.5 * (1 - .22 * p), l.userData.s0 * 1.5); }); });
+    return rig(Wd, cm(d, [[0, [-1.6, 8.6, 9.6], [0, .8, 0], 45], [.35, [2.6, 5.6, 10.6], [0, 1.0, 0], 45], [.7, [1.4, 3.0, 8.6], [0, 1.0, 0], 44], [1, [-.4, 1.7, 6.6], [0, 1.0, 0], 44]]), H);
+  } },
+  // ===== s16: ring of houses around the glowing book; windows light up one after another; orbit =====
+  { id: 's16', dur: DURS[15], wide: true, build() {
+    const d = DURS[15], Wd = stageWorld({ kind: 'meadow', seed: 31, shadowExt: 20 }), H = grp(Wd), R = X.houseRing(Wd, { n: 14, R: 7.5 }); H.add(R.g);
+    const bk = bookStand({ scale: 1.5 }); bk.userData.setOpen(1); for (let i = 0; i < 5; i++) bk.userData.setFlip(i, 1); bk.scale.setScalar(1.5); H.add(bk);
+    Wd.on(t => { R.houses.forEach((h, i) => h.userData.setLit(fr(t, d, .08 + i * .055, .08 + i * .055 + .08))); bk.userData.glow.material.opacity = .8 * fr(t, d, .0, .4) + .08 * sin(t * 2); bk.userData.glow.scale.setScalar(3.2 + .4 * sin(t * 1.5)); });
+    scatter(Wd, { n: 60, area: [-14, 14, -14, 14], avoid: [0, 0, 5], seed: 32 });
+    return rig(Wd, orb([0, 0, 0], [18, 16], [10, 6.5], 0, 150, d, 44, 1.0), H);
+  } },
+  // ===== s17: rays of light from every window to the book =====
+  { id: 's17', dur: DURS[16], wide: true, build() {
+    const d = DURS[16], Wd = stageWorld({ kind: 'meadow', seed: 31, shadowExt: 20 }), H = grp(Wd), R = X.houseRing(Wd, { n: 14, R: 7.5 }); H.add(R.g);
+    const bk = bookStand({ scale: 1.5 }); bk.userData.setOpen(1); for (let i = 0; i < 5; i++) bk.userData.setFlip(i, 1); bk.scale.setScalar(1.5); H.add(bk);
+    const wp = R.wins.map(w => [w.x, w.y, w.z]); X.rayBeams(Wd, wp, [0, 2.2, 0], (t, i) => fr(t, d, .06 + i * .03, .06 + i * .03 + .14), { r: .05, op: .6 });
+    Wd.on(t => { R.houses.forEach(h => h.userData.setLit(1)); bk.userData.glow.material.opacity = .5 + .4 * fr(t, d, .1, .7); bk.userData.glow.scale.setScalar(3.2 + 3 * fr(t, d, .1, .8)); });
+    scatter(Wd, { n: 60, area: [-14, 14, -14, 14], avoid: [0, 0, 5], seed: 33 });
+    return rig(Wd, orb([0, 0, 0], [16, 11.5], [9.5, 4.8], 150, 300, d, 44, 1.6), H);
+  } },
+  // ===== s18: map table, six clusters of buildings rise one after another =====
+  { id: 's18', dur: DURS[17], wide: true, build() {
+    const d = DURS[17], Wd = stageWorld({ kind: 'room', seed: 35, shadowExt: 16, w: { skyTop: 0xA8D8F0, skyBottom: 0xFFF4E0 } }), H = grp(Wd); roomBack(Wd, -9, 40);
+    H.add(table({ w: 15, d: 10, cloth: null, top: COL.woodL })); const mt = K.canvasTex(1024, 704, (c, w, h) => { c.fillStyle = COL.cream; c.fillRect(0, 0, w, h); const r = rng(3);
+      for (let i = 0; i < 9; i++) { c.fillStyle = [COL.sage, COL.sageL, COL.sageD][i % 3]; c.beginPath(); c.ellipse(120 + r() * 780, 100 + r() * 500, 120 + r() * 120, 70 + r() * 80, r() * 3, 0, 7); c.fill(); }
+      c.strokeStyle = COL.sky; c.lineWidth = 26; c.lineCap = 'round'; c.beginPath(); c.moveTo(0, 470); c.bezierCurveTo(260, 330, 520, 640, 1024, 360); c.stroke(); c.strokeStyle = '#E8D5A8'; c.lineWidth = 8; for (let i = 0; i < 6; i++) { c.beginPath(); c.moveTo(r() * 1024, 0); c.bezierCurveTo(r() * 1024, 250, r() * 1024, 450, r() * 1024, 704); c.stroke(); } });
+    const map = new THREE.Mesh(new THREE.PlaneGeometry(14, 9.6), new THREE.MeshToonMaterial({ map: mt })); map.rotation.x = -PI / 2; map.position.y = .82; map.receiveShadow = true; H.add(map); H.add(bx(14.3, .05, .2, COL.woodD, { pos: [0, .83, -4.9], inkW: .008 })); H.add(bx(14.3, .05, .2, COL.woodD, { pos: [0, .83, 4.9], inkW: .008 }));
+    const spots = [[-4.8, 2.4], [-2.2, -2.2], [0.6, 2.6], [2.8, -1.8], [5.0, 2.0], [-5.6, -2.8]], wall = [COL.coral, COL.sky, COL.honey, COL.cream, COL.sageD, COL.lilac], roofs = [COL.coralD, COL.skyD, COL.coral, COL.coralD, COL.sage, COL.honey], bl2 = [], r = rng(31);
+    spots.forEach((sp, j) => { const cg = grp(null, [sp[0], .83, sp[1]]); H.add(cg); for (let i = 0; i < 6; i++) { const h = house({ col: wall[j], roof: roofs[j], h: .9 + r() * .7, nw: 2 }); const a = i / 6 * PI * 2 + r(), rr = i ? .75 + r() * .3 : 0; h.position.set(sin(a) * rr * 1.3, 0, cos(a) * rr); h.rotation.y = a + PI; const s = .5 + r() * .15; h.userData.s = s; h.userData.t = (j + .5) / 6 * .78 + .05 + i * .006; h.userData.setLit(1); cg.add(h); bl2.push(h); } });
+    Wd.on(t => { for (const h of bl2) h.scale.set(h.userData.s, Math.max(.001, h.userData.s * elastic(prog(t, h.userData.t * d, h.userData.t * d + 1.3))), h.userData.s); });
+    for (let i = 0; i < 20; i++) { const x = -6.5 + r() * 13, z = -4 + r() * 8; H.add(bl(.2 + r() * .1, [COL.sageD, '#86BC96'][i % 2], { pos: [x, .95, z], inkW: .01 })); }
+    return rig(Wd, cm(d, [[0, [-9.5, 9.5, 11], [0, .8, 0], 44], [.5, [0, 11.5, 10.5], [0, .8, 0], 44], [1, [9.5, 8.8, 11], [0, .8, 0], 44]]), H);
+  } },
+  // ===== s19: a seedling in dry rocky ground grows into a tree, then more trees around it =====
+  { id: 's19', dur: DURS[18], wide: true, build() {
+    const d = DURS[18], Wd = stageWorld({ kind: 'dry', seed: 37, shadowExt: 22 }), H = grp(Wd), rr = rng(8);
+    scatter(Wd, { n: 60, area: [-14, 14, -12, 12], avoid: [0, 0, 1.2], seed: 38, rocks: true, cols: ['#C9B58C', '#B8A27A', '#D9C7A0', '#A8946A'] });
+    const gd = cy(1, 1, .03, '#A9D5B2', { pos: [0, .03, 0], inkW: .006 }); H.add(gd); const T = [treeObj()]; H.add(T[0]); const ex = [];
+    for (let i = 0; i < 6; i++) { const a = i / 6 * PI * 2 + .4, dd = 4 + rr() * 2.5, tt = treeObj(); tt.position.set(sin(a) * dd, 0, cos(a) * dd); tt.scale.setScalar(.8 + rr() * .2); H.add(tt); ex.push([tt, .55 + i * .06]); }
+    Wd.on(t => { const k = fr(t, d, .06, .5); T[0].userData.set(k); gd.scale.set(Math.max(.4, 1 + 8 * fr(t, d, .3, .95)), 1, Math.max(.4, 1 + 8 * fr(t, d, .3, .95)));
+      for (const [tt, a] of ex) tt.userData.set(fr(t, d, a, a + .25)); });
+    return rig(Wd, cm(d, [[0, [.7, .38, 1.5], [0, .32, 0], 40], [.35, [3.0, 1.0, 4.6], [0, 1.8, 0], 42], [.6, [7.0, 2.2, 13], [0, 3.8, 0], 46], [1, [4.5, 2.4, 17.5], [0, 3.8, 0], 48]]), H);
+  } },
+  // ===== s20: tracking down a street with lit windows; a rising curve of light along the ground =====
+  { id: 's20', dur: DURS[19], wide: true, build() {
+    const d = DURS[19], Wd = stageWorld({ kind: 'meadow', seed: 41, shadowExt: 30 }), H = grp(Wd), S = X.street(Wd, { n: 7, seed: 4 }); H.add(S.g);
+    for (let i = 0; i < 14; i++) H.add(bx(.12, .02, .9, COL.honey, { pos: [-1.6, .08, 3 - i * 3], inkW: .005, ink: false })); H.add(bx(.18, .03, 44, COL.cream, { pos: [-1.6, .075, -17], inkW: .005, ink: false }));
+    const pt = (t, u) => [-1.6 + 3.0 * u * u, .2 + 3.2 * Math.pow(u, 1.7), 4 - 40 * u];
+    lightLine(Wd, { n: 52, r: .1, pt, range: t => [0, ease.io(prog(t, .05 * d, .9 * d))], a: t => 1 });
+    Wd.on(t => { S.houses.forEach((h, i) => h.userData.setLit(fr(t, d, (i / S.houses.length) * .6, (i / S.houses.length) * .6 + .1))); });
+    return rig(Wd, t => { const u = ease.io(clamp(t / d, 0, 1)); return { pos: [-1.9 + .3 * sin(u * 4), 2.2, lerp(9, -14, u)], look: [.8, 2.0, lerp(9, -14, u) - 18], fov: 46 }; }, H);
+  } },
+  // ===== s21: grey rain clouds pass over the street, then sun breaks through; the glowing gate far on the road =====
+  { id: 's21', dur: DURS[20], wide: true, build() {
+    const d = DURS[20], Wd = stageWorld({ kind: 'meadow', seed: 43, shadowExt: 30 }), H = grp(Wd), S = X.street(Wd, { n: 7, seed: 4 }); H.add(S.g); S.houses.forEach(h => h.userData.setLit(1));
+    H.add(bx(5, .06, 45, '#EFE6D0', { pos: [0, .03, -60], inkW: .008 })); const gate = grp(null, [0, 0, -62]); H.add(gate); for (const x of [-6, 6]) gate.add(bx(1.6, 10, 1.6, COL.cream, { pos: [x, 5, 0] })); gate.add(mm(new THREE.TorusGeometry(6, .8, 12, 32, PI), COL.honey, { pos: [0, 10, 0], inkW: .04 })); gate.add(bx(14, .9, 1.8, COL.honey, { pos: [0, 10.2, 0], ink: false }));
+    const gg = glowSprite(0xFFD27A, 38, 0); gg.position.set(0, 6, -63); Wd.add(gg); gg.material.opacity = .7;
+    const rc = [0, 1, 2].map(i => { const c = stormCloud({ n: 8, size: 2.6, col: '#C4C8D0', seed: 3 + i }); c.scale.setScalar(2.0); Wd.add(c); return c; }); const U = Wd.sky.material.uniforms, gt = new THREE.Color('#AEB6BF'), gb = new THREE.Color('#D9D5D3'), bt = new THREE.Color(0xA8D8F0), bb = new THREE.Color(0xFFF4E0);
+    rain(Wd, { x0: -14, x1: 14, z0: -34, z1: 8, count: 800, top: 14, bottom: 0, amount: t => 1 - fr(t, d, .38, .55) });
+    const sunP = [-26, 34, -75]; X.rayBeams(Wd, [[-14, 30, -60], [-6, 31, -62], [3, 32, -62], [11, 30, -60], [18, 28, -58]], [0, 0, -20], (t, i) => fr(t, d, .55 + i * .02, .8), { r: .3, op: .16, color: 0xFFEFB8 });
+    Wd.on(t => { const sun = fr(t, d, .45, .72), m = sm(prog(t, .0, .5 * d)); rc.forEach((c, i) => { c.position.set(lerp(-34, 40, prog(t, 0, d * .85)) + i * 14 - 14, 13 + i * 1.5, -18 - i * 8); c.userData.P.forEach(b => b.scale.setScalar(Math.max(.001, 1 - .9 * fr(t, d, .55 + i * .03, .82)))); });
+      U.top.value.copy(gt).lerp(bt, sun); U.bot.value.copy(gb).lerp(bb, sun); Wd.scene.fog.color.copy(gb).lerp(bb, sun); Wd.hemi.intensity = 1.2 + .4 * sun; Wd.sun.intensity = .6 + 1.2 * sun; });
+    return rig(Wd, cm(d, [[0, [0, 2.2, 8.5], [0, 3.2, -60], 46], [.5, [.4, 6.5, 6.5], [0, 3.4, -60], 47], [1, [0, 15.5, 5.5], [0, 2.8, -58], 48]]), H);
+  } },
+  // ===== s22: lanterns float down and settle into the windows; every window lights up; pull back, then into a window =====
+  { id: 's22', dur: DURS[21], wide: true, build() {
+    const d = DURS[21], Wd = stageWorld({ kind: 'meadow', seed: 43, shadowExt: 30 }), H = grp(Wd), S = X.street(Wd, { n: 7, seed: 4 }); H.add(S.g);
+    const N = S.wins.length, LS = [], r = rng(44);
+    for (let i = 0; i < N; i++) { const l = lantern(); l.scale.setScalar(2.4); Wd.add(l); l.userData.set(1.1); LS.push(l); }
+    const arrive = i => (.06 + .62 * (i / (N - 1))) * d, dur = 4.0, start = LS.map((_, i) => [-26 + r() * 52, 16 + r() * 8, -48 - r() * 10]);
+    S.wins.forEach(w => { const sd = w.h.position.x < 0 ? 1 : -1; w.tgt = [w.pos.x + sd * .15, w.pos.y - .15, w.pos.z]; });
+    const winI = new Map(); S.houses.forEach((h, i) => winI.set(h, []));  S.wins.forEach((w, i) => winI.get(w.h).push(i));
+    Wd.on(t => { LS.forEach((l, i) => { const a0 = arrive(i) - dur, u = clamp((t - a0) / dur, 0, 1), s = start[i], w = S.wins[i].tgt, e = ease.io(u);
+      l.position.set(lerp(s[0], w[0], e) + 1.2 * sin(u * 9 + i), lerp(s[1], w[1], e) + 3.5 * sin(PI * u) , lerp(s[2], w[2], e)); l.visible = u > 0 && u < 1; l.scale.setScalar(2.4 * (1 - .8 * sm(prog(u, .88, 1)))); });
+      S.houses.forEach(h => { const ids = winI.get(h); h.userData.setLit(Math.max(...ids.map(i => sm(prog(t, arrive(i) - .15, arrive(i) + .7))))); }); });
+    const W0 = S.wins[0].pos, ex = W0.x + 2.2, camEnd = [ex + 0.4, W0.y, W0.z + .2];
+    return rig(Wd, cm(d, [[0, [0, 2.4, 6.5], [0, 4.0, -24], 46], [.35, [3, 7.5, 14], [0, 3.0, -14], 46], [.7, [0, 12, 24], [0, 2.4, -12], 48], [.9, [-.5, 5.5, 9], [W0.x, W0.y, W0.z], 46], [1, camEnd, [W0.x - 1.8, W0.y, W0.z], 52]]), H);
+  } },
+  // ===== s23: fly into one window onto the table: the thanks objects glowing, the glasses perfectly clear =====
+  { id: 's23', dur: DURS[22], wide: true, build() {
+    const d = DURS[22], Wd = stageWorld({ kind: 'room', seed: 45, backdrop: false, w: { skyTop: 0xA8D8F0, skyBottom: 0xFFF4E0 } }); roomBack(Wd, -7.5, 40);
+    const S = X.thanksSet(Wd, { haze: () => 0, lit: () => 1, pop: false, spark: () => 1, sparkRing: () => 0, fridgeOpen: () => 1.5 }); const wall = grp(Wd, [0, 0, 4.6]);
+    wall.add(bx(7, 4.4, .4, '#F4E3C4', { pos: [-5.2, 2.2, 0] })); wall.add(bx(7, 4.4, .4, '#F4E3C4', { pos: [5.2, 2.2, 0] })); wall.add(bx(3.4, 1.0, .4, '#F4E3C4', { pos: [0, .5, 0] })); wall.add(bx(3.4, 1.6, .4, '#F4E3C4', { pos: [0, 3.6, 0] })); wall.add(bx(14, .6, .5, COL.sageD, { pos: [0, 4.6, 0] }));
+    for (const s of [-1, 1]) wall.add(bx(.14, 2.8, .5, COL.wood, { pos: [s * 1.77, 2.4, 0] })); wall.add(bx(3.9, .14, .6, COL.wood, { pos: [0, 1.05, .1] })); for (let i = 0; i < 5; i++) wall.add(bl(.18, [COL.coral, COL.cream, COL.honey][i % 3], { pos: [-1.4 + i * .7, 1.3, .35], inkW: .01 }));
+    const gl = glowSprite(0xFFD27A, 9, .8); gl.position.set(0, 2.4, 3.2); Wd.add(gl); Wd.on(t => { gl.material.opacity = .85 * (1 - fr(t, d, .15, .5)); });
+    return rig(Wd, cm(d, [[0, [0, 2.4, 9.8], [0, 2.3, 0], 46], [.45, [0, 2.4, 6.0], [0, 1.6, 0], 46], [1, [0, 3.0, 4.0], [0, 1.1, -.6], 46]]), S.g);
+  } },
+  // ===== s24: end card, calm wide of the clear glasses on the table, slow pull back =====
+  { id: 's24', dur: DURS[23], wide: true, build() {
+    const d = DURS[23], Wd = stageWorld({ kind: 'room', seed: 45, backdrop: false, w: { skyTop: 0xA8D8F0, skyBottom: 0xFFF4E0 } }); roomBack(Wd, -7.5, 40);
+    const S = X.thanksSet(Wd, { haze: () => 0, lit: () => 1, pop: false, spark: () => 1, sparkRing: () => 0, fridgeOpen: () => 1.5 });
+    scatter(Wd, { n: 40, area: [-9, 9, -5, 6], avoid: [0, 0, 3.8], seed: 26 });
+    return rig(Wd, cm(d, [[0, [0, 3.6, 8.2], [0, 1.1, 0], 42], [1, [0, 4.0, 10.8], [0, 1.1, 0], 42]]), S.g);
+  } },
+] });
+</script>
