@@ -1,0 +1,9 @@
+PASS
+
+Sheets (CLEAN, safe to Read):
+  beat: C:/projects/_studio-animatzia/productions/stef_33/_verify/_view/_verify_beat_sheet_1.jpg
+  seam: C:/projects/_studio-animatzia/productions/stef_33/_verify/_view/_verify_seams_1.jpg
+  phone: C:/projects/_studio-animatzia/productions/stef_33/_verify/_view/_verify_phone_sheet_1.jpg
+  beat_2: C:/projects/_studio-animatzia/productions/stef_33/_verify/_view/_verify_beat_sheet_2.jpg
+  seam_2: C:/projects/_studio-animatzia/productions/stef_33/_verify/_view/_verify_seams_2.jpg
+SUMMARY | PASS | samples=68 | dur=185.9 | P0=0 P1=0 P2=0 | {"ready_s": 1.3, "gates_s": 155.4, "sheets_s": 69.7, "total_s": 226.8}

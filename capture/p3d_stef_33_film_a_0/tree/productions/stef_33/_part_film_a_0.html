@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>stef_33 film A</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>window.__T0=0.0000; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": {
+  "three": "../../node_modules/three/build/three.module.js",
+  "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+// stef_33 / film A: one who buys three trees, graphics layer, 185.92 s, silent. No Hebrew here: captions, title and kicker are vault IDs only.
+import { film, THREE, ease, prog, clamp, lerp, path, orbit } from '../../lib/stage3d.js';
+import { dolly, crane } from '../../lib/motion3d.js';
+import { PAL, GY, ZF, XW, sm, mkWorld, motes, tufts, flag, field, tree, roots, blueGround, xMark, checkMark, tile, pop, makeClock } from './il.js';
+
+const GREENF = 0x2E8B3E, BLUEF = 0x3F7FD0;
+const PAIR = [[-1.8, 1.6], [1.8, 1.6]], TRI = [[-1.8, 1.6], [1.8, 1.6], [0, -.5]], TC = [0, .9];
+const ZT = 1.75;
+const CAM = (p, l, f) => ({ pos: p, look: l, fov: f || 44 });
+
+// common scene: sky + hills + field + green corner flag + edge tufts + motes
+function mkS(o) {
+  o = o || {}; const Wd = mkWorld(o.world); const F = field(Wd); Wd.hero = F.g; motes(Wd, o.motes || 26, o.seed || 1, o.moteO);
+  const fgL = tufts(Wd, 20, 5 + (o.seed || 1), { x0: -10, x1: -6.2, z0: -2, z1: 5, y: 0 }, { s: 1.5 }), fgR = tufts(Wd, 20, 6 + (o.seed || 1), { x0: 6.2, x1: 10, z0: -2, z1: 5, y: 0 }, { s: 1.5 });
+  const fgN = tufts(Wd, 14, 7 + (o.seed || 1), { x0: -5, x1: 5, z0: 3.6, z1: 5.2, y: 0 }, { s: 1.3 });
+  const G = flag(Wd, GREENF, [-XW + 1.0, GY, ZF - 1.0], 1.3); const S = { Wd, F, G, trees: [], fa: () => 1 };
+  Wd.on(t => { fgL.sway(t); fgR.sway(t, .9); fgN.sway(t, 1.1); G.wave(t, S.fa(t), 0); S.trees.forEach(tr => tr.sway(t)); });
+  S.tree = (x, z, op) => { const tr = tree(Wd, x, z, op); S.trees.push(tr); return tr; };
+  return S;
+}
+const full = (tr) => { tr.set(1); tr.rib(1); return tr; };
+
+// ---------- s01 : trees grow out of the field ----------
+function s01() {
+  const S = mkS({ seed: 1 }); const { Wd } = S; const tr = TRI.map(p => S.tree(p[0], p[1])); tr.forEach(x => x.set(0));
+  const dg = ['1', '2', '3'].map((d, i) => tile(Wd, d, [TRI[i][0], GY + 2.9, TRI[i][1]], .8));
+  Wd.on(t => tr.forEach((x, i) => { const a = 1 + i * 1.0; x.set(prog(t, a, a + 1.4)); pop(dg[i], ease.out(prog(t, a + 1.0, a + 1.4)) * (1 - ease.in(prog(t, a + 2.6, a + 3.2)))); }));
+  return Object.assign(Wd, { cam: crane([0, .3, .4], 10.2, 7.2, 4.2, -10, 8, 0, 7.65, { lookDy: .9, fov0: 46, fov1: 44 }) });
+}
+// ---------- s02 : two trees - no land; three trees - land ----------
+function s02() {
+  const S = mkS({ seed: 2 }); const { Wd } = S;
+  const L = [[-4.6, 1.3], [-3.0, 1.3]], R = [[2.6, 1.3], [4.6, 1.3], [3.6, -.6]];
+  const tl = L.map(p => S.tree(p[0], p[1])), trr = R.map(p => S.tree(p[0], p[1])); const bg = blueGround(Wd, R, { r: 1.15 });
+  const xm = xMark(.7), ck = checkMark(.8); Wd.add(xm.g); Wd.add(ck.g); xm.g.position.set(-3.8, GY + 3.1, 1.3); ck.g.position.set(3.6, GY + 3.3, .3);
+  Wd.on(t => {
+    tl.forEach((x, i) => { x.set(prog(t, .4 + i * .5, 1.7 + i * .5)); x.rib(prog(t, 2.2 + i * .4, 3.2 + i * .4)); });
+    trr.forEach((x, i) => { x.set(prog(t, 7.9 + i * .5, 9.1 + i * .5)); x.rib(prog(t, 9.4 + i * .3, 10.3 + i * .3)); });
+    bg.set(prog(t, 9.9, 11.6));
+    xm.set(t > 5 && t < 7.4 && ((t - 5) * 2.4) % 1 < .62 ? 1 : 0); ck.set(prog(t, 11.0, 11.6));
+  });
+  return Object.assign(Wd, { cam: t => { const u = ease.io(prog(t, 7.3, 10.6)), cx = lerp(-3.9, 3.7, u) + .25 * Math.sin(t * .25); return CAM([cx, 5.3 + .4 * u, 10.4], [cx, 1.1, .2]); } });
+}
+// ---------- s03 : trees bought, ground is the question ----------
+function s03() {
+  const S = mkS({ seed: 3 }); const { Wd } = S; const tr = PAIR.map(p => S.tree(p[0], p[1])); const bw = blueGround(Wd, PAIR, { color: 0xFFFFFF, opacity: .6, line: false, r: 1.2 }); bw.set(1);
+  S.fa = t => 1 + .8 * sm(t, 1, 2);
+  Wd.on(t => { tr.forEach((x, i) => { x.set(prog(t, .4 + i * .4, 1.8 + i * .4)); x.rib(prog(t, 2.4 + i * .5, 3.6 + i * .5)); });
+    const q = prog(t, 5.7, 9.7); bw.fade(q > 0 && q < 1 ? Math.pow(Math.sin(Math.PI * 2 * q), 2) : 0); });
+  return Object.assign(Wd, { cam: path([[0, [0, 6.2, 12], [0, 1.1, .2], 44], [13.15, [0, 4.9, 8.8], [0, 1.2, .5], 42]]) });
+}
+// ---------- s04 : two trees - no land ----------
+function s04() {
+  const S = mkS({ seed: 4 }); const { Wd } = S; PAIR.forEach(p => full(S.tree(p[0], p[1]))); const bg = blueGround(Wd, PAIR, { r: 1.2 }); const xm = xMark(.8); Wd.add(xm.g); xm.g.position.set(0, GY + 2.9, 1.6);
+  Wd.on(t => {
+    const base = ease.io(prog(t, 1.2, 3.0)) * .8, fl = t > 3.0 && t < 4.4 ? .65 + .35 * Math.sin((t - 3) * 20) : 1, sh = 1 - ease.in(prog(t, 4.4, 5.6));
+    bg.set(base * fl * sh); xm.set(prog(t, 5.3, 5.9)); S.G.tall(sm(t, 6, 8.5));
+  });
+  return Object.assign(Wd, { cam: orbit([0, 1.0, .3], 9.6, 4.6, -12, 13, 0, 12.07, 44) });
+}
+// ---------- calm backdrop under a clip ----------
+function calm(keys, seed) {
+  const S = mkS({ seed, motes: 60, moteO: { w: 18, z0: -6, z1: 6 } }); const { Wd } = S; TRI.forEach(p => full(S.tree(p[0], p[1])));
+  return Object.assign(Wd, { cam: path(keys) });
+}
+const s05 = () => calm([[0, [2.0, 4.9, 9.6], [0, 1.1, .2], 44], [6, [.6, 5.2, 10.0], [0, 1.1, .2], 44], [12.95, [-1.2, 4.9, 9.6], [0, 1.1, .2], 44]], 5);
+const s09 = () => calm([[0, [-1.6, 4.8, 9.4], [0, 1.1, .2], 44], [6, [-.2, 5.2, 10.0], [0, 1.1, .2], 44], [12.55, [1.4, 4.9, 9.5], [0, 1.1, .2], 44]], 9);
+// ---------- s06 : cutaway - trunk shoot vs root shoot ----------
+function s06() {
+  const S = mkS({ seed: 6 }); const { Wd } = S; const t1 = full(S.tree(-1.4, ZT)), t2 = full(S.tree(3.4, ZT));
+  const sh = S.tree(-1.4 - .09, ZT + .06, { s: .4, y: GY + .8, rotZ: .95 }), rt = roots(Wd, -1.4, { left: 1.4, right: 2.9 }), sp = S.tree(1.5, ZT, { s: .6 }), fg = flag(Wd, GREENF, [1.95, GY, ZT + .15], .9, .8);
+  Wd.on(t => { sh.set(prog(t, 1.0, 2.6)); sh.rib(prog(t, 2.8, 3.4)); rt.set(prog(t, 5.3, 7.4)); sp.set(prog(t, 7.2, 8.8)); fg.pop(prog(t, 8.8, 9.6)); fg.wave(t, 1.1, 1); });
+  return Object.assign(Wd, { cam: path([[0, [.8, 2.7, 9.2], [.8, 1.7, 0], 44], [12.07, [.8, 4.1, 9.8], [.8, 1.6, 0], 44]]) });
+}
+// ---------- s07 : two trees die - nothing left ----------
+function s07() {
+  const S = mkS({ seed: 7 }); const { Wd } = S; const tr = PAIR.map(p => full(S.tree(p[0], p[1]))); const xm = xMark(.8); Wd.add(xm.g); xm.g.position.set(0, GY + 2.5, 1.6);
+  S.fa = t => 1.5;
+  Wd.on(t => { tr.forEach((x, i) => { const a = 1.0 + i * .4; x.wither(prog(t, a, a + 3.0)); x.ribDrop(prog(t, a + 1.2, a + 2.4)); }); xm.set(prog(t, 4.9, 5.5)); });
+  return Object.assign(Wd, { cam: path([[0, [0, 6.0, 12.4], [0, 1.1, .2], 44], [10.45, [-.3, 4.9, 9.2], [0, 1.2, .4], 42]]) });
+}
+// ---------- s08 : three trees - the land too ----------
+function s08() {
+  const S = mkS({ seed: 8 }); const { Wd } = S; const tr = PAIR.map(p => full(S.tree(p[0], p[1]))); const c = S.tree(TRI[2][0], TRI[2][1]); const bg = blueGround(Wd, TRI, { r: 1.2 });
+  const d3 = tile(Wd, '3', [0, GY + 2.9, -.5], .8), bf = flag(Wd, BLUEF, [TC[0], GY, TC[1]], 1.3);
+  Wd.on(t => { c.set(prog(t, .8, 2.4)); c.rib(prog(t, 2.6, 3.4)); pop(d3, ease.out(prog(t, 1.9, 2.4)) * (1 - ease.in(prog(t, 4.0, 4.6)))); bg.set(prog(t, 5.0, 7.4)); bf.plant(prog(t, 7.4, 8.4)); bf.wave(t, 1, 1); });
+  return Object.assign(Wd, { cam: crane([0, .5, .4], 9.4, 4.2, 8.2, -8, 6, 0, 11.53, { lookDy: .9, fov0: 44, fov1: 44 }) });
+}
+// ---------- s10 : three trees - everything is his; land stays ----------
+function s10() {
+  const S = mkS({ seed: 10 }); const { Wd } = S; const tr = TRI.map(p => full(S.tree(p[0], p[1]))); const bg = blueGround(Wd, TRI, { r: 1.2 }); bg.set(1);
+  const bf = flag(Wd, BLUEF, [TC[0], GY, TC[1]], 1.3); bf.plant(1);
+  const sh = S.tree(-1.8 - .09, 1.66, { s: .4, y: GY + .8, rotZ: .95 }), rt = roots(Wd, -1.8, { left: .8, right: 2.0 }), sp = S.tree(-.2, ZT, { s: .6 }), ns = S.tree(1.0, .7, { s: .5 });
+  Wd.on(t => {
+    sh.set(prog(t, 1.0, 2.4)); sh.rib(prog(t, 2.6, 3.2)); rt.set(prog(t, 1.0, 3.0) * (1 - ease.in(prog(t, 6.0, 8.0)))); sp.set(prog(t, 2.6, 4.0)); sp.rib(prog(t, 4.2, 4.8));
+    tr.concat([sh, sp]).forEach((x, i) => { const a = 5.4 + i * .45; x.wither(prog(t, a, a + 2.6)); x.ribDrop(prog(t, a + 1.0, a + 2.0)); });
+    bg.glow(sm(t, 8.2, 8.8) * (1 - sm(t, 9.6, 10.4)) * (.7 + .3 * Math.sin(t * 5))); bf.wave(t, 1, 1);
+    ns.set(prog(t, 9.2, 10.8)); ns.rib(prog(t, 10.9, 11.6));
+  });
+  return Object.assign(Wd, { cam: orbit([0, 1.0, .5], 11, 5.2, -18, 16, 0, 12.07, 44) });
+}
+// ---------- s11 : question 1 ----------
+function s11() {
+  const S = mkS({ seed: 11 }); const { Wd } = S; full(S.tree(-2.4, ZT)); full(S.tree(2.4, ZT));
+  const r1 = roots(Wd, -2.4, { right: 3.0 }), r2 = roots(Wd, 2.4, { left: 3.0 }), sp = S.tree(0, ZT, { s: .55 }), clock = makeClock(Wd, { pos: [0, GY + 2.4, ZT], R: .9 });
+  const xm = xMark(.6); Wd.add(xm.g); xm.g.position.set(0, GY + .8, 2.3); const fg = flag(Wd, GREENF, [.45, GY, ZT + .2], .9, .8);
+  Wd.on(t => {
+    r1.set(prog(t, 1.0, 3.0)); r2.set(prog(t, 1.0, 3.0)); sp.set(prog(t, 2.2, 4.0)); sp.rib(prog(t, 9.0, 9.8)); sp.ribDrop(prog(t, 13.6, 14.6));
+    clock.set(prog(t, 8.1, 13.1)); clock.g.position.y = GY + 2.4 + .05 * Math.sin(t * 1.3); clock.fade(ease.out(prog(t, 6.9, 7.6)) * (1 - sm(t, 13.2, 13.8)));
+    xm.set(prog(t, 13.3, 13.9) * (1 - ease.in(prog(t, 17, 17.6)))); fg.pop(prog(t, 14.8, 15.6)); fg.wave(t, 1.1, 1);
+  });
+  return Object.assign(Wd, { cam: path([[0, [-1.0, 3.3, 9.8], [0, 1.4, 0], 44], [11, [.2, 3.6, 9.4], [0, 1.5, 0], 44], [22, [1, 3.3, 9.8], [0, 1.4, 0], 44]]) });
+}
+// ---------- s12 : question 2 ----------
+function s12() {
+  const S = mkS({ seed: 12 }); const { Wd } = S; const tr = TRI.map(p => full(S.tree(p[0], p[1]))); const bg = blueGround(Wd, TRI, { r: 1.2 }); bg.set(1);
+  const bf = flag(Wd, BLUEF, [TC[0], GY, TC[1]], 1.3), ck = checkMark(1); Wd.add(ck.g); ck.g.position.set(0, GY + 2.6, .9); const clock = makeClock(Wd, { pos: [0, GY + 2.3, .9], R: .9 });
+  bf.plant(0);
+  Wd.on(t => {
+    tr.forEach((x, i) => { const a = 1.2 + i * .6; x.wither(prog(t, a, a + 2.8)); x.ribDrop(prog(t, a + 1.0, a + 2.0)); });
+    clock.set(prog(t, 5.67, 10.67)); clock.g.position.y = GY + 2.3 + .05 * Math.sin(t * 1.3); clock.fade(ease.out(prog(t, 5.0, 5.5)) * (1 - sm(t, 10.8, 11.3)));
+    bg.glow(sm(t, 10.9, 11.6) * (.55 + .45 * Math.sin(t * 3)) * (1 - .4 * sm(t, 14.5, 15.5))); bf.plant(prog(t, 12.0, 13.0)); bf.wave(t, 1, 1); ck.set(prog(t, 13.4, 14.0));
+  });
+  return Object.assign(Wd, { cam: path([[0, [0, 3.9, 10.2], [0, 1.5, 0], 46], [18.22, [0, 5.3, 9.8], [0, 1.3, .3], 44]]) });
+}
+// ---------- s13 : summary glide ----------
+function s13() {
+  const S = mkS({ seed: 13 }); const { Wd } = S;
+  const a1 = full(S.tree(-5.4, ZT)), b1 = full(S.tree(-1.8, ZT)), r1 = roots(Wd, -5.4, { right: 2.0 }), r2 = roots(Wd, -1.8, { left: 1.8 }), sp = S.tree(-3.6, ZT, { s: .55 });
+  const xm = xMark(.6); Wd.add(xm.g); xm.g.position.set(-3.6, GY + .8, 2.3); const fg = flag(Wd, GREENF, [-3.15, GY, ZT + .2], .9, .8);
+  const T3 = [[2.4, 1.6], [6.0, 1.6], [4.2, -.5]], tr = T3.map(p => S.tree(p[0], p[1])), bg = blueGround(Wd, T3, { r: 1.0 }), bf = flag(Wd, BLUEF, [4.2, GY, .9], 1.3);
+  Wd.on(t => {
+    r1.set(prog(t, .8, 2.6)); r2.set(prog(t, .8, 2.6)); sp.set(prog(t, 2.4, 4.0)); sp.rib(prog(t, 3.9, 4.5)); sp.ribDrop(prog(t, 5.9, 6.8)); xm.set(prog(t, 5.6, 6.0) * (1 - ease.in(prog(t, 8.2, 8.8)))); fg.pop(prog(t, 7.0, 7.8)); fg.wave(t, 1.1, 1);
+    tr.forEach((x, i) => { x.set(prog(t, 9.3 + i * .4, 10.7 + i * .4)); x.rib(prog(t, 10.8 + i * .3, 11.6 + i * .3)); const a = 14.4 + i * .5; x.wither(prog(t, a, a + 2.6)); x.ribDrop(prog(t, a + 1.0, a + 2.0)); });
+    bg.set(prog(t, 11.8, 14.0)); bf.plant(prog(t, 15.6, 16.6)); bf.wave(t, 1, 1);
+  });
+  return Object.assign(Wd, { cam: t => { const u = ease.io(prog(t, 7.6, 11.6)), cx = lerp(-3.6, 4.2, u); return CAM([cx, 5.2 + .6 * u + .3 * prog(t, 12, 18.25), 10.2 + .3 * u], [cx, 1.2 - .1 * u, .3]); } });
+}
+// ---------- s14 : calm wide, golden evening ----------
+function s14() {
+  const S = mkS({ seed: 14, motes: 60, moteO: { w: 18, z0: -6, z1: 6 }, world: { skyTop: 0xF6C98B, skyBottom: 0xFBE3B4, fogColor: 0xFBE3B4, hemi: .95, sun: .9, sunColor: 0xFFD9A0 } }); const { Wd } = S;
+  TRI.forEach(p => full(S.tree(p[0], p[1]))); const bg = blueGround(Wd, TRI, { r: 1.2 }); bg.set(1); const bf = flag(Wd, BLUEF, [TC[0], GY, TC[1]], 1.3); Wd.on(t => bf.wave(t, 1, 1));
+  return Object.assign(Wd, { cam: dolly([-3, 4.1, 10.4], [2.4, 3.8, 9.8], [0, 1.1, .2], 0, 7.452, { fov0: 40, fov1: 42 }) });
+}
+
+film({
+  title: 'TITLE', kicker: 'KICKER', vault: 'captions_vault.json',
+  shots: [
+    { id: 's01', dur: 7.65, caps: [], build: s01 },
+    { id: 's02', dur: 15.508, caps: ['CAP_s02_1'], capAt: [0.3], build: s02 },
+    { id: 's03', dur: 13.15, caps: ['CAP_s03_1', 'CAP_s03_2'], capAt: [0.3, 5.52], build: s03 },
+    { id: 's04', dur: 12.07, caps: ['CAP_s04_1', 'CAP_s04_2'], capAt: [0.3, 5.07], build: s04 },
+    { id: 's05', dur: 12.95, caps: ['CAP_s05_1', 'CAP_s05_2'], capAt: [0.2, 6.4], build: s05 },
+    { id: 's06', dur: 12.07, caps: ['CAP_s06_1', 'CAP_s06_2'], capAt: [0.3, 5.07], build: s06 },
+    { id: 's07', dur: 10.45, caps: ['CAP_s07_1', 'CAP_s07_2'], capAt: [0.3, 4.8], build: s07 },
+    { id: 's08', dur: 11.53, caps: ['CAP_s08_1', 'CAP_s08_2'], capAt: [0.3, 4.84], build: s08 },
+    { id: 's09', dur: 12.55, caps: ['CAP_s09_1', 'CAP_s09_2'], capAt: [0.2, 5.6], build: s09 },
+    { id: 's10', dur: 12.07, caps: ['CAP_s10_1', 'CAP_s10_2'], capAt: [0.3, 5.07], build: s10 },
+    { id: 's11', dur: 22.0, caps: ['CAP_s11_1', 'CAP_s11_2'], capAt: [0.3, 13.1], build: s11 },
+    { id: 's12', dur: 18.22, caps: ['CAP_s12_1', 'CAP_s12_2'], capAt: [0.3, 10.67], build: s12 },
+    { id: 's13', dur: 18.25, caps: ['CAP_s13_1', 'CAP_s13_2'], capAt: [0.3, 9.12], build: s13 },
+    { id: 's14', dur: 7.452, caps: ['CAP_s14_1'], capAt: [0.3], build: s14 },
+  ],
+});
+</script>
+</html>
