@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>stef_32 film A</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script type="importmap">{ "imports": {
+  "three": "../../node_modules/three/build/three.module.js",
+  "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+// stef_32 / film A: the surrounded neighbour, graphics layer, 167.95 s, silent. No Hebrew here: captions, title and kicker are vault IDs only.
+import { film, THREE, ease, prog, clamp, lerp, path, orbit } from '../../lib/stage3d.js';
+import { pushIn, dolly, crane } from '../../lib/motion3d.js';
+import { PAL, TO, TI, sm, mkWorld, motes, tufts, plots, ringTiles, wallSide, lightRun, coinStack, coinFlight, xMark, checkMark, tile, pop, makeClock, courtyard } from './mk.js';
+
+const T = (b, k) => () => { const W = b(); const c0 = W.cam; W.cam = t => { const c = c0(t), L = c.look, P = c.pos; const nl = [L[0], L[1] - .3, L[2] + .6];
+  return { pos: [nl[0] + (P[0] - L[0]) * k, nl[1] + (P[1] - L[1]) * (k * 1.15) + .4, nl[2] + (P[2] - L[2]) * k], look: nl, fov: c.fov }; }; return W; };
+const CEN = [0, 0, 1];
+const FROM = [0, TI + .4, 0], TO_ = [3.2, TO, 1.3];
+const orb = (a0, a1, t1, r, h, fov) => orbit([0, .9, 1], r || 11.5, h || 3.9, a0, a1, 0, t1, fov || 44);
+
+// common scene: plots + 4 walls (hidden) + wheat + coins + marks + foreground tufts
+function base(o) {
+  o = o || {}; const Wd = mkWorld(o.world); const P = plots(Wd); Wd.hero = P.g;
+  const W = [0, 1, 2, 3].map(i => wallSide(Wd, i, i === 3 && o.dust3 ? { dust: o.dust3 } : {})); W.forEach(w => w.set(0));
+  const wh = tufts(Wd, 18, 9, { x0: -1.6, x1: 1.6, z0: -1.6, z1: 1.5, y: TI }, { cols: [0xD9A93A, 0xE3B94A, 0xC9993A], head: 0xF0CE6A, h: .45, s: .9 }); wh.grow(0);
+  const fgL = tufts(Wd, 22, 5, { x0: -11, x1: -5.6, z0: -3, z1: 8, y: 0 }, { s: 1.5 }), fgR = tufts(Wd, 22, 6, { x0: 5.6, x1: 11, z0: -3, z1: 8, y: 0 }, { s: 1.5 });
+  const gap = tufts(Wd, 10, 31, { x0: -1.6, x1: 1.6, z0: 1.7, z1: 2.5, y: TO }, { s: 1.1 }); gap.grow(0);
+  const cf = coinFlight(Wd, 6), xm = xMark(), ck = checkMark(); Wd.add(xm.g); Wd.add(ck.g); xm.set(0); ck.set(0);
+  const coin1 = coinStack(Wd, 1); coin1.set(0);
+  P.glowFront(0);
+  Wd.on(t => { fgL.sway(t); fgR.sway(t, .9); wh.sway(t, .8); gap.sway(t, o.gapAmp || 1.8); P.fGold.wave(t, 1, 0); P.fGreen.wave(t, 1, 1.7); });
+  return { Wd, P, W, wh, cf, xm, ck, coin1, gap };
+}
+const built = (S, n) => { for (let i = 0; i < n; i++) S.W[i].set(1); };
+
+// coin lifts from the inner plot, hesitates, sinks back; the red X shows over its path
+function reject(S, t, o) {
+  const lift = ease.io(prog(t, o.lift, o.lift + 1.4)), down = ease.io(prog(t, o.sink, o.sink + 1.4));
+  const hes = sm(t, o.sink - 1.3, o.sink - .6) * (1 - sm(t, o.sink - .5, o.sink));
+  const k = lift * (1 - down), vis = sm(t, o.lift - .3, o.lift + .1) * (1 - sm(t, o.sink + 1.3, o.sink + 1.5));
+  S.coin1.g.position.set(.55 * sm(t, o.lift + .8, o.sink) * (1 - down) + .06 * Math.sin(t * 11) * hes, TI + .05 + 1.15 * k + .05 * Math.sin(t * 2.2) * lift * (1 - down), 0); S.coin1.g.rotation.y = t * 2; S.coin1.set(vis);
+  S.xm.g.position.set(.7, TI + 1.2, .2); S.xm.set(Math.min(prog(t, o.x, o.x + .5), 1 - ease.in(prog(t, o.xEnd, o.xEnd + .5))));
+}
+// the 4th wall rises, the field glows, light runs around all four walls, coins hop to the outer plot
+function accept(S, t, t0, sp) {
+  const T = x => t0 + x * sp;
+  S.W[3].set(ease.io(prog(t, T(0), T(3)))); S.gap.grow(1 - ease.io(prog(t, T(0), T(1.5))));
+  S.P.glowFront(prog(t, T(3), T(5.2)), .4); S.wh.grow(prog(t, T(3.4), T(5.6))); S.P.shield(prog(t, T(4.4), T(7)));
+  const p = -.15 + 1.3 * prog(t, T(5.4), T(8)); lightRun(S.W, p, .14);
+  S.cf.set(FROM, TO_, prog(t, T(5.8), T(8.4)));
+  S.ck.g.position.set(3.2, 1.7, 1.3); S.ck.set(prog(t, T(8.1), T(8.6)));
+}
+
+// ---------- s01 : the field rises out of the meadow ----------
+function s01() {
+  const S = base(); const { Wd, P } = S;
+  const gh = [0, 1, 2, 3].map(i => { const m = new THREE.Mesh(new THREE.BoxGeometry(4.2, .6, .24), new THREE.MeshBasicMaterial({ color: 0xFFF3C8, transparent: true, opacity: 0, depthWrite: false, fog: false })); m.position.set(i === 1 ? -2 : i === 2 ? 2 : 0, TO + .3, i === 0 ? -2 : i === 3 ? 2 : 0); if (i === 1 || i === 2) m.rotation.y = Math.PI / 2; Wd.add(m); return m; });
+  motes(Wd, 30, 1);
+  Wd.on(t => {
+    P.rise(prog(t, 1.0, 3.2)); P.fGold.pop(prog(t, 3.0, 3.6)); P.fGreen.pop(prog(t, 3.3, 3.9));
+    gh.forEach((m, i) => { m.material.opacity = .55 * sm(t, 5.0 + i * .15, 5.4 + i * .15) * (.5 + .5 * Math.sin(t * 13 + i * 2)) * (1 - sm(t, 6.9, 7.5)); m.visible = m.material.opacity > .01; });
+  });
+  return Object.assign(Wd, { cam: crane(CEN, 13, 7.5, 4.6, -14, 12, 0, 7.65, { lookDy: .9, fov0: 46, fov1: 44 }) });
+}
+// ---------- s02 : the 4th wall closes, everything rolls onto him ----------
+function s02() {
+  const S = base(); const { Wd, P, W } = S; motes(Wd, 26, 2); built(S, 3);
+  Wd.on(t => {
+    W[3].set(ease.io(prog(t, 4, 7.5))); lightRun(W, -.15 + 1.3 * prog(t, 8, 11.5), .14);
+    S.cf.set(FROM, TO_, prog(t, 8.6, 12.0)); S.gap.grow(1 - ease.io(prog(t, 4, 5)));
+  });
+  return Object.assign(Wd, { cam: orb(-15, 15, 13.685) });
+}
+// ---------- s03 : inner field vs the surrounding ring ----------
+function s03() {
+  const S = base(); const { Wd, P } = S; motes(Wd, 26, 3); const rt = ringTiles(Wd);
+  Wd.on(t => {
+    const a = sm(t, .3, 1.0) * (1 - sm(t, 4.6, 5.2)); P.pulse(t, a); P.fGold.wave(t, 1 + 1.6 * a, 0); P.fGreen.wave(t, 1 + 1.6 * sm(t, 5, 6), 1.7);
+    for (let i = 0; i < 12; i++) rt.set(i, sm(t, 4.84 + i * .36, 5.24 + i * .36));
+  });
+  return Object.assign(Wd, { cam: path([[0, [0, 8, 9.5], [0, 0, .6], 44], [6, [0, 11, 6.5], [0, 0, .4], 44], [11.53, [0, 14.5, 3.6], [0, 0, .3], 44]]) });
+}
+// ---------- s04 : three walls, no payment ----------
+function s04() {
+  const S = base(); const { Wd, P, W } = S; motes(Wd, 26, 4);
+  const starts = [.8, 2.2, 3.6], dg = [tile(Wd, '1', [0, 1.9, -2], .9), tile(Wd, '2', [-2, 1.9, 0], .9), tile(Wd, '3', [2, 1.9, 0], .9)];
+  Wd.on(t => {
+    starts.forEach((a, i) => { W[i].set(ease.io(prog(t, a, a + 1.4))); pop(dg[i], ease.out(prog(t, a + .2, a + .7)) * (1 - ease.in(prog(t, 6.2, 6.8)))); });
+    reject(S, t, { lift: 5.4, sink: 8.0, x: 8.6, xEnd: 11.0 });
+  });
+  return Object.assign(Wd, { cam: pushIn([0, 4.9, 12.5], [0, .9, 1], .14, 0, 12.07, { fov0: 45, fov1: 42 }) });
+}
+// ---------- calm backdrop under a clip ----------
+function calm(keys, seed) {
+  const S = base(); const { Wd, P } = S; motes(Wd, 60, seed, { w: 18, z0: -6, z1: 6 }); built(S, 4); S.wh.grow(1); S.P.glowFront(1, .12);
+  Wd.on(t => { S.W.forEach(w => w.set(1)); });
+  return Object.assign(Wd, { cam: path(keys) });
+}
+const s05 = () => calm([[0, [2.2, 4.75, 12.4], [0, .9, .8], 44], [5, [.4, 4.97, 12.7], [0, .9, .8], 44], [10.35, [-1.2, 4.82, 12.4], [0, .9, .8], 44]], 5);
+const s09 = () => calm([[0, [-1.8, 4.68, 12.2], [0, .9, .8], 44], [5, [-.2, 4.97, 12.8], [0, .9, .8], 44], [10.35, [1.6, 4.75, 12.3], [0, .9, .8], 44]], 9);
+// ---------- s06 : closing the 4th side shows he wants an enclosed field ----------
+function s06() {
+  const S = base({ dust3: 0xF2D98A }); const { Wd, P, W } = S; motes(Wd, 26, 6); built(S, 3);
+  Wd.on(t => {
+    W[3].set(ease.io(prog(t, 2.0, 5.0))); P.fGold.dip(sm(t, 1.4, 3.0) * (1 - sm(t, 4.8, 6.0)));
+    P.glowFront(prog(t, 5.0, 7.6), .42); S.wh.grow(prog(t, 6.4, 9)); P.shield(prog(t, 8, 10.5)); S.gap.grow(1 - ease.io(prog(t, 2, 3.2)));
+  });
+  return Object.assign(Wd, { cam: orb(28, -22, 12.07, 11.5, 4.6) });
+}
+// ---------- s07 : he shares in ALL the walls ----------
+function s07() {
+  const S = base(); const { Wd, P, W } = S; motes(Wd, 26, 7); built(S, 4); S.wh.grow(1); P.glowFront(1, .15);
+  const order = [3, 0, 1, 2], st = [[.8, TI, 1.35], [-.8, TI, -1.35], [-1.35, TI, -.5], [1.35, TI, .5]];
+  const dst = [[3.4, TO, 2.8], [-3.3, TO, -3.2], [-3.5, TO, .6], [3.5, TO, -.8]];
+  const stk = st.map(p => { const s = coinStack(Wd, 4); s.g.position.set(...p); s.set(0); return s; }), cfs = st.map(() => coinFlight(Wd, 4, { arc: 2.0 }));
+  Wd.on(t => {
+    order.forEach((wi, n) => {
+      const a = .8 + n * 1.1, b = sm(t, a, a + .4) * (1 - .6 * sm(t, a + 1.0, a + 1.6)); W[wi].flash(1, b);
+      const fp = prog(t, 5.4 + n * .4, 7.4 + n * .4); stk[wi].set(sm(t, a + .3, a + 1.3) * (1 - sm(fp, 0, .06))); cfs[wi].set([st[wi][0], st[wi][1] + .3, st[wi][2]], dst[wi], fp);
+    });
+  });
+  return Object.assign(Wd, { cam: path([[0, [0, 4.6, 13.5], [0, 1.0, .6], 46], [10.99, [0, 5.6, 12], [0, .9, .6], 44]]) });
+}
+// ---------- s08 : two courtyards and one shared wall ----------
+function s08() {
+  const Wd = mkWorld(); const cy = courtyard(Wd); Wd.hero = cy.g; motes(Wd, 26, 8);
+  const fgL = tufts(Wd, 20, 15, { x0: -11, x1: -6.4, z0: -3, z1: 8, y: 0 }, { s: 1.5 }), fgR = tufts(Wd, 20, 16, { x0: 6.4, x1: 11, z0: -3, z1: 8, y: 0 }, { s: 1.5 });
+  cy.joint.set(0); const stack = coinStack(Wd, 4); stack.g.position.set(...cy.right); stack.set(0); const cf = coinFlight(Wd, 4, { arc: 2.3 });
+  Wd.on(t => {
+    fgL.sway(t); fgR.sway(t, .9);
+    cy.joint.set(ease.io(prog(t, 5.6, 9.0))); cy.flash(Math.sin(Math.PI * clamp(prog(t, 5.7, 6.5), 0, 1)) * .9);
+    const fp = prog(t, 9.6, 12.4); stack.set(sm(t, .8, 2.6) * (1 - sm(fp, 0, .06))); cf.set([cy.right[0], TO + .3, cy.right[2]], [cy.left[0], TO, cy.left[2]], fp);
+  });
+  return Object.assign(Wd, { cam: orbit([0, .9, .5], 10.5, 5.0, -26, 22, 0, 13.69, 44) });
+}
+// ---------- s10 : question 1 ----------
+function s10() {
+  const S = base(); const { Wd } = S; motes(Wd, 26, 10); built(S, 3); S.gap.grow(1); const clock = makeClock(Wd, { pos: [0, 2.7, 0], R: 1.1 });
+  Wd.on(t => {
+    clock.set(prog(t, 6.48, 11.48)); clock.g.position.y = 2.7 + .05 * Math.sin(t * 1.3); clock.fade(ease.out(prog(t, .5, 1.2)) * (1 - sm(t, 11.6, 12.2)));
+    reject(S, t, { lift: 1.0, sink: 11.7, x: 13.0, xEnd: 18.6 });
+  });
+  return Object.assign(Wd, { cam: path([[0, [-1.5, 4.68, 12], [0, .9, .8], 44], [10, [0, 4.90, 11.5], [0, .9, .8], 44], [19.48, [1.5, 4.61, 12], [0, .9, .8], 44]]) });
+}
+// ---------- s11 : question 2 ----------
+function s11() {
+  const S = base({ dust3: 0xF2D98A }); const { Wd, P } = S; motes(Wd, 26, 11); built(S, 3); S.gap.grow(1); const clock = makeClock(Wd, { pos: [0, 2.7, 0], R: 1.1 });
+  Wd.on(t => {
+    clock.set(prog(t, 6.48, 11.48)); clock.g.position.y = 2.7 + .05 * Math.sin(t * 1.3); clock.fade(ease.out(prog(t, .5, 1.2)) * (1 - sm(t, 11.6, 12.2)));
+    S.coin1.g.position.set(0, TI + 1.15 + .05 * Math.sin(t * 2.2), 0); S.coin1.g.rotation.y = t * 2; S.coin1.set(sm(t, 1.0, 1.4) * (1 - sm(t, 11.7, 12.2)));
+    accept(S, t, 11.7, .92);
+  });
+  return Object.assign(Wd, { cam: path([[0, [1.5, 4.18, 12.5], [0, .9, .8], 45], [10, [0, 4.61, 12], [0, .9, .8], 44], [20.38, [-1.2, 5.18, 11.5], [0, .9, .8], 44]]) });
+}
+// ---------- s12 : summary glide ----------
+function s12() {
+  const S = base({ dust3: 0xF2D98A }); const { Wd } = S; motes(Wd, 30, 12); built(S, 3); S.gap.grow(1);
+  Wd.on(t => {
+    reject(S, t, { lift: .6, sink: 4.4, x: 5.4, xEnd: 8.3 });
+    accept(S, t, 9.4, .9);
+  });
+  return Object.assign(Wd, { cam: path([[0, [-2.2, 4.68, 12], [0, .9, .8], 44], [9, [0, 5.04, 10.8], [0, .9, .6], 44], [18.25, [2.6, 4.68, 12], [0, .9, .8], 44]]) });
+}
+// ---------- s13 : calm wide, golden evening ----------
+function s13() {
+  const S = base({ world: { skyTop: 0xF6C98B, skyBottom: 0xFBE3B4, fogColor: 0xFBE3B4, hemi: .95, sun: .9, sunColor: 0xFFD9A0 } }); const { Wd, P } = S; motes(Wd, 60, 13, { w: 18, z0: -6, z1: 6 });
+  built(S, 4); S.wh.grow(1); P.glowFront(1, .16);
+  Wd.on(t => { S.W.forEach(w => w.set(1)); });
+  return Object.assign(Wd, { cam: dolly([-2.2, 5.6, 14], [1.6, 3.74, 12.4], [0, .9, .6], 0, 7.455, { fov0: 38, fov1: 40 }) });
+}
+
+film({
+  title: 'TITLE', kicker: 'KICKER', vault: 'captions_vault.json',
+  shots: [
+    { id: 's01', dur: 7.65, caps: [], build: T(s01, 0.58) },
+    { id: 's02', dur: 13.685, caps: ['CAP_s02_1'], capAt: [0.3], build: T(s02, 0.58) },
+    { id: 's03', dur: 11.53, caps: ['CAP_s03_1', 'CAP_s03_2'], capAt: [0.3, 4.84], build: T(s03, 0.58) },
+    { id: 's04', dur: 12.07, caps: ['CAP_s04_1', 'CAP_s04_2'], capAt: [0.3, 5.07], build: T(s04, 0.58) },
+    { id: 's05', dur: 10.35, caps: ['CAP_s05_1', 'CAP_s05_2'], capAt: [0.2, 5.0], build: s05 },
+    { id: 's06', dur: 12.07, caps: ['CAP_s06_1', 'CAP_s06_2'], capAt: [0.3, 5.07], build: T(s06, 0.58) },
+    { id: 's07', dur: 10.99, caps: ['CAP_s07_1', 'CAP_s07_2'], capAt: [0.3, 4.8], build: T(s07, 0.58) },
+    { id: 's08', dur: 13.69, caps: ['CAP_s08_1', 'CAP_s08_2'], capAt: [0.3, 5.75], build: T(s08, 0.7) },
+    { id: 's09', dur: 10.35, caps: ['CAP_s09_1', 'CAP_s09_2'], capAt: [0.2, 5.0], build: s09 },
+    { id: 's10', dur: 19.48, caps: ['CAP_s10_1', 'CAP_s10_2'], capAt: [0.3, 11.48], build: T(s10, 0.58) },
+    { id: 's11', dur: 20.38, caps: ['CAP_s11_1', 'CAP_s11_2'], capAt: [0.3, 11.48], build: T(s11, 0.58) },
+    { id: 's12', dur: 18.25, caps: ['CAP_s12_1', 'CAP_s12_2'], capAt: [0.3, 9.12], build: T(s12, 0.58) },
+    { id: 's13', dur: 7.455, caps: ['CAP_s13_1'], capAt: [0.3], build: T(s13, 0.58) },
+  ],
+});
+</script>
+</html>
