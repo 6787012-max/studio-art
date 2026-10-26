@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>stef_30 film A</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script>window.__T0=0.0000; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": {
+  "three": "../../node_modules/three/build/three.module.js",
+  "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+// stef_30 / film A: graphics layer, 215.34 s, silent. No Hebrew here: captions, title and kicker are vault IDs only.
+import { film, THREE, ease, prog, clamp, lerp, path, orbit, label } from '../../lib/stage3d.js';
+import { pushIn, dolly } from '../../lib/motion3d.js';
+import { PAL, TOP, LOAF, GAP, sm, keyColor, glow, mkWorld, motes, makeTable, sideSlabs, paint, mold, ghostify, makePair, makeRig, makeAir,
+  sevenDays, makeClock, makeCandle, makeSteam, makeBeam, lightRing, makeOutline } from './lp.js';
+
+const base = o => { const Wd = mkWorld(o); const tb = makeTable(Wd); Wd.hero = tb; return [Wd, tb]; };
+const cand = Wd => [makeCandle(Wd, { pos: [-.9, TOP, -.34], ph: 0 }), makeCandle(Wd, { pos: [.9, TOP, -.34], ph: 1.7 })];
+const warm = (pr, t, k, off) => pr.stacks.forEach((s, si) => s.loaves.forEach((l, i) => paint(l, { emi: k * (.2 + .1 * Math.sin(t * 2 + i * .6 + si + (off || 0))) })));
+
+// ---------- s01 : loaves drop onto the empty golden table ----------
+function dropY(u) { if (u < 0) return null; if (u < .32) return 1.5 * (1 - ease.in(u / .32)); if (u < .5) return .05 * Math.sin(Math.PI * (u - .32) / .18); return 0; }
+function s01() {
+  const [Wd] = base(); const pr = makePair(Wd); motes(Wd, 30, 1);
+  Wd.on(t => { pr.stacks.forEach((s, si) => { s.loaves.forEach((l, li) => { const y = dropY(t - (1.0 + (li * 2 + si) * .46)); l.visible = y !== null; l.userData.dy = y || 0; }); s.layout(0); }); });
+  return Object.assign(Wd, { cam: path([[0, [3.4, 4.0, 4.4], [0, .7, 0], 40], [7.65, [.5, 1.45, 3.9], [0, .62, 0], 38]]) });
+}
+// ---------- s02 : the light never stops circling ----------
+function s02() {
+  const [Wd] = base(); const pr = makePair(Wd); const beam = makeBeam(Wd), lr = lightRing(Wd); motes(Wd, 30, 2);
+  Wd.on(t => { beam.set(sm(t, .2, 2.6)); lr.update(t, sm(t, 1.8, 3.0), .16); warm(pr, t, sm(t, 2, 3.5)); });
+  return Object.assign(Wd, { cam: orbit([0, .75, 0], 3.7, 1.35, -20, 20, 0, 9.432, 40) });
+}
+// ---------- s03 : 12 = 2 x 6 ----------
+function s03() {
+  const [Wd] = base(); const pr = makePair(Wd); motes(Wd, 26, 3);
+  pr.stacks.forEach((s, si) => {
+    s.lab = []; for (let li = 0; li < 6; li++) { const lb = label({ add: x => s.g.add(x) }, String(li + 1), { size: 80, height: .16, bg: 'rgba(255,248,224,.95)', color: '#7a4a10', pos: [(si ? 1 : -1) * .46, LOAF.h / 2 + li * LOAF.h, 0] }); lb.userData.s0 = lb.scale.clone(); lb.visible = false; s.lab.push(lb); }
+    const six = label({ add: x => s.g.add(x) }, '6', { size: 110, height: .3, bg: 'rgba(255,248,224,.95)', color: '#7a4a10', pos: [0, .78, 0] }); six.userData.s0 = six.scale.clone(); six.visible = false; s.six = six;
+  });
+  const t12 = label(Wd, '12', { size: 110, height: .36, bg: 'rgba(255,248,224,.95)', color: '#7a4a10', pos: [0, TOP + 1.18, 0] }); const s12 = t12.scale.clone(); t12.visible = false;
+  const pop = (sp, k) => { sp.scale.set(sp.userData.s0.x * Math.max(k, .0001), sp.userData.s0.y * Math.max(k, .0001), 1); sp.visible = k > .01; };
+  Wd.on(t => {
+    const tint = sm(t, 5.3, 6.0), sx = .52 + .14 * ease.io(prog(t, 5.8, 8.0));
+    [1, 0].forEach((si, order) => { const s = pr.stacks[si]; s.g.position.x = (si ? 1 : -1) * sx;
+      s.loaves.forEach((l, li) => { const u = t - ((order ? 3.0 : .8) + li * .38), pulse = sm(u, 0, .12) * (1 - .45 * sm(u, .5, 1.1));
+        paint(l, { mixCol: 0x7EC8E3, mix: si ? 0 : .3 * tint, emiCol: tint > .01 ? (si ? 0xFFB02E : 0x7EC8E3) : 0xFFD060, emi: pulse * .55 + tint * .3 }); pop(s.lab[li], ease.out(prog(u, 0, .35))); });
+      pop(s.six, ease.out(prog(t, 8.3, 8.9))); });
+    const k12 = ease.out(prog(t, 9.6, 10.3)); t12.scale.set(s12.x * Math.max(k12, .0001), s12.y * Math.max(k12, .0001), 1); t12.visible = k12 > .01;
+  });
+  return Object.assign(Wd, { cam: pushIn([0, 2.0, 4.3], [0, .95, 0], .36, 0, 12.611, { fov0: 42, fov1: 36 }) });
+}
+// ---------- s04 : the weekly swap ----------
+function s04() {
+  const [Wd] = base(); sideSlabs(Wd, 6); const ring = sevenDays(Wd, { pos: [0, 2.25, -1.3], R: 1.0 }); Wd.hero = ring.g; const c = cand(Wd); motes(Wd, 30, 4);
+  const old = makePair(Wd, { trays: true }), nw = makePair(Wd, { trays: true });
+  const cA = makeCandle(ring.g, { pos: [Math.sin(6 * 2 * Math.PI / 7) * 1.0 - .09, Math.cos(6 * 2 * Math.PI / 7) * 1.0 + .25, .06], s: .8, ph: 0 }), cB = makeCandle(ring.g, { pos: [Math.sin(6 * 2 * Math.PI / 7) * 1.0 + .09, Math.cos(6 * 2 * Math.PI / 7) * 1.0 + .25, .06], s: .8, ph: 2 });
+  Wd.on(t => {
+    for (let i = 0; i < 7; i++) { const u = t - (.7 + i * .5); ring.lit(i, i < 6 ? sm(u, 0, .12) * (1 - .55 * sm(u, .45, .8)) : sm(u, 0, .12)); }
+    ring.runner(clamp((t - .7) / .5, 0, 6), sm(t, .5, .9) * (1 - sm(t, 4.0, 4.5)) * .9);
+    const kc = sm(t, 3.8, 4.2); cA.set(kc, t); cB.set(kc, t); c.forEach(x => x.set(0, t));
+    old.g.position.x = -4.6 * ease.io(prog(t, 4.7, 6.7)); nw.g.position.x = lerp(6.0, 0, ease.io(prog(t, 4.9, 6.9)));
+    old.stacks.forEach(s => s.loaves.forEach(l => paint(l, { mixCol: 0x8a6a45, mix: .3 })));
+    nw.stacks.forEach(s => s.loaves.forEach((l, i) => paint(l, { emiCol: 0xFFD36A, emi: .18 + .06 * Math.sin(t * 3 + i) })));
+  });
+  return Object.assign(Wd, { cam: dolly([0, 2.2, 4.8], [-.5, 2.0, 4.3], [0, 1.1, 0], 0, 9.91, { fov0: 52, fov1: 50 }) });
+}
+// ---------- s05 / s07 : calm backdrop under the clip ----------
+function calm(keys) {
+  const [Wd] = base(); const pr = makePair(Wd); const rig = makeRig(pr); const c = cand(Wd); const lr = lightRing(Wd); motes(Wd, 70, 5, { w: 12, z0: -4, z1: 3 });
+  Wd.on(t => { rig.update(() => 0); lr.update(t, .6, .05); c.forEach(x => x.set(.85, t)); warm(pr, t, .6); });
+  return Object.assign(Wd, { cam: path(keys) });
+}
+const s05 = () => calm([[0, [1.5, 1.5, 3.7], [0, .9, 0], 40], [5, [0, 1.7, 3.9], [0, .9, 0], 40], [10.55, [-1.4, 1.5, 3.7], [0, .9, 0], 40]]);
+const s07 = () => calm([[0, [2.0, 1.6, 3.7], [0, .9, 0], 40], [10, [0, 1.9, 4.1], [0, .9, 0], 40], [20, [-2.0, 1.5, 3.7], [0, .9, 0], 40], [30, [0, 1.8, 4.2], [0, .9, 0], 41], [39.349, [1.9, 1.6, 3.7], [0, .9, 0], 40]]);
+// ---------- s06 : tubes keep the bread fresh, the ghost stack moulds ----------
+function s06() {
+  const [Wd] = base(); const pr = makePair(Wd, { sx: .62, spots: true }); const rig = makeRig(pr, { only: 0 }); const air = makeAir(pr.g, { stacks: [pr.stacks[0]], trays: pr.trays }); motes(Wd, 26, 6);
+  pr.stacks.forEach(s => s.loaves.forEach(l => ghostify(l, .85)));
+  Wd.on(t => {
+    rig.update(i => .35 * (1 - ease.out(prog(t, .6 + i * .65, .6 + i * .65 + .9))), GAP); air.update(t, sm(t, 5.2, 6.2), .55);
+    const km = sm(t, 1.0, 10.5);
+    pr.stacks[1].loaves.forEach((l, i) => { const q = clamp(km * 1.2 - i * .03, 0, 1); paint(l, { mixCol: 0x7d8a6a, mix: .75 * q }); mold(l, q); });
+    pr.stacks[0].loaves.forEach((l, i) => paint(l, { emi: .1 + .07 * Math.sin(t * 2 + i) }));
+  });
+  return Object.assign(Wd, { cam: path([[0, [-.75, 1.25, 2.2], [-.65, 1.05, 0], 38], [11.53, [0, 1.5, 4.5], [0, .98, 0], 42]]) });
+}
+// ---------- s08 : sunset, tubes out, night, tubes back ----------
+function s08() {
+  const [Wd] = base(); const pr = makePair(Wd); const rig = makeRig(pr); const c = cand(Wd); motes(Wd, 24, 8);
+  const sunB = new THREE.Mesh(new THREE.SphereGeometry(2.2, 24, 16), new THREE.MeshBasicMaterial({ color: 0xFFE08A, fog: false })); Wd.add(sunB);
+  const stars = []; for (let i = 0; i < 90; i++) { const a = (Math.sin(i * 12.9898) * 43758.5453) % 1, b = (Math.sin(i * 78.233) * 24634.6345) % 1, m = new THREE.Mesh(new THREE.SphereGeometry(1, 6, 5), new THREE.MeshBasicMaterial({ color: 0xFFF6D0, transparent: true, opacity: 0, fog: false }));
+    m.position.set(Math.abs(a) * 120 - 60, 6 + Math.abs(b) * 36, -55); m.scale.setScalar(.12 + Math.abs(a * b) * .5); Wd.add(m); stars.push(m); }
+  const TK = [[0, 0xBFE3F2], [3.5, 0xB5D9EE], [6.2, 0xD9805F], [8.0, 0x14234F], [11.5, 0x0F1B45], [14.771, 0x34447F]], BK = [[0, 0xFBF0D6], [3.5, 0xFBE8C0], [6.2, 0xF8C47F], [8.0, 0x2F3F7A], [11.5, 0x28386E], [14.771, 0x7C88BA]];
+  const FK = [[0, 0xEEDDB2], [6.2, 0xE8C99A], [8.0, 0x39466E], [14.771, 0x4d5a86]], SK = [[0, 0xFFF0B0], [5.5, 0xFF9A4A], [14.771, 0xFF9A4A]], SC = [[0, 0xFFFFFF], [5, 0xFFB070], [8, 0x8fa0e0], [14.771, 0x8fa0e0]];
+  Wd.on(t => {
+    const top = keyColor(TK, t), bot = keyColor(BK, t); Wd.sky.material.uniforms.top.value.copy(top); Wd.sky.material.uniforms.bot.value.copy(bot); Wd.scene.fog.color.copy(bot); Wd.floor.material.color.copy(keyColor(FK, t));
+    const night = sm(t, 6.5, 8.0) * (1 - sm(t, 12.5, 14.7) * .5);
+    Wd.hemi.intensity = lerp(1.1, .75, night); Wd.hemi.color.copy(keyColor(SC, t)); Wd.sun.intensity = lerp(1.05, .32, night); Wd.sun.color.copy(keyColor(SC, t));
+    sunB.position.set(-16 + t * 1.4, lerp(15, -3, sm(t, 0, 7.2)), -45); sunB.material.color.copy(keyColor(SK, t)); sunB.visible = sunB.position.y > -2.4;
+    const sa = sm(t, 6.8, 8.2) * (1 - sm(t, 11.5, 13.8)); stars.forEach((m, i) => { m.material.opacity = sa * (.65 + .35 * Math.sin(t * 2 + i)); m.visible = sa > .01; });
+    rig.update(i => { const a = ease.io(prog(t, 3.0 + i * .12, 4.7 + i * .12)), b = ease.io(prog(t, 11.2 + i * .12, 12.9 + i * .12)); return a * (1 - b); });
+    const ck = sm(t, 6.0, 6.5) * (1 - sm(t, 10.8, 11.3)); c.forEach(x => x.set(ck, t));
+    const pl = Math.max(sm(t, 8.2, 8.7) * (1 - sm(t, 8.9, 9.5)), sm(t, 9.8, 10.3) * (1 - sm(t, 10.5, 11.1)));
+    pr.stacks.forEach(s => s.loaves.forEach((l, i) => paint(l, pl > .02 ? { emiCol: 0x7CF0A0, emi: pl * .6 } : { emiCol: 0xFFB347, emi: .14 * night })));
+  });
+  return Object.assign(Wd, { cam: orbit([0, .8, 0], 4.2, 1.5, -16, 16, 0, 14.771, 40) });
+}
+// ---------- s09 : the table is never empty ----------
+function s09() {
+  const [Wd] = base(); sideSlabs(Wd, 6); const ol = makeOutline(Wd); motes(Wd, 26, 9);
+  const P = [0, 1, 2].map(() => makePair(Wd, { trays: true }));
+  Wd.on(t => {
+    ol.update(t);
+    const U = ease.io(prog(t, 1.0, 4.6)) + ease.io(prog(t, 7.0, 12.0));
+    P.forEach((p, j) => { p.g.position.x = 1.84 * (j - U); });
+    const age = [.3, .3 * sm(U, 1.2, 1.8), 0];
+    P.forEach((p, j) => p.stacks.forEach(s => s.loaves.forEach((l, i) => paint(l, j === 0 || j === 1 ? { mixCol: 0x8a6a45, mix: age[j], emiCol: 0xFFD36A, emi: .16 * (1 - age[j] / .3) } : { emiCol: 0xFFD36A, emi: .18 + .05 * Math.sin(t * 3 + i) }))));
+  });
+  return Object.assign(Wd, { cam: path([[0, [-.5, 1.0, 3.8], [0, .9, 0], 44], [6.5, [.8, 1.15, 3.6], [0, .9, 0], 44], [9.5, [.2, 2.8, 2.6], [0, .7, 0], 44], [13.15, [0, 4.6, .6], [0, .7, 0], 46]]) });
+}
+// ---------- s10 : the 7-day miracle, warm bread ----------
+function s10() {
+  const [Wd] = base({ skyBottom: 0xE9D2A2, skyTop: 0xF6E8C4, fogColor: 0xE9D2A2, floor: 0xE2CE9C, hemi: 1.0 }); const ring = sevenDays(Wd, { pos: [0, 2.15, -1.4], R: 1.0 }); const pr = makePair(Wd); motes(Wd, 26, 10);
+  const stm = pr.stacks.map(s => makeSteam(s.g, { pos: [0, .5, 0], n: 9, seed: 3, size: .3, h: .8 })), big = makeSteam(pr.stacks[1].g, { pos: [0, .55, 0], n: 14, seed: 9, size: .5, h: 1.2, w: .6 });
+  const gl = pr.stacks.map(s => glow(Wd, 0xFF9A3C, 2.2)); gl.forEach((g, i) => g.position.set(pr.stacks[i].g.position.x, TOP + .3, -.25));
+  Wd.on(t => {
+    for (let i = 0; i < 7; i++) { const u = t - (.6 + i * .55); ring.lit(i, i < 6 ? sm(u, 0, .12) * (1 - .6 * sm(u, .45, .9)) : sm(u, 0, .12)); }
+    ring.runner(clamp((t - .6) / .55, 0, 6), sm(t, .4, .8) * (1 - sm(t, 4.2, 4.8)) * .9);
+    const w = sm(t, .9, 2.2); pr.stacks.forEach((s, si) => s.loaves.forEach((l, i) => paint(l, { emi: w * (.22 + .1 * Math.sin(t * 2 + i * .6 + si)) })));
+    stm.forEach(s => s.update(t, w * .75)); gl.forEach((g, i) => g.set(w * (.3 + .08 * Math.sin(t * 1.7 + i))));
+    pr.stacks[1].g.position.y = .45 * ease.io(prog(t, 5.0, 6.2)) - .45 * ease.io(prog(t, 11.5, 12.8));
+    big.update(t, sm(t, 5.9, 6.6) * (1 - sm(t, 11.0, 12.8)));
+  });
+  return Object.assign(Wd, { cam: pushIn([.2, 2.3, 5.0], [0, 1.2, 0], .5, 0, 14.23, { fov0: 42, fov1: 34 }) });
+}
+// ---------- s11 / s12 : question with a 5 second clock, then the answer ----------
+function question(kind) {
+  const [Wd] = base(); const pr = makePair(Wd); const rig = makeRig(pr); const clock = makeClock(Wd, { pos: [0, 2.3, 0], R: .6 }); const c = cand(Wd); const air = makeAir(pr.g, pr); motes(Wd, 30, 11 + kind);
+  const stm = pr.stacks.map(s => makeSteam(s.g, { pos: [0, .5, 0], n: 9, seed: 4, size: .3, h: .8 })); const gl = pr.stacks.map(s => glow(Wd, 0xFF9A3C, 2.2)); gl.forEach((g, i) => g.position.set(pr.stacks[i].g.position.x, TOP + .3, -.25));
+  Wd.on(t => {
+    const k = prog(t, 6.48, 11.48); clock.set(k); clock.g.position.y = 2.3 + .04 * Math.sin(t * 1.3); clock.fade(1 - sm(t, 11.6, 12.4));
+    if (kind === 0) {
+      rig.update(i => ease.io(prog(t, 12.0 + i * .25, 13.7 + i * .25)));
+      const ck = sm(t, 13.5, 14.2); c.forEach(x => x.set(ck, t)); air.update(t, 0, .5); stm.forEach(s => s.update(t, 0)); gl.forEach(g => g.set(0));
+    } else {
+      rig.update(() => 0); c.forEach(x => x.set(0, t));
+      air.update(t, sm(t, 11.6, 12.6), .55); const w = sm(t, 16.0, 17.2);
+      stm.forEach(s => s.update(t, w * .75)); gl.forEach((g, i) => g.set(w * (.3 + .08 * Math.sin(t * 1.7 + i)))); warm(pr, t, w);
+    }
+  });
+  return Object.assign(Wd, { cam: path([[0, [1.2, 2.0, 4.6], [0, 1.35, 0], 42], [10, [-.4, 1.9, 4.2], [0, 1.2, 0], 40], [21.73, [.9, 1.7, 3.8], [0, .95, 0], 38]]) });
+}
+// ---------- s13 : summary glide ----------
+function s13() {
+  const [Wd] = base({ skyBottom: 0xEBD6A8, skyTop: 0xF7EAC8, fogColor: 0xEBD6A8 }); const ring = sevenDays(Wd, { pos: [0, 2.2, -1.5], R: 1.0 }); const pr = makePair(Wd); const rig = makeRig(pr); const air = makeAir(pr.g, pr); const c = cand(Wd); motes(Wd, 30, 13);
+  const stm = pr.stacks.map(s => makeSteam(s.g, { pos: [0, .5, 0], n: 9, seed: 6, size: .3, h: .8 })); const gl = pr.stacks.map(s => glow(Wd, 0xFF9A3C, 2.2)); gl.forEach((g, i) => g.position.set(pr.stacks[i].g.position.x, TOP + .3, -.25));
+  Wd.on(t => {
+    rig.update(() => 0);
+    for (let i = 0; i < 7; i++) { const u = t - (.8 + i * .5); ring.lit(i, i < 6 ? sm(u, 0, .12) * (1 - .5 * sm(u, .45, .8)) : sm(u, 0, .12)); }
+    ring.runner(clamp((t - .8) / .5, 0, 6), sm(t, .6, 1) * (1 - sm(t, 4.2, 4.8)) * .9);
+    air.update(t, sm(t, 6.8, 7.8), .55);
+    const ck = sm(t, 13.6, 14.3); c.forEach(x => x.set(ck, t)); const w = sm(t, 14.2, 15.4);
+    stm.forEach(s => s.update(t, w * .75)); gl.forEach((g, i) => g.set(w * (.3 + .08 * Math.sin(t * 1.7 + i)))); warm(pr, t, w);
+  });
+  return Object.assign(Wd, { cam: path([[0, [-1.8, 1.6, 3.8], [-.5, 1.1, 0], 40], [7, [-.3, 1.6, 3.5], [0, 1.1, 0], 40], [14, [1.0, 1.5, 3.4], [.3, 1.0, 0], 40], [21.25, [1.8, 1.7, 3.8], [.5, 1.2, 0], 40]]) });
+}
+// ---------- s14 : calm wide, light dims ----------
+function s14() {
+  const [Wd] = base(); const pr = makePair(Wd); const rig = makeRig(pr); const c = cand(Wd); const lr = lightRing(Wd); motes(Wd, 60, 14, { w: 12, z0: -4, z1: 3 });
+  const stm = pr.stacks.map(s => makeSteam(s.g, { pos: [0, .5, 0], n: 8, seed: 7, size: .28, h: .7 }));
+  Wd.on(t => { rig.update(() => 0); lr.update(t, .5, .05); c.forEach(x => x.set(1, t)); stm.forEach(s => s.update(t, .5)); warm(pr, t, .6);
+    const d = sm(t, .5, 7.2); Wd.hemi.intensity = lerp(1.1, .5, d); Wd.sun.intensity = lerp(1.05, .35, d); });
+  return Object.assign(Wd, { cam: dolly([0, 1.6, 3.5], [0, 1.9, 4.2], [0, .9, 0], 0, 7.448, { fov0: 42, fov1: 44 }) });
+}
+
+film({
+  title: 'TITLE', kicker: 'KICKER', vault: 'captions_vault.json',
+  shots: [
+    { id: 's01', dur: 7.65, caps: [], build: s01 },
+    { id: 's02', dur: 9.432, caps: ['CAP_s02_1'], capAt: [0.3], build: s02 },
+    { id: 's03', dur: 12.611, caps: ['CAP_s03_1', 'CAP_s03_2'], capAt: [0.3, 5.3], build: s03 },
+    { id: 's04', dur: 9.91, caps: ['CAP_s04_1', 'CAP_s04_2'], capAt: [0.3, 4.86], build: s04 },
+    { id: 's05', dur: 10.55, caps: ['CAP_s05_1', 'CAP_s05_2'], capAt: [0.2, 4.8], build: s05 },
+    { id: 's06', dur: 11.53, caps: ['CAP_s06_1', 'CAP_s06_2'], capAt: [0.3, 4.84], build: s06 },
+    { id: 's07', dur: 39.349, caps: ['CAP_s07_1', 'CAP_s07_2'], capAt: [0.4, 20.0], build: s07 },
+    { id: 's08', dur: 14.771, caps: ['CAP_s08_1', 'CAP_s08_2'], capAt: [0.3, 6.2], build: s08 },
+    { id: 's09', dur: 13.15, caps: ['CAP_s09_1', 'CAP_s09_2'], capAt: [0.3, 5.52], build: s09 },
+    { id: 's10', dur: 14.23, caps: ['CAP_s10_1', 'CAP_s10_2'], capAt: [0.3, 5.98], build: s10 },
+    { id: 's11', dur: 21.729, caps: ['CAP_s11_1', 'CAP_s11_2'], capAt: [0.3, 11.48], build: () => question(0) },
+    { id: 's12', dur: 21.73, caps: ['CAP_s12_1', 'CAP_s12_2'], capAt: [0.3, 11.48], build: () => question(1) },
+    { id: 's13', dur: 21.25, caps: ['CAP_s13_1', 'CAP_s13_2', 'CAP_s13_3'], capAt: [0.3, 7.18, 14.07], build: s13 },
+    { id: 's14', dur: 7.448, caps: ['CAP_s14_1'], capAt: [0.3], build: s14 },
+  ],
+});
+</script>
+</html>
