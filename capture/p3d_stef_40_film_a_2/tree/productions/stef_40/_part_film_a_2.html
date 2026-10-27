@@ -1,0 +1,162 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>stef_40 film A</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>window.__T0=86.4040; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": {
+  "three": "../../node_modules/three/build/three.module.js",
+  "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+// stef_40 / film A: graphics layer (216.01 s, silent). No Hebrew here: captions, title and kicker are vault IDs only.
+import { film, THREE, ease, prog, clamp, lerp, orbit } from '../../lib/stage3d.js';
+import { K, sm, lp3, A3, POP, pulse, CAM, mkS, farm, heroOn, mkTrip, playTrips, farmFx, restAt, route, goldArrow, tally, ckWin, loops, scroll, clockRing, heroProxy } from './hs.js';
+
+// ---------- helpers ----------
+const base = (o, fo) => { const Wd = mkS(o); const F = farm(Wd, fo); return { Wd, F }; };
+const hide = (F, t) => { F.rb.pop(0); F.rb.bar(0); };
+
+// ---------- s01 : title - the sheep hops over the fence and trots into the field ----------
+function s01() {
+  const { Wd, F } = base({ seed: 1, motes: 48 }); heroOn(Wd, F.sheep);
+  const tr = mkTrip(F, { an: F.sheep, t0: 4.4, L: 4.5, hopOut: true, noReturn: true, S: [4.6, 0, 3.0] });
+  Wd.on(t => { const r = playTrips(F, t, F.sheep, [tr]); farmFx(F, t, { n: 0, gate: r.gate, dust: r.dust }); hide(F); });
+  return Object.assign(Wd, { cam: CAM([-3, 16, 22], [-2, 1.2, 1], [-1, 8, 17.5], [-1.5, 1.8, 1], 7.65) });
+}
+
+// ---------- s02 : verse scroll; a sheep and an ox lost in a far field; arrow brings them home ----------
+function s02() {
+  const { Wd, F } = base({ seed: 2 }, { cow: true }); heroOn(Wd, F.sheep);
+  const sc = scroll(Wd, 6.4, 4.0); sc.g.position.set(0, 9.6, -5); const ar = goldArrow(Wd);
+  const ts = mkTrip(F, { an: F.sheep, t0: 1.4, L: 9, S: [6, 0, -2.4], c: [0, 0, 1.8], arrow: ar, ph0: 0 });
+  const tc = mkTrip(F, { an: F.cow, t0: 1.95, L: 9, S: [7.8, 0, -1.4], c: [0, 0, 1.4], ph0: 2 });
+  Wd.on(t => { sc.set(prog(t, .4, 3.8)); const a = playTrips(F, t, F.sheep, [ts]), b = playTrips(F, t, F.cow, [tc]);
+    farmFx(F, t, { n: 0, gate: Math.max(a.gate, b.gate), ck: ckWin(t, [tc.done], 9, true) }); F.hs.lit(.6 + .4 * sm(t, 9, 10)); hide(F); });
+  return Object.assign(Wd, { cam: CAM([1, 6.8, 17], [1, 3.2, 0], [-1, 6.0, 13.8], [-1.5, 2.6, 0], 13.685) });
+}
+
+// ---------- s03 : stray sheep; grey arrow passes it by + red bar; then gold arrow, sheep trots home ----------
+function s03() {
+  const { Wd, F } = base({ seed: 3 }); heroOn(Wd, F.sheep);
+  const S = [3, 0, -0.4], gr = goldArrow(Wd, { color: 0x4A4F57, halo: 0x6E737B, add: false, r: .25, hs: 1.4 }), grr = route([-0.5, 0, 2.4], [7.5, 0, 2.4], [0, 0, 3.4]), ar = goldArrow(Wd);
+  const tr = mkTrip(F, { an: F.sheep, t0: 2.86, L: 9, S, c: [0, 0, 1.4], arrow: ar });
+  F.rb.g.position.set(3.5, .8, 4.4);
+  Wd.on(t => { const r = playTrips(F, t, F.sheep, [tr]);
+    gr.set(grr, 0, ease.io(prog(t, .8, 2.6)), 1 - sm(t, 5.6, 6.3), t, .15);
+    F.rb.pop(POP(t, 3.0, 3.6) * (1 - sm(t, 6.2, 6.8))); F.rb.bar(ease.io(prog(t, 3.3, 4.0)));
+    farmFx(F, t, { n: 0, gate: r.gate, ck: ckWin(t, [tr.done], 3, true) }); });
+  return Object.assign(Wd, { cam: CAM([5, 6.5, 15.5], [3, 1.4, .5], [-3, 6.5, 15.5], [-3, 1.4, .5], 14.77) });
+}
+
+// ---------- s04 : the doubled verb - two arrows above the field; the sheep is returned twice ----------
+function s04() {
+  const { Wd, F } = base({ seed: 4 }); heroOn(Wd, F.sheep);
+  const a1 = goldArrow(Wd), a2 = goldArrow(Wd), h1 = goldArrow(Wd, { r: .24, hs: 1.5 }), h2 = goldArrow(Wd, { r: .24, hs: 1.5 });
+  const r1 = route([7.5, 4.3, -1.2], [2.0, 4.3, -1.2]), r2 = route([7.5, 5.9, -1.2], [2.0, 5.9, -1.2]);
+  const t1 = mkTrip(F, { an: F.sheep, t0: -2.68, L: 8, S: [4.5, 0, .2], c: [0, 0, 1.3], arrow: a1 });
+  const t2 = mkTrip(F, { an: F.sheep, t0: 5.4, L: 5.6, hopOut: true, S: [6.5, 0, -0.3], c: [0, 0, 1.3], arrow: a2, ph0: 1 });
+  Wd.on(t => { const r = playTrips(F, t, F.sheep, [t1, t2]); const ap = POP(t, .2, 1.0);
+    h1.set(r1, 0, 1, (.3 + .7 * pulse(t, .6, 1.3, 5.3, 6.0)) * ap, t, 0); h2.set(r2, 0, 1, (.3 + .7 * sm(t, 6.2, 6.9) * (1 - sm(t, 10.6, 11.4))) * ap, t, 0);
+    farmFx(F, t, { times: [t1.done, t2.done], gate: r.gate, dust: r.dust, ck: ckWin(t, [t1.done, t2.done], 2.2, true) }); hide(F); });
+  return Object.assign(Wd, { cam: orbit([-1.5, 1.8, 1.0], 17, 7.2, -10, 10, 0, 14.77, 44) });
+}
+
+// ---------- calm backdrop under a clip ----------
+function calm(seed, dur, v, n, withCow) {
+  const { Wd, F } = base({ seed, motes: 64, moteO: { w: 30, z0: -8, z1: 6 } }, { cow: !!withCow }); heroOn(Wd, F.sheep);
+  const dir = v % 2 ? 1 : -1;
+  Wd.on(t => { restAt(F, t, F.sheep, 'sheep', v); if (F.cow) restAt(F, t, F.cow, 'cow', 1 + v); F.hs.lit(.65 + .3 * Math.sin(t * .7 + v)); farmFx(F, t, { n, k: 0 }); hide(F); });
+  return Object.assign(Wd, { cam: CAM([-.4 * dir - 1, 6.4, 18], [-2, 1.6, 1], [.4 * dir - 1, 6.7, 18.5], [-2, 1.6, 1], dur) });
+}
+const s05 = () => calm(5, 18.55, 1, 2), s06 = () => calm(6, 18.05, 2, 2), s08 = () => calm(8, 12.55, 3, 5), s10 = () => calm(10, 24.15, 4, 5, true);
+
+// ---------- s07 : fast rhythmic loop - escape, arrow, home, counter +1 (five times) ----------
+function s07() {
+  const { Wd, F } = base({ seed: 7 }); heroOn(Wd, F.sheep); const sp = [[.1, 1.55, [1.4, 0, 3.2]], [1.65, 1.55, [2.8, 0, -0.2]], [3.2, 1.55, [1.2, 0, -1.2]], [5.0, 2.0, [3.4, 0, 2.2]], [7.2, 2.2, [2.2, 0, 3.4]]];
+  const trips = sp.map((q, i) => mkTrip(F, { an: F.sheep, t0: q[0], L: q[1], hopOut: true, S: q[2], c: [0, 0, i % 2 ? -1.0 : 1.2], arrow: goldArrow(Wd), ph0: i }));
+  Wd.on(t => { const r = playTrips(F, t, F.sheep, trips); farmFx(F, t, { times: trips.map(x => x.done), gate: r.gate, dust: r.dust, ck: ckWin(t, [trips[4].done], 2, true) }); hide(F); });
+  return Object.assign(Wd, { cam: CAM([-1, 6.6, 17], [-1.5, 1.6, 1], [-.6, 6.2, 15.4], [-1.8, 1.6, 1], 12.07) });
+}
+
+// ---------- s09 : a hundred times - camera pulls back, loops stack up, digits roll to 100 ----------
+function s09() {
+  const { Wd, F } = base({ seed: 9, ext: 30, gw: 120 }); heroOn(Wd, F.sheep, 9, 6.8); const lp = loops(Wd, F.pc, 9, 3.2, .7);
+  Wd.on(t => { restAt(F, t, F.sheep, 'sheep', 0);
+    const roll = ease.io(prog(t, .6, 5.6)), n = t >= 5.98 ? 100 : 5 + Math.floor(95 * roll), kk = t >= 5.98 ? pulse(t, 5.98, 6.15, 6.3, 7.4) : .22 * (1 + Math.sin(t * 18)) / 2 * sm(t, .6, 1);
+    F.ct.sg.scale.setScalar(.8 * (1 + .7 * ease.io(prog(t, 0, 7))));
+    lp.set(prog(t, .5, 5.8) * 9, t, 1 + .8 * pulse(t, 5.98, 6.2, 6.4, 7.5)); farmFx(F, t, { n, k: kk, ck: POP(t, 6.2, 6.8) }); hide(F); });
+  return Object.assign(Wd, { cam: t => { const u = ease.io(prog(t, 0, 12)); return { pos: lp3([-5, 4.6, 12], [-3.5, 13.5, 20.5], u), look: lp3([-4, 1.6, 1.4], [-4.5, .8, 1.5], u), fov: 44 }; } });
+}
+
+// ---------- s11 : question 1 - the cow escaped again; return it again ----------
+function s11() {
+  const { Wd, F } = base({ seed: 11 }, { cow: true }); heroOn(Wd, F.cow); const ar = goldArrow(Wd), ck = clockRing(Wd, { pos: [5, 5.0, .8], R: 1.1 });
+  const tr = mkTrip(F, { an: F.cow, t0: 8.92, L: 8, S: [5, 0, .8], c: [0, 0, 1.6], arrow: ar });
+  Wd.on(t => { const r = playTrips(F, t, F.cow, [tr]); restAt(F, t, F.sheep, 'sheep', 2);
+    ck.set(prog(t, 6.48, 12.48)); ck.g.position.y = 5.0 + .05 * Math.sin(t * 1.3); ck.fade(POP(t, 4.6, 5.4) * (1 - sm(t, 12.5, 13.2)));
+    farmFx(F, t, { base: 1, times: [tr.done], gate: r.gate, ck: ckWin(t, [tr.done], 3, true) }); hide(F); });
+  return Object.assign(Wd, { cam: CAM([2, 7, 17], [0, 1.8, .8], [-1, 6.6, 16], [-.5, 1.8, .8], 20.48) });
+}
+
+// ---------- s12 : question 2 - why is the word doubled: two arrows, two returns ----------
+function s12() {
+  const { Wd, F } = base({ seed: 12 }); heroOn(Wd, F.sheep); const sc = scroll(Wd, 6.0, 3.0); sc.g.position.set(-1, 8.6, -6); sc.set(1);
+  const h1 = goldArrow(Wd, { r: .24, hs: 1.5 }), h2 = goldArrow(Wd, { r: .24, hs: 1.5 }), a1 = goldArrow(Wd), a2 = goldArrow(Wd), ck = clockRing(Wd, { pos: [8, 5.4, -2], R: 1.0 });
+  const r1 = route([6, 3.6, -1.5], [.5, 3.6, -1.5]), r2 = route([6, 4.9, -1.5], [.5, 4.9, -1.5]);
+  const t1 = mkTrip(F, { an: F.sheep, t0: 7.48, L: 7, S: [4.5, 0, .6], c: [0, 0, 1.4], arrow: a1 });
+  const t2 = mkTrip(F, { an: F.sheep, t0: 14.3, L: 4.0, hopOut: true, S: [5.4, 0, 1.2], c: [0, 0, -1.0], arrow: a2, ph0: 1 });
+  Wd.on(t => { const r = playTrips(F, t, F.sheep, [t1, t2]); const ap = POP(t, .3, 1.2);
+    h1.set(r1, 0, 1, (.3 + .7 * pulse(t, 10.3, 10.9, 13.6, 14.3)) * ap, t, 0); h2.set(r2, 0, 1, (.3 + .7 * pulse(t, 15.6, 16.2, 18.0, 18.8)) * ap, t, 0);
+    ck.set(prog(t, 4.46, 10.46)); ck.g.position.y = 5.4 + .05 * Math.sin(t * 1.3); ck.fade(POP(t, 2.8, 3.6) * (1 - sm(t, 10.5, 11.2)));
+    farmFx(F, t, { base: 2, times: [t1.done, t2.done], gate: r.gate, dust: r.dust, ck: ckWin(t, [t1.done, t2.done], 2, true) }); hide(F); });
+  return Object.assign(Wd, { cam: CAM([-6, 9.2, 16.5], [1, 1.8, 0], [2, 9.6, 15.5], [0, 1.8, 0], 19.355) });
+}
+
+// ---------- s13 : summary glide past four mini stations ----------
+function s13() {
+  const WP = [[0, 0], [3.4, 0], [4.8, 16], [9.4, 16], [10.6, 32], [12.8, 32], [14.0, 48], [18.25, 48]];
+  const cxf = t => { for (let i = 0; i < WP.length - 1; i++) { if (t <= WP[i + 1][0]) return lerp(WP[i][1], WP[i + 1][1], ease.io(prog(t, WP[i][0], WP[i + 1][0]))); } return 48; };
+  const Wd = mkS({ seed: 13, cx: 24, ext: 30, span: 80, gw: 140, sspan: 62, motes: 80, moteO: { w: 80, z0: -6, z1: 5 }, noTop: true });
+  const Fs = [0, 16, 32, 48].map(ox => farm(Wd, { ox })); const hh = heroProxy(Wd, [0, 2.4, 0], [9, 4.8, 2]); Wd.hero = hh; const sunRef = Wd.sun;
+  const A = Fs[0], B = Fs[1], C = Fs[2], D = Fs[3];
+  const tA = mkTrip(A, { an: A.sheep, t0: -1.03, L: 2.9, S: [2.5, 0, -.3], c: [0, 0, 1.3], arrow: goldArrow(Wd) });
+  const tB = mkTrip(B, { an: B.sheep, t0: 5.0, L: 3.7, hopOut: true, S: [18.5, 0, 2.4], c: [0, 0, 1.2], arrow: goldArrow(Wd) });
+  const tC = mkTrip(C, { an: C.sheep, t0: 10.1, L: 2.1, hopOut: true, S: [34, 0, 2.6], c: [0, 0, 1.0], arrow: goldArrow(Wd) });
+  Wd.on(t => { const cx = cxf(t); hh.position.x = cx - 1; if (sunRef) { sunRef.position.set(cx - 6, 14, 9); sunRef.target.position.set(cx, 0, 0); sunRef.target.updateMatrixWorld(); }
+    let r = playTrips(A, t, A.sheep, [tA]); farmFx(A, t, { times: [tA.done], gate: r.gate, ck: ckWin(t, [tA.done], 2.2) }); hide(A);
+    r = playTrips(B, t, B.sheep, [tB]); farmFx(B, t, { base: 1, times: [tB.done], gate: r.gate, dust: r.dust, ck: ckWin(t, [tB.done], 2.2) }); hide(B);
+    r = playTrips(C, t, C.sheep, [tC]); farmFx(C, t, { base: 4, times: [tC.done], gate: r.gate, dust: r.dust, ck: ckWin(t, [tC.done], 2.2) }); hide(C);
+    restAt(D, t, D.sheep, 'sheep', 3); farmFx(D, t, { n: 100, k: pulse(t, 14.5, 14.7, 15.2, 16.2), ck: POP(t, 14.8, 15.3) }); hide(D); });
+  return Object.assign(Wd, { cam: t => { const x = cxf(t) - 1; return { pos: [x, 6.9, 16.8], look: [x, 1.8, .8], fov: 44 }; } });
+}
+
+// ---------- s14 : credits, evening ----------
+function s14() {
+  const { Wd, F } = base({ seed: 14, motes: 60, moteO: { w: 22 }, grass: 0x93B070, world: { skyTop: 0xF3D5A8, skyBottom: 0xF7E3C0, fogColor: 0xF3DDB8, hemi: 1.15, sun: .9, sunColor: 0xFFC890, floor: ['#EBD9B8', '#E2CFA9', '#E6D3AF'], arch: [0xE8CFA8, 0xDFC499], glass: 0xF6C99B } }, { cow: true });
+  heroOn(Wd, F.sheep);
+  Wd.on(t => { restAt(F, t, F.sheep, 'sheep', 0); restAt(F, t, F.cow, 'cow', 1.5); F.hs.lit(.92 + .08 * Math.sin(t * 1.4)); farmFx(F, t, { n: 100, k: .22 * (1 + Math.sin(t * 1.6)) / 2 }); hide(F); });
+  return Object.assign(Wd, { cam: CAM([-.4, 5.4, 17.5], [-2.5, 1.8, 1], [.8, 4.8, 19], [-2, 1.8, 1], 7.45) });
+}
+
+film({
+  title: 'TITLE', kicker: 'KICKER', vault: 'captions_vault.json',
+  shots: [
+    { id: 's01', dur: 7.65, caps: [], build: s01 },
+    { id: 's02', dur: 13.685, caps: ['CAP_s02_1'], capAt: [0.3], build: s02 },
+    { id: 's03', dur: 14.77, caps: ['CAP_s03_1', 'CAP_s03_2'], capAt: [0.3, 6.2], build: s03 },
+    { id: 's04', dur: 14.77, caps: ['CAP_s04_1', 'CAP_s04_2'], capAt: [0.3, 6.2], build: s04 },
+    { id: 's05', dur: 18.55, caps: ['CAP_s05_1', 'CAP_s05_2'], capAt: [0.2, 9.0], build: s05 },
+    { id: 's06', dur: 18.05, caps: ['CAP_s06_1', 'CAP_s06_2'], capAt: [0.2, 8.5], build: s06 },
+    { id: 's07', dur: 12.07, caps: ['CAP_s07_1', 'CAP_s07_2'], capAt: [0.3, 5.07], build: s07 },
+    { id: 's08', dur: 12.55, caps: ['CAP_s08_1', 'CAP_s08_2'], capAt: [0.2, 6.0], build: s08 },
+    { id: 's09', dur: 14.23, caps: ['CAP_s09_1', 'CAP_s09_2'], capAt: [0.3, 5.98], build: s09 },
+    { id: 's10', dur: 24.15, caps: ['CAP_s10_1', 'CAP_s10_2', 'CAP_s10_3'], capAt: [0.2, 8.0, 16.0], build: s10 },
+    { id: 's11', dur: 20.48, caps: ['CAP_s11_1', 'CAP_s11_2'], capAt: [0.3, 12.48], build: s11 },
+    { id: 's12', dur: 19.355, caps: ['CAP_s12_1', 'CAP_s12_2'], capAt: [0.3, 10.46], build: s12 },
+    { id: 's13', dur: 18.25, caps: ['CAP_s13_1', 'CAP_s13_2'], capAt: [0.3, 9.12], build: s13 },
+    { id: 's14', dur: 7.45, caps: ['CAP_s14_1'], capAt: [0.3], build: s14 },
+  ],
+});
+</script>
+</html>
