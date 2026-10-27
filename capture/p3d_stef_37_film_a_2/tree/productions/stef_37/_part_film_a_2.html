@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>stef_37 film A</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>window.__T0=86.4000; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": {
+  "three": "../../node_modules/three/build/three.module.js",
+  "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+// stef_37 / film A: graphics layer (302.40 s, silent). No Hebrew here: captions, title and kicker are vault IDs only.
+import { film, THREE, ease, prog, clamp, lerp, orbit, rng } from '../../lib/stage3d.js';
+import { PAL, sm, lp3, arc, mkWorld, motes, topiary, checkMark, prohib, numberTag, pop, clockRing, heroProxy, glow, link3,
+  court, witnesses, bell, beads, scroll, fatSlab, meat, board, milk, bowl, dropShape, animalIcon, ant, lettuce, fanLeaf, lens,
+  fruit, cart, pile, pedestal, basket, tray, hatPeg, tithe, domeTable, balance, olive, bread, edgeDecor } from './mk.js';
+import { box, cyl, ball, mesh, toon } from '../../lib/stage3d.js';
+
+const Ck = (Wd, s) => { const m = checkMark(s || .8); Wd.add(m.g); m.g.visible = false; return m; };
+const at = (m, p) => m.g.position.set(p[0], p[1], p[2]);
+const HZ = (Wd, fx, w, h, y) => { const hh = heroProxy(Wd, [fx(0), y === undefined ? 1.8 : y, 0], [w || 8, h || 3.8, 2]); Wd.on(t => { hh.position.x = fx(t); }); Wd.hero = hh; return hh; };
+const CAM = (p0, l0, p1, l1, dur, fov) => t => { const u = ease.io(prog(t, 0, dur)); return { pos: lp3(p0, p1, u), look: lp3(l0, l1, u), fov: fov || 44 }; };
+function mkS(o) {
+  o = o || {}; const cx = o.cx || 0, Wd = mkWorld(Object.assign({ cx, ext: o.ext, span: o.span }, o.world));
+  motes(Wd, o.motes || 34, o.seed || 1, Object.assign({ cx, w: 26, z0: -6, z1: 6 }, o.moteO));
+  if (o.top !== false) { const a = topiary(Wd, cx - (o.fx || 3.9), 5.8, 1), b = topiary(Wd, cx + (o.fx || 3.9), 5.8, 1); Wd.on(t => { a.b.rotation.z = .04 * Math.sin(t * 1.1); b.b.rotation.z = .04 * Math.sin(t * 1.3 + 1); }); }
+  return { Wd };
+}
+const tagGlow = (Wd, pos, size) => { const g = glow(Wd, size || 4); g.s.position.set(...pos); return g; };
+
+// ---------- s01 : title ----------
+function s01() {
+  const { Wd } = mkS({ seed: 1, motes: 48, top: false }); const ct = court(Wd); ct.g.position.set(0, 0, -3.4); ct.g.scale.setScalar(.95);
+  const bd = beads(Wd, { leg: .02 }); bd.g.position.set(0, 6.0, -4.6); bd.g.scale.setScalar(.72);
+  const items = [[-3.9, fatSlab(Wd, 1.0), 0], [-1.3, dropShape(Wd, .8), 1], [1.3, ant(Wd, 1.25), 2], [3.9, pile(Wd, .85, 5), 3]];
+  const pl = items.map(it => { const p = cyl(.85, .95, .35, PAL.stone, { pos: [it[0], .18, 1.3], inkW: .02, inkColor: 0x8C7650 }); Wd.add(p); return p; });
+  const pr = prohib(Wd, 1.0); items[3][1].bright(1);
+  Wd.on(t => {
+    ct.lamp(sm(t, .3, 2.0), t); bd.set({ show: 1, pop: 1, glow: 1, all: 1, t });
+    items.forEach((it, i) => { const k = ease.out(prog(t, .2 + .25 * i, .9 + .25 * i)), bob = .12 * Math.sin(t * 1.5 + i * 1.3), y = i === 0 ? .35 : i === 1 ? 1.5 : i === 2 ? .35 : .35; const o = it[1];
+      o.g.position.set(it[0], y + bob + 0, 1.3); o.g.scale.setScalar(Math.max(k, 1e-4) * 1.3 * (i === 0 ? 1 : i === 1 ? .8 : i === 2 ? 1.25 : .85)); if (o.wob) o.wob(t); if (o.set) o.set(t, 1, 1); });
+    const j = clamp(Math.floor((t - 1.5) / 1.5), 0, 3), lo = t - 1.5 - 1.5 * j; pr.pop(ease.out(prog(t, 1.2, 1.7))); pr.bar(lo < 0 ? 0 : lo < 1.0 ? prog(lo, 0, .6) : 1 - prog(lo, 1.0, 1.15));
+    const tx = items[j][0], ty = j === 1 ? 1.6 : 1.0, nx = j < 3 ? items[j + 1][0] : tx, mv = ease.io(prog(lo, 1.1, 1.5)); pr.g.position.set(lerp(tx, nx, j < 3 ? mv : 0), ty + .5, 2.5); });
+  HZ(Wd, () => 0, 9.5, 4.8, 2.4);
+  return Object.assign(Wd, { cam: CAM([0, 8.2, 13.8], [0, 2.2, 0], [0, 4.2, 10.8], [0, 2.4, 0], 7.65) });
+}
+
+// ---------- s02 : the three conditions -> court ----------
+function s02() {
+  const cxf = t => lerp(-2.6, 4.8, ease.io(prog(t, .2, 15.6)));
+  const { Wd } = mkS({ seed: 2, motes: 48, top: false, span: 70 }); const ct = court(Wd); ct.g.position.set(6.0, 0, -3.2); ct.g.scale.setScalar(.9);
+  const tb = new THREE.Group(); tb.position.set(-6.2, 0, 0); Wd.add(tb); tb.add(box(2.0, .12, 1.1, PAL.wood, { pos: [0, 1.05, 0], inkW: .02, inkColor: 0x2E1D12 })); [-.8, .8].forEach(x => tb.add(box(.14, 1.0, .14, 0x543823, { pos: [x, .5, 0], inkW: .012, inkColor: 0x2E1D12 })));
+  const fr = fruit(.32); fr.set(1); Wd.add(fr.g); const tk = cyl(.55, .6, .2, PAL.stone, { inkW: .02, inkColor: 0x8C7650 }); Wd.add(tk); tk.visible = false;
+  const wi = witnesses(Wd, 1.4), bl = bell(Wd), bd = beads(Wd, { leg: .02 }); bd.g.position.set(6.0, 5.7, -4.0); bd.g.scale.setScalar(.72);
+  const gl = glow(Wd, 3.2); gl.s.position.set(3.0, 1.2, .5);
+  Wd.on(t => {
+    // 1 the action: the fruit slides off a table by itself
+    const sl = ease.io(prog(t, 1.0, 2.2)), fl = prog(t, 2.2, 3.1), rl = ease.out(prog(t, 3.1, 3.9)); let p;
+    if (fl <= 0) p = [-6.7 + 1.3 * sl, 1.4, 0]; else if (rl <= 0) p = [lerp(-5.4, -4.7, fl), lerp(1.4, .32, fl * fl) + .0, 0]; else p = [lerp(-4.7, -4.0, rl), .32 + .1 * Math.sin(Math.PI * rl) * (1 - rl), 0];
+    const bounce = fl >= 1 ? 0 : 0; const fp = lerp(0, 1, ease.out(prog(t, .3, .9)));
+    const glideK = ease.io(prog(t, 6.66, 10.0)), tokX = lerp(-4.0, 3.0, glideK);
+    fr.g.scale.setScalar(Math.max(fp, 1e-4)); fr.g.position.set(rl > 0 ? lerp(p[0], tokX, glideK) : p[0], rl > 0 ? lerp(p[1], .62, sm(t, 3.8, 4.4)) : p[1], 0); fr.g.rotation.z = -(sl * 1.5 + fl * 3 + rl * 2);
+    tk.visible = t > 3.8; tk.position.set(tokX, .1, 0); tk.scale.setScalar(Math.max(ease.out(prog(t, 3.8, 4.4)), 1e-4));
+    // 2 witnesses
+    const wk = ease.out(prog(t, 2.6, 3.2)); wi.g.scale.setScalar(Math.max(wk, 1e-4)); wi.g.visible = wk > .01; wi.light(sm(t, 3.5, 4.3), t);
+    wi.g.position.set(lerp(-2.2, 5.4, glideK), 0, lerp(1.1, .8, glideK));
+    // 3 warning bell
+    const bk = ease.out(prog(t, 4.0, 4.7)), amp = .55 * sm(t, 4.9, 5.2) * (1 - sm(t, 6.4, 6.8)); bl.g.scale.setScalar(Math.max(bk, 1e-4)); bl.g.visible = bk > .01; bl.g.position.set(lerp(.2, 6.6, glideK), 0, lerp(-.2, .2, glideK));
+    bl.swing(t, amp); bl.ringFx(sm(t, 5.0, 5.3) * (1 - sm(t, 6.5, 6.9)), t);
+    gl.set(.6 * sm(t, 6.8, 7.6) * (1 - sm(t, 10.4, 11.4))); gl.s.position.set(lerp(1, 4.6, glideK), 1.4, .8);
+    ct.lamp(sm(t, 9.0, 12.0), t); bd.set({ show: ease.io(prog(t, 11.0, 13.2)), pop: 1, glow: sm(t, 13.0, 14.6), all: sm(t, 13.5, 15), t });
+  });
+  HZ(Wd, cxf, 9, 3.8, 1.9);
+  return Object.assign(Wd, { cam: t => { const x = cxf(t); return { pos: [x, 4.8, 11.8], look: [x, 1.9, 0], fov: 44 }; } });
+}
+
+// ---------- s03 : the verse, forty ----------
+function s03() {
+  const { Wd } = mkS({ seed: 3, top: false }); const bd = beads(Wd, { leg: 2.1 }); bd.g.position.set(0, 2.1, 0); const sc = scroll(Wd, 6.4, 5.0); sc.g.position.set(0, 6.2, -1.4);
+  const t40 = numberTag(Wd, '40', [0, 4.2, .4], 1.5), gl = glow(Wd, 5); gl.s.position.set(0, 4.2, .2);
+  Wd.on(t => { sc.set(prog(t, .4, 3.8)); bd.set({ show: ease.io(prog(t, .5, 2.8)), t, all: sm(t, 3, 4) }); pop(t40, ease.out(prog(t, 2.6, 3.3))); t40.position.y = 4.2 + .06 * Math.sin(t * 1.6); gl.set(.8 * sm(t, 3.0, 3.8) * (.85 + .15 * Math.sin(t * 2.4))); });
+  HZ(Wd, () => 0, 9.2, 4.2, 2.8);
+  return Object.assign(Wd, { cam: CAM([0, 3.4, 11.4], [0, 2.9, 0], [0, 3.1, 8.8], [0, 2.9, 0], 7.88) });
+}
+
+// ---------- s04 : 40 - 1 = 39 ----------
+function s04() {
+  const { Wd } = mkS({ seed: 4, top: false }); const bd = beads(Wd, { leg: 2.1 }); bd.g.position.set(0, 2.1, 0); const sc = scroll(Wd, 6.4, 5.0); sc.g.position.set(0, 6.2, -1.4); sc.set(1);
+  const t40 = numberTag(Wd, '40', [0, 4.2, .4], 1.5), t39 = numberTag(Wd, '39', [0, 4.2, .4], 1.5, { color: '#B8871B' }), gl = glow(Wd, 5); gl.s.position.set(0, 4.2, .2); const sp = sparkles(Wd, 10, 4);
+  Wd.on(t => { bd.set({ show: 1, pop: ease.io(prog(t, 5.0, 7.0)), glow: ease.io(prog(t, 7.0, 10.8)), all: sm(t, 8, 10), t });
+    pop(t40, ease.out(prog(t, .3, .9)) * (1 - ease.in(prog(t, 5.4, 6.0)))); pop(t39, ease.out(prog(t, 5.9, 6.6))); t40.position.y = t39.position.y = 4.2 + .06 * Math.sin(t * 1.6);
+    gl.set((.55 + .3 * sm(t, 6, 8)) * (.85 + .15 * Math.sin(t * 2.4))); sp.set([0, 3.6, .4], sm(t, 6.5, 8), t, 1.6); });
+  HZ(Wd, () => 0, 9.2, 4.2, 2.8);
+  return Object.assign(Wd, { cam: orbit([0, 2.7, 0], 9.8, 3.4, -7.5, 7.5, 0, 11.53, 44) });
+}
+const sparkles = (Wd, n, seed) => { const r = rng(seed), arr = []; for (let i = 0; i < n; i++) { const s = new THREE.Mesh(new THREE.OctahedronGeometry(1, 0), new THREE.MeshBasicMaterial({ color: 0xFFF2A8, transparent: true, fog: false })); Wd.add(s); arr.push({ s, a: r() * 6.28, ph: i / n }); }
+  return { set(pos, a, t, R) { arr.forEach((q, i) => { const u = (((t || 0) * .3 + q.ph) % 1 + 1) % 1, z = .1 * Math.sin(Math.PI * u) * a; q.s.position.set(pos[0] + Math.cos(q.a + i) * R, pos[1] + u * 1.8, pos[2] + Math.sin(q.a + i) * R * .3); q.s.scale.set(z + 1e-4, z + 1e-4, z * .3 + 1e-4); q.s.rotation.y = (t || 0) * 2 + i; q.s.visible = z > .004; }); } }; };
+
+// ---------- s05 : the list on dishes, four are foods ----------
+function s05() {
+  const { Wd } = mkS({ seed: 5, top: false }); const tb = domeTable(Wd); const fat = fatSlab(Wd, .5), dr = dropShape(Wd, .45), an = ant(Wd, .95), pl = pile(Wd, .42, 5); pl.bright(1); const IT = [fat, dr, an, pl];
+  const ring = prohib(Wd, .9), tx = t => lerp(16, 0, ease.out(prog(t, .2, 2.6)));
+  Wd.on(t => { const x0 = tx(t); tb.g.position.set(x0, 0, 0);
+    IT.forEach((o, i) => { const sl = 1 + i; o.g.position.set(x0 + tb.slots[sl], 1.22 + (i === 1 ? .62 * .45 : 0) + (i === 2 ? 0 : 0), 0); if (o.wob) o.wob(t); if (o.set) o.set(t, 1, 1); const rv = ease.out(prog(t, 5.75 + .35 * i + .4, 5.75 + .35 * i + 1.2)); o.g.visible = rv > .01; o.g.scale.setScalar(Math.max(rv, 1e-4) * (i === 0 ? .5 : i === 1 ? .45 : i === 2 ? 1 : .42)); });
+    // dishes without items stay closed, the four middle ones lift
+    tb.D.forEach((d, i) => { d.d.position.x = x0 + d.x; const idx = i - 1; if (idx >= 0 && idx <= 3) { const a = 5.75 + .35 * idx, u = ease.io(prog(t, a, a + 1.5)); d.d.position.y = 1.2 + 2.4 * u; d.d.rotation.z = .5 * u * (idx % 2 ? 1 : -1); sc(d.d, 1 - .85 * prog(u, .75, 1)); d.d.visible = u < .99; } else { d.d.position.y = 1.2 + .03 * Math.sin(t * 1.2 + i); } });
+    const j = clamp(Math.floor((t - 7.4) / 1.5), 0, 3), lo = t - 7.4 - 1.5 * j; ring.pop(ease.out(prog(t, 7.0, 7.5))); ring.bar(t < 7.4 ? 0 : lo < .6 ? prog(lo, 0, .6) : lo < .9 || j === 3 ? 1 : 1 - prog(lo, .9, 1.05));
+    let rx = -3 + 2 * (j > 0 ? 1 : 0) * 0; rx = -3; for (let q = 0; q < 3; q++) rx += 2 * ease.io(prog(t, 7.4 + 1.5 * q + .9, 7.4 + 1.5 * q + 1.5)); ring.g.position.set(rx, 2.15 + .06 * Math.sin(t * 2), 1.2); });
+  HZ(Wd, () => 0, 12, 3.8, 1.9);
+  return Object.assign(Wd, { cam: CAM([-3, 3.7, 11.6], [-3, 1.9, 0], [3, 3.7, 11.6], [3, 1.9, 0], 13.69) });
+}
+const sc = (o, k) => o.scale.setScalar(Math.max(k, 1e-4));
+
+// ---------- s06 : 1. chelev ----------
+function s06() {
+  const { Wd } = mkS({ seed: 6 }); const bo = board(Wd, 4.8, 2.4); bo.g.position.set(-.8, 0, 0); const fa = fatSlab(Wd, 1.35), me = meat(Wd, 1.25), mk = milk(Wd, 1.35), ring = prohib(Wd, 1.25), ck = Ck(Wd, .85), t1 = numberTag(Wd, '1', [-2.3, 4.0, .2], 1.2);
+  fa.g.position.set(-2.1, .21, 0); me.g.position.set(.5, .21, 0); mk.g.position.set(3.7, 0, .3);
+  Wd.on(t => { fa.wob(t); fa.g.scale.setScalar(1.35 * ease.out(prog(t, .1, .6))); me.g.scale.setScalar(1.25 * ease.out(prog(t, .3, .8))); mk.g.scale.setScalar(Math.max(1.35 * ease.out(prog(t, .5, 1.0)), 1e-4));
+    const m = ease.io(prog(t, 1.7, 2.7)); ring.pop(ease.out(prog(t, .9, 1.4))); ring.g.position.set(lerp(.5, -2.1, m), lerp(2.6, 1.55, m) + .06 * Math.sin(t * 2), 1.4); ring.bar(ease.io(prog(t, 2.9, 3.7)));
+    pop(t1, ease.out(prog(t, .8, 1.4))); t1.position.y = 4.0 + .07 * Math.sin(t * 1.6); ck.set(ease.out(prog(t, 5.5, 6.1))); at(ck, [3.7, 3.3, .6]); });
+  HZ(Wd, () => .6, 8.5, 3.8, 1.8);
+  return Object.assign(Wd, { cam: CAM([-.2, 3.9, 12.2], [.5, 1.5, 0], [.4, 3.2, 9.6], [.5, 1.4, 0], 12.61) });
+}
+
+// ---------- calm backdrop under a clip ----------
+function calm(seed, kl, kr, dur) {
+  const { Wd } = mkS({ seed, motes: 64, top: false, moteO: { w: 30, z0: -8, z1: 6 } });
+  edgeDecor(Wd, kl, -7.5, 0); edgeDecor(Wd, kr, 7.5, 0); const h = heroProxy(Wd, [-7.5, 2.1, 0], [1.6, 4.2, 1.6]); Wd.hero = h;
+  return Object.assign(Wd, { cam: CAM([-.25, 3.8, 11.5], [0, 1.9, 0], [.25, 3.9, 11.7], [0, 1.9, 0], dur) });
+}
+const s07 = () => calm(7, 'column', 'fruit', 12.55), s08 = () => calm(8, 'bell', 'lettuce', 37.55), s10 = () => calm(10, 'column', 'ring', 19.55), s12 = () => calm(12, 'lettuce', 'column', 5.65),
+  s13 = () => calm(13, 'fruit', 'bell', 7.15), s16 = () => calm(16, 'ring', 'lettuce', 5.55), s17 = () => calm(17, 'bell', 'column', 8.85);
+
+// ---------- s09 : 2. blood ----------
+function s09() {
+  const { Wd } = mkS({ seed: 9 }); const bw = bowl(Wd, 1.5), dr = dropShape(Wd, 1.5), ring = prohib(Wd, 1.35), t2 = numberTag(Wd, '2', [-4.6, 5.2, 0], 1.3);
+  const ic = [animalIcon(Wd, 'cow'), animalIcon(Wd, 'deer'), animalIcon(Wd, 'bird')], ip = [[-3.7, 3.2, .3], [3.7, 3.2, .3], [0, 5.9, .3]], ln = ic.map(() => link3(Wd, PAL.red, .035));
+  Wd.on(t => { const dy = lerp(8, 3.2, ease.out(prog(t, .3, 2.3))) + .1 * Math.sin(t * 1.5) * ease.out(prog(t, 1.8, 2.6)); dr.g.position.set(0, dy, 0); dr.wob(t); bw.g.position.set(0, 0, 0);
+    ring.pop(ease.out(prog(t, 2.4, 3.0))); ring.g.position.set(0, 3.5 + .06 * Math.sin(t * 2), 1.2); ring.bar(ease.io(prog(t, 3.2, 4.1)));
+    pop(t2, ease.out(prog(t, 1.2, 1.8))); t2.position.y = 5.2 + .07 * Math.sin(t * 1.6);
+    ic.forEach((c, i) => { const a = 5.75 + .5 * i, k = ease.out(prog(t, a, a + .7)); c.g.position.set(ip[i][0], ip[i][1] + .1 * Math.sin(t * 1.4 + i), ip[i][2]); sc(c.g, k); c.g.visible = k > .01; ln[i].set([ip[i][0], ip[i][1] - .5, .2], [0, 3.4 + (i === 2 ? .7 : 0), .2], ease.io(prog(t, a + .5, a + 1.3))); }); });
+  HZ(Wd, () => 0, 8.5, 5.4, 2.8);
+  return Object.assign(Wd, { cam: CAM([0, 4.2, 12.4], [0, 3.0, 0], [.5, 4.3, 11.0], [0, 3.0, 0], 13.69) });
+}
+
+// ---------- s11 : 3. insects, even one tiny ----------
+function s11() {
+  const { Wd } = mkS({ seed: 11 }); const L = lettuce(Wd, { s: 1.6, seed: 3 }), an = ant(Wd, .8), ring = prohib(Wd, .75), t3 = numberTag(Wd, '3', [-2.7, 2.7, .8], 1.0);
+  Wd.on(t => { L.sway(t, 1); const d = lerp(.3, .95, ease.io(prog(t, .5, 6.0))), lp = L.leafPoint(0, d, .1), wk = t > .5 && t < 6.0 ? 1 : 0; an.g.position.set(...lp.pos); an.g.rotation.set(lp.rot[0], lp.rot[1], 0); an.set(t, wk, ease.out(prog(t, .3, .9)));
+    pop(t3, ease.out(prog(t, 1.0, 1.6))); t3.position.y = 2.7 + .06 * Math.sin(t * 1.6);
+    ring.pop(ease.out(prog(t, 4.9, 5.5))); ring.g.position.set(lp.pos[0], lp.pos[1] + .38, lp.pos[2] + .6); ring.bar(ease.io(prog(t, 5.7, 6.5))); });
+  HZ(Wd, () => 0, 5.2, 3.2, 1.5);
+  return Object.assign(Wd, { cam: CAM([0, 4.0, 9.4], [0, 1.0, .6], [.3, 3.3, 6.8], [0, .8, .9], 11.53) });
+}
+
+// ---------- s14 : we check the leaves ----------
+function s14() {
+  const { Wd } = mkS({ seed: 14 }); const bo = board(Wd, 8.2, 2.4); bo.g.position.set(0, 0, 0); const fan = new THREE.Group(); fan.position.set(0, .22, 0); Wd.add(fan);
+  const ANG = [-.98, -.49, 0, .49, .98], cols = [0x7DBA5A, 0x8CC96A, 0x6BAA4C, 0x93D070, 0x7DBA5A], lv = ANG.map((a, i) => ({ pv: fanLeaf(fan, cols[i], i), a, i }));
+  const an = ant(Wd, .55), lz = lens(Wd, .85), ck = Ck(Wd, 1.0); an.g.rotation.order = 'ZXY';
+  const AI = 3, D = 2.2;
+  Wd.on(t => {
+    const st = ease.io(prog(t, 4.9, 6.4));
+    lv.forEach(l => { const u = ease.out(prog(t, .3 + .45 * l.i, 1.1 + .45 * l.i)); l.pv.visible = u > .01; const a = lerp(0, l.a, u) * (1 - st); l.pv.rotation.z = a; l.pv.position.set(0, 0, (l.i - 2) * .06 * (1 - st) + (l.i - 2) * .14 * st); sc(l.pv, 1); });
+    const aa = lv[AI].pv.rotation.z, base = [-Math.sin(aa) * D, .22 + Math.cos(aa) * D, .2 + (AI - 2) * .06], rev = sm(t, 3.5, 4.0), lift = ease.io(prog(t, 4.0, 5.0));
+    const p = arc(base, [5.2, 6.4, 1.2], lift, 1.8); an.g.position.set(...p); an.g.rotation.set(Math.PI / 2, 0, aa + lift * 1.0); an.set(t, lift > 0 ? 1 : 0, rev * (1 - ease.in(prog(lift, .7, 1)))); an.g.visible = rev > .01 && lift < .995;
+    // lens sweeps leaves 0..AI along the arc
+    const lu = ease.io(prog(t, 2.2, 3.9)), li = lu * AI, i0 = Math.floor(li), i1 = Math.min(AI, i0 + 1), f = li - i0, la = lerp(ANG[i0] * (1 - (i0 < 0 ? 0 : 0)), ANG[i1], f);
+    lz.pop(ease.out(prog(t, 1.8, 2.3)) * (1 - ease.in(prog(t, 5.0, 5.5)))); lz.g.position.set(-Math.sin(la) * D, .22 + Math.cos(la) * D + .0, 1.1 + .05 * Math.sin(t * 2));
+    ck.set(ease.out(prog(t, 6.6, 7.2))); at(ck, [0, 4.7, .6]); });
+  HZ(Wd, () => 0, 8.0, 4.4, 2.3);
+  return Object.assign(Wd, { cam: CAM([0, 4.1, 11.6], [0, 2.0, 0], [.8, 3.8, 10.2], [0, 2.1, 0], 10.45) });
+}
+
+// ---------- s15 : 4. tevel ----------
+function s15() {
+  const { Wd } = mkS({ seed: 15 }); const ct = cart(Wd), ring = prohib(Wd, 1.7), t4 = numberTag(Wd, '4', [-1.8, 5.4, 0], 1.3), hp = hatPeg(Wd, [-5.6, 0, 0]);
+  const pb = pedestal(Wd, 3.4, 0, 1.0), pt = pedestal(Wd, 6.0, 0, 1.0), bk = basket(Wd), tr = tray(Wd); bk.g.position.set(3.4, pb.top, 0); tr.g.position.set(6.0, pt.top, 0);
+  const g1 = glow(Wd, 4.2), g2 = glow(Wd, 4.2); g1.s.position.set(3.4, pb.top + .7, .3); g2.s.position.set(6.0, pt.top + .4, .3);
+  ct.g.position.set(-1.8, 0, 0); ct.bright(0);
+  Wd.on(t => { ring.pop(ease.out(prog(t, .8, 1.4))); ring.g.position.set(-1.8, 2.5 + .06 * Math.sin(t * 2), 1.7); ring.bar(ease.io(prog(t, 1.5, 2.4)));
+    pop(t4, ease.out(prog(t, 1.0, 1.6))); t4.position.y = 5.4 + .07 * Math.sin(t * 1.6);
+    const k = ease.out(prog(t, 4.84, 5.5)); [pb.g, pt.g, bk.g, tr.g].forEach(o => sc(o, k)); [pb.g, pt.g, bk.g, tr.g].forEach(o => { o.visible = k > .01; });
+    const gp = .75 * sm(t, 5.3, 6.0) * (.8 + .2 * Math.sin(t * 3.2)); g1.set(gp); g2.set(gp * (.8 + .2 * Math.sin(t * 3.2 + 1.5))); });
+  HZ(Wd, () => .4, 11, 4.0, 2.0);
+  return Object.assign(Wd, { cam: CAM([0, 4.3, 13.8], [.6, 1.9, 0], [.7, 3.7, 10.8], [.8, 1.9, 0], 11.53) });
+}
+
+// ---------- tithe scene (s18 / s21 / s22) ----------
+function tithePlay(R, t, o) {
+  R.F.forEach((f, i) => { const k = ease.out(prog(t, o.pop0 + .08 * i, o.pop0 + .08 * i + .5)); sc(f.g, k); f.g.visible = k > .01;
+    if (i === 9) { const u = ease.io(prog(t, o.f0, o.f1)); const p = arc(f.home, R.trayTop, u, 2.8); f.g.position.set(p[0], p[1], p[2]); f.g.rotation.y = u * 6; f.set(Math.max(o.dull0 !== undefined ? lerp(o.dull0, 1, sm(t, o.br0, o.br1)) : 1, u > 0 ? 1 : 0)); f.m.material.emissive.setHex(u > 0 && u < 1 ? 0xE8B830 : 0x8A1A10); f.m.material.emissiveIntensity = u > 0 && u < 1 ? .65 : .22 * (o.dull0 !== undefined ? lerp(o.dull0, 1, sm(t, o.br0, o.br1)) : 1); }
+    else f.set(lerp(o.dull0, 1, sm(t, o.br0, o.br1))); });
+}
+function titheShot(Wd, o) {
+  const R = tithe(Wd, -1.8, 3.2, 0), t10 = numberTag(Wd, '10', [-1.8, 4.5, 0], 1.2), ck1 = Ck(Wd, .9), ck2 = Ck(Wd, .7), ring = prohib(Wd, 1.35), hp = hatPeg(Wd, [-6.2, 0, 0]);
+  Wd.on(t => { tithePlay(R, t, o); pop(t10, ease.out(prog(t, o.pop0 + .6, o.pop0 + 1.2))); t10.position.y = 4.5 + .07 * Math.sin(t * 1.6);
+    if (o.ghost) { const a = ease.out(prog(t, o.ghost[0], o.ghost[0] + .5)) * (1 - ease.in(prog(t, o.ghost[1], o.ghost[1] + .6))); ring.pop(a > .01 ? 1 : 0); ring.g.position.set(-1.8, 2.5 + .06 * Math.sin(t * 2), 1.5); ring.alpha(.55 * a); sc(ring.g, a); ring.bar(ease.io(prog(t, o.ghost[0] + .5, o.ghost[0] + 1.3))); }
+    ck1.set(ease.out(prog(t, o.ck, o.ck + .6))); at(ck1, [-.2, 3.2, 1.2]); ck2.set(ease.out(prog(t, o.ck + .5, o.ck + 1.1))); at(ck2, [3.2, 2.6, 1.0]); });
+  return R;
+}
+function s18() {
+  const { Wd } = mkS({ seed: 18, top: false }); titheShot(Wd, { pop0: .3, ghost: [.9, 3.4], f0: 3.9, f1: 6.0, dull0: .35, br0: 5.3, br1: 6.3, ck: 6.4 }); HZ(Wd, () => .7, 9.5, 3.8, 2.0);
+  return Object.assign(Wd, { cam: CAM([-1.6, 4.0, 11.8], [-1.0, 1.9, 0], [1.9, 3.8, 11.0], [1.6, 1.9, 0], 12.61) });
+}
+function s21() {
+  const { Wd } = mkS({ seed: 21, top: false }); titheShot(Wd, { pop0: .5, f0: 11.6, f1: 13.7, dull0: .35, br0: 11.3, br1: 12.6, ck: 13.9 }); const ck = clockRing(Wd, { pos: [-1.8, 6.0, .4], R: 1.0 });
+  Wd.on(t => { ck.set(prog(t, 5.26, 11.27)); ck.g.position.y = 6.0 + .05 * Math.sin(t * 1.3); ck.fade(ease.out(prog(t, 3.4, 4.2)) * (1 - sm(t, 11.3, 12.0))); });
+  HZ(Wd, () => .7, 9.5, 4.2, 2.3);
+  return Object.assign(Wd, { cam: CAM([-3.4, 7.4, 10.4], [.4, 2.4, 0], [1.0, 6.4, 10.8], [.8, 2.4, 0], 19.265) });
+}
+
+// ---------- s19 : kezayit ----------
+function s19() {
+  const { Wd } = mkS({ seed: 19, top: false }); const bl = balance(Wd, 1.1), mb = balance(Wd, .7), an = ant(Wd, .75), ring = prohib(Wd, .6), g1 = glow(Wd, 3.2), g2 = glow(Wd, 3.2);
+  bl.g.position.set(-1.8, 0, 0); mb.g.position.set(4.8, 0, 0);
+  const ol = olive(bl.pans[0], [0, .35, 0]), br = bread(bl.pans[1], [0, .35, 0]);
+  Wd.on(t => { const tilt = .32 * Math.exp(-1.1 * Math.max(0, t - .3)) * Math.cos(4.6 * Math.max(0, t - .3)) + .012 * Math.sin(t * 1.3) * sm(t, 3, 4); bl.set(tilt); const ob = ease.out(prog(t, .1, .7)); sc(bl.g, 1.1 * ob);
+    const gp = sm(t, 2.6, 3.6) * (.8 + .2 * Math.sin(t * 3)); [[g1, 0], [g2, 1]].forEach(q => { const p = bl.panTop(q[1]); q[0].s.position.set(p[0], p[1] + .4, p[2] + .5); q[0].set(.8 * gp); });
+    const mk = ease.out(prog(t, 5.3, 6.1)); sc(mb.g, .7 * mk); mb.g.visible = mk > .01; mb.set(-.07); const p2 = mb.panTop(1); an.g.position.set(p2[0], p2[1] + .02, p2[2]); an.g.rotation.set(0, -.9, 0); an.set(t, 0, ease.out(prog(t, 6.3, 6.9)));
+    ring.pop(ease.out(prog(t, 6.0, 6.6))); ring.g.position.set(p2[0], p2[1] + .45, p2[2] + .6); ring.bar(ease.io(prog(t, 6.9, 7.7))); });
+  HZ(Wd, () => 1.2, 10, 4.4, 2.3);
+  return Object.assign(Wd, { cam: orbit([1.4, 2.4, 0], 11.6, 3.9, -9, 9, 0, 12.61, 44) });
+}
+
+// ---------- s20 : question 1, why check lettuce ----------
+function s20() {
+  const { Wd } = mkS({ seed: 20 }); const L = lettuce(Wd, { s: 1.9, seed: 9 }), an = ant(Wd, .8), lz = lens(Wd, .95), ring = prohib(Wd, .62), ck = clockRing(Wd, { pos: [0, 5.4, .4], R: 1.0 });
+  Wd.on(t => { L.sway(t, 1); const d = lerp(.75, .9, prog(t, 10, 18)), lp = L.leafPoint(0, d, .1); an.g.position.set(...lp.pos); an.g.rotation.set(lp.rot[0], lp.rot[1], 0); const rev = sm(t, 12.1, 12.7); an.set(t, rev > .5 ? .5 : 0, rev);
+    ck.set(prog(t, 4.05, 10.05)); ck.g.position.y = 5.4 + .05 * Math.sin(t * 1.3); ck.fade(ease.out(prog(t, 2.6, 3.4)) * (1 - sm(t, 10.1, 10.8)));
+    const lu = ease.io(prog(t, 10.4, 12.1)), lk = ease.out(prog(t, 10.2, 10.8)) * (1 - ease.in(prog(t, 14.4, 15.0))); lz.pop(lk); lz.g.position.set(lerp(6.5, lp.pos[0], lu), lerp(3.4, lp.pos[1] + .1, lu), lerp(3.0, lp.pos[2] + 1.2, lu));
+    ring.pop(ease.out(prog(t, 13.4, 14.0))); ring.g.position.set(lp.pos[0], lp.pos[1] + .42, lp.pos[2] + .7); ring.bar(ease.io(prog(t, 14.3, 15.1))); });
+  HZ(Wd, () => 0, 6, 3.8, 1.7);
+  return Object.assign(Wd, { cam: CAM([-.6, 4.4, 11.0], [0, 1.4, .4], [.8, 3.9, 9.2], [.1, 1.2, .6], 18.95) });
+}
+
+// ---------- s22 : summary glide ----------
+function s22() {
+  const WP = [[0, 0], [2.0, 0], [4.2, 9], [6.6, 9], [8.6, 18], [11.0, 18], [13.0, 27], [14.6, 27], [16.4, 36], [18.25, 36]];
+  const cxf = t => { for (let i = 0; i < WP.length - 1; i++) { if (t <= WP[i + 1][0]) return lerp(WP[i][1], WP[i + 1][1], ease.io(prog(t, WP[i][0], WP[i + 1][0]))); } return 36; };
+  const { Wd } = mkS({ seed: 22, cx: 18, top: false, ext: 18, span: 50, motes: 70, moteO: { w: 70, z0: -6, z1: 5 } });
+  const ct = court(Wd); ct.g.position.set(0, 0, -3.2); ct.g.scale.setScalar(.9); const bd = beads(Wd, { leg: .02 }); bd.g.position.set(0, 5.7, -4.0); bd.g.scale.setScalar(.72);
+  const fa = fatSlab(Wd, 1.1), dr = dropShape(Wd, 1.0), r1 = prohib(Wd, 1.1), r2 = prohib(Wd, 1.0); fa.g.position.set(7.3, .22, 0); dr.g.position.set(10.9, 1.7, 0);
+  const L = lettuce(Wd, { s: 1.6, seed: 4 }); L.g.position.set(16.6, 0, 0); const an = ant(Wd, .75), lz = lens(Wd, .9), r3 = prohib(Wd, .7);
+  const cr = cart(Wd); cr.g.position.set(27, 0, 0); cr.bright(0); const r4 = prohib(Wd, 1.7);
+  const R = tithe(Wd, 34.2, 38.0, 0), ck1 = Ck(Wd, .9), ck2 = Ck(Wd, .7), sunRef = Wd.sun;
+  Wd.on(t => { const cx = cxf(t); sunRef.position.set(cx - 6, 14, 9); sunRef.target.position.set(cx, 0, 0); sunRef.target.updateMatrixWorld();
+    ct.lamp(sm(t, .2, 1.4), t); bd.set({ show: 1, pop: 1, glow: 1, all: 1, t });
+    fa.wob(t); dr.wob(t); dr.g.position.y = 1.7 + .1 * Math.sin(t * 1.6);
+    r1.pop(ease.out(prog(t, 4.4, 4.9))); r1.g.position.set(7.3, 1.6, 1.4); r1.bar(ease.io(prog(t, 4.9, 5.5))); r2.pop(ease.out(prog(t, 5.3, 5.8))); r2.g.position.set(10.9, 1.9, 1.4); r2.bar(ease.io(prog(t, 5.8, 6.4)));
+    L.sway(t, 1); const lp = L.leafPoint(0, .88, .1); an.g.position.set(...lp.pos); an.g.rotation.set(lp.rot[0], lp.rot[1], 0); const rev = sm(t, 9.6, 10.1); an.set(t, rev > .5 ? .5 : 0, rev);
+    const lu = ease.io(prog(t, 9.0, 9.7)), lk = ease.out(prog(t, 8.8, 9.2)) * (1 - ease.in(prog(t, 11.2, 11.6))); lz.pop(lk); lz.g.position.set(lerp(21.5, lp.pos[0], lu), lerp(3.4, lp.pos[1] + .1, lu), lerp(2.5, lp.pos[2] + 1.2, lu));
+    r3.pop(ease.out(prog(t, 10.2, 10.7))); r3.g.position.set(lp.pos[0], lp.pos[1] + .42, lp.pos[2] + .7); r3.bar(ease.io(prog(t, 10.6, 11.3)));
+    r4.pop(ease.out(prog(t, 13.0, 13.6))); r4.g.position.set(27, 2.6, 1.7); r4.bar(ease.io(prog(t, 13.4, 14.2)));
+    tithePlay(R, t, { pop0: 14.6, f0: 15.6, f1: 17.0, dull0: .3, br0: 15.0, br1: 16.2 }); ck1.set(ease.out(prog(t, 16.6, 17.2))); at(ck1, [34.2, 3.5, 1.0]); ck2.set(ease.out(prog(t, 17.2, 17.8))); at(ck2, [38.0, 2.6, 1.0]); });
+  HZ(Wd, cxf, 9, 4.0, 1.9);
+  return Object.assign(Wd, { cam: t => { const x = cxf(t); return { pos: [x, 4.2, 12.2], look: [x, 1.9, 0], fov: 44 }; } });
+}
+
+// ---------- s23 : credits, evening ----------
+function s23() {
+  const { Wd } = mkS({ seed: 23, top: false, motes: 60, moteO: { w: 22 }, world: { skyTop: 0xF3D5A8, skyBottom: 0xF7E3C0, fogColor: 0xF3DDB8, hemi: 1.15, sun: .9, sunColor: 0xFFC890, floor: ['#EBD9B8', '#E2CFA9', '#E6D3AF'], arch: [0xE8CFA8, 0xDFC499], glass: 0xF6C99B } });
+  const ct = court(Wd); ct.g.position.set(-3.8, 0, -3.0); ct.g.scale.setScalar(.95); const p1 = pedestal(Wd, 3.0, 0, 1.0), p2 = pedestal(Wd, 5.9, 0, 1.0), L = lettuce(Wd, { s: .75, seed: 6 }), pl = pile(Wd, .95, 5), c1 = Ck(Wd, .8), c2 = Ck(Wd, .8);
+  L.g.position.set(3.0, p1.top, 0); pl.g.position.set(5.9, p2.top, 0); pl.bright(1);
+  Wd.on(t => { ct.lamp(1, t); L.sway(t, 1); c1.set(ease.out(prog(t, 1.0, 1.7))); at(c1, [3.0, 3.8, .8]); c2.set(ease.out(prog(t, 1.6, 2.3))); at(c2, [5.9, 3.8, .8]); });
+  HZ(Wd, () => .6, 12, 4.2, 2.0);
+  return Object.assign(Wd, { cam: CAM([-.4, 4.4, 13.8], [.6, 1.9, 0], [.9, 4.1, 12.6], [.6, 1.9, 0], 7.455) });
+}
+
+film({
+  title: 'TITLE', kicker: 'KICKER', vault: 'captions_vault.json',
+  shots: [
+    { id: 's01', dur: 7.65, caps: [], build: s01 },
+    { id: 's02', dur: 15.85, caps: ['CAP_s02_1', 'CAP_s02_2'], capAt: [0.3, 6.66], build: s02 },
+    { id: 's03', dur: 7.88, caps: ['CAP_s03_1'], capAt: [0.3], build: s03 },
+    { id: 's04', dur: 11.53, caps: ['CAP_s04_1', 'CAP_s04_2'], capAt: [0.3, 4.84], build: s04 },
+    { id: 's05', dur: 13.69, caps: ['CAP_s05_1', 'CAP_s05_2'], capAt: [0.3, 5.75], build: s05 },
+    { id: 's06', dur: 12.61, caps: ['CAP_s06_1', 'CAP_s06_2'], capAt: [0.3, 5.3], build: s06 },
+    { id: 's07', dur: 12.55, caps: ['CAP_s07_1', 'CAP_s07_2'], capAt: [0.2, 6.0], build: s07 },
+    { id: 's08', dur: 37.55, caps: ['CAP_s08_1', 'CAP_s08_2', 'CAP_s08_3', 'CAP_s08_4'], capAt: [0.2, 9.5, 16.0, 25.0], build: s08 },
+    { id: 's09', dur: 13.69, caps: ['CAP_s09_1', 'CAP_s09_2'], capAt: [0.3, 5.75], build: s09 },
+    { id: 's10', dur: 19.55, caps: ['CAP_s10_1', 'CAP_s10_2', 'CAP_s10_3'], capAt: [0.2, 5.8, 12.5], build: s10 },
+    { id: 's11', dur: 11.53, caps: ['CAP_s11_1', 'CAP_s11_2'], capAt: [0.3, 4.84], build: s11 },
+    { id: 's12', dur: 5.65, caps: ['CAP_s12_1'], capAt: [0.2], build: s12 },
+    { id: 's13', dur: 7.15, caps: ['CAP_s13_1'], capAt: [0.2], build: s13 },
+    { id: 's14', dur: 10.45, caps: ['CAP_s14_1', 'CAP_s14_2'], capAt: [0.3, 4.8], build: s14 },
+    { id: 's15', dur: 11.53, caps: ['CAP_s15_1', 'CAP_s15_2'], capAt: [0.3, 4.84], build: s15 },
+    { id: 's16', dur: 5.55, caps: ['CAP_s16_1'], capAt: [0.2], build: s16 },
+    { id: 's17', dur: 8.85, caps: ['CAP_s17_1'], capAt: [0.2], build: s17 },
+    { id: 's18', dur: 12.61, caps: ['CAP_s18_1', 'CAP_s18_2'], capAt: [0.3, 5.3], build: s18 },
+    { id: 's19', dur: 12.61, caps: ['CAP_s19_1', 'CAP_s19_2'], capAt: [0.3, 5.3], build: s19 },
+    { id: 's20', dur: 18.95, caps: ['CAP_s20_1', 'CAP_s20_2'], capAt: [0.3, 10.05], build: s20 },
+    { id: 's21', dur: 19.265, caps: ['CAP_s21_1', 'CAP_s21_2'], capAt: [0.3, 11.27], build: s21 },
+    { id: 's22', dur: 18.25, caps: ['CAP_s22_1', 'CAP_s22_2'], capAt: [0.3, 9.12], build: s22 },
+    { id: 's23', dur: 7.455, caps: ['CAP_s23_1'], capAt: [0.3], build: s23 },
+  ],
+});
+</script>
+</html>
