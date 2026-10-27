@@ -314,7 +314,7 @@ export function startLine(w, o) {
   g.add(bx(.12, 1.5, .12, COL.coral, { pos: [-w / 2 - .1, .75, 0], inkW: .012 })); g.add(bx(.12, 1.5, .12, COL.coral, { pos: [w / 2 + .1, .75, 0], inkW: .012 }));
   const banner = bx(w + .32, .3, .1, COL.honey, { pos: [0, 1.5, 0], inkW: .012 }); g.add(banner);
   const gl = glowSprite(0xFFD27A, w * 3.4, 0); gl.position.set(0, .8, 0); g.add(gl); const beam = bm(new THREE.PlaneGeometry(w, 4), 0xFFE9A8, { transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide }); beam.position.y = 2.2; g.add(beam);
-  g.userData.set = k => { gl.material.opacity = .85 * k; beam.material.opacity = .32 * k; gl.scale.setScalar(w * (2.4 + 2.2 * k)); };
+  g.userData.set = k => { gl.material.opacity = .4 * k; beam.material.opacity = .12 * k; gl.scale.setScalar(w * (1.8 + 1.2 * k)); };
   return g;
 }
 // GATE: arch of light. s = scale. set(k) 0..1 brightness
