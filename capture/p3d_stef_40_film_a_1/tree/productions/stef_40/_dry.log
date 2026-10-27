@@ -1,0 +1,12 @@
+01:01:24 render_all: production=stef_40 films=film_a part=50s hq=True dry_run=True
+01:01:27 budget WARN: ahead of pace - continue sparingly: spent $2088 of $2600 (cap $2340), allowed by now $1769 (118% of pace) [render]
+01:01:27 verify gate: PASS for film_a
+01:01:31 PLAN film_a: length 216.0s -> 5 part(s) of 43.2s, canvas 1920x1080, dispatch stagger 20 s, retry = split 2 (2 rounds), HQ injection=True
+01:01:31    part 0: t0=0.0 d=43.2 page=_part_film_a_0.html job=p3d_stef_40_film_a_0
+01:01:31    part 1: t0=43.2 d=43.2 page=_part_film_a_1.html job=p3d_stef_40_film_a_1
+01:01:31    part 2: t0=86.4 d=43.2 page=_part_film_a_2.html job=p3d_stef_40_film_a_2
+01:01:31    part 3: t0=129.6 d=43.2 page=_part_film_a_3.html job=p3d_stef_40_film_a_3
+01:01:31    part 4: t0=172.8 d=43.2 page=_part_film_a_4.html job=p3d_stef_40_film_a_4
+01:01:31    includes (render.json, 14 + production folder): lib/figure3d.js lib/geo_eretz.js lib/glb3d.js lib/motion3d.js lib/people_pro.js lib/stage3d.js node_modules/three/build/three.core.js node_modules/three/build/three.module.js node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js node_modules/three/examples/jsm/loaders/GLTFLoader.js node_modules/three/examples/jsm/utils/BufferGeometryUtils.js node_modules/three/examples/jsm/utils/SkeletonUtils.js productions/stef_40/hs.js productions/stef_40/hs_base.js
+01:01:31    output: C:/projects/_studio-animatzia/productions/stef_40/render/film_a/out.mp4
+01:01:31 DONE {"film_a": "dry-run 216.0s / 5 parts"}
