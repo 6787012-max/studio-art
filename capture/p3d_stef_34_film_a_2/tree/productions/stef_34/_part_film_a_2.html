@@ -1,0 +1,183 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>stef_34 film A</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>window.__T0=85.5800; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": {
+  "three": "../../node_modules/three/build/three.module.js",
+  "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+// stef_34 / film A: the owner adds a fifth, graphics layer, 213.95 s, silent. No Hebrew here: captions, title and kicker are vault IDs only.
+import { film, THREE, ease, prog, clamp, lerp, path, orbit } from '../../lib/stage3d.js';
+import { dolly, crane } from '../../lib/motion3d.js';
+import { preloadGLBs } from '../../lib/glb3d.js';
+import { PAL, PY, sm, mkWorld, motes, tufts, platform, chest, donkey, pawn, row, jar, lanes, house, fieldPlot, fractionBar, heroProxy, xMark, checkMark, numberTag, pop, clockRing } from './ch.js';
+
+await preloadGLBs({ donkey: './assets/Donkey.glb' });
+
+const DK = 'AnimalArmature|';
+const adj = fn => () => { const W = fn(), c0 = W.cam; W.cam = t => { const c = c0(t); return { pos: [c.look[0] + (c.pos[0] - c.look[0]) * .8, c.pos[1] * .78, c.look[2] + (c.pos[2] - c.look[2]) * .8], look: [c.look[0], c.look[1] + .5, c.look[2]], fov: c.fov }; }; return W; };
+
+// common scene: sky + hills + platform + (chest) + edge tufts + motes
+function mkS(o) {
+  o = o || {}; const x0 = o.x0 === undefined ? -7 : o.x0, x1 = o.x1 === undefined ? 7 : o.x1, cx = (x0 + x1) / 2;
+  const Wd = mkWorld(Object.assign({ cx: o.wide ? cx : 0, ext: o.ext }, o.world)); const plat = platform(Wd, { x0, x1 });
+  const sd = o.seed || 1, ch = o.chest === false ? null : chest(Wd, [o.chx === undefined ? 0 : o.chx, PY, -2.3]);
+  const fgL = tufts(Wd, 20, 5 + sd, { x0: x0 - 6, x1: x0 - 1, z0: -2, z1: 6, y: 0 }, { s: 1.5 }), fgR = tufts(Wd, 20, 6 + sd, { x0: x1 + 1, x1: x1 + 6, z0: -2, z1: 6, y: 0 }, { s: 1.5 });
+  const fgN = tufts(Wd, o.wide ? 40 : 16, 7 + sd, { x0: x0 + 1, x1: x1 - 1, z0: 5.6, z1: 6.6, y: 0 }, { s: 1.3 });
+  motes(Wd, o.motes || 26, sd, Object.assign({ cx }, o.moteO));
+  const S = { Wd, plat, ch };
+  Wd.on(t => { fgL.sway(t); fgR.sway(t, .9); fgN.sway(t, 1.1); if (ch) { ch.sparkle(t, S.spark === undefined ? 0 : S.spark); ch.ring.set(S.ring || 0, t); } });
+  return S;
+}
+const P2 = (a, b) => path([[0, a[0], a[1], a[2] || 44], [a[3], b[0], b[1], b[2] || 44]]);
+
+// ---------- s01 : the consecrated animal beside the treasury ----------
+function s01() {
+  const S = mkS({ seed: 1, motes: 40 }); const { Wd } = S; S.spark = 1; S.ch.coinsOnLid(true);
+  const D = donkey(Wd, t => ({ pos: [-3.2, PY, .6], facing: .65, clip: DK + 'Idle' })); Wd.hero = heroProxy(Wd, [-1.5, PY + 1.4, 0], [6, 2.8, 1.5]);
+  Wd.on(t => { D.glow.place(-3.2, PY, .6); D.glow.set(ease.out(prog(t, .2, 1.6)), t); });
+  return Object.assign(Wd, { cam: path([[0, [4.4, 9.6, 12.6], [-.4, 1.1, -.6], 46], [7.65, [0, 4.9, 10.8], [-.4, 1.2, -.6], 44]]) });
+}
+// ---------- s02 : redeem it and add its fifth ----------
+function s02() {
+  const S = mkS({ seed: 2, chx: 5.6 }); const { Wd } = S; S.spark = .8;
+  const D = donkey(Wd, t => ({ pos: [-4.6, PY, .6], facing: .5, clip: DK + 'Idle_Headlow' }));
+  const R = row(Wd, { x0: -2.4, z: 1.5 }); Wd.hero = heroProxy(Wd, [-.2, PY + 1.6, 1.5], [6, 3.2, 1]);
+  const t100 = numberTag(Wd, '100', [R.cx4, PY + 2.1, R.z], .6), t125 = numberTag(Wd, '125', [R.cx5, PY + 2.1, R.z], .7, { bg: 'rgba(255,240,170,.97)', color: '#8a5a10' });
+  Wd.on(t => { D.glow.place(-4.6, PY, .6); D.glow.set(1, t); R.time(t); R.four(prog(t, .5, 3.7)); R.fifth(prog(t, 5.0, 6.4)); R.cols[4].bright(ease.out(prog(t, 5.4, 6.4)));
+    pop(t100, ease.out(prog(t, 3.5, 4.0)) * (1 - ease.in(prog(t, 5.0, 5.5)))); pop(t125, ease.out(prog(t, 6.2, 6.8))); });
+  return Object.assign(Wd, { cam: path([[0, [-2.6, 5.0, 10.8], [-1.6, 1.3, -.2], 44], [9.43, [2.2, 5.2, 10.8], [1.2, 1.3, -.2], 44]]) });
+}
+// ---------- s03 : money replaces the animal, the holiness moves to the chest ----------
+function s03() {
+  const S = mkS({ seed: 3, chx: 3.8 }); const { Wd } = S; const ch = S.ch;
+  const dpos = t => { const w = ease.io(prog(t, 7.0, 9.8)); return [lerp(-2.8, -4.6, w), PY, lerp(.8, 1.5, w)]; };
+  const D = donkey(Wd, t => { const w = prog(t, 7.0, 9.8), f = lerp(.6, -1.2, ease.io(prog(t, 6.6, 7.4))); return { pos: dpos(t), facing: f, clip: w > 0 && w < 1 ? DK + 'Walk' : DK + 'Idle', clipTime: t * 1.2 }; }); Wd.hero = heroProxy(Wd, [.5, PY + 1.4, 1.2], [8, 2.8, 2]);
+  const R = row(Wd, { x0: -.2, z: 1.6 });
+  Wd.on(t => { const p = dpos(t); D.glow.place(p[0], p[1], p[2]); D.glow.set(1 - ease.io(prog(t, 5.4, 6.4)), t); S.ring = ease.io(prog(t, 5.6, 6.8));
+    R.time(t); R.four(prog(t, 1.0, 3.6)); ch.open(prog(t, 4.6, 5.4)); R.into(ch, t, 5.0, 1.4, 4); ch.fill(prog(t, 5.8, 6.8)); });
+  return Object.assign(Wd, { cam: path([[0, [0, 5.6, 12.2], [.8, 1.2, -.3], 46], [10.45, [.4, 4.0, 8.8], [.8, 1.3, -.3], 42]]) });
+}
+// ---------- s04 : anyone may redeem, the owner goes first ----------
+function s04() {
+  const S = mkS({ seed: 4 }); const { Wd } = S; const ch = S.ch; const L = lanes(Wd, { x: 0 });
+  const B = pawn(Wd, PAL.blue, .95), O = [0, 1, 2].map(() => pawn(Wd, PAL.orange, .95)); Wd.hero = heroProxy(Wd, [0, PY + 1.3, .6], [6.5, 2.6, 5]);
+  Wd.on(t => { L.gate.open(prog(t, 4.8, 5.6)); const u = ease.io(prog(t, 5.4, 8.2)), z = lerp(2.2, -.95, u);
+    B.at(L.cxB, PY, z, u > 0 && u < 1 ? u * 6 : 0, 0); O.forEach((o, i) => o.at(L.cxO, PY, .8 + i * 1.0, t * .8 + i * .37, 0)); ch.open(prog(t, 7.4, 8.6)); S.ch.sparkle(t, prog(t, 7.6, 8.4)); });
+  return Object.assign(Wd, { cam: path([[0, [-3.4, 6.6, 10.2], [0, .9, -.1], 44], [9.91, [-.6, 6.0, 10.6], [0, .9, -.2], 44]]) });
+}
+// ---------- calm backdrop under a clip (s05 and s07) ----------
+function calm(keys, seed, dpos) {
+  const S = mkS({ seed, chx: 5.6, motes: 60, moteO: { w: 18, z0: -6, z1: 6 } }); const { Wd } = S; S.spark = .6;
+  const D = donkey(Wd, t => ({ pos: dpos, facing: .7, clip: DK + 'Eating' }), { height: 3.0 }); Wd.hero = heroProxy(Wd, [dpos[0] + .4, PY + 1.5, dpos[2]], [4, 3, 2]);
+  Wd.on(t => { D.glow.place(dpos[0], dpos[1], dpos[2]); D.glow.set(0, t); });
+  return Object.assign(Wd, { cam: path(keys) });
+}
+const s05 = () => calm([[0, [1.4, 5.0, 11.0], [0, 1.2, -.3], 44], [6, [.6, 5.1, 11.2], [0, 1.2, -.3], 44], [45.35, [-1.2, 5.0, 11.0], [0, 1.2, -.3], 44]], 5, [-5.4, PY, 1.8]);
+const s07 = () => calm([[0, [-1.4, 4.9, 10.8], [0, 1.2, -.3], 44], [6, [-.4, 5.1, 11.2], [0, 1.2, -.3], 44], [36.95, [1.4, 4.9, 10.9], [0, 1.2, -.3], 44]], 7, [-4.8, PY, 2.4]);
+// ---------- s06 : what is a fifth ----------
+function s06() {
+  const S = mkS({ seed: 6, chest: false }); const { Wd } = S;
+  const R = row(Wd, { x0: -2.2, z: 1.0 }); Wd.hero = heroProxy(Wd, [0, PY + 1.8, 1], [6, 3.4, 1]); const bar = fractionBar(Wd, R.x0, PY + 2.0, R.z, R.sp);
+  const t25 = R.cols.map((c, i) => numberTag(Wd, '25', [R.x0 + i * R.sp, PY + 1.45, R.z], .45));
+  const t100 = numberTag(Wd, '100', [R.cx4, PY + 2.8, R.z], .6), t125 = numberTag(Wd, '125', [R.cx5, PY + 2.85, R.z], .7, { bg: 'rgba(255,240,170,.97)', color: '#8a5a10' }), tf = numberTag(Wd, '1/5', [R.x0 + 4 * R.sp, PY + 2.7, R.z], .6, { bg: 'rgba(255,240,170,.97)', color: '#8a5a10' });
+  Wd.on(t => { R.time(t); R.four(prog(t, .6, 3.0)); R.fifth(prog(t, 3.4, 4.4)); R.cols[4].bright(ease.out(prog(t, 3.6, 4.4)));
+    t25.forEach((x, i) => pop(x, ease.out(prog(t, i < 4 ? 1.3 + i * .4 : 4.3, i < 4 ? 1.8 + i * .4 : 4.8))));
+    pop(t100, ease.out(prog(t, 3.0, 3.5)) * (1 - ease.in(prog(t, 4.2, 4.6)))); pop(t125, ease.out(prog(t, 4.5, 5.0)));
+    bar.set(prog(t, 5.2, 6.4)); bar.lit(sm(t, 6.4, 7.2), t); pop(tf, ease.out(prog(t, 6.8, 7.4))); });
+  return Object.assign(Wd, { cam: orbit([0, 1.4, 1.0], 10.6, 4.8, -11, 11, 0, 11.53, 44) });
+}
+// ---------- s08 : why owners first - the treasury gets more ----------
+function jars(Wd, S) {
+  const JO = jar(Wd, [-2.5, PY, .6]), JB = jar(Wd, [2.5, PY, .6]), O = pawn(Wd, PAL.orange, 1.0), B = pawn(Wd, PAL.blue, 1.0);
+  const t100 = numberTag(Wd, '100', [-2.5, PY + 4.0, .6], .6), t125 = numberTag(Wd, '125', [2.5, PY + 4.0, .6], .7, { bg: 'rgba(255,240,170,.97)', color: '#8a5a10' }), ck = checkMark(1.0); Wd.add(ck.g); ck.g.position.set(0, PY + 2.3, .6);
+  return { JO, JB, O, B, t100, t125, ck };
+}
+function s08() {
+  const S = mkS({ seed: 8, chest: false }); const { Wd } = S; const J = jars(Wd, S); Wd.hero = heroProxy(Wd, [0, PY + 1.8, .6], [10, 3.2, 1.5]);
+  Wd.on(t => { const a = prog(t, .6, 3.0), b = prog(t, 1.4, 4.2); J.JO.levels(4 * ease.io(a)); J.JB.levels(5 * ease.io(b)); J.JO.pour(t, a > 0 && a < 1); J.JB.pour(t, b > 0 && b < 1);
+    J.O.at(-4.3, PY, .8, a > 0 && a < 1 ? t * .9 : 0, .5); J.B.at(4.3, PY, .8, b > 0 && b < 1 ? t * .9 : 0, -.5);
+    pop(J.t100, ease.out(prog(t, 3.2, 3.7))); pop(J.t125, ease.out(prog(t, 4.3, 4.8))); const gl = sm(t, 4.8, 5.6); J.JB.glow(gl, t); J.JO.glow(0, t); J.ck.set(prog(t, 5.4, 6.0)); });
+  return Object.assign(Wd, { cam: path([[0, [0, 5.4, 13.2], [0, 2.4, 0], 46], [9.91, [0, 4.6, 9.8], [0, 2.5, 0], 44]]) });
+}
+// ---------- s09 : house and field ----------
+function s09() {
+  const S = mkS({ seed: 9, chest: false, motes: 30 }); const { Wd } = S; const H = house(Wd, [-4.1, PY, -.8], 1.15), F = fieldPlot(Wd, [4.5, PY, -.6], 1.1); Wd.hero = heroProxy(Wd, [0, PY + 1.6, .4], [12, 3.2, 3]);
+  const RH = row(Wd, { x0: -5.9, z: 1.6, sp: .85, s: .8 }), RF = row(Wd, { x0: 2.7, z: 1.6, sp: .85, s: .8 });
+  Wd.on(t => { H.flag.wave(t, 1, 0); F.flag.wave(t, 1, 1.3); RH.time(t); RF.time(t); H.pop(prog(t, 0, .8)); F.pop(prog(t, 0, .8));
+    RH.four(prog(t, .8, 3.4)); RH.fifth(prog(t, 3.8, 4.9)); RH.cols[4].bright(ease.out(prog(t, 4.0, 4.9)));
+    RF.four(prog(t, 6.0, 8.6)); RF.fifth(prog(t, 9.2, 10.4)); RF.cols[4].bright(ease.out(prog(t, 9.4, 10.4))); });
+  return Object.assign(Wd, { cam: path([[0, [-3.0, 4.8, 10.6], [-3.0, 1.3, 0], 44], [13.15, [3.0, 4.8, 10.6], [3.0, 1.3, 0], 44]]) });
+}
+// ---------- s10 : question 1 - someone else redeems ----------
+function s10() {
+  const S = mkS({ seed: 10, chx: 4.6 }); const { Wd } = S; const ch = S.ch;
+  const D = donkey(Wd, t => ({ pos: [-4.6, PY, .8], facing: .55, clip: DK + 'Idle' }), { collar: true });
+  const R = row(Wd, { x0: -2.3, z: 1.4 }); const O = pawn(Wd, PAL.orange, 1.0); Wd.hero = heroProxy(Wd, [0, PY + 1.6, 1], [11, 3, 2]);
+  const clock = clockRing(Wd, { pos: [-.2, PY + 3.7, 1.0], R: .9 }), xm = xMark(.55); Wd.add(xm.g); xm.g.position.set(R.x0 + 4 * R.sp, PY + 1.3, R.z + .1);
+  Wd.on(t => { D.glow.place(-4.6, PY, .8); D.glow.set(1, t); R.time(t); R.four(prog(t, 1.0, 3.4)); R.fifth(prog(t, 3.6, 4.8)); R.cols[4].bright(ease.out(prog(t, 3.8, 4.8)));
+    const w = prog(t, 1.0, 5.4), ox = lerp(7.8, 3.9, ease.io(w)), oz = lerp(3.0, 2.2, ease.io(w)); const think = t > 6.0 && t < 11.1;
+    const push = ease.io(prog(t, 11.2, 12.4)); O.at(lerp(ox, 1.0, push), PY, lerp(oz, 2.4, push), (w > 0 && w < 1 ? w * 5 : 0) + (think ? t * .5 : 0) + (push > 0 && push < 1 ? push * 3 : 0), -1.2);
+    clock.set(prog(t, 6.08, 11.07)); clock.g.position.y = PY + 3.7 + .05 * Math.sin(t * 1.3); clock.fade(ease.out(prog(t, 5.4, 6.0)) * (1 - sm(t, 11.2, 11.8)));
+    ch.open(prog(t, 11.2, 12.2)); R.into(ch, t, 11.8, 2.4, 4); ch.fill(prog(t, 13.5, 14.6)); R.cols[4].grey(prog(t, 11.6, 13.2)); xm.set(prog(t, 13.0, 13.6)); });
+  return Object.assign(Wd, { cam: path([[0, [-1.4, 5.1, 11.6], [.4, 1.3, -.3], 46], [18.18, [1.2, 4.7, 11.2], [.8, 1.3, -.3], 44]]) });
+}
+// ---------- s11 : question 2 - which does the treasury prefer ----------
+function s11() {
+  const S = mkS({ seed: 11, chest: false }); const { Wd } = S; const J = jars(Wd, S); Wd.hero = J.JB.g;
+  const clock = clockRing(Wd, { pos: [0, PY + 2.9, .6], R: .9 });
+  Wd.on(t => { const a = prog(t, 8.8, 11.0), b = prog(t, 9.0, 11.8); J.JO.levels(4 * ease.io(a)); J.JB.levels(5 * ease.io(b)); J.JO.pour(t, a > 0 && a < 1); J.JB.pour(t, b > 0 && b < 1);
+    J.O.at(-4.3, PY, .8, a > 0 && a < 1 ? t * .9 : 0, .5); J.B.at(4.3, PY, .8, b > 0 && b < 1 ? t * .9 : 0, -.5);
+    clock.set(prog(t, 3.64, 8.64)); clock.g.position.y = PY + 2.9 + .05 * Math.sin(t * 1.3); clock.fade(ease.out(prog(t, 2.9, 3.5)) * (1 - sm(t, 8.7, 9.3)));
+    pop(J.t100, ease.out(prog(t, 11.2, 11.7))); pop(J.t125, ease.out(prog(t, 12.0, 12.5))); J.JB.glow(sm(t, 12.4, 13.2), t); J.JO.glow(0, t); J.ck.set(prog(t, 13.0, 13.6)); });
+  return Object.assign(Wd, { cam: path([[0, [0, 2.5, 12.4], [0, 2.0, 0], 48], [15.745, [0, 4.1, 11.4], [0, 2.3, 0], 46]]) });
+}
+// ---------- s12 : summary glide ----------
+function s12() {
+  const S = mkS({ seed: 12, x0: -12, x1: 31, wide: true, ext: 30, chest: false, motes: 50, moteO: { w: 44, z0: -4, z1: 5 } }); const { Wd } = S;
+  const X1 = -4, X2 = 10, c1 = chest(Wd, [X1, PY, -2.3]), c2 = chest(Wd, [X2, PY, -2.3]); const L1 = lanes(Wd, { x: X1 }), L2 = lanes(Wd, { x: X2 });
+  const R1 = row(Wd, { x0: -.2, z: 1.0 }), R2 = row(Wd, { x0: 13.8, z: 1.0 }), B = pawn(Wd, PAL.blue, .95), O = pawn(Wd, PAL.orange, .95); const HP = heroProxy(Wd, [0, PY + 1.5, 0], [6, 3, 3]); Wd.hero = HP;
+  const J = (() => { const JO = jar(Wd, [21.6, PY, .6]), JB = jar(Wd, [26.4, PY, .6]); return { JO, JB, po: pawn(Wd, PAL.orange, 1.0), pb: pawn(Wd, PAL.blue, 1.0) }; })();
+  const ck1 = checkMark(.9); Wd.add(ck1.g); ck1.g.position.set(X1, PY + 2.7, -2.3); const ck2 = checkMark(.9); Wd.add(ck2.g); ck2.g.position.set(26.4, PY + 5.0, .6);
+  const cxf = t => { const u1 = ease.io(prog(t, 8.0, 10.4)), u2 = ease.io(prog(t, 13.4, 15.4)); return lerp(lerp(-1.6, 11.8, u1), 24.2, u2) + .3 * Math.sin(t * .3); };
+  Wd.on(t => {
+    HP.position.x = cxf(t); R1.time(t); R2.time(t); L1.gate.open(prog(t, .6, 1.4)); R1.four(prog(t, .4, 2.6)); R1.fifth(prog(t, 2.8, 3.8)); R1.cols[4].bright(ease.out(prog(t, 3.0, 3.8)));
+    const u = ease.io(prog(t, 1.2, 3.4)); B.at(L1.cxB, PY, lerp(2.8, -.95, u), u > 0 && u < 1 ? u * 6 : 0, 0);
+    c1.open(prog(t, 3.4, 4.2)); R1.into(c1, t, 4.4, 2.0, 5); c1.fill(prog(t, 6.0, 7.2)); c1.ring.set(sm(t, 6.8, 7.8), t); c1.sparkle(t, sm(t, 6.8, 7.6)); ck1.set(prog(t, 7.2, 7.8));
+    R2.four(prog(t, 9.8, 12.0)); const w = ease.io(prog(t, 10.2, 12.2)); O.at(L2.cxO, PY, lerp(2.8, .55, w), w > 0 && w < 1 ? w * 4 : 0, 0);
+    c2.open(prog(t, 11.8, 12.6)); R2.into(c2, t, 12.2, 1.4, 4); c2.fill(prog(t, 13.4, 14.4)); c2.sparkle(t, sm(t, 13.6, 14.4));
+    const a = prog(t, 14.6, 16.4), b = prog(t, 14.9, 17.2); J.JO.levels(4 * ease.io(a)); J.JB.levels(5 * ease.io(b)); J.JO.pour(t, a > 0 && a < 1); J.JB.pour(t, b > 0 && b < 1);
+    J.po.at(19.6, PY, .8, a > 0 && a < 1 ? t * .9 : 0, .5); J.pb.at(28.4, PY, .8, b > 0 && b < 1 ? t * .9 : 0, -.5); J.JB.glow(sm(t, 17.1, 17.9), t); J.JO.glow(0, t); ck2.set(prog(t, 17.6, 18.1));
+  });
+  return Object.assign(Wd, { cam: t => { const cx = cxf(t); return { pos: [cx, 5.4, 11.6], look: [cx, 1.4, -.4], fov: 44 }; } });
+}
+// ---------- s13 : calm wide, golden evening ----------
+function s13() {
+  const S = mkS({ seed: 13, motes: 60, moteO: { w: 18, z0: -6, z1: 6 }, world: { skyTop: 0xF6C98B, skyBottom: 0xFBE3B4, fogColor: 0xFBE3B4, hemi: .95, sun: .9, sunColor: 0xFFD9A0 } }); const { Wd } = S; S.spark = .8; S.ring = .5;
+  const D = donkey(Wd, t => ({ pos: [3.8, PY, 1.2], facing: -.6, clip: DK + 'Eating' }), { height: 3.0 }); Wd.hero = heroProxy(Wd, [1.9, PY + 1.4, 0], [8, 3, 3]); Wd.on(t => { D.glow.place(3.8, PY, 1.2); D.glow.set(0, t); });
+  return Object.assign(Wd, { cam: dolly([-3, 4.4, 11.8], [2.4, 4.1, 11.2], [0, 1.2, -.3], 0, 7.448, { fov0: 42, fov1: 44 }) });
+}
+
+film({
+  title: 'TITLE', kicker: 'KICKER', vault: 'captions_vault.json',
+  shots: [
+    { id: 's01', dur: 7.65, caps: [], build: adj(s01) },
+    { id: 's02', dur: 9.432, caps: ['CAP_s02_1'], capAt: [0.3], build: adj(s02) },
+    { id: 's03', dur: 10.45, caps: ['CAP_s03_1', 'CAP_s03_2'], capAt: [0.3, 4.8], build: adj(s03) },
+    { id: 's04', dur: 9.91, caps: ['CAP_s04_1', 'CAP_s04_2'], capAt: [0.3, 4.8], build: adj(s04) },
+    { id: 's05', dur: 45.35, caps: ['CAP_s05_1', 'CAP_s05_2', 'CAP_s05_3', 'CAP_s05_4', 'CAP_s05_5', 'CAP_s05_6'], capAt: [0.2, 6.6, 15.2, 22.4, 30.2, 38.4], build: adj(s05) },
+    { id: 's06', dur: 11.53, caps: ['CAP_s06_1', 'CAP_s06_2'], capAt: [0.3, 4.84], build: adj(s06) },
+    { id: 's07', dur: 36.95, caps: ['CAP_s07_1', 'CAP_s07_2', 'CAP_s07_3', 'CAP_s07_4', 'CAP_s07_5'], capAt: [0.2, 5.6, 12.6, 19.2, 27.6], build: adj(s07) },
+    { id: 's08', dur: 9.91, caps: ['CAP_s08_1', 'CAP_s08_2'], capAt: [0.3, 4.8], build: adj(s08) },
+    { id: 's09', dur: 13.15, caps: ['CAP_s09_1', 'CAP_s09_2'], capAt: [0.3, 5.52], build: adj(s09) },
+    { id: 's10', dur: 18.175, caps: ['CAP_s10_1', 'CAP_s10_2'], capAt: [0.3, 11.07], build: adj(s10) },
+    { id: 's11', dur: 15.745, caps: ['CAP_s11_1', 'CAP_s11_2'], capAt: [0.3, 8.64], build: adj(s11) },
+    { id: 's12', dur: 18.25, caps: ['CAP_s12_1', 'CAP_s12_2'], capAt: [0.3, 9.12], build: adj(s12) },
+    { id: 's13', dur: 7.448, caps: ['CAP_s13_1'], capAt: [0.3], build: adj(s13) },
+  ],
+});
+</script>
+</html>

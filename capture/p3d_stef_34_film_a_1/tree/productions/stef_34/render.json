@@ -1,0 +1,15 @@
+{
+ "render_includes": [
+  "lib/figure3d.js",
+  "lib/geo_eretz.js",
+  "lib/glb3d.js",
+  "lib/motion3d.js",
+  "lib/people_pro.js",
+  "lib/stage3d.js",
+  "node_modules/three/build/three.core.js",
+  "node_modules/three/build/three.module.js",
+  "node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js",
+  "productions/stef_34/assets/Donkey.glb",
+  "productions/stef_34/ch.js"
+ ]
+}
