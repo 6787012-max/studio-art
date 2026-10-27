@@ -1,0 +1,409 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>film_siach</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script>window.__T0=48.9500; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import { film, world, path, orbit, cloud, ease, prog, lerp, clamp, rng, THREE, box, cyl, ball, mesh, toon, ink, canvasTex } from '../../lib/stage3d.js';
+import * as P from '../../lib/props3d.js';
+import { route } from '../azamra342/road.js';
+import * as S from './shared.js';
+import * as K from './kit.js';
+import * as H from './sh26.js';
+import * as W from './world26.js';
+
+const PI = Math.PI, V3 = H.V3, C = H.C, bell = H.bell;
+const cap = n => 'CAP_S_' + String(n).padStart(2, '0');
+const B = {};
+
+// =============================== A: the rainy highway ===============================
+const LX = -3.5;                                   // our lane (driving toward +z, right-hand traffic)
+function aWorld(o) {
+  o = o || {}; const Wd = world(H.rainSky({ fogNear: 34, fogFar: 240 }));
+  H.highway(Wd, { x: 0, z: -40, len: 340, w: 14 });
+  H.guardrail(Wd, 9.6, -200, 120);
+  const r = rng(4);
+  for (let z = -200; z < 120; z += 15) { H.rtree(Wd, 12 + r() * 8, z + r() * 6, .9 + r() * .4, o.sway || .012, z * .13, r() < .3 ? 1 : 0); H.rtree(Wd, -36 - r() * 8, z + r() * 6, .9 + r() * .4, o.sway || .012, z * .1 + 1, r() < .3 ? 1 : 0); }
+  H.hills(Wd, [[62, -150, 34, 0x8DB070], [70, -50, 40, 0x7FA35A], [66, 50, 36, 0x97B878], [60, 140, 34, 0x8DB070], [-70, -110, 38, 0x7FA35A], [-76, -10, 44, 0x8DB070], [-66, 90, 36, 0x97B878], [-72, 170, 38, 0x7FA35A], [0, -240, 70, 0x97B878]]);
+  for (const [x, y, z, s, sd] of [[-50, 44, -90, 4.5, 3], [40, 48, -120, 5.5, 5], [70, 42, -30, 4, 8], [-30, 46, 60, 4.5, 12], [20, 50, 100, 5, 14]]) Wd.add(cloud({ seed: sd, size: s, pos: [x, y, z], puffs: 6, cast: false, color: 0xEDF1F5, inkColor: 0xAEB9C6 }));
+  return Wd;
+}
+const cs1 = t => -90 + 11 * t;
+B.s01 = () => {
+  const Wd = aWorld(), car = H.makeCar(Wd, { interior: false });
+  const cam = t => ({ pos: [-16.5, 1.25, -52 + 8 * t], look: [LX, .95, cs1(t) + 1.5], fov: 30 });
+  H.rainCam(Wd, cam, { count: 1400 });
+  Wd.on(t => car.update({ x: LX, z: cs1(t), h: 0, dist: cs1(t), t, wr: .9 }));
+  return Object.assign(Wd, { hero: car.g, cam });
+};
+// inside the car: camera / persons are placed in car-local coordinates
+const cs2 = t => -70 + 12 * t;
+function driverIn(Wd, st, fn, look) { const Dp = S.man(Wd, look || H.DRIVER, t => Object.assign({ pos: H.toW(st(t), H.DRV), facing: st(t).h, sit: true, groundY: .2, smile: .6, seed: .3 }, fn(t))); return Dp; }
+B.s02 = () => {
+  const Wd = aWorld(), car = H.makeCar(Wd, { warm: true }), st = t => ({ x: LX, z: cs2(t), h: 0, dist: cs2(t), t, wr: .8 });
+  Wd.on(t => car.update(st(t)));
+  const Dp = driverIn(Wd, st, t => ({ gesture: t < 5.2 ? 'rest' : 'heart', talk: 0, smile: t < 5.2 ? .45 : .9 }));
+  // warm haze, notes, air lines (children of the car: car-local coordinates)
+  const hz = H.glow(null, 2.4, .2, 0xFFD9A0); hz.position.set(0, 1.25, 0); car.g.add(hz);
+  const notes = []; const nm = new THREE.MeshBasicMaterial({ color: H.GOLD });
+  for (let i = 0; i < 9; i++) { const n = new THREE.Group(); const hd = new THREE.Mesh(new THREE.SphereGeometry(.035, 12, 8), nm); hd.scale.set(1.25, .9, 1); n.add(hd);
+    const sm = new THREE.Mesh(new THREE.BoxGeometry(.009, .11, .009), nm); sm.position.set(.04, .06, 0); n.add(sm); const fl = new THREE.Mesh(new THREE.BoxGeometry(.045, .014, .009), nm); fl.position.set(.06, .115, 0); fl.rotation.z = -.5; n.add(fl);
+    car.g.add(n); notes.push(n); }
+  const lines = []; const lm = new THREE.MeshBasicMaterial({ color: 0xFFE3B0, transparent: true, opacity: .4, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide });
+  for (let i = 0; i < 6; i++) { const l = new THREE.Mesh(new THREE.PlaneGeometry(.014, .4), lm.clone()); l.rotation.x = -PI / 2; car.g.add(l); lines.push(l); }
+  Wd.on(t => {
+    notes.forEach((n, i) => { const u = (t * .21 + i / 9) % 1, vx = [.4, 0, -.4][i % 3]; n.position.set(vx * .6 + .07 * Math.sin(u * 7 + i), 1.0 + .5 * u, .72 - .85 * u * (.7 + .3 * (i % 3) / 2)); n.rotation.y = .5 * Math.sin(u * 5 + i); const s = Math.max(.001, Math.pow(bell(u), .5)); n.scale.setScalar(s * .85); });
+    lines.forEach((l, i) => { const u = (t * .55 + i / 6) % 1, vx = [.4, 0, -.4][i % 3] + (i < 3 ? .06 : -.06); l.position.set(vx, 1.0 + .05 * Math.sin(u * 6 + i), .66 - .75 * u); l.material.opacity = .45 * bell(u); });
+  });
+  const cam = t => { const k = ease.io(prog(t, 0, 11.2)), c = [lerp(-.55, -.3, k), lerp(1.28, 1.27, k), lerp(-.16, -.12, k)], l = [.4, 1.2, lerp(-.06, -.04, k)]; const s = st(t); return { pos: H.toW(s, c), look: H.toW(s, l), fov: lerp(44, 34, k) }; };
+  H.rainCam(Wd, cam, { count: 1100 });
+  return Object.assign(Wd, { hero: Dp, cam });
+};
+const cs3 = t => -50 + 10 * t;
+B.s03 = () => {
+  const Wd = aWorld({ sway: .04 }), car = H.makeCar(Wd, { interior: false });
+  const pd = H.flatDisc(Wd, LX, .092, 3.8, 1.7, 4.8, H.PUD, .9);
+  Wd.on(t => car.update({ x: LX, z: cs3(t), h: 0, dist: cs3(t), t, wr: 1.6 }));
+  const T0 = 4.8, SP = 1.05, N = 340;
+  H.splash(Wd, { t0: T0, span: SP, n: N, seed: 21, size: [.1, .3], life: 1.2, col: 0xE9F1F7, mudFrac: .25, mudCol: 0xA9A396,
+    src: (i, r) => { const rear = (i % 4) >= 2, sx = (i % 2) ? 1 : -1, tb = T0 + (i / N) * SP + (rear ? .256 : 0); return [LX + sx * .88, .12, cs3(tb) + (rear ? -1.28 : 1.28)]; },
+    vel: (i, r) => { const sx = (i % 2) ? 1 : -1; return [sx * (1.8 + 4.6 * r()), 3.2 + 4.2 * r(), 8.5 + 3 * (r() - .5)]; } });
+  const cam = t => ({ pos: [-13.5, 1.6, cs3(t) + 2.2], look: [LX, .9, cs3(t) + .4], fov: 36 });
+  H.rainCam(Wd, cam, { count: 1500, amount: t => .55 + .45 * prog(t, 1.5, 7) });
+  return Object.assign(Wd, { hero: car.g, cam });
+};
+// A4: the exit road
+const EXIT = new THREE.CatmullRomCurve3([[LX, -70], [LX, -30], [-5.5, -6], [-12, 8], [-25, 20], [-42, 27], [-60, 30], [-82, 30], [-110, 30], [-150, 30]].map(p => V3(p[0], 0, p[1])), false, 'centripetal');
+const EXL = EXIT.getLength(), exP = s => EXIT.getPointAt(clamp(s / EXL, 0, 1)), exT = s => EXIT.getTangentAt(clamp(s / EXL, 0, 1));
+B.s04 = () => {
+  const Wd = aWorld(), car = H.makeCar(Wd, { interior: false });
+  // exit road (slabs along the curve) + the little city
+  for (let s = 28; s < EXL - 1; s += 3) { const a = exP(s), t = exT(s); const m = new THREE.Mesh(new THREE.BoxGeometry(7, .08, 3.4), toon(H.WET)); m.position.set(a.x, .045, a.z); m.rotation.y = Math.atan2(t.x, t.z); m.receiveShadow = true; Wd.add(m); }
+  const rr = rng(8), hc = [0xF4DFB4, 0xEED8AC, 0xF0E2C0, 0xE9D3A1];
+  for (let i = 0; i < 4; i++) for (let j = 0; j < 4; j++) { const x = -112 - i * 13 + (rr() - .5) * 2, z = 4 + j * 14 + (rr() - .5) * 2; if (Math.abs(z - 30) < 6) continue; P.house(Wd, { pos: [x, 0, z], rot: rr() < .5 ? 0 : PI, scale: 1.35, color: hc[(i + j) % 4] }); }
+  for (let i = 0; i < 5; i++) { const x = -112 - i * 13; P.house(Wd, { pos: [x, 0, 44 + (i % 2) * 3], rot: PI, scale: 1.4, color: hc[i % 4] }); }
+  for (let i = 0; i < 14; i++) H.rtree(Wd, -40 - i * 7 + rr() * 3, 40 + rr() * 20, .9, .015, i, 0);
+  const s0 = 25, sp = 10, S = t => s0 + sp * t;
+  Wd.on(t => { const s = S(t), p = exP(s), tn = exT(s); car.update({ x: p.x, z: p.z, h: Math.atan2(tn.x, tn.z), dist: s, t, wr: 1.0 }); });
+  const cam = t => { const s = S(t), p = exP(s), tn = exT(s), fx = tn.x, fz = tn.z, lx = fz, lz = -fx, k1 = ease.io(prog(t, 0, 6.2)), k2 = ease.io(prog(t, 6.2, 11.2));
+    const back = lerp(lerp(9, 11, k1), 38, k2), side = lerp(lerp(7, 9, k1), 34, k2), up = lerp(lerp(1.4, 7, k1), 42, k2);
+    return { pos: [p.x - fx * back + lx * side, up, p.z - fz * back + lz * side], look: [p.x + fx * lerp(4, 22, k2), .9, p.z + fz * lerp(4, 22, k2)], fov: lerp(38, 50, k2) }; };
+  H.rainCam(Wd, cam, { count: 1400, top: 40, half: 18 });
+  return Object.assign(Wd, { hero: car.g, cam });
+};
+// =============================== B: the street at the city edge ===============================
+const RL = 2.4, PVZ = 6.7;                          // right lane centre z, pavement walking line z
+function jew(Wd, xf, o) {
+  o = o || {}; const zz = o.z === undefined ? PVZ : o.z; const Jp = S.man(Wd, H.WETJEW, t => Object.assign({ pos: [xf(t), .12, zz], facing: PI / 2, groundY: .12, smile: 0, brow: .15, seed: .45 }, o.fn ? o.fn(t) : {}));
+  K.hatOn(Wd, Jp); S.holdIn(Wd, Jp, 'A', H.bagMesh(0xC9A173), [0, 0, 0]); S.holdIn(Wd, Jp, 'B', H.bagMesh(0x7F9FB5), [0, 0, 0]); H.drips(Wd, Jp, 28, .13); return Jp;
+}
+const MUD = [[.15, -.1, .02, .075], [.14, -.28, -.04, .09, 1, 1.3, .5], [.04, -.12, -.13, .08, 1.2, 1, .4], [-.06, -.3, -.13, .07, 1.2, 1, .4], [.15, -.46, .02, .07]];
+const xJ5 = t => 30 + 1.1 * t, xJ6 = t => 42.3 + 1.1 * t, xJ7 = t => 54.2 + 1.1 * t, xJ8 = t => 60 + 1.1 * t, xJ9 = t => 72 + 1.1 * t;
+B.s05 = () => {
+  const Wd = world(H.rainSky({ fogNear: 40, fogFar: 200 })); H.cityEdge(Wd, { sway: .012 });
+  const car = H.makeCar(Wd, { warm: true }), st = t => ({ x: -45 + 6.5 * t, z: RL, h: PI / 2, dist: 6.5 * t, t, wr: 1.1 });
+  Wd.on(t => car.update(st(t)));
+  const Dp = driverIn(Wd, st, t => ({ gesture: 'rest', smile: .2 }));
+  jew(Wd, xJ5);
+  const cam = t => { const k = ease.io(prog(t, 0, 11.2)), c = [lerp(-.3, -.12, k), lerp(1.34, 1.31, k), lerp(-1.0, -.74, k)], l = [lerp(2.6, 2.8, k), lerp(1.1, 1.08, k), 8.5], s = st(t); return { pos: H.toW(s, c), look: H.toW(s, l), fov: lerp(60, 52, k) }; };
+  H.rainCam(Wd, cam, { count: 1300, half: 16 });
+  return Object.assign(Wd, { hero: Dp, cam });
+};
+B.s06 = () => {
+  const Wd = world(H.rainSky({ fogNear: 40, fogFar: 200 })); H.cityEdge(Wd, { sway: .015 });
+  const Jp = jew(Wd, xJ6, { fn: t => ({ walk: xJ6(t) * 5.2, gesture: 'rest' }) });
+  const cam = t => { const xc = xJ6(t) + lerp(-1.0, 1.0, prog(t, 0, 10.8)); return { pos: [xc, 1.4, .9], look: [xJ6(t) + .3, 1.15, PVZ], fov: 36 }; };
+  H.rainCam(Wd, cam, { count: 1500, half: 14 });
+  return Object.assign(Wd, { hero: Jp, cam });
+};
+B.s07 = () => {
+  const Wd = world(H.rainSky({ fogNear: 40, fogFar: 200 })); const ce = H.cityEdge(Wd, { sway: .015 });
+  H.flatDisc(Wd, 60.6, .095, 3.9, 4.2, 1.2, H.PUD, .92);
+  const car = H.makeCar(Wd, { interior: false, color: 0x8E949B, accent: 0x6A727A }), cx = t => 11.1 + 9 * t;
+  Wd.on(t => car.update({ x: cx(t), z: RL, h: PI / 2, dist: cx(t), t, wr: 1.4 }));
+  const T0 = 4.85, SP = .9, N = 230;
+  H.splash(Wd, { t0: T0, span: SP, n: N, seed: 31, size: [.07, .19], life: 1.25, col: 0xAFA590, mudFrac: .4, mudCol: 0x6F5F48,
+    src: (i, r) => { const rear = (i % 4) >= 2, tb = T0 + (i / N) * SP + (rear ? .28 : 0); return [cx(tb) + (rear ? -1.28 : 1.28), .12, RL + .88]; },
+    vel: (i, r) => [3 + 4 * (r() - .5), 3.2 + 4.2 * r(), 4.2 + 3.4 * r()] });
+  const Jp = jew(Wd, xJ7, { fn: t => ({ walk: xJ7(t) * 5.2, gesture: 'rest' }) });
+  H.mudOn(Wd, Jp, 5.7, MUD);
+  const cam = t => ({ pos: [xJ7(t) - 6.2, 1.9, -2.6], look: [xJ7(t) + .6, 1.0, 5.0], fov: 36 });
+  H.rainCam(Wd, cam, { count: 1500, half: 14 });
+  return Object.assign(Wd, { hero: Jp, cam });
+};
+// B3 / B4 / B5: the car moves at the man's pace, then stops
+const stB3 = t => ({ x: xJ8(t) + .25, z: RL, h: PI / 2, dist: 1.1 * t, t, wr: 1.0 });
+function cabin(Wd, st, o) {
+  o = o || {}; const car = H.makeCar(Wd, { warm: true }); Wd.on(t => car.update(st(t)));
+  const Dp = driverIn(Wd, st, o.fn || (() => ({ gesture: 'rest' })));
+  return { car, Dp };
+}
+function seatGlow(car) { const s = H.glow(null, 1.7, .0, 0xFFE08A); s.position.set(-.4, .62, -.05); car.g.add(s); return s; }
+B.s08 = () => {
+  const Wd = world(H.rainSky({ fogNear: 40, fogFar: 200 })); H.cityEdge(Wd, { sway: .012 });
+  const { car, Dp } = cabin(Wd, stB3, { fn: t => ({ gesture: t < 5.4 ? 'think' : 'shrug', smile: .1, brow: .2 }) });
+  const sg = seatGlow(car); Wd.on(t => { sg.material.opacity = .7 + .15 * Math.sin(t * 2.2); });
+  const Jp = jew(Wd, t => xJ8(t) + .6, { z: 5.35, fn: t => ({ walk: xJ8(t) * 5.2, gesture: 'rest' }) }); H.mudOn(Wd, Jp, 0, MUD);
+  const cam = t => { const a = lerp(192, 158, ease.io(prog(t, 0, 10.8))) * PI / 180, r = 1.0, s = stB3(t); return { pos: H.toW(s, [Math.sin(a) * r, 1.34, Math.cos(a) * r]), look: H.toW(s, [-.4, 1.12, .35]), fov: 62 }; };
+  H.rainCam(Wd, cam, { count: 1200, half: 14 });
+  return Object.assign(Wd, { hero: Dp, cam });
+};
+function scaleOfLight(car) {
+  const g = new THREE.Group(); g.position.set(.2, 1.4, .46); car.g.add(g); const gm = toon(H.KGOLD, { emissive: 0x7a5200 });
+  g.add(cyl(.012, .016, .34, H.KGOLD, { pos: [0, -.1, 0], ink: false })); g.add(cyl(.05, .06, .02, H.KGOLD, { pos: [0, -.28, 0], ink: false }));
+  const beam = new THREE.Group(); beam.position.y = .07; g.add(beam); beam.add(box(.01, .014, .52, H.KGOLD, { ink: false })); g.add(ball(.022, H.KGOLD, { pos: [0, .07, 0], ink: false }));
+  const pans = [-1, 1].map(s => { const p = new THREE.Group(); g.add(p); p.add(cyl(.095, .08, .014, H.KGOLD, { pos: [0, -.19, 0], ink: false }));
+    for (const dz of [-.07, .07]) p.add(cyl(.003, .003, .19, H.KGOLD, { pos: [0, -.095, dz], rot: [0, 0, 0], ink: false })); return p; });
+  // heart pan (-z): tiny glowing heart; car pan (+z): tiny clean car
+  const hm = mesh(S.heartGeo(), toon(0xE8453C, { emissive: 0x7a2008 }), { box: true, inkW: .03 }); hm.scale.setScalar(.085); hm.position.set(0, -.12, 0); pans[0].add(hm);
+  const tc = new THREE.Group(); tc.position.set(0, -.155, 0); tc.add(box(.07, .03, .14, H.CARC, { pos: [0, .02, 0], inkW: .003 })); tc.add(box(.065, .03, .07, 0x8CC6F2, { pos: [0, .05, -.01], inkW: .003 })); pans[1].add(tc);
+  const gl = H.glow(null, .7, .6, 0xFFD54A); gl.position.y = -.05; g.add(gl);
+  return { g, beam, pans };
+}
+B.s09 = () => {
+  const Wd = world(H.rainSky({ fogNear: 40, fogFar: 200 })); H.cityEdge(Wd, { sway: .012 });
+  const st = t => ({ x: xJ9(t) + .25, z: RL, h: PI / 2, dist: 1.1 * t, t, wr: 1.0 });
+  const { car, Dp } = cabin(Wd, st, { fn: t => ({ gesture: t < 5.4 ? 'count' : 'heart', smile: t < 5.4 ? .15 : .85, brow: t < 5.4 ? .15 : 0 }) });
+  const sc = scaleOfLight(car); Wd.on(t => { const b = lerp(.36, -.4, ease.io(prog(t, 1.5, 9))); sc.beam.rotation.x = b; const L = .26; sc.pans[0].position.set(0, .07 + L * Math.sin(b), -L * Math.cos(b)); sc.pans[1].position.set(0, .07 - L * Math.sin(b), L * Math.cos(b)); sc.g.position.y = 1.4 + .015 * Math.sin(t * 1.7); });
+  const Jp = jew(Wd, t => xJ9(t) + .6, { fn: t => ({ walk: xJ9(t) * 5.2, gesture: 'rest' }) }); H.mudOn(Wd, Jp, 0, MUD);
+  const cam = t => { const k = ease.io(prog(t, 0, 10.8)), s = st(t); return { pos: H.toW(s, [lerp(-.5, -.4, k), lerp(1.36, 1.33, k), lerp(-.26, -.28, k)]), look: H.toW(s, [lerp(.25, .2, k), 1.28, lerp(.15, .14, k)]), fov: lerp(46, 40, k) }; };
+  H.rainCam(Wd, cam, { count: 1000, half: 14 });
+  return Object.assign(Wd, { hero: Dp, cam });
+};
+const JB = 84, xJ10 = t => JB + 1.1 * Math.min(t, 2.4), CX10 = JB + 1.1 * 2.4 + .25;
+B.s10 = () => {
+  const Wd = world(H.rainSky({ fogNear: 40, fogFar: 200 })); H.cityEdge(Wd, { sway: .012 });
+  const cxf = t => CX10 - 6.9 * Math.pow(1 - prog(t, 0, 2.6), 2);
+  const doorK = t => ease.io(prog(t, 2.5, 3.6)) * (1 - ease.io(prog(t, 6.4, 7.4)));
+  const st = t => ({ x: cxf(t), z: RL, h: PI / 2, dist: cxf(t), t, door: doorK(t), wr: 1.0 });
+  const car = H.makeCar(Wd, { warm: true }); Wd.on(t => car.update(st(t)));
+  const Dp = driverIn(Wd, st, t => ({ gesture: t < 2.8 ? 'rest' : t < 6.4 ? 'offer' : 'heart', smile: t < 2.8 ? .2 : .95 }));
+  // the man: walks to the door, then glides in sitting down
+  const doorZ = RL + .84, seatW = t => H.toW(st(t), [-.4, .21, -.18]);
+  const Jp = S.man(Wd, H.WETJEW, t => {
+    if (t < 4.2) { const x = xJ10(t); return { pos: [x, .12, PVZ], facing: PI / 2, groundY: .12, smile: 0, brow: .15, seed: .45, walk: t < 2.4 ? x * 5.2 : undefined, gesture: 'rest' }; }
+    if (t < 5.0) { const u = ease.io(prog(t, 4.2, 5.0)), x = xJ10(t); return { pos: [x, .12, lerp(PVZ, doorZ + .25, u)], facing: lerp(PI / 2, PI, 1) * 1 - 0, groundY: .12, smile: .4, seed: .45, walk: x * 5.2 + u * 4, gesture: 'rest' }; }
+    const u = ease.io(prog(t, 5.0, 5.9)), sw = seatW(t); return { pos: [lerp(xJ10(t), sw[0], u), lerp(.12, sw[1], u), lerp(doorZ + .25, sw[2], u)], facing: lerp(PI, PI / 2, ease.io(prog(t, 5.0, 5.9))) - PI / 2 * 0 + 0, sit: u > .5, groundY: u > .5 ? .2 : .12, smile: .9, seed: .45, gesture: 'rest' }; });
+  K.hatOn(Wd, Jp); S.holdIn(Wd, Jp, 'A', H.bagMesh(0xC9A173), [0, 0, 0]); S.holdIn(Wd, Jp, 'B', H.bagMesh(0x7F9FB5), [0, 0, 0]);
+  H.drips(Wd, Jp, 20, .13); H.mudOn(Wd, Jp, 0, MUD);
+  // stains on the clean seat, appear when he sits
+  const stn = new THREE.Group(); car.g.add(stn); const stM = new THREE.MeshBasicMaterial({ color: 0x6B5A44, transparent: true, opacity: .8, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
+  for (const [x, z, rx, rz] of [[-.4, -.08, .16, .12], [-.34, .08, .09, .07], [-.46, -.2, .08, .1]]) { const m = new THREE.Mesh(new THREE.CircleGeometry(1, 20), stM); m.rotation.x = -PI / 2; m.position.set(x, .565, z); m.scale.set(rx, rz, 1); stn.add(m); }
+  const glo = H.glow(null, 4.2, 0, 0xFFC27A); glo.position.set(0, 1.2, 0); car.g.add(glo);
+  Wd.on(t => { const k = ease.out(prog(t, 5.4, 6.0)); stn.visible = k > .01; stn.scale.setScalar(Math.max(.001, k)); glo.material.opacity = .65 * ease.sm(prog(t, 5.6, 8.6)); });
+  const cam = t => { const k = ease.io(prog(t, 0, 10.74)), s = st(t), cx = s.x; return { pos: [cx - lerp(3.4, 10, k), lerp(1.5, 8.5, k), -lerp(8.2, 15, k)], look: [cx, lerp(1.0, 1.1, k), lerp(4.2, 3.0, k)], fov: 40 }; };
+  H.rainCam(Wd, cam, { count: 1500, half: 16, top: 24 });
+  return Object.assign(Wd, { hero: car.g, cam });
+};
+
+// =============================== C: the evening living room ===============================
+const rWorld = () => { const Wd = world(W.roomSky()); const R = W.livingRoom(Wd); return { Wd, R }; };
+const CUP = () => { const g = new THREE.Group(); g.add(cyl(.045, .035, .09, 0xFFFFFF, { pos: [0, -.05, 0], inkW: .006 })); const hd = new THREE.Mesh(new THREE.TorusGeometry(.03, .008, 6, 12), toon(0xFFFFFF)); hd.position.set(.05, -.05, 0); g.add(hd); g.add(cyl(.04, .04, .004, 0x7A4A2A, { pos: [0, -.008, 0], ink: false })); return g; };
+const NOTEBOOK = () => { const g = new THREE.Group(); g.add(box(.2, .27, .02, 0x4A93D8, { inkW: .005 })); g.add(box(.185, .255, .016, 0xFAF5E6, { pos: [.004, 0, .003], ink: false })); return g; };
+function steam(Wd, pos, tOn) { const ps = []; for (let i = 0; i < 3; i++) { const m = new THREE.Mesh(new THREE.CircleGeometry(.05, 12), new THREE.MeshBasicMaterial({ color: 0xFFFFFF, transparent: true, opacity: .3, depthWrite: false, side: THREE.DoubleSide })); m.renderOrder = 4; Wd.add(m); ps.push(m); }
+  Wd.on((t, cam) => ps.forEach((m, i) => { const u = (t * .5 + i / 3) % 1; m.position.set(pos[0] + .02 * Math.sin(u * 6 + i), pos[1] + .04 + .28 * u, pos[2]); m.lookAt(cam.position); m.scale.setScalar(.5 + u * 1.2); m.material.opacity = .32 * bell(u) * (t > tOn ? 1 : 0); })); }
+const SOFA_FY = .09, FATHER_X = -.9, FATHER_Z = -3.45;
+const fatherSit = (t, o) => Object.assign({ pos: [FATHER_X, SOFA_FY, FATHER_Z], facing: 0, sit: true, groundY: 0, smile: .5, seed: .35 }, o || {});
+function bagOnFloor(Wd, tShow, pos) { const b = H.bagMesh(0x7A5A3A); b.position.set(...pos); b.position.y = .36; b.visible = false; Wd.add(b); Wd.on(t => { b.visible = t >= tShow; }); return b; }
+B.s11 = () => {
+  const { Wd, R } = rWorld();
+  const A = [-4.0, -.3], Bp = [-1.6, -1.5], Cc = [-.9, -2.5];
+  const hAB = Math.atan2(Bp[0] - A[0], Bp[1] - A[1]), hBC = Math.atan2(Cc[0] - Bp[0], Cc[1] - Bp[1]);
+  const fpos = t => {
+    if (t < 3.4) { const u = t / 3.4; return { pos: [lerp(A[0], Bp[0], u), 0, lerp(A[1], Bp[1], u)], facing: hAB, walk: t * 11 }; }
+    if (t < 4.8) { const u = ease.io((t - 3.4) / 1.4); return { pos: [lerp(Bp[0], Cc[0], u), 0, lerp(Bp[1], Cc[1], u)], facing: lerp(hAB, hBC, ease.sm(prog(t, 3.4, 3.9))) * (1 - prog(t, 4.2, 4.8)), walk: 37 + (t - 3.4) * 7 }; }
+    const u = ease.io(prog(t, 4.8, 5.8)); return { pos: [lerp(Cc[0], FATHER_X, u), lerp(0, SOFA_FY, u), lerp(Cc[1], FATHER_Z, u)], facing: 0, sit: t > 5.05, groundY: 0 };
+  };
+  const Fp = S.man(Wd, H.FATHER, t => Object.assign({ groundY: 0, smile: .12, seed: .35, gesture: 'rest', brow: -.15 }, fpos(t)));
+  const bag = H.bagMesh(0x7A5A3A); S.holdIn(Wd, Fp, 'B', bag, [0, 0, 0]); Wd.on(t => { bag.visible = t < 4.3 && !!Fp.figure; }); bagOnFloor(Wd, 4.3, [-1.75, 0, -2.6]);
+  const cup = CUP(); S.holdIn(Wd, Fp, 'A', cup, [0, -.01, .02]); Wd.on(t => { cup.visible = t > 5.7 && !!Fp.figure; }); steam(Wd, [FATHER_X + .22, .62, FATHER_Z + .35], 6.2);
+  const cam = path([[0, [1.8, 1.8, 3.4], [-2.0, 1.0, -1.4], 50], [5.5, [.6, 1.5, 1.4], [-1.0, .95, -3.0], 42], [11.1, [-.1, 1.25, .1], [-.75, .85, -3.3], 36]]);
+  return Object.assign(Wd, { hero: Fp, cam });
+};
+const bPath = (t, pts) => {   // pts [[t,x,z]...] -> pos / facing / walk (distance based)
+  let i = 0; while (i < pts.length - 2 && t > pts[i + 1][0]) i++;
+  const a = pts[i], b = pts[i + 1], u = clamp((t - a[0]) / (b[0] - a[0] || 1), 0, 1), dx = b[1] - a[1], dz = b[2] - a[2];
+  let d = 0; for (let k = 0; k < i; k++) d += Math.hypot(pts[k + 1][1] - pts[k][1], pts[k + 1][2] - pts[k][2]); d += u * Math.hypot(dx, dz);
+  return { pos: [lerp(a[1], b[1], u), 0, lerp(a[2], b[2], u)], facing: Math.atan2(dx, dz), walk: Math.hypot(dx, dz) > .01 ? d * 7.2 : undefined };
+};
+B.s12 = () => {
+  const { Wd, R } = rWorld(); const cup = CUP();
+  const Fp = S.man(Wd, H.FATHER, t => fatherSit(t, { gesture: t < 5.1 ? 'rest' : 'think', look: t > 5.4 ? -.7 : 0, smile: .12, brow: -.1 }));
+  S.holdIn(Wd, Fp, 'A', cup, [0, -.01, .02]); steam(Wd, [FATHER_X + .22, .62, FATHER_Z + .35], 0);
+  bagOnFloor(Wd, 0, [-1.75, 0, -2.6]);
+  const bpts = [[0, -4.1, -.3], [.6, -3.9, -.3], [2.5, -.5, -2.0], [3.0, .1, -2.35]];
+  const Lb = S.man(Wd, H.LITTLE, t => { const p = bPath(t, bpts), done = t > 3.0;
+    return Object.assign({ groundY: 0, smile: .95, seed: .7, gesture: t > 2.6 ? 'offer' : 'rest' }, p, done ? { pos: [.1, 0, -2.35], facing: lerp(-2.0, -2.5, ease.io(prog(t, 3.0, 4.2))), walk: undefined } : {}); }, { scale: .7 });
+  S.holdIn(Wd, Lb, 'A', NOTEBOOK(), [0, -.03, .05], [.5, 0, 0]);
+  const cam = orbit([-.4, .9, -3.0], 3.9, .18, 38, -22, 0, 11.1, 44);
+  return Object.assign(Wd, { hero: Fp, cam });
+};
+B.s13 = () => {
+  const { Wd, R } = rWorld(); const cup = CUP();
+  const Fp = S.man(Wd, H.FATHER, t => fatherSit(t, { gesture: t < 1.5 ? 'think' : t < 4.6 ? 'rest' : t < 7.8 ? 'explain' : 'point', smile: t < 1.5 ? .1 : .9, look: t < 1.5 ? -.5 : t < 4.4 ? .3 : .8, talk: t > 5 ? .3 : 0, brow: 0 }));
+  S.holdIn(Wd, Fp, 'A', cup, [0, -.01, .02]); const tc = CUP(); tc.position.set(1.0, .62, -3.72); tc.visible = false; Wd.add(tc); Wd.on(t => { cup.visible = t < 1.9 && !!Fp.figure; tc.visible = t >= 1.9; }); steam(Wd, [1.0, .62, -3.72], 2.0);
+  bagOnFloor(Wd, 0, [-1.75, 0, -2.6]);
+  const BX = -.15, BZ = -3.45;
+  const Lb = S.man(Wd, H.LITTLE, t => {
+    if (t < 2.6) return { pos: [.1, 0, -2.35], facing: lerp(-2.5, -2.9, prog(t, 0, 2.6)), gesture: 'offer', smile: .95, groundY: 0, seed: .7 };
+    if (t < 3.6) { const u = ease.io(prog(t, 2.6, 3.6)); return { pos: [lerp(.1, BX, u), 0, lerp(-2.35, -2.8, u)], facing: lerp(-2.9, 0, u), gesture: 'rest', walk: u < .8 ? t * 5 : undefined, smile: .9, groundY: 0, seed: .7 }; }
+    const u = ease.io(prog(t, 3.6, 4.4)); return { pos: [BX, lerp(0, .2, u), lerp(-2.8, BZ, u)], facing: 0, sit: t > 3.8, gesture: t < 5 ? 'rest' : t < 7.4 ? 'point' : 'rest', smile: .95, groundY: 0, seed: .7, look: t > 5 ? -.6 : 0 }; }, { scale: .7 });
+  const nb = NOTEBOOK(); S.holdIn(Wd, Lb, 'A', nb, [0, -.03, .05], [.5, 0, 0]);
+  const L = S.lightField(Wd, 40, { r: .03, glow: .7 });
+  L.frame((t, cam, L) => { S.stream(L, t, { t0: 4.6, t1: 11, N: 22, life: 3.4, size: 1, pos: (u, i) => { const a = i * 2.4 + u * 2, rr = .35 + .5 * ((i * 37) % 10) / 10; return [-.5 + rr * 1.6 * Math.cos(a), .7 + 1.6 * u, -3.2 + rr * .9 * Math.sin(a)]; } }); });
+  const ring = H.glow(Wd, 4.2, 0, 0xFFD54A); ring.position.set(-.5, 1.1, -3.1); Wd.on(t => { ring.material.opacity = .45 * ease.sm(prog(t, 4.4, 6.5)); });
+  const cam = path([[0, [1.5, 1.5, 1.4], [-.5, .9, -3.2], 42], [11.1, [.2, 1.25, -.7], [-.5, .9, -3.3], 33]]);
+  return Object.assign(Wd, { hero: Fp, cam });
+};
+B.s14 = () => {
+  const { Wd, R } = rWorld();
+  const Fp = S.man(Wd, H.FATHER, t => fatherSit(t, { gesture: t < 2.6 ? 'rest' : 'heart', smile: t < 2.6 ? .7 : 1, look: t < 3 ? .5 : .1, seed: .35 }));
+  const tc = CUP(); tc.position.set(1.0, .62, -3.72); Wd.add(tc); steam(Wd, [1.0, .62, -3.72], 0); bagOnFloor(Wd, 0, [-1.75, 0, -2.6]);
+  const BX = -.15, BZ = -3.45, run = [[3.9, -.15, -2.6], [5.2, -3.4, -1.2], [5.9, -4.15, -.3]];
+  const Lb = S.man(Wd, H.LITTLE, t => {
+    if (t < 1.7) return { pos: [BX, .2, BZ], facing: 0, sit: true, groundY: 0, gesture: t < .6 ? 'point' : 'rest', smile: 1, seed: .7, look: -.3 };
+    if (t < 3.9) { const u = ease.io(prog(t, 1.7, 2.5)); return { pos: [BX, lerp(.2, 0, u), lerp(BZ, -2.6, u)], facing: 0, sit: u < .5, gesture: 'heart', smile: 1, groundY: 0, seed: .7 }; }
+    return Object.assign({ groundY: 0, smile: 1, seed: .7, gesture: 'heart', hidden: t > 5.95 }, bPath(t, run)); }, { scale: .7 });
+  const nb = NOTEBOOK(); S.holdIn(Wd, Lb, 'B', nb, [0, -.03, .05], [.4, 0, 0]);
+  const lap = NOTEBOOK(); lap.position.set(BX, .62, BZ + .35); lap.rotation.x = -1.0; Wd.add(lap); Wd.on(t => { lap.visible = t < 1.7; nb.visible = t >= 1.7 && !!Lb.figure; });
+  const L = S.lightField(Wd, 24, { r: .03, glow: .7 });
+  L.frame((t, cam, L) => { S.stream(L, t, { t0: 0, t1: 7, N: 16, life: 3.4, size: 1, pos: (u, i) => { const a = i * 2.4 + u * 2, rr = .4 + .6 * ((i * 37) % 10) / 10; return [-.5 + rr * 1.6 * Math.cos(a), .7 + 1.6 * u, -3.2 + rr * .9 * Math.sin(a)]; } }); });
+  const cam = path([[0, [.5, 1.3, -.4], [-.6, .95, -3.2], 38], [5.5, [-.4, 1.35, 1.0], [-1.0, 1.0, -2.0], 44], [11.1, [-1.0, 1.5, 4.4], [-2.2, 1.5, -1.0], 52]]);
+  Wd.on(t => R.glowBoost(ease.sm(prog(t, 5, 11))));
+  return Object.assign(Wd, { hero: Fp, cam });
+};
+
+// =============================== D: Avraham at his tent ===============================
+const dSky = () => Object.assign(S.sky({ skyTop: 0x7EC8F0, skyBottom: 0xFFE9B8, fogColor: 0xFFE9B8, fogNear: 110, fogFar: 400, sun: 1.9, hemi: 1.3, shadowExt: 22 }), { ground: null });
+const avr = (Wd, fn, staff) => { const Pp = S.man(Wd, K.AVRAHAM, fn); K.clothOn(Wd, Pp); if (staff !== false) K.staffIn(Wd, Pp, 'A'); return Pp; };
+function mkTrail(pts) {
+  const cv = new THREE.CatmullRomCurve3(pts.map(p => V3(p[0], 0, p[1])), false, 'centripetal'), len = cv.getLength(), q = V3(0, 0, 0);
+  return { len, at(d) { cv.getPointAt(clamp(d / len, 0, 1), q); return [q.x, q.z]; }, tan(d) { const a = this.at(Math.max(0, d - .4)), b = this.at(Math.min(len, d + .4)), dx = b[0] - a[0], dz = b[1] - a[1], l = Math.hypot(dx, dz) || 1; return [dx / l, dz / l]; } };
+}
+const TRL = mkTrail([[0, 3], [1.5, 10], [-1, 20], [-6, 32], [-12, 46], [-20, 64]]);
+function onT(d, lat) { const dd = clamp(d, 0, TRL.len), a = TRL.at(dd), tn = TRL.tan(dd), x = a[0] - tn[1] * (lat || 0), z = a[1] + tn[0] * (lat || 0); return { x, z, y: K.hY(x, z), tn }; }
+function campSet(Wd, o) {
+  o = o || {}; K.land(Wd); P.tent(Wd, { pos: [0, 0, 0], rot: 0, color: 0xE7D3A8 });
+  const rb = K.ribbon(Wd, TRL, { w: 1.7, op: 1 }); rb.reveal(1); rb.mesh.material.color.set(0xE4CC92); rb.mesh.material.transparent = false; rb.mesh.material.depthWrite = true;
+  const sun = H.glow(Wd, 90, .55, 0xFFF3D0); sun.position.set(-110, 140, 70);
+  Wd.add(box(.5, .3, .5, 0xB59A6A, { pos: [0, .15, 2.3], inkW: .015 }));
+  return rb;
+}
+function heat(Wd) { const ms = []; for (let i = 0; i < 3; i++) { const m = new THREE.Mesh(new THREE.PlaneGeometry(60, 9), new THREE.MeshBasicMaterial({ color: 0xFFFFFF, transparent: true, opacity: .0, depthWrite: false, blending: THREE.AdditiveBlending })); m.rotation.x = -PI / 2 + .02; m.position.set(0, .35 + i * .35, 18); Wd.add(m); ms.push(m); }
+  Wd.on(t => ms.forEach((m, i) => { m.material.opacity = .07 + .04 * Math.sin(t * 1.3 + i * 2); m.position.x = 2 * Math.sin(t * .4 + i); })); }
+B.s15 = () => {
+  const Wd = world(dSky()); campSet(Wd);
+  const Av = avr(Wd, t => ({ pos: [0, -.05, 2.25], facing: 0, sit: true, groundY: 0, gesture: t < 5.5 ? 'rest' : 'up', smile: .4, seed: .3, look: t > 2 && t < 5 ? .4 : 0 }));
+  K.sunFollow(Wd, t => [0, 0, 6]);
+  const cam = path([[0, [13, 26, 11], [0, 1, 3], 52], [5.4, [7.5, 4.6, 7.0], [0, 1.1, 2.6], 42], [10.85, [4.9, 1.5, 4.5], [.15, 1.0, 2.3], 36]]);
+  return Object.assign(Wd, { hero: Av, cam });
+};
+const AvD = t => 2.0 + 2.7 * Math.max(0, t - 1.2), TrD = t => 40 - 1.15 * t;
+B.s16 = () => {
+  const Wd = world(dSky()); campSet(Wd);
+  const Av = avr(Wd, t => { if (t < 1.0) return { pos: [0, -.05, 2.25], facing: 0, sit: true, groundY: 0, gesture: 'up', smile: .5, seed: .3 };
+    const u = ease.io(prog(t, 1.0, 1.5)); if (t < 1.5) return { pos: [0, lerp(-.05, 0, u), 2.25], facing: lerp(0, .2, u), sit: u < .5, groundY: 0, gesture: 'rest', smile: .6, seed: .3 };
+    const o = onT(AvD(t), 0); return { pos: [o.x, o.y, o.z], groundY: o.y, facing: Math.atan2(o.tn[0], o.tn[1]), walk: AvD(t) * 6.3 * 1.15, gesture: t > 9.4 ? 'offer' : 'rest', smile: .7, seed: .3 }; });
+  const TRV = [[0, 0], [-1.1, .9], [1.15, 1.5]];
+  TRV.forEach(([lat, off], i) => { const Tp = S.man(Wd, H.TRAVL(i), t => { const o = onT(TrD(t) + off, lat), f = Math.atan2(-o.tn[0], -o.tn[1]); return { pos: [o.x, o.y, o.z], groundY: o.y, facing: f, walk: TrD(t) * 6.3, gesture: 'rest', smile: .3, seed: .4 + i * .1 }; }); K.clothOn(Wd, Tp); });
+  const cam = t => { const k = prog(t, 0, 10.85), a = onT(AvD(t), 0), b = onT(TrD(t), 0), f = lerp(.2, .5, ease.io(prog(t, 0, 8))), tx = lerp(a.x, b.x, f), tz = lerp(a.z, b.z, f), side = lerp(16, 13, ease.io(prog(t, 0, 8))), cx = tx + side, cz = tz + 1.5;
+    return { pos: [cx, Math.max(K.hY(cx, cz) + 4.2, 5.2), cz], look: [tx, K.hY(tx, tz) + 1.2, tz], fov: lerp(54, 48, k) }; };
+  K.sunFollow(Wd, t => { const o = onT(AvD(t), 0); return [o.x, 0, o.z]; });
+  return Object.assign(Wd, { hero: Av, cam });
+};
+B.s17 = () => {
+  const Wd = world(dSky()); K.land(Wd);
+  P.tent(Wd, { pos: [0, 0, 0], rot: 0, color: 0xE7D3A8 }); P.tree(Wd, { pos: [-8.6, 0, 7.6], kind: 0, scale: 1.9 }); P.tree(Wd, { pos: [-0.5, 0, 13.5], kind: 0, scale: 1.4 });
+  const sun = H.glow(Wd, 90, .55, 0xFFF3D0); sun.position.set(-110, 140, 70);
+  const rock = (x, z, s) => Wd.add(ball(.34 * s, 0xB9A98C, { pos: [x, .2 * s, z], scale: [1.3, .7, 1], inkW: .02 }));
+  rock(-5.75, 5.2, 1); rock(-7.4, 6.9, 1); rock(-6.6, 8.1, 1);
+  const bx = -4.95, bz = 5.2;
+  const basin = new THREE.Group(); basin.position.set(bx, 0, bz); Wd.add(basin); basin.add(cyl(.32, .25, .15, 0xC9A173, { pos: [0, .075, 0], inkW: .012 })); const wtr = cyl(.27, .27, .01, 0x9BCDE8, { pos: [0, .14, 0], ink: false }); basin.add(wtr);
+  const dust = H.flatDisc(Wd, -5.2, .03, bz, .55, .38, 0xB5946A, .75);
+  const mat = box(1.0, .02, .8, 0xB8553C, { pos: [-6.6, .02, 6.9], inkW: .005 }); Wd.add(mat); for (let i = 0; i < 3; i++) Wd.add(ball(.1, 0xD9A55B, { pos: [-6.85 + i * .25, .09, 6.9 + (i % 2) * .15], scale: [1.5, .6, 1], inkW: .008 }));
+  const Av = avr(Wd, t => ({ pos: [bx, 0, bz - .5], facing: .0, groundY: 0, gesture: 'offer', smile: .6, seed: .3, look: t > 1 ? .3 : 0 }), false);
+  const jug = new THREE.Group(); jug.add(ball(.11, 0xB5673A, { pos: [0, -.02, 0], scale: [1, 1.2, 1], inkW: .008 })); jug.add(cyl(.045, .06, .1, 0xB5673A, { pos: [0, .13, 0], inkW: .006 })); jug.add(box(.03, .05, .1, 0xB5673A, { pos: [0, .16, .06], rot: [.5, 0, 0], inkW: .004 }));
+  S.holdIn(Wd, Av, 'A', jug, [0, .0, .09], [.45, 0, 0]);
+  const T1 = S.man(Wd, H.TRAVL(0), t => ({ pos: [-5.75, 0, 5.2], facing: PI / 2, sit: true, groundY: 0, gesture: 'rest', smile: .5, seed: .5 })); K.clothOn(Wd, T1);
+  const T2 = S.man(Wd, H.TRAVL(1), t => ({ pos: [-7.4, 0, 6.9], facing: PI / 2, sit: true, groundY: 0, gesture: t % 7 < 4 ? 'rest' : 'explainA', smile: .5, seed: .6 })); K.clothOn(Wd, T2);
+  const T3 = S.man(Wd, H.TRAVL(2), t => ({ pos: [-6.6, 0, 8.1], facing: PI, sit: true, groundY: 0, gesture: 'rest', smile: .5, seed: .7 })); K.clothOn(Wd, T3);
+  const str = box(.028, 1, .028, 0xBFE2F5, { pos: [bx, .6, bz], ink: false }); Wd.add(str); str.material = new THREE.MeshBasicMaterial({ color: 0xCFEAFA, transparent: true, opacity: .85 });
+  const rip = new THREE.Mesh(new THREE.RingGeometry(.9, 1, 24), new THREE.MeshBasicMaterial({ color: 0xFFFFFF, transparent: true, opacity: .6, side: THREE.DoubleSide, depthWrite: false })); rip.rotation.x = -PI / 2; rip.position.set(bx, .155, bz); Wd.add(rip);
+  Wd.on(t => { const on = t > .9, top = 1.02 + .02 * Math.sin(t * 3); str.visible = on; if (on) { str.scale.y = top - .16; str.position.y = .16 + (top - .16) / 2; }
+    const u = (t * 1.6) % 1; rip.visible = on; rip.scale.setScalar(.06 + .24 * u); rip.material.opacity = .6 * (1 - u); dust.material.opacity = .75 * (1 - ease.sm(prog(t, 1.5, 8))); wtr.material.color.set(C(0x9BCDE8).lerp(C(0xB5946A), .5 * bell(prog(t, 1, 9)))); });
+  const L = S.lightField(Wd, 36, { r: .035, glow: .8 });
+  L.frame((t, cam, L) => { S.stream(L, t, { t0: 3.4, t1: 11, N: 22, life: 3.4, size: 1, pos: (u, i) => { const a = i * 2.4 + u * 2, rr = .5 + 1.9 * ((i * 37) % 10) / 10; return [-5.8 + rr * Math.cos(a), .2 + 2.4 * u, 6 + rr * Math.sin(a)]; } }); });
+  const ring = H.glow(Wd, 7, 0, 0xFFD54A); ring.position.set(-5.5, 1.0, 5.8); Wd.on(t => { ring.material.opacity = .4 * ease.sm(prog(t, 3.4, 6)); });
+  K.sunFollow(Wd, t => [-5, 0, 6]);
+  const cam = orbit([-5.7, .9, 5.7], 5.8, 1.3, 118, 62, 0, 10.84, 42);
+  return Object.assign(Wd, { hero: Av, cam });
+};
+
+// =============================== E: the bright city, the bus ===============================
+const STOPZ = 24, BUSX = -3.6, BUSZ1 = STOPZ - 3.9, busZ = t => BUSZ1 - 50 * Math.pow(1 - prog(t, 0, 8.2), 2);
+B.s18 = () => {
+  const Wd = world(W.sunnySky()); W.cityStreet(Wd, { len: 300 }); W.busStop(Wd, -7.0, STOPZ);
+  const bus = H.makeBus(Wd), doorK = t => ease.io(prog(t, 8.8, 10.2));
+  Wd.on(t => { const z = busZ(t); bus.update({ x: BUSX, z, h: 0, dist: z, door: doorK(t) }); });
+  const Mp = S.man(Wd, H.BUSMAN, t => { const u = ease.io(prog(t, 9.6, 11.6)); const base = { groundY: .14, smile: .3, seed: .5, gesture: 'rest' };
+    if (t < 9.6) return Object.assign(base, { pos: [-6.5, .14, 22.6], facing: PI / 2 });
+    return Object.assign(base, { pos: [lerp(-6.5, -4.6, u), .14, lerp(22.6, STOPZ - 0.2, u)], facing: lerp(PI / 2, PI / 2, u), walk: u < 1 ? t * 5 : undefined, hidden: t > 11.7 }); });
+  K.hatOn(Wd, Mp);
+  const cam = path([[0, [-10.6, 6.2, 31], [-4, 2.2, 14], 46], [6.1, [-10.4, 3.8, 28.5], [-5.2, 1.8, 22], 42], [12.21, [-9.4, 1.5, 26.4], [-4.9, 1.3, 24.2], 38]]);
+  K.sunFollow(Wd, t => [-4, 0, 22]);
+  return Object.assign(Wd, { hero: bus.g, cam });
+};
+const bScroll = 6, BZ = .8, SEATY = .17;
+function bagOn(Wd) { const bagM = box(.34, .3, .14, 0x3C7FD8, { inkW: .008 }); Wd.add(bagM); bagM.add(box(.3, .12, .16, 0xF5B820, { pos: [0, .05, 0], ink: false })); return bagM; }
+B.s19 = () => {
+  const Wd = world(W.sunnySky({ ground: null })); const BI = W.busInterior(Wd, { speed: bScroll });
+  const pts = [[0, 0, 2.9], [6.2, 0, .95], [12.21, 0, .95]];
+  const Mn = S.man(Wd, H.BUSMAN, t => Object.assign({ groundY: 0, smile: .3, seed: .5, gesture: t < 6.0 ? 'rest' : 'think', look: t > 6.4 ? .8 : 0 }, bPath(t, pts), { facing: PI })); K.hatOn(Wd, Mn);
+  const Bj = S.man(Wd, S.BOY, t => ({ pos: [.95, SEATY, BZ], facing: 0, sit: true, groundY: 0, gesture: 'rest', smile: .75, seed: .6, look: t > 3 ? -.4 : 0 }));
+  const bagM = bagOn(Wd); bagM.position.set(.52, .66, BZ);
+  const cam = t => { const z = bPath(t, pts).pos[2]; return { pos: [lerp(.05, -.1, prog(t, 0, 12)), 1.5, Math.min(3.95, z + 1.25)], look: [lerp(.2, .3, prog(t, 0, 12)), 1.1, z - 2.0], fov: lerp(54, 46, prog(t, 0, 12.2)) }; };
+  return Object.assign(Wd, { hero: Mn, cam });
+};
+B.s20 = () => {
+  const Wd = world(W.sunnySky({ ground: null })); const BI = W.busInterior(Wd, { speed: bScroll });
+  const sitK = t => ease.io(prog(t, 3.2, 4.4));
+  const Mn = S.man(Wd, H.BUSMAN, t => { const k = sitK(t); return { pos: [lerp(0, .52, k), lerp(0, SEATY, k), BZ + .15 - .15 * k], facing: lerp(PI, 0, ease.io(prog(t, 2.9, 3.9))), sit: t > 3.5, groundY: 0, smile: t > 5 ? .95 : .3, seed: .5, gesture: t < 2.4 ? 'think' : t < 6.6 ? 'rest' : 'heart', look: t > 6 ? -.7 : 0 }; }); K.hatOn(Wd, Mn);
+  const Bj = S.man(Wd, S.BOY, t => ({ pos: [.95, SEATY, BZ], facing: 0, sit: true, groundY: 0, gesture: t > 1.2 && t < 3.2 ? 'offer' : 'rest', smile: .9, seed: .6, look: t > 3 ? .6 : 0 }));
+  const bagM = bagOn(Wd); Wd.on(t => { const u = ease.io(prog(t, .6, 1.8)); bagM.position.set(lerp(.52, .95, u), lerp(.66, .78, u), BZ + lerp(0, .12, u)); });
+  const L = S.lightField(Wd, 30, { r: .03, glow: .7 });
+  L.frame((t, cam, L) => { S.stream(L, t, { t0: 5.6, t1: 12, N: 18, life: 3.2, size: 1, pos: (u, i) => { const a = i * 2.4 + u * 2, rr = .15 + .45 * ((i * 37) % 10) / 10; return [.75 + rr * Math.cos(a), .9 + 1.0 * u, BZ + rr * Math.sin(a)]; } }); });
+  const ring = H.glow(Wd, 3.4, 0, 0xFFD54A); ring.position.set(.75, 1.0, BZ); Wd.on(t => { ring.material.opacity = .5 * ease.sm(prog(t, 5.4, 8)); });
+  const cam = path([[0, [.15, 1.45, 3.9], [.6, .95, BZ], 46], [12.21, [.4, 1.3, 2.9], [.75, .95, BZ], 34]]);
+  return Object.assign(Wd, { hero: Bj, cam });
+};
+B.s21 = () => {
+  const Wd = world(W.sunnySky()); const CS = W.cityStreet(Wd, { len: 420 });
+  const FC = W.farCity(Wd), bus = H.makeBus(Wd), z0 = -20, sp = 8, zb = t => z0 + sp * t;
+  Wd.on(t => bus.update({ x: BUSX, z: zb(t), h: 0, dist: zb(t), door: 0 }));
+  // gold glows in the windows, switching on one by one (pure function of t)
+  const wl = CS.wins.concat(FC.wins), N = wl.length, r = rng(33), tOn = [], pos = new Float32Array(N * 3), col = new Float32Array(N * 3), geo = new THREE.BufferGeometry();
+  for (let i = 0; i < N; i++) tOn.push(2.5 + 8.5 * r());
+  geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+  wl.forEach(([x, y, z, s], i) => { pos[i * 3] = x - s * .5; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z; });
+  const pts = new THREE.Points(geo, new THREE.PointsMaterial({ map: S.glowTex(), size: 3.2, sizeAttenuation: true, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, vertexColors: true, fog: false })); pts.frustumCulled = false; pts.renderOrder = 4; Wd.add(pts);
+  Wd.on(t => { for (let i = 0; i < N; i++) { const k = ease.out(prog(t, tOn[i], tOn[i] + .8)); col[i * 3] = 1 * k; col[i * 3 + 1] = .83 * k; col[i * 3 + 2] = .29 * k; } geo.attributes.color.needsUpdate = true; });
+  K.sunFollow(Wd, t => [BUSX, 0, zb(t)]);
+  const cam = t => { const z = zb(t), k1 = ease.io(prog(t, 0, 7.0)), k2 = ease.io(prog(t, 7.0, 12.21)), back = lerp(lerp(2.5, 12, k1), 60, k2), up = lerp(lerp(4.6, 18, k1), 130, k2), side = lerp(lerp(0, 8, k1), 30, k2);
+    return { pos: [BUSX + side * .5 + 2, up, z - back], look: [BUSX, lerp(2.5, 0, k2), z + lerp(7, 30, k2)], fov: lerp(52, 56, k2) }; };
+  return Object.assign(Wd, { hero: bus.g, cam });
+};
+
+// ---------------------------------------------------------------------------------
+const TL = [['s01', 11.2, [.5, 5.7], 1], ['s02', 11.2, [.5, 5.7]], ['s03', 11.2, [.5, 5.7], 1], ['s04', 11.2, [.5, 5.7], 1], ['s05', 11.23, [.5, 5.71]], ['s06', 10.8, [.5, 5.5]], ['s07', 10.8, [.5, 5.5], 1], ['s08', 10.8, [.5, 5.5]], ['s09', 10.8, [.5, 5.5]], ['s10', 10.74, [.5, 5.47], 1],
+  ['s11', 11.1, [.5, 5.65]], ['s12', 11.1, [.5, 5.65]], ['s13', 11.1, [.5, 5.65]], ['s14', 11.1, [.5, 5.65], 1], ['s15', 10.85, [.5, 5.52], 1], ['s16', 10.85, [.5, 5.52], 1], ['s17', 10.84, [.5, 5.52]], ['s18', 12.21, [.5, 6.21], 1], ['s19', 12.21, [.5, 6.21]], ['s20', 12.21, [.5, 6.21]], ['s21', 12.21, [.5, 6.21], 1]];
+film({
+  title: 'TITLE', kicker: 'KICKER', recap: ['RECAP_1', 'RECAP_2', 'RECAP_3'], vault: 'captions_vault.json', recapDur: 9, xf: .3, veilEnd: 1.5,
+  shots: TL.map(([id, dur, at, wide], i) => ({ id, dur, caps: [cap(2 * i + 1), cap(2 * i + 2)], capAt: at, wide: !!wide, build: B[id] })),
+});
+</script>
+</html>
