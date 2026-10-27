@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>stef_35 film A</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>window.__T0=172.6000; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": {
+  "three": "../../node_modules/three/build/three.module.js",
+  "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+// stef_35 / film A: graphics layer (215.75 s, silent). No Hebrew here: captions, title and kicker are vault IDs only.
+import { film, THREE, ease, prog, clamp, lerp, path, orbit, rng } from '../../lib/stage3d.js';
+import { dolly } from '../../lib/motion3d.js';
+import { PAL, sm, mkWorld, motes, tufts, chest, col, xMark, checkMark, pop, clockRing, heroProxy, halo,
+  sheep, dog, altar, barrier, shears, pail, plough, bowl, kit, stones, token, swirl, spot, arc } from './ps.js';
+
+const fr = x => ((x % 1) + 1) % 1;
+const gait = (xf, t) => { const v = (xf(t + .04) - xf(t - .04)) / .08; return { walk: xf(t) * .6, wa: clamp(Math.abs(v) * .9, 0, .65) }; };
+const Xm = (Wd, s) => { const m = xMark(s || .5); Wd.add(m.g); m.g.visible = false; return m; };
+const Ck = (Wd, s) => { const m = checkMark(s || .7); Wd.add(m.g); m.g.visible = false; return m; };
+const at = (m, p) => m.g.position.set(p[0], p[1], p[2]);
+
+// common scene: sky + hills + meadow patches + grass edge + motes
+function mkS(o) {
+  o = o || {}; const x0 = o.x0 === undefined ? -9 : o.x0, x1 = o.x1 === undefined ? 9 : o.x1, cx = (x0 + x1) / 2, sd = o.seed || 1;
+  const Wd = mkWorld(Object.assign({ cx: o.wide ? cx : 0, ext: o.ext, floor: 0x9CCB7A }, o.world));
+  const r = rng(40 + sd), pc = [0xA8D488, 0x8DBF6C, 0xB4DB94];
+  for (let i = 0; i < (o.wide ? 34 : 14); i++) { const p = new THREE.Mesh(new THREE.CircleGeometry(1.8 + r() * 3, 28), new THREE.MeshLambertMaterial({ color: pc[i % 3], polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }));
+    p.rotation.x = -Math.PI / 2; p.scale.y = .6; p.position.set(lerp(x0 - 3, x1 + 3, r()), .01, lerp(-9, 5, r())); Wd.add(p); }
+  const fgL = tufts(Wd, 20, 5 + sd, { x0: x0 - 6, x1: x0 - 1, z0: -2, z1: 6, y: 0 }, { s: 1.5 }), fgR = tufts(Wd, 20, 6 + sd, { x0: x1 + 1, x1: x1 + 6, z0: -2, z1: 6, y: 0 }, { s: 1.5 });
+  const fgN = tufts(Wd, o.wide ? 70 : 24, 7 + sd, { x0: x0 + 1, x1: x1 - 1, z0: 5.8, z1: 7.2, y: 0 }, { s: 1.3 });
+  motes(Wd, o.motes || 26, sd, Object.assign({ cx }, o.moteO));
+  Wd.on(t => { fgL.sway(t); fgR.sway(t, .9); fgN.sway(t, 1.1); });
+  return { Wd };
+}
+
+// ---------- s01 : title - the consecrated sheep beside the altar, then the blemish ----------
+function s01() {
+  const { Wd } = mkS({ seed: 1, motes: 40 }); const AL = altar(Wd, [6.2, 0, .2], 1.2), sh = sheep(Wd, { s: 1.45, seed: 1 }); Wd.hero = sh.g;
+  Wd.on(t => { sh.set({ x: -1.0, z: 1.0, f: 1.1 }, t); sh.gold(ease.out(prog(t, .3, 1.4)), t); sh.bandage(ease.out(prog(t, 4.4, 5.6)), t, sm(t, 3.8, 4.2) * (1 - sm(t, 6.0, 6.8))); });
+  return Object.assign(Wd, { cam: path([[0, [-4, 10, 13], [1.2, 1.0, -.2], 46], [7.65, [-.6, 4.2, 10.4], [1.6, 1.0, -.2], 44]]) });
+}
+// ---------- s02 : the blemished animal is stopped at the foot of the ramp ----------
+function s02() {
+  const { Wd } = mkS({ seed: 2 }); const AL = altar(Wd, [5.8, 0, .2], 1.2), BR = barrier(Wd, AL.foot + .6, .2, 1.5), sh = sheep(Wd, { s: 1.5, seed: 2 }); Wd.hero = sh.g;
+  const xf = t => t < 5.5 ? lerp(-6.5, -1.9, ease.sm(prog(t, .2, 4.8))) : lerp(-1.9, -3.4, ease.sm(prog(t, 6.8, 9.6)));
+  Wd.on(t => { const g = gait(xf, t); sh.set({ x: xf(t), z: .2, f: Math.PI / 2, walk: g.walk, wa: g.wa }, t); sh.gold(1, t); sh.bandage(ease.out(prog(t, 1.2, 2.2)), t, sm(t, 1.0, 1.4) * (1 - sm(t, 2.6, 3.2))); BR.set(prog(t, 5.3, 6.3)); });
+  return Object.assign(Wd, { cam: path([[0, [-6.5, 3.4, 9.0], [-4.6, 1.2, .6], 44], [12.61, [1.0, 3.6, 9.4], [.0, 1.3, .4], 44]]) });
+}
+// ---------- calm backdrop under a clip (s03, s11) ----------
+function calm(seed, dur, sx) {
+  const { Wd } = mkS({ seed, motes: 70, moteO: { w: 24, z0: -6, z1: 6 } }); const AL = altar(Wd, [9.5, 0, -6], 1.0), sh = sheep(Wd, { s: 1.9, seed }); Wd.hero = sh.g;
+  Wd.on(t => { sh.set({ x: sx, z: 1.4, f: .9, graze: .8 }, t); sh.gold(0, t); });
+  return Object.assign(Wd, { cam: path([[0, [-1.0, 4.0, 9.8], [-1.6, 1.4, -.3], 44], [dur, [-2.0, 4.2, 10.0], [-1.6, 1.4, -.3], 44]]) });
+}
+const s03 = () => calm(3, 14.75, -5.6);
+const s11 = () => calm(11, 30.55, -5.6);
+// ---------- s04 : money replaces the animal; the holiness moves to the chest; another animal is offered ----------
+function s04() {
+  const { Wd } = mkS({ seed: 4 }); const AL = altar(Wd, [5.8, 0, .2], 1.2), chs = chest(Wd, [-.6, 0, -2.0]); const s1 = sheep(Wd, { s: 1.5, seed: 4 }), s2 = sheep(Wd, { s: 1.4, seed: 14 }); Wd.hero = s1.g;
+  const c = col(Wd, [-2.4, 0, 1.4], { s: 1 }); const CT = chs.top(0), home = [-2.4, 0, 1.4];
+  const x2 = t => lerp(.4, 4.9, ease.sm(prog(t, 6.0, 9.4)));
+  Wd.on(t => { chs.ring.set(sm(t, 4.4, 5.2), t); chs.sparkle(t, sm(t, 4.4, 5.2));
+    s1.set({ x: -4.8, z: .9, f: .8 }, t); s1.bandage(1, t, 0); const u = ease.io(prog(t, 2.8, 4.5)), d = [CT[0] + 4.8, 0, CT[2] - .9];
+    s1.gold(1 - prog(t, 4.2, 4.8), t, (CT[0] + 4.8) * u, 1.6 * Math.sin(Math.PI * u) + 1.1 * u, (CT[2] - .9) * u);
+    c.time(t); c.grow(prog(t, .8, 2.4)); chs.open(prog(t, 2.2, 3.0)); c.go(prog(t, 3.0, 4.4), CT); chs.fill(prog(t, 4.2, 5.0));
+    const ap = ease.out(prog(t, 4.8, 5.6)), w = x2(t), g = gait(x2, t), onR = AL.onRamp(w);
+    s2.set({ x: w, y: AL.hAt(w), z: .2, f: Math.PI / 2, sc: ap, walk: g.walk, wa: g.wa * (t > 6 ? 1 : 0), pitch: onR ? .4575 : 0 }, t); s2.gold(sm(t, 5.7, 6.4), t, 0, AL.hAt(w), 0); });
+  return Object.assign(Wd, { cam: path([[0, [-2.2, 4.6, 10.2], [-1.0, 1.1, 0], 46], [9.91, [2.8, 4.0, 9.4], [2.2, 1.4, 0], 42]]) });
+}
+// ---------- s05 : the redeemed sheep grazes, gold motes orbit, soft spotlight ----------
+function s05() {
+  const { Wd } = mkS({ seed: 5 }); const sh = sheep(Wd, { s: 1.2, seed: 5 }), sw = swirl(Wd, 12, 1.9, 5), sp = spot(Wd, 0, .5, 7, 2.4); Wd.hero = sh.g;
+  Wd.on(t => { sh.set({ x: 0, z: .5, f: .5, graze: .6 + .25 * Math.sin(t * .7) }, t); sh.bandage(1, t, 0); sh.gold(0, t); sh.glint(.25, t); sw.set(0, 0, .5, t, 1); sp.set(sm(t, 0, 1.5)); });
+  return Object.assign(Wd, { cam: orbit([0, 1.1, .5], 6.8, 2.8, -7.5, 7.5, 0, 7.88, 42) });
+}
+// ---------- s06 : not shearing ----------
+function s06() {
+  const { Wd } = mkS({ seed: 6 }); const sh = sheep(Wd, { s: 1.25, seed: 6 }), sr = shears(Wd, 1.0), xm = Xm(Wd, .6); Wd.hero = sh.g;
+  const sp = t => { const u = ease.io(prog(t, .4, 3.8)), r = ease.io(prog(t, 6.0, 8.6)), a = [-6, 3.6, 1.8], b = [-.6, 2.6, 1.3], p = arc(a, b, u, .5); return r > 0 ? arc(b, [-7, 4.5, 2.4], r, .4) : p; };
+  Wd.on(t => { sh.set({ x: 0, z: .3, f: .45, graze: .15 }, t); sh.bandage(1, t, 0); sh.gold(0, t); sh.glint(ease.out(prog(t, 4.9, 5.9)), t);
+    const p = sp(t); sr.g.position.set(p[0], p[1] + .05 * Math.sin(t * 2), p[2]); sr.hover(t); sr.snip(t, 9, t > 2.2 && t < 4.84 ? undefined : .12);
+    xm.set(ease.out(prog(t, 5.1, 5.6)) * (1 - sm(t, 8.0, 8.8))); at(xm, [p[0], p[1] + 1.3, p[2] + .3]); });
+  return Object.assign(Wd, { cam: path([[0, [1.8, 3.4, 9.2], [0, 1.3, .3], 44], [11.53, [.8, 2.8, 7.0], [-.2, 1.4, .3], 42]]) });
+}
+// ---------- s07 : not milk ----------
+function s07() {
+  const { Wd } = mkS({ seed: 7 }); const sh = sheep(Wd, { s: 1.4, seed: 7 }), pl = pail(Wd, .8), xm = Xm(Wd, .65); Wd.hero = sh.g;
+  const px = t => t < 6.5 ? lerp(-7.5, -.2, ease.io(prog(t, .3, 3.2))) : lerp(-.2, -8.5, ease.in(prog(t, 7.2, 10.0)));
+  Wd.on(t => { sh.set({ x: 0, z: .2, f: Math.PI / 2, graze: .1 }, t); sh.bandage(1, t, 0); sh.gold(0, t); sh.glint(.2, t);
+    pl.g.position.set(px(t), 0, 1.3); pl.level(t < 6.0 ? ease.sm(prog(t, 1.0, 4.7)) * .9 + .05 : (1 - prog(t, 6.0, 6.8)) * .95); pl.glint(sm(t, 5.1, 5.9) * (1 - prog(t, 6.0, 6.8)), t);
+    xm.set(ease.out(prog(t, 5.5, 6.0)) * (1 - sm(t, 9.0, 9.8))); at(xm, [px(t), 1.7, 1.7]); });
+  return Object.assign(Wd, { cam: path([[0, [-3.2, 1.1, 7.6], [0, 1.1, .2], 44], [12.07, [2.8, 1.4, 7.2], [0, 1.2, .2], 44]]) });
+}
+// ---------- s08 : not for the dogs ----------
+function s08() {
+  const { Wd } = mkS({ seed: 8 }); const chs = chest(Wd, [4.6, 0, -1.4]), sh = sheep(Wd, { s: 1.0, seed: 8 }), dg = dog(Wd), bw = bowl(Wd, 1.0), c = col(Wd, [2.4, 0, .5], { s: 1.1 }), xm = Xm(Wd, .6); Wd.hero = heroProxy(Wd, [0, 1.8, .2], [11, 3.8, 1.5]);
+  const cx = t => t < 4.6 ? lerp(2.4, -1.2, ease.io(prog(t, .8, 3.4))) : lerp(-1.2, 2.4, ease.io(prog(t, 5.9, 8.3)));
+  chs.coinsOnLid(true); bw.g.position.set(-3.0, 0, .5);
+  Wd.on(t => { sh.set({ x: 1.1, z: -1.4, f: .6, graze: .7 }, t); sh.bandage(1, t, 0); sh.gold(0, t); sh.glint(.3, t); dg.set(-4.6, 0, .5, Math.PI / 2, 1.5, t, 1 - .8 * sm(t, 5.4, 6.0)); c.time(t); c.grow(prog(t, 0, .8)); c.g.position.set(cx(t), 0, .5);
+    xm.set(ease.out(prog(t, 5.3, 5.8))); at(xm, [-3.0, 2.1, .6]); chs.sparkle(t, .6); chs.ring.set(.6, t); });
+  return Object.assign(Wd, { cam: path([[0, [-2.5, 4.2, 11.0], [-.3, 1.2, 0], 46], [12.61, [1.8, 4.1, 11.0], [.9, 1.2, 0], 46]]) });
+}
+// ---------- order-track scene pieces ----------
+function trackPieces(Wd, xs, z, kinds, times) {
+  stones(Wd, xs, z); return kinds.map((k, i) => { const tk = token(Wd, k, [xs[i], 1.55, z], 1.05); return { tk, t0: times[i] }; });
+}
+// ---------- s09 : order track - two sheep ----------
+function s09() {
+  const { Wd } = mkS({ seed: 9, x0: -11, x1: 13 }); const xs = [-2.4, -.4, 1.6], zA = -2.4, zB = 1.6, ix = [4.6, 6.1, 7.6];
+  const A = trackPieces(Wd, xs, zA, ['gold', 'red', 'coin'], [1.0, 3.4, 6.0]), B = trackPieces(Wd, xs, zB, ['red', 'gold', 'coin'], [2.2, 4.4, 6.9]);
+  const sA = sheep(Wd, { s: .9, seed: 9 }), sB = sheep(Wd, { s: .9, seed: 19 }), kA = kit(Wd, ix, zA, ['shears', 'pail', 'plough']), kB = kit(Wd, ix, zB, ['shears', 'pail', 'plough']); Wd.hero = heroProxy(Wd, [1.5, 1.9, -.3], [13, 4, 5]);
+  const xA = ix.map(() => Xm(Wd, .5)), cB = ix.map(() => Ck(Wd, .7));
+  Wd.on(t => { A.concat(B).forEach(o => o.tk.set(prog(t, o.t0, o.t0 + .6), t));
+    sA.set({ x: -5.2, z: zA, f: 1.2 }, t); sA.gold(sm(t, 1.3, 2.0) * (1 - prog(t, 6.2, 7.2)), t); sA.bandage(ease.out(prog(t, 3.8, 4.8)), t, sm(t, 3.4, 3.8) * (1 - sm(t, 5.2, 5.8))); sA.glint(.1 + .5 * ease.out(prog(t, 6.4, 7.6)), t);
+    sB.set({ x: -5.2, z: zB, f: 1.2 }, t); sB.bandage(ease.out(prog(t, 2.6, 3.6)), t, sm(t, 2.2, 2.6) * (1 - sm(t, 4.0, 4.6))); sB.gold(sm(t, 4.6, 5.2) * (1 - prog(t, 7.4, 8.6)), t); sB.glint(0, t);
+    [kA, kB].forEach(k => { k.shears.hover(t); k.shears.snip(t, 4, .3); k.shears.g.position.y = .75 + .05 * Math.sin(t * 2); });
+    ix.forEach((x, i) => { xA[i].set(ease.out(prog(t, 7.6 + i * .4, 8.1 + i * .4))); at(xA[i], [x, 2.3, zA + .3]); cB[i].set(ease.out(prog(t, 8.8 + i * .4, 9.3 + i * .4))); at(cB[i], [x, 2.3, zB + .3]); }); });
+  return Object.assign(Wd, { cam: path([[0, [1.5, 7.0, 11.4], [1.8, .8, -1.8], 44], [15.85, [1.5, 5.9, 12.0], [1.8, .6, 1.2], 44]]) });
+}
+// ---------- s10 : order track - the lamb conceived after redemption ----------
+function s10() {
+  const { Wd } = mkS({ seed: 10 }); const xs = [-3.4, -1.2, 1.0, 3.2], z = .3; const T = trackPieces(Wd, xs, z, ['gold', 'red', 'coin'], [.8, 2.6, 4.4]);
+  const m = sheep(Wd, { s: 1.0, seed: 10 }), lamb = sheep(Wd, { s: .55, seed: 30 }), ck = Ck(Wd, .8); Wd.hero = heroProxy(Wd, [1.2, 1.9, .3], [12, 3.9, 1]);
+  Wd.on(t => { T.forEach(o => o.tk.set(prog(t, o.t0, o.t0 + .6), t));
+    m.set({ x: 5.8, z: z, f: -Math.PI / 2 + .25, graze: .15 }, t); m.gold(sm(t, 1.0, 1.8) * (1 - prog(t, 4.6, 5.6)), t); m.bandage(ease.out(prog(t, 3.0, 4.0)), t, sm(t, 2.6, 3.0) * (1 - sm(t, 4.4, 5.0))); m.glint(.5 * ease.out(prog(t, 5.0, 6.0)), t);
+    const lp = ease.out(prog(t, 5.2, 5.9)), hop = t > 6.6 ? Math.abs(Math.sin((t - 6.6) * 3.2)) * .55 : 0;
+    lamb.set({ x: 3.2, y: .17 + hop, z: z, f: -.6, sc: lp }, t); lamb.glint(0, t);
+    ck.set(ease.out(prog(t, 6.2, 6.8))); at(ck, [3.2, 2.2, z + .3]); });
+  return Object.assign(Wd, { cam: path([[0, [-1.2, 3.8, 9.8], [-.6, 1.3, .3], 44], [14.23, [3.0, 3.6, 9.4], [2.6, 1.3, .3], 44]]) });
+}
+// ---------- s12 : question 1 ----------
+function s12() {
+  const { Wd } = mkS({ seed: 12 }); const xs = [-5.6, -3.4, -1.2], z = .3; const T = trackPieces(Wd, xs, z, ['gold', 'red', 'coin'], [1.0, 2.8, 4.6]);
+  const sh = sheep(Wd, { s: 1.1, seed: 12 }), sr = shears(Wd, 1.1), clock = clockRing(Wd, { pos: [-3.4, 4.2, z], R: .9 }), xm = Xm(Wd, .65); Wd.hero = heroProxy(Wd, [-1, 2.0, .3], [10, 4.2, 1]);
+  const sx = 2.6, sp = t => { const r = ease.io(prog(t, 13.8, 16.6)); return arc([sx, 3.5, z + .8], [9, 5, z + 2], r, .5); };
+  Wd.on(t => { T.forEach(o => o.tk.set(prog(t, o.t0, o.t0 + .6), t));
+    sh.set({ x: sx, z: z, f: -Math.PI / 2 + .2, graze: .1 }, t); sh.gold(sm(t, 1.4, 2.2) * (1 - prog(t, 4.8, 5.8)), t); sh.bandage(ease.out(prog(t, 3.2, 4.2)), t, sm(t, 2.8, 3.2) * (1 - sm(t, 4.6, 5.2))); sh.glint(ease.out(prog(t, 12.4, 13.4)) * .9, t);
+    const p = sp(t), sc = ease.out(prog(t, 5.0, 5.8)); sr.g.visible = sc > .01; sr.g.scale.setScalar(Math.max(sc, 1e-4)); sr.g.position.set(p[0], p[1] + .08 * Math.sin(t * 2), p[2]); sr.hover(t); sr.snip(t, 6, t < 12.29 ? undefined : .1);
+    clock.set(prog(t, 7.29, 12.29)); clock.g.position.y = 4.2 + .05 * Math.sin(t * 1.3); clock.fade(ease.out(prog(t, 6.6, 7.2)) * (1 - sm(t, 12.5, 13.1)));
+    xm.set(ease.out(prog(t, 12.7, 13.2)) * (1 - sm(t, 16.0, 16.8))); at(xm, [p[0], p[1] + 1.4, p[2] + .3]); });
+  return Object.assign(Wd, { cam: path([[0, [-.5, 4.2, 11.2], [-.3, 1.4, 0], 44], [18.49, [.8, 4.0, 10.6], [.2, 1.5, 0], 44]]) });
+}
+// ---------- s13 : question 2 ----------
+function s13() {
+  const { Wd } = mkS({ seed: 13 }); const xs = [-2.4, -.2, 2.0], z = 1.0; const T = trackPieces(Wd, xs, z, ['red', 'gold'], [1.0, 3.2]);
+  const AL = altar(Wd, [8.2, 0, -4.5], 1.3), BR = barrier(Wd, AL.foot + .8, -4.5, 1.7), sh = sheep(Wd, { s: 1.0, seed: 13 }), c = col(Wd, [5.4, 0, 1.6], { s: 1.1 }), fly = halo(Wd, 2.0, 1), sr = shears(Wd, 1.0), clock = clockRing(Wd, { pos: [-.2, 4.2, z], R: .9 }), ck = Ck(Wd, .8); Wd.hero = heroProxy(Wd, [0, 2.1, 1], [10, 4.6, 1]);
+  Wd.on(t => { T.forEach(o => o.tk.set(prog(t, o.t0, o.t0 + .6), t));
+    const gk = sm(t, 3.4, 4.2); const u = ease.io(prog(t, 13.0, 15.6)), a = [-5.2, 0, z], b = [5.4, 0, 1.6], P = arc(a, b, u, 2.4);
+    sh.set({ x: -5.2, z: z, f: 1.15 }, t); sh.bandage(ease.out(prog(t, 1.8, 2.8)), t, sm(t, 1.4, 1.8) * (1 - sm(t, 3.2, 3.8))); sh.glint(0, t);
+    sh.gold(t < 11.67 ? gk : 1 - prog(t, 13.0, 13.6), t, 0, 0, 0, t < 11.67 ? 0 : .8 * sm(t, 11.67, 12.4));
+    fly.place(P[0], P[1] + .1, P[2]); fly.set(prog(t, 13.0, 13.5) * (1 - prog(t, 15.4, 15.9)), t); fly.disc.material.opacity *= .2;
+    c.time(t); c.grow(prog(t, 12.0, 13.0)); c.bright(sm(t, 15.2, 15.9)); BR.set(prog(t, 11.9, 12.8));
+    clock.set(prog(t, 5.67, 11.67)); clock.g.position.y = 4.2 + .05 * Math.sin(t * 1.3); clock.fade(ease.out(prog(t, 5.0, 5.6)) * (1 - sm(t, 11.8, 12.4)));
+    const sc = ease.out(prog(t, 4.0, 4.8)); sr.g.visible = sc > .01; sr.g.scale.setScalar(Math.max(sc, 1e-4)); sr.g.position.set(-4.2, 3.4 + .08 * Math.sin(t * 2), z + 1.2); sr.hover(t); sr.snip(t, 5, .45);
+    ck.set(ease.out(prog(t, 16.4, 17.0))); at(ck, [-4.2, 5.0, z + 1.4]); });
+  return Object.assign(Wd, { cam: path([[0, [1.0, 2.0, 13.5], [1.2, 1.6, -1.0], 46], [21.92, [.6, 4.8, 13], [1.2, 1.2, -1.0], 44]]) });
+}
+// ---------- s14 : summary glide ----------
+function s14() {
+  const { Wd } = mkS({ seed: 14, x0: -12, x1: 34, wide: true, ext: 30, motes: 50, moteO: { w: 48, z0: -4, z1: 5 } });
+  const chs = chest(Wd, [2.8, 0, -1.6]), s1 = sheep(Wd, { s: 1.1, seed: 14 }), c = col(Wd, [-.2, 0, 1.4], { s: 1 }), CT = chs.top(0);
+  const kA = kit(Wd, [8.6, 10.8, 13.0, 15.2], .6, ['shears', 'pail', 'plough', 'bowl']), sB = sheep(Wd, { s: 1.1, seed: 24 }), kB = kit(Wd, [24.4, 26.4, 28.4], .6, ['shears', 'pail', 'plough']);
+  const HP = heroProxy(Wd, [0, 1.5, 0], [6, 3, 3]); Wd.hero = HP; const xs = [8.6, 10.8, 13.0, 15.2].map(() => Xm(Wd, .5)), cs = [24.4, 26.4, 28.4].map(() => Ck(Wd, .7));
+  const cxf = t => { const u1 = ease.io(prog(t, 6.6, 9.6)), u2 = ease.io(prog(t, 12.0, 15.0)); return lerp(lerp(.6, 12, u1), 24.4, u2); };
+  Wd.on(t => { HP.position.x = cxf(t);
+    s1.set({ x: -3.0, z: .9, f: .9, sc: ease.out(prog(t, .2, .9)), graze: .7 * sm(t, 5.4, 6.2) }, t); s1.bandage(ease.out(prog(t, 1.0, 2.0)), t, sm(t, .8, 1.2) * (1 - sm(t, 2.4, 3.0)));
+    const u = ease.io(prog(t, 3.2, 5.0)); s1.gold(sm(t, .6, 1.2) * (1 - prog(t, 4.6, 5.2)), t, (CT[0] + 3.0) * u, 1.5 * Math.sin(Math.PI * u) + 1.1 * u, (CT[2] - .9) * u);
+    c.time(t); c.grow(prog(t, 2.0, 3.4)); chs.open(prog(t, 3.4, 4.0)); c.go(prog(t, 3.8, 5.2), CT); chs.fill(prog(t, 5.0, 5.8)); chs.ring.set(sm(t, 5.0, 5.8), t); chs.sparkle(t, sm(t, 5.0, 5.8));
+    [kA, kB].forEach(k => { k.shears.hover(t); k.shears.snip(t, 4, .3); k.shears.g.position.y = .75; });
+    xs.forEach((m, i) => { m.set(ease.out(prog(t, 9.9 + i * .7, 10.4 + i * .7))); at(m, [8.6 + i * 2.2, 2.2, .9]); });
+    sB.set({ x: 21.0, z: .9, f: .9, graze: .5 }, t); sB.bandage(1, t, 0); sB.gold(sm(t, 12.4, 13.0) * (1 - prog(t, 13.6, 14.6)), t, 0, 0, 0, .5);
+    cs.forEach((m, i) => { m.set(ease.out(prog(t, 15.4 + i * .6, 15.9 + i * .6))); at(m, [24.4 + i * 2, 2.2, .9]); }); });
+  return Object.assign(Wd, { cam: t => { const cx = cxf(t); return { pos: [cx, 5.4, 11.8], look: [cx, 1.3, -.2], fov: 44 }; } });
+}
+// ---------- s15 : calm wide, golden evening ----------
+function s15() {
+  const { Wd } = mkS({ seed: 15, motes: 60, moteO: { w: 20, z0: -6, z1: 6 }, world: { skyTop: 0xF6C98B, skyBottom: 0xFBE3B4, fogColor: 0xFBE3B4, hemi: .95, sun: .9, sunColor: 0xFFD9A0 } });
+  const AL = altar(Wd, [7.5, 0, -8], .9), sh = sheep(Wd, { s: 1.5, seed: 15 }), lb = sheep(Wd, { s: .6, seed: 25 }); Wd.hero = sh.g;
+  Wd.on(t => { sh.set({ x: 1.6, z: 1.2, f: -.6, graze: .8 }, t); sh.bandage(1, t, 0); sh.gold(0, t); lb.set({ x: 3.4, z: 1.8, f: -.9, graze: .6 + .2 * Math.sin(t * 1.1) }, t); lb.glint(0, t); });
+  return Object.assign(Wd, { cam: dolly([-2, 3.8, 9.4], [2.4, 3.6, 9.0], [1.2, 1.2, -.3], 0, 7.448, { fov0: 42, fov1: 44 }) });
+}
+
+film({
+  title: 'TITLE', kicker: 'KICKER', vault: 'captions_vault.json',
+  shots: [
+    { id: 's01', dur: 7.65, caps: [], build: s01 },
+    { id: 's02', dur: 12.61, caps: ['CAP_s02_1', 'CAP_s02_2'], capAt: [0.3, 5.3], build: s02 },
+    { id: 's03', dur: 14.75, caps: ['CAP_s03_1', 'CAP_s03_2', 'CAP_s03_3'], capAt: [0.2, 5.0, 9.6], build: s03 },
+    { id: 's04', dur: 9.91, caps: ['CAP_s04_1', 'CAP_s04_2'], capAt: [0.3, 4.8], build: s04 },
+    { id: 's05', dur: 7.88, caps: ['CAP_s05_1'], capAt: [0.3], build: s05 },
+    { id: 's06', dur: 11.53, caps: ['CAP_s06_1', 'CAP_s06_2'], capAt: [0.3, 4.84], build: s06 },
+    { id: 's07', dur: 12.07, caps: ['CAP_s07_1', 'CAP_s07_2'], capAt: [0.3, 5.07], build: s07 },
+    { id: 's08', dur: 12.61, caps: ['CAP_s08_1', 'CAP_s08_2'], capAt: [0.3, 5.3], build: s08 },
+    { id: 's09', dur: 15.85, caps: ['CAP_s09_1', 'CAP_s09_2'], capAt: [0.3, 6.66], build: s09 },
+    { id: 's10', dur: 14.23, caps: ['CAP_s10_1', 'CAP_s10_2'], capAt: [0.3, 5.98], build: s10 },
+    { id: 's11', dur: 30.55, caps: ['CAP_s11_1', 'CAP_s11_2', 'CAP_s11_3', 'CAP_s11_4', 'CAP_s11_5'], capAt: [0.2, 4.8, 10.8, 16.6, 22.6], build: s11 },
+    { id: 's12', dur: 18.49, caps: ['CAP_s12_1', 'CAP_s12_2'], capAt: [0.3, 12.29], build: s12 },
+    { id: 's13', dur: 21.92, caps: ['CAP_s13_1', 'CAP_s13_2'], capAt: [0.3, 11.67], build: s13 },
+    { id: 's14', dur: 18.25, caps: ['CAP_s14_1', 'CAP_s14_2'], capAt: [0.3, 9.12], build: s14 },
+    { id: 's15', dur: 7.45, caps: ['CAP_s15_1'], capAt: [0.3], build: s15 },
+  ],
+});
+</script>
+</html>
