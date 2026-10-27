@@ -1,0 +1,181 @@
+{
+  "clip": 515.43,
+  "total": 520.23,
+  "shots": [
+    {
+      "id": "s01",
+      "src_from": 12.3,
+      "clip_from": 0.0,
+      "dur": 9.38
+    },
+    {
+      "id": "s02",
+      "src_from": 32.8,
+      "clip_from": 9.38,
+      "dur": 13.9
+    },
+    {
+      "id": "s03",
+      "src_from": 46.7,
+      "clip_from": 23.28,
+      "dur": 10.71
+    },
+    {
+      "id": "s04",
+      "src_from": 59.3,
+      "clip_from": 33.99,
+      "dur": 19.0
+    },
+    {
+      "id": "s05",
+      "src_from": 78.3,
+      "clip_from": 52.99,
+      "dur": 32.2
+    },
+    {
+      "id": "s06",
+      "src_from": 110.5,
+      "clip_from": 85.19,
+      "dur": 21.7
+    },
+    {
+      "id": "s07",
+      "src_from": 132.2,
+      "clip_from": 106.89,
+      "dur": 13.6
+    },
+    {
+      "id": "s08",
+      "src_from": 145.8,
+      "clip_from": 120.49,
+      "dur": 6.4
+    },
+    {
+      "id": "s09",
+      "src_from": 152.2,
+      "clip_from": 126.89,
+      "dur": 23.2
+    },
+    {
+      "id": "s10",
+      "src_from": 175.4,
+      "clip_from": 150.09,
+      "dur": 13.7
+    },
+    {
+      "id": "s11",
+      "src_from": 189.1,
+      "clip_from": 163.79,
+      "dur": 19.8
+    },
+    {
+      "id": "s12",
+      "src_from": 208.9,
+      "clip_from": 183.59,
+      "dur": 27.3
+    },
+    {
+      "id": "s13",
+      "src_from": 236.2,
+      "clip_from": 210.89,
+      "dur": 14.4
+    },
+    {
+      "id": "s14",
+      "src_from": 250.6,
+      "clip_from": 225.29,
+      "dur": 19.2
+    },
+    {
+      "id": "s15",
+      "src_from": 269.8,
+      "clip_from": 244.49,
+      "dur": 16.8
+    },
+    {
+      "id": "s16",
+      "src_from": 286.6,
+      "clip_from": 261.29,
+      "dur": 20.5
+    },
+    {
+      "id": "s17",
+      "src_from": 307.1,
+      "clip_from": 281.79,
+      "dur": 13.9
+    },
+    {
+      "id": "s18",
+      "src_from": 321.0,
+      "clip_from": 295.69,
+      "dur": 16.61
+    },
+    {
+      "id": "s19",
+      "src_from": 346.3,
+      "clip_from": 312.3,
+      "dur": 15.0
+    },
+    {
+      "id": "s20",
+      "src_from": 361.3,
+      "clip_from": 327.3,
+      "dur": 23.9
+    },
+    {
+      "id": "s21",
+      "src_from": 385.2,
+      "clip_from": 351.2,
+      "dur": 12.8
+    },
+    {
+      "id": "s22",
+      "src_from": 398.0,
+      "clip_from": 364.0,
+      "dur": 23.9
+    },
+    {
+      "id": "s23",
+      "src_from": 421.9,
+      "clip_from": 387.9,
+      "dur": 24.8
+    },
+    {
+      "id": "s24",
+      "src_from": 446.7,
+      "clip_from": 412.7,
+      "dur": 25.6
+    },
+    {
+      "id": "s25",
+      "src_from": 472.3,
+      "clip_from": 438.3,
+      "dur": 25.6
+    },
+    {
+      "id": "s26",
+      "src_from": 497.9,
+      "clip_from": 463.9,
+      "dur": 25.6
+    },
+    {
+      "id": "s27",
+      "src_from": 523.5,
+      "clip_from": 489.5,
+      "dur": 13.7
+    },
+    {
+      "id": "s28",
+      "src_from": 537.2,
+      "clip_from": 503.2,
+      "dur": 12.23
+    },
+    {
+      "id": "s_end",
+      "src_from": null,
+      "clip_from": 515.43,
+      "dur": 4.8,
+      "note": "end card shot"
+    }
+  ]
+}
