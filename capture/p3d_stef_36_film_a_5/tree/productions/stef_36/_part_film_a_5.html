@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>stef_36 film A</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>window.__T0=231.2833; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": {
+  "three": "../../node_modules/three/build/three.module.js",
+  "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+// stef_36 / film A: graphics layer (277.54 s, silent). No Hebrew here: captions, title and kicker are vault IDs only.
+import { film, THREE, ease, prog, clamp, lerp, path, orbit, rng } from '../../lib/stage3d.js';
+import { dolly } from '../../lib/motion3d.js';
+import { PAL, sm, mkWorld, motes, tufts, xMark, checkMark, pop, clockRing, heroProxy, flag, numberTag,
+  sheep, arc, peg, chain, collar, neck, plinth, anvil, coinStack, pen, trough, hay, puff, sparkles } from './tz.js';
+
+const gait = (xf, t) => { const v = (xf(t + .04) - xf(t - .04)) / .08; return { walk: xf(t) * .6, wa: clamp(Math.abs(v) * .9, 0, .65) }; };
+const Xm = (Wd, s) => { const m = xMark(s || .5); Wd.add(m.g); m.g.visible = false; return m; };
+const Ck = (Wd, s) => { const m = checkMark(s || .7); Wd.add(m.g); m.g.visible = false; return m; };
+const at = (m, p) => m.g.position.set(p[0], p[1], p[2]);
+const lp3 = (a, b, u) => [lerp(a[0], b[0], u), lerp(a[1], b[1], u), lerp(a[2], b[2], u)];
+
+// common scene: sky + hills + meadow patches + grass edge + motes
+function mkS(o) {
+  o = o || {}; const x0 = o.x0 === undefined ? -9 : o.x0, x1 = o.x1 === undefined ? 9 : o.x1, cx = (x0 + x1) / 2, sd = o.seed || 1;
+  const Wd = mkWorld(Object.assign({ cx: o.wide ? cx : 0, ext: o.ext, floor: 0x9CCB7A }, o.world));
+  const r = rng(40 + sd), pc = [0xA8D488, 0x8DBF6C, 0xB4DB94];
+  for (let i = 0; i < (o.wide ? 34 : 14); i++) { const p = new THREE.Mesh(new THREE.CircleGeometry(1.8 + r() * 3, 28), new THREE.MeshLambertMaterial({ color: pc[i % 3], polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 }));
+    p.rotation.x = -Math.PI / 2; p.scale.y = .6; p.position.set(lerp(x0 - 3, x1 + 3, r()), .01, lerp(-9, 5, r())); Wd.add(p); }
+  const fgL = tufts(Wd, 20, 5 + sd, { x0: x0 - 6, x1: x0 - 1, z0: -2, z1: 6, y: 0 }, { s: 1.5 }), fgR = tufts(Wd, 20, 6 + sd, { x0: x1 + 1, x1: x1 + 6, z0: -2, z1: 6, y: 0 }, { s: 1.5 });
+  const fgN = tufts(Wd, o.wide ? 70 : 24, 7 + sd, { x0: x0 + 1, x1: x1 - 1, z0: 5.8, z1: 7.2, y: 0 }, { s: 1.3 });
+  motes(Wd, o.motes || 26, sd, Object.assign({ cx }, o.moteO));
+  Wd.on(t => { fgL.sway(t); fgR.sway(t, .9); fgN.sway(t, 1.1); });
+  return { Wd };
+}
+
+const HZ = (Wd, fx, w) => { const h = heroProxy(Wd, [fx(0), 1.7, 0], [w || 8, 3.4, 2]); Wd.on(t => { h.position.x = fx(t); }); Wd.hero = h; return h; };
+// ---------- generation row: plinths with sheep, collars, digit tags ----------
+const SC = [1, .85, .72, .62, .52], X0 = -3.2, DX = 2.6, PEGX = -6.4;
+function mkRow(Wd, n, o) {
+  o = o || {}; const x0 = o.x0 === undefined ? X0 : o.x0, R = [];
+  for (let i = 0; i < n; i++) { const x = x0 + i * DX, z = o.z || 0, pl = plinth(Wd, x, z), sh = sheep(Wd, { s: SC[i], seed: 40 + i }), cl = collar(sh), tg = numberTag(Wd, String(i + 1), [x, 3, z], .55); R.push({ x, z, s: SC[i], pl, sh, cl, tg, i }); }
+  return R;
+}
+function place(r, t, o) {
+  o = o || {}; const sc = o.sc === undefined ? 1 : o.sc;
+  r.sh.set({ x: r.x + (o.dx || 0), y: r.pl.top + (o.dy || 0), z: r.z + (o.dz || 0), f: o.f === undefined ? -1.0 : o.f, sc, graze: o.graze || 0, walk: o.walk, wa: o.wa }, t);
+  r.cl.visible = !!o.collar && sc > .3;
+}
+function tagAt(r, t, k) { r.tg.position.set(r.x, r.pl.top + 1.95 * r.s + .6 + .08 * Math.sin(t * 1.6 + r.i), r.z); pop(r.tg, k); }
+const mkChains = (Wd, n, o) => Array.from({ length: n }, () => chain(Wd, (o && o.links) || 14, o));
+// chain i runs from the peg ring (i=0) or neck(i-1) to neck(i)
+function link(Cs, pg, R, t, ks, o) {
+  o = o || {};
+  for (let i = 0; i < Cs.length; i++) {
+    const a = i === 0 ? pg.ring : neck(R[i - 1].sh), b = neck(R[i].sh), pl = o.pulse === undefined || o.pulse < 0 ? -1 : o.pulse * Cs.length - i;
+    Cs[i].set(a, b, { k: ks[i], t, ph: i * 1.3, sag: o.sag, taut: o.taut, glow: o.glow, pulse: pl >= 0 && pl <= 1 ? pl : -1, open: o.open && o.open[i], thin: o.thin });
+  }
+}
+
+// ---------- s01 : title ----------
+function s01() {
+  const { Wd } = mkS({ seed: 1, motes: 40 }); const pg = peg(Wd, [PEGX, 0, 0]), R = mkRow(Wd, 4), Cs = mkChains(Wd, 3); HZ(Wd, () => .6, 7);
+  Wd.on(t => { R.forEach((r, i) => { place(r, t, { collar: i < 2 }); tagAt(r, t, ease.out(prog(t, .4 + .4 * i, 1 + .4 * i))); });
+    link(Cs, pg, R, t, [ease.io(prog(t, .4, 2)), ease.io(prog(t, 1.6, 3.2)), .82 * ease.io(prog(t, 2.6, 3.8))], { open: [0, 0, 1] }); R[3].sh.gold(.6 + .1 * Math.sin(t * 2), t); });
+  return Object.assign(Wd, { cam: path([[0, [-2, 9, 13.5], [.6, 1.0, 0], 44], [7.65, [.8, 4.2, 11.2], [.6, 1.1, 0], 42]]) });
+}
+
+// ---------- s02 : the flock walks to the pen, a sheep is lost, the iron coins come back ----------
+function s02() {
+  const { Wd } = mkS({ seed: 2 }); const pg = peg(Wd, [-6.6, 0, -.2]), an = anvil(Wd, [-5.0, 0, 1.7], 1.0), pn = pen(Wd, 2.2, 8.0, -1.6, 2.6), co = coinStack(Wd, 5), pf = puff(Wd);
+  const F = [0, 1, 2, 3].map(i => sheep(Wd, { s: 1.0, seed: 60 + i })); HZ(Wd, t => lerp(-1.5, .2, t / 16.93), 9);
+  const st = [[-3.8, .2], [-4.6, -.8], [-3.0, 1.3], [-2.2, -.2]], de = [[3.4, .2], [4.8, -.6], [6.2, .9], [7.0, -.5]];
+  Wd.on(t => { F.forEach((s, i) => { const xf = t2 => lerp(st[i][0], de[i][0], ease.sm(prog(t2, .2 + .35 * i, 6.2 + .35 * i))), g = gait(xf, t), u = ease.sm(prog(t, .2 + .35 * i, 6.2 + .35 * i));
+      const lost = i === 2 ? 1 - ease.in(prog(t, 7.3, 8.5)) : 1; s.set({ x: xf(t), z: lerp(st[i][1], de[i][1], u), f: Math.PI / 2 - .25 * (1 - u), walk: g.walk, wa: g.wa, graze: u > .98 ? .6 : 0, sc: lost }, t); });
+    pf.set(prog(t, 8.2, 9.2), [6.2, 1.0, .9]);
+    const k = prog(t, 8.2, 9.0), u = ease.io(prog(t, 9.2, 13.4)); co.set(k); const p = arc([6.2, .2, 1.9], [-3.7, 0, 2.5], u, 2.3); co.g.position.set(p[0], p[1], p[2]);
+    an.gleam(sm(t, 13.2, 14) * (1 - sm(t, 16.4, 16.9)), t); pg.pulse(0); });
+  return Object.assign(Wd, { cam: path([[0, [-2.5, 3.8, 11.5], [-1.5, 1.2, 0], 44], [16.93, [1.0, 3.9, 12.0], [.2, 1.2, 0], 44]]) });
+}
+
+// ---------- s03 : firstborn is holy only with no gentile share ----------
+function s03() {
+  const { Wd } = mkS({ seed: 3 }); const pg = peg(Wd, [-6.6, 0, 0]), C1 = chain(Wd, 12), E1 = sheep(Wd, { s: 1.2, seed: 71 }), E2 = sheep(Wd, { s: 1.2, seed: 72 }), L1 = sheep(Wd, { s: .55, seed: 73 }), L2 = sheep(Wd, { s: .55, seed: 74 });
+  const cl = collar(E1); cl.visible = true; const x = Xm(Wd, .6), c = Ck(Wd, .8); HZ(Wd, () => .4, 8);
+  Wd.on(t => { E1.set({ x: -2.6, z: 0, f: -.6, graze: .3 }, t); E2.set({ x: 2.4, z: 0, f: -.3, graze: .3 }, t);
+    L1.set({ x: -.9, z: .6, f: -.2, sc: ease.out(prog(t, 1.0, 2.0)) }, t); L2.set({ x: 4.0, z: .6, f: .2, sc: ease.out(prog(t, 1.6, 2.6)) }, t);
+    C1.set(pg.ring, neck(E1), { k: ease.io(prog(t, .2, 1.8)), t, thin: .7, sag: .6 });
+    L2.gold(sm(t, 5.6, 6.6), t); c.set(ease.out(prog(t, 6.2, 6.8))); at(c, [4.0, 2.3, .6]); x.set(ease.out(prog(t, 6.0, 6.6))); at(x, [-.9, 2.3, .6]); });
+  return Object.assign(Wd, { cam: path([[0, [.2, 3.4, 12.5], [0, 1.2, 0], 44], [13.15, [.2, 2.4, 8.8], [0, 1.2, 0], 44]]) });
+}
+
+// ---------- s04 : seizing ----------
+function s04() {
+  const { Wd } = mkS({ seed: 4 }); const pg = peg(Wd, [-5.5, 0, 0]), S = sheep(Wd, { s: 1.35, seed: 81 }), Cn = chain(Wd, 14), cl = collar(S); cl.visible = true; Wd.hero = S.g;
+  Wd.on(t => { const u1 = ease.io(prog(t, 6.9, 8.0)), x = 2.2 - 1.3 * u1; S.set({ x, z: 0, f: -.9, graze: .5 * (1 - sm(t, 6.7, 7.3)) }, t);
+    Cn.set(pg.ring, neck(S), { k: ease.io(prog(t, .2, 1.6)), t, sag: .6, taut: sm(t, 6.8, 7.4) * (1 - sm(t, 9.4, 10.4)), pulse: t > 7.2 && t < 9.8 ? prog(t, 7.2, 9.8) : -1, glow: sm(t, 7, 7.6) * (1 - sm(t, 9.6, 10.5)) });
+    pg.pulse(sm(t, 7.2, 7.8) * (1 - sm(t, 9.6, 10.6))); });
+  return Object.assign(Wd, { cam: path([[0, [1, 3.2, 10], [-1.8, 1.3, 0], 44], [16.39, [0, 3.0, 9.2], [-1.8, 1.3, 0], 44]]) });
+}
+
+// ---------- s05 : the mishna speaks of generations (calm) ----------
+function s05() {
+  const { Wd } = mkS({ seed: 5, motes: 60 }); const pg = peg(Wd, [PEGX, 0, 0]), R = mkRow(Wd, 3), Cs = mkChains(Wd, 2); HZ(Wd, () => -1);
+  Wd.on(t => { R.forEach((r, i) => { place(r, t, { collar: i < 2, graze: i === 2 ? .3 : 0 }); tagAt(r, t, ease.out(prog(t, .2 + .3 * i, .8 + .3 * i))); });
+    link(Cs, pg, R, t, [1, 1], { glow: .55 + .25 * Math.sin(t * 1.6), pulse: prog(t, 1, 9) }); });
+  return Object.assign(Wd, { cam: orbit([-1, 1.2, 0], 11.5, 3.8, -7.5, 7.5, 0, 11.863, 44) });
+}
+
+// ---------- s06 : how far does the chain reach ----------
+function s06() {
+  const { Wd } = mkS({ seed: 6 }); const pg = peg(Wd, [PEGX, 0, 0]), R = mkRow(Wd, 4), C0 = chain(Wd, 12), Cp = chain(Wd, 16); HZ(Wd, t => lerp(-3, 2, t / 14.769), 8);
+  const pt = (i, y) => [R[i].x, y, R[i].z + .3], t0 = [6.4, 8.6, 10.8];
+  Wd.on(t => { R.forEach((r, i) => { place(r, t, { collar: i === 0, sc: i === 0 ? 1 : 0 }); tagAt(r, t, ease.out(prog(t, .4 + .4 * i, 1 + .4 * i))); });
+    C0.set(pg.ring, neck(R[0].sh), { k: ease.io(prog(t, .2, 1.6)), t });
+    const hv = j => 1.6 + .25 * Math.sin((t - t0[j]) * 3), tgt = prog(t, 8.2, 8.9) < 1 ? lp3(pt(1, hv(0)), pt(2, hv(1)), ease.io(prog(t, 8.2, 8.9))) : null;
+    let b; if (t < 8.4) b = pt(1, hv(0)); else if (t < 10.6) b = lp3(pt(1, hv(0)), pt(2, hv(1)), ease.io(prog(t, 8.3, 8.9))); else b = lp3(pt(2, hv(1)), pt(3, hv(2)), ease.io(prog(t, 10.6, 11.2)));
+    if (t >= 8.9 && t < 10.6) b = pt(2, hv(1)); if (t >= 11.2) b = pt(3, hv(2));
+    Cp.set(neck(R[0].sh), b, { k: ease.out(prog(t, 6.2, 6.9)), t, sag: .4, ph: 2 });
+    R[1].pl.glow(sm(t, 6.4, 6.9) * (1 - sm(t, 8.3, 8.9))); R[2].pl.glow(sm(t, 8.7, 9.2) * (1 - sm(t, 10.5, 11))); R[3].pl.glow(sm(t, 10.9, 11.4) * (1 - sm(t, 13, 14))); });
+  return Object.assign(Wd, { cam: path([[0, [-5, 2.4, 10], [-3, 1.5, 0], 44], [14.769, [3, 2.4, 10], [2, 1.5, 0], 44]]) });
+}
+
+// ---------- calm backdrop under a clip (s07, s10, s12) ----------
+function calm(seed, sx, dur) {
+  const { Wd } = mkS({ seed, motes: 70, moteO: { w: 24, z0: -6, z1: 6 } }); const S = sheep(Wd, { s: 1.6, seed }), L = sheep(Wd, { s: .8, seed: seed + 9 }); Wd.hero = S.g;
+  Wd.on(t => { S.set({ x: sx, z: 1.4, f: sx < 0 ? .9 : -.9, graze: .8 * sm(t, 0, 1) }, t); L.set({ x: sx + (sx < 0 ? 2.2 : -2.2), z: 2.2, f: sx < 0 ? .5 : -.5, graze: .6 + .2 * Math.sin(t * 1.1) }, t); });
+  return Object.assign(Wd, { cam: path([[0, [-.6, 3.8, 11.5], [0, 1.4, 0], 44], [dur, [.6, 4.0, 11.8], [0, 1.4, 0], 44]]) });
+}
+const s07 = () => calm(7, -6.2, 18.55), s10 = () => calm(10, 6.4, 27.55), s12 = () => calm(12, -6.4, 38.049);
+
+// shared 4-row with chain
+function chainRow(Wd, n) { const pg = peg(Wd, [PEGX, 0, 0]), R = mkRow(Wd, n), Cs = mkChains(Wd, n - 1 > 3 ? 3 : n - 1 >= 3 ? 3 : 3); return { pg, R, Cs }; }
+
+// ---------- s08 : the chain ends, the next firstborn is holy ----------
+function s08() {
+  const { Wd } = mkS({ seed: 8 }); const { pg, R, Cs } = chainRow(Wd, 4), pf = puff(Wd), ck = Ck(Wd, .8); HZ(Wd, t => lerp(-1.6, 3.4, ease.io(prog(t, 0.5, 14.5))) + .2, 7);
+  Wd.on(t => { const lamb = ease.out(prog(t, 7.1, 7.9)); R.forEach((r, i) => { place(r, t, { collar: i < 2, sc: i === 3 ? lamb : 1 }); tagAt(r, t, ease.out(prog(t, .2 + .3 * i, .8 + .3 * i))); });
+    const op = ease.io(prog(t, 4.6, 5.4));
+    link(Cs, pg, R, t, [ease.io(prog(t, .3, 1.5)), ease.io(prog(t, 1.3, 2.6)), t < 5.6 ? ease.io(prog(t, 2.5, 4.2)) : 1 - .12 * ease.io(prog(t, 5.6, 6.6))], { open: [0, 0, op] });
+    pf.set(prog(t, 5.0, 6.0), neck(R[2].sh)); R[3].sh.gold(sm(t, 7.5, 8.3), t); ck.set(ease.out(prog(t, 8.2, 8.8))); at(ck, [R[3].x, 2.6, R[3].z + .3]); });
+  const cx = t => lerp(-1.6, 3.4, ease.io(prog(t, 0.5, 14.5)));
+  return Object.assign(Wd, { cam: t => ({ pos: [cx(t), 3.8, 12], look: [cx(t) + .2, 1.2, 0], fov: 44 }) });
+}
+
+// ---------- the lamb swap, shared by s09 and s14 (tau in s09 units) ----------
+function swapRun(Wd, pg, R, Cs, P, t, tau, kA) {
+  const slide = ease.io(prog(tau, 0, 3.5)), back = ease.io(prog(tau, 6.2, 9.5)), u = prog(tau, 4.75, 5.75), mx = -4.9, mz = 1.9;
+  const bx = lerp(lerp(R[1].x, mx, slide), R[1].x, back), bz = lerp(lerp(R[1].z, mz, slide), R[1].z, back), mv = (tau > 0 && tau < 3.5) || (tau > 6.2 && tau < 9.5) ? .6 : 0;
+  place(R[0], t, { collar: tau < 5.4 });
+  place(R[1], t, { collar: true, dx: bx - R[1].x, dz: bz - R[1].z, dy: .35 * Math.sin(Math.PI * slide) + .35 * Math.sin(Math.PI * back), f: -1.0 - .5 * slide * (1 - back) + 2.0 * back * (1 - prog(tau, 9.5, 9.6)) * 0, walk: t * 1.4, wa: mv });
+  place(R[2], t, { collar: tau > 9.6 });
+  R[0].sh.glint(sm(tau, 4.75, 5.75) * (1 - sm(tau, 9, 10)) * .8, t);
+  const nm = neck(R[0].sh), nl = neck(R[1].sh), ng = neck(R[2].sh);
+  Cs[0].set(pg.ring, lp3(nm, nl, u), { k: kA, t, sag: .5 });
+  if (tau < 8.5) Cs[1].set(nm, nl, { k: kA * (1 - u), t, ph: 1.3 }); else Cs[1].set(nl, ng, { k: ease.io(prog(tau, 8.5, 10.5)), t, ph: 1.3 });
+  P.set(prog(tau, 4.8, 5.8), nm);
+}
+
+// ---------- s09 : trick, young instead of mothers ----------
+function s09() {
+  const { Wd } = mkS({ seed: 9 }); const pg = peg(Wd, [PEGX, 0, 0]), R = mkRow(Wd, 3), Cs = mkChains(Wd, 2), P = puff(Wd); HZ(Wd, () => -1.2, 8);
+  Wd.on(t => { R.forEach((r, i) => tagAt(r, t, ease.out(prog(t, .1 + .2 * i, .7 + .2 * i)) * (tau9(t) > 10.2 && i > 0 ? 1.3 : 1)));
+    swapRun(Wd, pg, R, Cs, P, t, t - 1.0, ease.io(prog(t, .2, 1.6))); });
+  return Object.assign(Wd, { cam: path([[0, [-1, 3.2, 11], [-1.2, 1.2, 0], 44], [13.69, [.5, 5.0, 11.5], [-1.2, 1.2, 0], 44]]) });
+}
+const tau9 = t => t - 1.0;
+
+// ---------- s11 : dispute, two views over generation 4 ----------
+function s11() {
+  const { Wd } = mkS({ seed: 11 }); const { pg, R, Cs } = chainRow(Wd, 4), Gh = mkChains(Wd, 2, { color: 0xE08A3A, opacity: .45 }), xm = Xm(Wd, .7), sp = sparkles(Wd, 8, 5);
+  const fT = flag(Wd, 0x2FA7A0, [R[3].x - 1.5, 0, 1.0], 3.0), fO = flag(Wd, 0xE08A3A, [R[3].x + 1.5, 0, 1.0], 3.0); HZ(Wd, t => lerp(1.5, 4.0, t / 16.931), 7);
+  Wd.on(t => { R.forEach((r, i) => { place(r, t, { collar: i < 2 }); tagAt(r, t, ease.out(prog(t, .2 + .3 * i, .8 + .3 * i))); });
+    link(Cs, pg, R, t, [ease.io(prog(t, .3, 1.5)), ease.io(prog(t, 1.3, 2.6)), 0]);
+    const alt = 0.5 + .5 * Math.sin(t * 1.3); R[3].sh.gold(t < 7.2 ? .4 + .3 * alt : .9, t);
+    fT.pop(ease.out(prog(t, 7.2, 8.2))); fT.wave(t, 1, 0); fO.pop(ease.out(prog(t, 7.6, 8.6))); fO.wave(t, 1, 1.5);
+    sp.set([R[3].x - 1.5, 3, 1.0], sm(t, 7.8, 8.6), t, .5);
+    const a = neck(R[1].sh), b = neck(R[2].sh), c = neck(R[3].sh);
+    Gh[0].set(a, b, { k: ease.io(prog(t, 8.8, 10.0)), t, ph: 2.1, sag: .3 }); Gh[1].set(b, c, { k: ease.io(prog(t, 9.8, 11.0)), t, ph: 3.2, sag: .3 });
+    xm.set(ease.out(prog(t, 11.2, 11.8))); at(xm, [R[3].x + 1.5, 3.9, 1.0]); });
+  return Object.assign(Wd, { cam: path([[0, [1.5, 3.8, 12.5], [1.5, 1.4, 0], 44], [16.931, [4.2, 3.2, 9.0], [4.0, 1.5, 0], 44]]) });
+}
+
+// ---------- s13 : question 1, care does not remove the share ----------
+function s13() {
+  const { Wd } = mkS({ seed: 13 }); const pg = peg(Wd, [-6.4, 0, 0]), pn = pen(Wd, -1.2, 5.6, -1.8, 2.6), tr = trough(Wd, [4.0, 0, .8]), hy = hay(Wd, [-.2, 0, .6]), S = sheep(Wd, { s: 1.2, seed: 91 }), Lb = sheep(Wd, { s: .55, seed: 92 }), Cn = chain(Wd, 14), cl = collar(S); cl.visible = true;
+  const clock = clockRing(Wd, { pos: [1.8, 4.8, .2], R: .9 }), xm = Xm(Wd, .6); HZ(Wd, () => -.5, 8);
+  Wd.on(t => { S.set({ x: 1.8, z: .2, f: -.8, graze: .6 * (1 - sm(t, 12, 12.5)) }, t); Lb.set({ x: 3.2, z: 1.0, f: -.2, sc: ease.out(prog(t, 12.5, 13.3)) }, t);
+    const tp = Math.sin(Math.PI * prog(t, 12.4, 13.8));
+    Cn.set(pg.ring, neck(S), { k: ease.io(prog(t, .3, 1.8)), t, thin: .75, sag: .6, taut: tp * .8, glow: sm(t, 12.1, 12.8) * (1 - sm(t, 15.5, 17)), pulse: t > 12.2 && t < 14.2 ? prog(t, 12.2, 14.2) : -1 }); pg.pulse(sm(t, 12.2, 12.8) * (1 - sm(t, 14.5, 15.5)));
+    clock.set(prog(t, 6.08, 12.07)); clock.g.position.y = 4.8 + .05 * Math.sin(t * 1.3); clock.fade(ease.out(prog(t, 3, 3.8)) * (1 - sm(t, 12.1, 12.8)));
+    xm.set(ease.out(prog(t, 13.2, 13.8))); at(xm, [3.2, 2.2, 1.0]); });
+  return Object.assign(Wd, { cam: path([[0, [0, 3.8, 12.5], [-.6, 1.4, 0], 44], [20.525, [1, 3.4, 11], [-.4, 1.4, 0], 44]]) });
+}
+
+// ---------- s14 : question 2, the chain moves one generation ----------
+function s14() {
+  const { Wd } = mkS({ seed: 14 }); const pg = peg(Wd, [PEGX, 0, 0]), R = mkRow(Wd, 3), Cs = mkChains(Wd, 2), P = puff(Wd), clock = clockRing(Wd, { pos: [R[1].x, 4.9, 0], R: .9 }); HZ(Wd, () => -.4, 8);
+  Wd.on(t => { const tau = Math.max(0, (t - 10.9) * 1.6);
+    R.forEach((r, i) => tagAt(r, t, ease.out(prog(t, .1 + .2 * i, .7 + .2 * i)) * (tau > 10 && i > 0 ? 1.3 : 1)));
+    swapRun(Wd, pg, R, Cs, P, t, tau, ease.io(prog(t, .3, 1.6)));
+    clock.set(prog(t, 4.86, 10.86)); clock.g.position.y = 4.9 + .05 * Math.sin(t * 1.3); clock.fade(ease.out(prog(t, 3, 3.8)) * (1 - sm(t, 10.9, 11.5))); });
+  return Object.assign(Wd, { cam: path([[0, [0, 6.5, 12], [-.4, .9, 0], 44], [18.86, [1.2, 6.0, 11.2], [-.4, .9, 0], 44]]) });
+}
+
+// ---------- s15 : summary glide ----------
+function s15() {
+  const { Wd } = mkS({ seed: 15, x0: -12, x1: 14, wide: true, ext: 24, motes: 50, moteO: { w: 34, z0: -4, z1: 5 } });
+  const { pg, R, Cs } = chainRow(Wd, 4), an = anvil(Wd, [-4.6, 0, 3.0], .9), pf = puff(Wd), ck = Ck(Wd, .8), Gh = mkChains(Wd, 2, { color: 0xE08A3A, opacity: .45 }), xm = Xm(Wd, .7);
+  const fT = flag(Wd, 0x2FA7A0, [R[3].x - 1.5, 0, 1.0], 3.0), fO = flag(Wd, 0xE08A3A, [R[3].x + 1.5, 0, 1.0], 3.0), HP = heroProxy(Wd, [0, 1.5, 0], [6, 3, 3]); Wd.hero = HP;
+  const cxf = t => lerp(-4.6, 4.6, ease.io(prog(t, 1.0, 17.0)));
+  Wd.on(t => { HP.position.x = cxf(t); an.gleam(sm(t, 0, 1) * (1 - sm(t, 4, 6)), t);
+    R.forEach((r, i) => { place(r, t, { collar: i < 2, sc: 1 }); tagAt(r, t, 1); });
+    link(Cs, pg, R, t, [ease.io(prog(t, .2, 1.2)), ease.io(prog(t, .8, 1.8)), .82 * ease.io(prog(t, 1.4, 2.4))], { open: [0, 0, 1] });
+    pf.set(prog(t, 2.2, 3.2), neck(R[2].sh)); R[3].sh.gold(sm(t, .2, 1), t); ck.set(ease.out(prog(t, .6, 1.2))); at(ck, [R[3].x, 2.6, R[3].z + .3]);
+    fT.pop(ease.out(prog(t, 12.8, 13.8))); fT.wave(t, 1, 0); fO.pop(ease.out(prog(t, 13.4, 14.4))); fO.wave(t, 1, 1.5);
+    const a = neck(R[1].sh), b = neck(R[2].sh), c = neck(R[3].sh);
+    Gh[0].set(a, b, { k: ease.io(prog(t, 14.4, 15.4)), t, ph: 2.1, sag: .3 }); Gh[1].set(b, c, { k: ease.io(prog(t, 15.2, 16.2)), t, ph: 3.2, sag: .3 }); xm.set(ease.out(prog(t, 16.2, 16.8))); at(xm, [R[3].x + 1.5, 3.9, 1.0]); });
+  return Object.assign(Wd, { cam: t => { const cx = cxf(t); return { pos: [cx, 4.6, 12], look: [cx, 1.3, 0], fov: 44 }; } });
+}
+
+// ---------- s16 : credits, golden evening, the flock grazes free ----------
+function s16() {
+  const { Wd } = mkS({ seed: 16, motes: 60, moteO: { w: 20, z0: -6, z1: 6 }, world: { skyTop: 0xF6C98B, skyBottom: 0xFBE3B4, fogColor: 0xFBE3B4, hemi: .95, sun: .9, sunColor: 0xFFD9A0 } });
+  const pg = peg(Wd, [-13, 0, -9], .9), F = [[-1.2, 1.2, 1.5], [1.6, .5, 1.2], [3.4, 1.8, 1.0], [-3.4, -.6, 1.1], [.4, -1.4, .55], [2.6, 2.6, .5]].map((q, i) => ({ q, s: sheep(Wd, { s: q[2], seed: 120 + i }) })); Wd.hero = F[0].s.g;
+  Wd.on(t => F.forEach((f, i) => f.s.set({ x: f.q[0], z: f.q[1], f: -.6 + i * .5, graze: .6 + .25 * Math.sin(t * 1.1 + i) }, t)));
+  return Object.assign(Wd, { cam: dolly([-2, 3.8, 9.4], [2.4, 3.6, 9.0], [.6, 1.2, -.3], 0, 7.453, { fov0: 42, fov1: 44 }) });
+}
+
+film({
+  title: 'TITLE', kicker: 'KICKER', vault: 'captions_vault.json',
+  shots: [
+    { id: 's01', dur: 7.65, caps: [], build: s01 },
+    { id: 's02', dur: 16.93, caps: ['CAP_s02_1', 'CAP_s02_2'], capAt: [0.3, 7.11], build: s02 },
+    { id: 's03', dur: 13.15, caps: ['CAP_s03_1', 'CAP_s03_2'], capAt: [0.3, 5.52], build: s03 },
+    { id: 's04', dur: 16.39, caps: ['CAP_s04_1', 'CAP_s04_2'], capAt: [0.3, 6.88], build: s04 },
+    { id: 's05', dur: 11.863, caps: ['CAP_s05_1'], capAt: [0.3], build: s05 },
+    { id: 's06', dur: 14.769, caps: ['CAP_s06_1', 'CAP_s06_2'], capAt: [0.3, 6.2], build: s06 },
+    { id: 's07', dur: 18.55, caps: ['CAP_s07_1', 'CAP_s07_2', 'CAP_s07_3', 'CAP_s07_4'], capAt: [0.2, 4.6, 9.1, 13.6], build: s07 },
+    { id: 's08', dur: 16.93, caps: ['CAP_s08_1', 'CAP_s08_2'], capAt: [0.3, 7.11], build: s08 },
+    { id: 's09', dur: 13.69, caps: ['CAP_s09_1', 'CAP_s09_2'], capAt: [0.3, 5.75], build: s09 },
+    { id: 's10', dur: 27.55, caps: ['CAP_s10_1', 'CAP_s10_2', 'CAP_s10_3', 'CAP_s10_4', 'CAP_s10_5'], capAt: [0.2, 6.0, 12.4, 17.8, 22.4], build: s10 },
+    { id: 's11', dur: 16.931, caps: ['CAP_s11_1', 'CAP_s11_2'], capAt: [0.3, 7.11], build: s11 },
+    { id: 's12', dur: 38.049, caps: ['CAP_s12_1', 'CAP_s12_2', 'CAP_s12_3', 'CAP_s12_4', 'CAP_s12_5'], capAt: [0.2, 7.0, 13.0, 22.0, 30.0], build: s12 },
+    { id: 's13', dur: 20.525, caps: ['CAP_s13_1', 'CAP_s13_2'], capAt: [0.3, 12.07], build: s13 },
+    { id: 's14', dur: 18.86, caps: ['CAP_s14_1', 'CAP_s14_2'], capAt: [0.3, 10.86], build: s14 },
+    { id: 's15', dur: 18.25, caps: ['CAP_s15_1', 'CAP_s15_2'], capAt: [0.3, 9.12], build: s15 },
+    { id: 's16', dur: 7.453, caps: ['CAP_s16_1'], capAt: [0.3], build: s16 },
+  ],
+});
+</script>
+</html>
