@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>stef_38 film A</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>window.__T0=45.9257; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": {
+  "three": "../../node_modules/three/build/three.module.js",
+  "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+// stef_38 / film A: graphics layer (321.48 s, silent). No Hebrew here: captions, title and kicker are vault IDs only.
+import { film, THREE, ease, prog, clamp, lerp, orbit, rng } from '../../lib/stage3d.js';
+import { PAL, sm, lp3, mkWorld, motes, checkMark, prohib, numberTag, pop, clockRing, heroProxy, glow, court, bell, scroll,
+  TINT, lerp3, wpost, beam3, token, stamp, rig } from './wt.js';
+
+const POP = (t, a, b) => ease.out(prog(t, a, b));
+const CAM = (p0, l0, p1, l1, dur, fov) => t => { const u = ease.io(prog(t, 0, dur)); return { pos: lp3(p0, p1, u), look: lp3(l0, l1, u), fov: fov || 44 }; };
+function mkS(o) {
+  o = o || {}; const cx = o.cx || 0, Wd = mkWorld(Object.assign({ cx, ext: o.ext, span: o.span }, o.world));
+  motes(Wd, o.motes || 34, o.seed || 1, Object.assign({ cx, w: 26, z0: -6, z1: 6 }, o.moteO));
+  return { Wd };
+}
+const dig = (d, y0, k, t) => { pop(d, k); d.position.y = y0 + .07 * Math.sin(t * 1.6) - (1 - clamp(k, 0, 1)) * .9; };
+// all four posts: pop in, lit
+function postsOn(R, t, a, dt, la) { R.posts.forEach((p, i) => { p.show(POP(t, a + dt * i, a + dt * i + .6)); p.light(sm(t, la + dt * i, la + dt * i + .6), t); p.relax(t, .5); }); }
+
+// ---------- s01 : title - stage with windows, posts, deed token, bell ----------
+function s01() {
+  const { Wd } = mkS({ seed: 1, motes: 48 }); const R = rig(Wd, {}); Wd.hero = R.hero;
+  Wd.on(t => {
+    R.posts.forEach((p, i) => { p.show(POP(t, .1 + .15 * i, .8 + .15 * i)); p.light(sm(t, 1.2 + .6 * i, 1.8 + .6 * i), t); p.relax(t, .4); });
+    R.tok.update(t, .35 + .4 * sm(t, .5, 2)); R.bl.swing(t, .05 * Math.sin(t * .8)); R.aimAll(0, t, 0);
+    R.posts.forEach((p, i) => R.aim(i, prog(t, 4.0 + .25 * i, 5.0 + .25 * i), t, 0));
+  });
+  return Object.assign(Wd, { cam: CAM([0, 12.5, 17.5], [0, 2.0, 1], [0, 6.8, 14.8], [0, 1.8, 1], 7.65) });
+}
+
+// ---------- s02 : by two witnesses - one post alone, then the second ----------
+function s02() {
+  const { Wd } = mkS({ seed: 2 }); const sc = scroll(Wd, 6.4, 4.0); sc.g.position.set(0, 9.6, -3.5);
+  const a = wpost(Wd, TINT.L), b = wpost(Wd, TINT.R); a.g.position.set(-1.4, 0, .5); b.g.position.set(1.4, 0, .5); a.g.rotation.y = .25; b.g.rotation.y = -.25;
+  const rd = prohib(Wd, .9), ck = checkMark(1.5); Wd.add(ck.g); rd.g.position.set(-1.4, 4.9, .8); ck.g.position.set(0, 4.9, .8);
+  const hh = heroProxy(Wd, [0, 2.2, .5], [6, 4.4, 2]); Wd.hero = hh;
+  Wd.on(t => {
+    sc.set(prog(t, .4, 3.8)); a.show(POP(t, 2.6, 3.5)); b.show(POP(t, 6.9, 7.8)); a.relax(t, .3); b.relax(t, .3);
+    a.light(sm(t, 7.8, 8.6) , t); b.light(sm(t, 7.8, 8.6), t);
+    const fl = t > 4.5 && t < 6.4 ? (.55 + .45 * (Math.sin(t * 11) > 0 ? 1 : 0)) : 1;
+    rd.pop(POP(t, 3.8, 4.3) * (1 - ease.in(prog(t, 6.4, 6.9)))); rd.bar(ease.io(prog(t, 4.2, 4.8))); rd.alpha(fl);
+    ck.set(POP(t, 8.8, 9.5)); ck.g.position.y = 4.9 + .06 * Math.sin(t * 1.8);
+  });
+  return Object.assign(Wd, { cam: CAM([0, 5.2, 13.8], [0, 4.2, 0], [0, 4.4, 10.0], [0, 3.4, 0], 10.647) });
+}
+
+// ---------- s03 : two witnesses + warner glide to the court; warning comes first ----------
+function s03() {
+  const { Wd } = mkS({ seed: 3, cx: 5, span: 70 }); const ct = court(Wd); ct.g.position.set(9.5, 0, -4.6); ct.g.scale.setScalar(1.0);
+  const a = wpost(Wd, TINT.L), b = wpost(Wd, TINT.R), tk = token(Wd); tk.g.position.set(12.4, 0, 1.0); a.g.rotation.y = b.g.rotation.y = .9;
+  const bl = bell(Wd); bl.g.scale.setScalar(.8); const gb = beam3(Wd, TINT.gold, .06), g1 = beam3(Wd, TINT.L, .05), g2 = beam3(Wd, TINT.R, .05), gl = glow(Wd, 4.5);
+  const cxf = t => lerp(-1, 9.0, ease.io(prog(t, .3, 6.8)));
+  const hh = heroProxy(Wd, [cxf(0), 2.2, .5], [8, 4.4, 2]); Wd.hero = hh;
+  Wd.on(t => {
+    const u = ease.io(prog(t, .4, 6.4)); hh.position.x = cxf(t) + 1;
+    a.g.position.set(lerp(-6.2, 7.2, u), 0, .6); b.g.position.set(lerp(-4.6, 8.8, u), 0, .6); a.show(POP(t, .1, .7)); b.show(POP(t, .2, .8));
+    const bx = lerp(-3.6, 10.2, u) - 1.04; bl.g.position.set(bx, 0, 2.8); bl.g.visible = true;
+    const amp = .55 * sm(t, 6.9, 7.3) * (1 - sm(t, 9.6, 10.0)); bl.swing(t, amp); bl.ringFx(sm(t, 7.0, 7.4) * (1 - sm(t, 9.6, 10.0)), t);
+    const bp = [bx + 1.04, 2.2, 2.8]; gb.set(bp, tk.aim(), POP(t, 7.6, 8.6), t, 1 - sm(t, 10.0, 10.8)); gl.s.position.set(...bp); gl.set(.7 * sm(t, 7.0, 7.6) * (1 - sm(t, 9.8, 10.6)));
+    tk.update(t, .7 * sm(t, 9.0, 9.6)); ct.lamp(sm(t, 9.6, 12.5), t);
+    a.light(sm(t, 5.6, 6.4), t); b.light(sm(t, 5.6, 6.4), t); a.relax(t, .4); b.relax(t, .4);
+    g1.set(a.lensPos(), tk.aim(), prog(t, 11.0, 12.0), t); g2.set(b.lensPos(), tk.aim(), prog(t, 11.3, 12.3), t);
+  });
+  return Object.assign(Wd, { cam: t => { const x = cxf(t); return { pos: [x + .5, 6.4, 14.5], look: [x + 1, 1.8, 0], fov: 44 }; } });
+}
+
+// ---------- s04 : is it one testimony or two? posts go to different windows ----------
+function s04() {
+  const { Wd } = mkS({ seed: 4 }); const R = rig(Wd, { nL: 1, nR: 1, bell: false }); Wd.hero = R.hero;
+  Wd.on(t => {
+    const u = ease.io(prog(t, .6, 4.0)); const A = R.L[0], B = R.R[0];
+    A.g.position.set(lerp(-1.3, A.home[0], u), 0, lerp(.5, -.9, u)); B.g.position.set(lerp(1.3, B.home[0], u), 0, lerp(.5, -.9, u));
+    A.g.rotation.y = lerp(.25, .7, u); B.g.rotation.y = -lerp(.25, .7, u);
+    A.show(POP(t, .1, .8)); B.show(POP(t, .2, .9)); A.light(sm(t, 4.0, 4.8), t); B.light(sm(t, 4.0, 4.8), t); A.relax(t, .4); B.relax(t, .4);
+    R.tok.update(t, .5 * sm(t, 1, 3));
+    const al = t > 5.6 ? 1 : 1, pa = .35 + .65 * (.5 + .5 * Math.sin(t * 2.3)), pb = .35 + .65 * (.5 + .5 * Math.sin(t * 2.3 + Math.PI));
+    R.aim(0, prog(t, 4.4, 5.2), t, 0, t > 5.6 ? pa : 1); R.aim(1, prog(t, 4.8, 5.6), t, 0, t > 5.6 ? pb : 1);
+    const k = t < 6.5 ? 0 : .72 * (.5 + .5 * Math.sin((t - 6.5) * 1.1)) + .08; R.ring1.set(k > .02 ? k : 0, t < 6.5 ? 0 : .35 + .5 * (.5 + .5 * Math.sin(t * 7.3)));
+  });
+  return Object.assign(Wd, { cam: orbit([0, 1.8, .8], 15, 5.6, -10, 10, 0, 18.55, 44) });
+}
+
+// ---------- calm backdrop under a clip ----------
+function calm(seed, dur, v) {
+  const { Wd } = mkS({ seed, motes: 64, moteO: { w: 30, z0: -8, z1: 6 } }); const R = rig(Wd, { nL: 1, nR: 1, X: 7.4, token: false, bell: false });
+  const hh = heroProxy(Wd, [-7.4, 2.2, -.9], [3.4, 4.4, 2]); Wd.hero = hh;
+  Wd.on(t => {
+    R.posts.forEach((p, i) => { p.show(POP(t, .05 + .1 * i, .7 + .1 * i)); p.light(.25 + .2 * Math.sin(t * .7 + i * 2 + v), t); p.relax(t, .35); });
+    R.ring1.set(sm(t, 1, 3), .28 + .1 * Math.sin(t * .8 + v));
+  });
+  const dir = v % 2 ? 1 : -1;
+  return Object.assign(Wd, { cam: CAM([-.3 * dir, 4.2, 12.6], [0, 1.9, 0], [.3 * dir, 4.4, 12.9], [0, 1.9, 0], dur) });
+}
+const s05 = () => calm(5, 25.55, 1), s07 = () => calm(7, 11.35, 2), s09 = () => calm(9, 11.349, 3), s10 = () => calm(10, 11.35, 4), s14 = () => calm(14, 11.35, 5), s15 = () => calm(15, 11.35, 6), s17 = () => calm(17, 11.35, 7);
+
+// ---------- s06 : each saw alone - a wall rises between the windows ----------
+function s06() {
+  const { Wd } = mkS({ seed: 6 }); const R = rig(Wd, { nL: 1, nR: 1, bell: false }); Wd.hero = R.hero;
+  Wd.on(t => {
+    R.posts.forEach((p, i) => { p.show(POP(t, .2 + .2 * i, .9 + .2 * i)); p.light(sm(t, 1.0 + .2 * i, 1.6 + .2 * i), t); p.relax(t, .4); });
+    R.tok.update(t, .5 * sm(t, .6, 1.6)); R.aim(0, prog(t, 1.6, 2.4), t, 0); R.aim(1, prog(t, 2.0, 2.8), t, 0);
+    R.wall.set(prog(t, 3.2, 6.0)); R.rL.set(prog(t, 8.8, 10.2)); R.rR.set(prog(t, 9.2, 10.6));
+  });
+  return Object.assign(Wd, { cam: t => { const u = ease.io(prog(t, 6.4, 15.5)), v = ease.io(prog(t, 0, 6)); return { pos: [lerp(-1.2, 0, v), lerp(4.6, 4.6, v) + (11.2 - 4.6) * u, lerp(14.6, 12.6, u)], look: [0, lerp(2.2, 1.2, u), .5], fov: 44 }; } });
+}
+
+// ---------- s08 : the mishna scene builds, the warner swings ----------
+function s08() {
+  const { Wd } = mkS({ seed: 8 }); const R = rig(Wd, {}); Wd.hero = R.hero; const gl = glow(Wd, 4.5, 0xFFD04A); gl.s.position.set(...R.bellAim);
+  Wd.on(t => {
+    postsOn(R, t, .4, .4, 2.6); R.tok.update(t, .55 * sm(t, 1.8, 2.8));
+    const bk = POP(t, 2.4, 3.2); R.bl.g.scale.setScalar(Math.max(.8 * bk, 1e-4)); R.bl.g.visible = bk > .01;
+    R.posts.forEach((p, i) => R.aim(i, prog(t, 3.4 + .2 * i, 4.4 + .2 * i), t, 0));
+    const a = sm(t, 5.1, 5.4) * (1 - sm(t, 9.2, 9.8)); R.bl.swing(t, .55 * a); R.bl.ringFx(a, t); gl.set(.6 * a);
+  });
+  return Object.assign(Wd, { cam: t => { const u = ease.io(prog(t, 0, 12.07)), x = lerp(-3.5, 3.5, u); return { pos: [x, 6.8, 14.8], look: [x * .5, 1.8, .8], fov: 44 }; } });
+}
+
+// ---------- s11 : they see each other = ONE testimony ----------
+function s11() {
+  const { Wd } = mkS({ seed: 11 }); const R = rig(Wd, {}); Wd.hero = R.hero;
+  Wd.on(t => {
+    postsOn(R, t, .05, .06, .1); R.tok.update(t, .6); R.bl.swing(t, .04 * Math.sin(t * .8));
+    R.posts.forEach((p, i) => R.aim(i, prog(t, .4 + .3 * i, 1.4 + .3 * i), t, 0));
+    R.bK.set(R.lensL(), R.lensR(), ease.io(prog(t, 2.8, 4.4)), t);
+    R.ring1.set(prog(t, 5.6, 7.6), 1); dig(R.d1, 5.2, POP(t, 7.2, 8.0), t);
+  });
+  return Object.assign(Wd, { cam: CAM([0, 10.8, 16.0], [0, 1.6, .6], [0, 6.8, 12.8], [0, 1.8, .6], 13.15) });
+}
+
+// ---------- s12 : they do not see each other = TWO testimonies ----------
+function s12() {
+  const { Wd } = mkS({ seed: 12 }); const R = rig(Wd, {}); Wd.hero = R.hero;
+  Wd.on(t => {
+    postsOn(R, t, .0, .04, -1); R.tok.update(t, .6); R.bl.swing(t, .04 * Math.sin(t * .8));
+    R.posts.forEach((p, i) => R.aim(i, 1, t, 0));
+    R.wall.set(prog(t, .8, 3.0)); R.bK.set(R.lensL(), R.lensR(), 1 - ease.io(prog(t, 1.6, 3.2)), t);
+    R.rL.set(prog(t, 5.2, 6.6)); R.rR.set(prog(t, 5.4, 6.8)); dig(R.d2, 5.2, POP(t, 6.6, 7.6), t);
+  });
+  return Object.assign(Wd, { cam: orbit([0, 1.8, .8], 14.5, 6.2, 9, -9, 0, 12.07, 44) });
+}
+
+// ---------- s13 : the warner joins them ----------
+function s13() {
+  const { Wd } = mkS({ seed: 13 }); const R = rig(Wd, {}); Wd.hero = R.hero; const gl = glow(Wd, 5, 0xFFD04A); gl.s.position.set(...R.bellAim);
+  Wd.on(t => {
+    postsOn(R, t, .0, .04, -1); R.tok.update(t, .6); R.wall.set(1); R.rL.set(1, 1 - .7 * sm(t, 9.5, 10.5)); R.rR.set(1, 1 - .7 * sm(t, 9.5, 10.5));
+    const m = ease.io(prog(t, 1.0, 3.0)); R.aimAll(1, t, m);
+    const a = sm(t, 7.2, 7.6) * (1 - sm(t, 11.5, 12.5)); R.bl.swing(t, .55 * a); R.bl.ringFx(a, t); gl.set(.7 * a);
+    R.ring1.set(prog(t, 7.8, 10.0), 1);
+    dig(R.d2, 5.2, POP(t, .0, .4) * (1 - ease.in(prog(t, 9.0, 9.6))), t); dig(R.d1, 5.2, POP(t, 9.6, 10.4), t);
+  });
+  return Object.assign(Wd, { cam: t => { const u = ease.io(prog(t, 0, 16.93)); return { pos: [lerp(-3, 2, u), lerp(4.8, 11.5, u), lerp(14.6, 12.8, u)], look: [0, lerp(1.6, 1.2, u), .8], fov: 44 }; } });
+}
+
+// ---------- s16 : why it matters - one group turns out false ----------
+function falseRight(R, t, a0) {
+  R.R.forEach(p => { p.dull(sm(t, a0, a0 + 1.2)); p.crack(sm(t, a0 + .6, a0 + 1.4)); p.relax(t, .0); });
+  R.redR.pop(POP(t, a0 + .9, a0 + 1.6)); R.redR.bar(ease.io(prog(t, a0 + 1.5, a0 + 2.3)));
+}
+function s16() {
+  const { Wd } = mkS({ seed: 16 }); const R = rig(Wd, {}); Wd.hero = R.hero;
+  Wd.on(t => {
+    postsOn(R, t, .0, .04, -1); R.tok.update(t, .6); R.wall.set(1); R.rL.set(1); R.rR.set(1, 1 - .65 * sm(t, 6.0, 7.5)); dig(R.d2, 5.2, 1, t);
+    R.posts.forEach((p, i) => R.aim(i, 1, t, 0, i >= 2 ? 1 - .85 * sm(t, 6.0, 7.2) : 1)); falseRight(R, t, 5.6);
+    R.okL.set(POP(t, 8.8, 9.5));
+  });
+  return Object.assign(Wd, { cam: t => { const u = ease.io(prog(t, 0, 13.15)); return { pos: [lerp(0, 3.6, u), lerp(7.2, 5.6, u), lerp(15, 11.5, u)], look: [lerp(0, 4.0, u), lerp(1.6, 2.0, u), lerp(.5, -.6, u)], fov: 44 }; } });
+}
+
+// ---------- s18 : the offender is judged on the honest group; liars punished; honest exempt ----------
+function s18() {
+  const { Wd } = mkS({ seed: 18 }); const R = rig(Wd, { bell: false }); Wd.hero = R.hero; const ct = court(Wd); ct.g.position.set(0, 0, -8.5); ct.g.scale.setScalar(1.1);
+  const lb = beam3(Wd, TINT.gold, .07), lb2 = beam3(Wd, TINT.gold, .07), st = stamp(Wd, .7), lamp = [0, 4.2, -8.5];
+  Wd.on(t => {
+    postsOn(R, t, .0, .04, -1); R.R.forEach(p => { p.light(0, t); p.dull(1); p.crack(1); p.relax(t, 0); }); R.redR.pop(POP(t, .3, .9)); R.redR.bar(1);
+    R.rL.set(prog(t, 2.0, 3.2)); R.rR.set(prog(t, 2.0, 3.2), .35); R.rL.colorMix(TINT.L, TINT.green, ease.io(prog(t, 10.5, 12.0)));
+    R.okL.set(POP(t, 1.8, 2.4)); R.tok.update(t, .75 * sm(t, 5.6, 6.4)); ct.lamp(sm(t, 2.4, 5.4), t);
+    R.aim(0, prog(t, .6, 1.5), t, 0); R.aim(1, prog(t, .8, 1.7), t, 0); R.aim(2, 0, t, 0); R.aim(3, 0, t, 0);
+    lb.set(lamp, R.tokAim, POP(t, 3.6, 5.0), t, 1 - sm(t, 6.6, 7.2)); R.tok.seal(prog(t, 5.0, 5.8));
+    lb2.set(lamp, [R.cx + R.X, 3.2, -.9], POP(t, 7.0, 8.0), t, 1 - sm(t, 9.0, 9.8)); st.set(prog(t, 7.6, 8.4), [R.cx + R.X, 3.9, -.9]);
+    R.L.forEach(p => p.relax(t, sm(t, 12, 13)));
+  });
+  return Object.assign(Wd, { cam: t => { const u = ease.io(prog(t, 0, 16.39)); return { pos: [lerp(-2.5, 2.5, u), 7.6, 16.5], look: [lerp(-.5, .5, u), 1.9, -.8], fov: 44 }; } });
+}
+
+// ---------- s19 : QUESTION 1 - can the warner join them? ----------
+function s19() {
+  const { Wd } = mkS({ seed: 19 }); const R = rig(Wd, {}); Wd.hero = R.hero; const ck = clockRing(Wd, { pos: [0, 7.8, -.5], R: 1.1 }), gl = glow(Wd, 5, 0xFFD04A); gl.s.position.set(...R.bellAim);
+  Wd.on(t => {
+    postsOn(R, t, .0, .2, .6); R.tok.update(t, .55); R.aimAll(0, t, 0); R.posts.forEach((p, i) => R.aim(i, prog(t, 1.4 + .2 * i, 2.4 + .2 * i), t, ease.io(prog(t, 14.8, 16.8))));
+    R.wall.set(prog(t, 2.6, 4.2)); R.rL.set(prog(t, 4.6, 6.0), 1 - .7 * sm(t, 19.5, 20.5)); R.rR.set(prog(t, 4.8, 6.2), 1 - .7 * sm(t, 19.5, 20.5));
+    dig(R.d2, 5.2, POP(t, 6.0, 6.8) * (1 - ease.in(prog(t, 19.0, 19.6))), t);
+    ck.set(prog(t, 8.51, 14.51)); ck.g.position.y = 7.8 + .05 * Math.sin(t * 1.3); ck.fade(POP(t, 7.2, 8.0) * (1 - sm(t, 14.55, 15.2)));
+    const a = sm(t, 16.8, 17.2) * (1 - sm(t, 21.5, 22.5)); R.bl.swing(t, .55 * a); R.bl.ringFx(a, t); gl.set(.7 * a);
+    R.ring1.set(prog(t, 17.6, 20.0), 1); dig(R.d1, 5.2, POP(t, 19.6, 20.4), t);
+  });
+  return Object.assign(Wd, { cam: t => { const u = ease.io(prog(t, 0, 23.855)); return { pos: [lerp(-1.5, 1.5, u), 8.6, 15.6], look: [0, 3.3, .3], fov: 44 }; } });
+}
+
+// ---------- s20 : QUESTION 2 - a separate testimony keeps the honest group standing ----------
+function s20() {
+  const { Wd } = mkS({ seed: 20 }); const R = rig(Wd, {}); Wd.hero = R.hero; const ck = clockRing(Wd, { pos: [0, 7.8, -.5], R: 1.1 });
+  Wd.on(t => {
+    postsOn(R, t, .0, .08, .1); R.tok.update(t, .55); R.wall.set(prog(t, .2, 1.6)); R.rL.set(prog(t, 1.0, 2.2)); R.rR.set(prog(t, 1.2, 2.4), 1 - .65 * sm(t, 13.0, 14.5)); dig(R.d2, 5.2, POP(t, 2.0, 2.8), t);
+    R.posts.forEach((p, i) => R.aim(i, prog(t, .4 + .15 * i, 1.2 + .15 * i), t, 0, i >= 2 ? 1 - .85 * sm(t, 12.6, 13.8) : 1));
+    ck.set(prog(t, 5.67, 11.67)); ck.g.position.y = 7.8 + .05 * Math.sin(t * 1.3); ck.fade(POP(t, 3.6, 4.4) * (1 - sm(t, 11.72, 12.4)));
+    falseRight(R, t, 12.2); R.okL.set(POP(t, 14.6, 15.3)); R.L.forEach(p => p.relax(t, sm(t, 15, 16)));
+  });
+  return Object.assign(Wd, { cam: t => { const u = ease.io(prog(t, 0, 23.27)); return { pos: [lerp(-6, 5, u), 9.6, 13.6], look: [0, 2.8, .2], fov: 44 }; } });
+}
+
+// ---------- s21 : summary glide ----------
+function s21() {
+  const WP = [[0, 0], [3.0, 0], [4.6, 16], [8.4, 16], [9.9, 32], [12.6, 32], [14.2, 48], [18.25, 48]];
+  const cxf = t => { for (let i = 0; i < WP.length - 1; i++) { if (t <= WP[i + 1][0]) return lerp(WP[i][1], WP[i + 1][1], ease.io(prog(t, WP[i][0], WP[i + 1][0]))); } return 48; };
+  const { Wd } = mkS({ seed: 21, cx: 24, ext: 30, span: 70, motes: 80, moteO: { w: 80, z0: -6, z1: 5 } });
+  const A = rig(Wd, { cx: 0, X: 2.6, nL: 1, nR: 1, ws: .8, token: false, bell: false }), B = rig(Wd, { cx: 16, X: 3.2, nL: 1, nR: 1, ws: .85, bell: false }),
+    C = rig(Wd, { cx: 32, X: 3.2, nL: 1, nR: 1, ws: .85, bell: false }), D = rig(Wd, { cx: 48, X: 3.2, nL: 1, nR: 1, ws: .85 }); const sunRef = Wd.sun;
+  const ckA = checkMark(1.6); Wd.add(ckA.g); ckA.g.position.set(0, 4.9, -.4); const gl = glow(Wd, 5, 0xFFD04A); gl.s.position.set(...D.bellAim);
+  const hh = heroProxy(Wd, [0, 2.2, 0], [9, 4.4, 2]); Wd.hero = hh;
+  Wd.on(t => {
+    const cx = cxf(t); hh.position.x = cx; sunRef.position.set(cx - 6, 14, 9); sunRef.target.position.set(cx, 0, 0); sunRef.target.updateMatrixWorld();
+    A.posts.forEach((p, i) => { p.show(POP(t, .2 + .15 * i, .9 + .15 * i)); p.light(sm(t, 1.0 + .2 * i, 1.8 + .2 * i), t); p.relax(t, .4); }); ckA.set(POP(t, 1.9, 2.5)); ckA.g.position.y = 4.9 + .05 * Math.sin(t * 1.8);
+    [B, C, D].forEach(R => R.posts.forEach(p => { p.show(1); p.light(1, t); p.relax(t, .4); }));
+    B.tok.update(t, .6); B.posts.forEach((p, i) => B.aim(i, prog(t, 4.0 + .3 * i, 5.0 + .3 * i), t, 0)); B.bK.set(B.lensL(), B.lensR(), ease.io(prog(t, 5.2, 6.2)), t); B.ring1.set(prog(t, 6.4, 7.6), 1); dig(B.d1, 5.2, POP(t, 7.0, 7.8), t);
+    C.tok.update(t, .6); C.posts.forEach((p, i) => C.aim(i, prog(t, 8.6 + .3 * i, 9.5 + .3 * i), t, 0)); C.wall.set(prog(t, 9.6, 10.8)); C.rL.set(prog(t, 11.0, 12.0)); C.rR.set(prog(t, 11.2, 12.2)); dig(C.d2, 5.2, POP(t, 11.6, 12.4), t);
+    D.tok.update(t, .5); D.wall.set(1); D.posts.forEach((p, i) => D.aim(i, 1, t, ease.io(prog(t, 14.4, 15.8)))); D.rL.set(1, 1 - .7 * sm(t, 17.0, 17.8)); D.rR.set(1, 1 - .7 * sm(t, 17.0, 17.8));
+    const a = sm(t, 15.8, 16.1) * (1 - sm(t, 17.9, 18.25)); D.bl.swing(t, .5 * a); D.bl.ringFx(a, t); gl.set(.6 * a); D.ring1.set(prog(t, 16.2, 17.6), 1); dig(D.d1, 5.2, POP(t, 17.0, 17.8), t);
+  });
+  return Object.assign(Wd, { cam: t => { const x = cxf(t); return { pos: [x, 6.4, 14.4], look: [x, 1.9, .6], fov: 44 }; } });
+}
+
+// ---------- s22 : credits, evening ----------
+function s22() {
+  const { Wd } = mkS({ seed: 22, motes: 60, moteO: { w: 22 }, world: { skyTop: 0xF3D5A8, skyBottom: 0xF7E3C0, fogColor: 0xF3DDB8, hemi: 1.15, sun: .9, sunColor: 0xFFC890, floor: ['#EBD9B8', '#E2CFA9', '#E6D3AF'], arch: [0xE8CFA8, 0xDFC499], glass: 0xF6C99B } });
+  const R = rig(Wd, { nL: 1, nR: 1, X: 4.6, token: false, bell: false }); Wd.hero = R.hero;
+  Wd.on(t => { R.posts.forEach(p => { p.show(1); p.light(.12 + .05 * Math.sin(t * .8), t); p.relax(t, .25); }); R.ring1.set(POP(t, .2, 1.8), .75 + .2 * Math.sin(t * 1.2)); });
+  return Object.assign(Wd, { cam: CAM([-.4, 5.0, 14.6], [0, 1.6, 0], [.5, 4.6, 13.2], [0, 1.6, 0], 7.448) });
+}
+
+film({
+  title: 'TITLE', kicker: 'KICKER', vault: 'captions_vault.json',
+  shots: [
+    { id: 's01', dur: 7.65, caps: [], build: s01 },
+    { id: 's02', dur: 10.647, caps: ['CAP_s02_1'], capAt: [0.3], build: s02 },
+    { id: 's03', dur: 16.391, caps: ['CAP_s03_1', 'CAP_s03_2'], capAt: [0.3, 6.88], build: s03 },
+    { id: 's04', dur: 18.55, caps: ['CAP_s04_1', 'CAP_s04_2'], capAt: [0.3, 7.79], build: s04 },
+    { id: 's05', dur: 25.55, caps: ['CAP_s05_1', 'CAP_s05_2', 'CAP_s05_3'], capAt: [0.2, 9.0, 18.3], build: s05 },
+    { id: 's06', dur: 18.01, caps: ['CAP_s06_1', 'CAP_s06_2'], capAt: [0.3, 7.56], build: s06 },
+    { id: 's07', dur: 11.35, caps: ['CAP_s07_1', 'CAP_s07_2'], capAt: [0.2, 5.4], build: s07 },
+    { id: 's08', dur: 12.07, caps: ['CAP_s08_1', 'CAP_s08_2'], capAt: [0.3, 5.07], build: s08 },
+    { id: 's09', dur: 11.349, caps: ['CAP_s09_1', 'CAP_s09_2'], capAt: [0.2, 5.4], build: s09 },
+    { id: 's10', dur: 11.35, caps: ['CAP_s10_1'], capAt: [0.2], build: s10 },
+    { id: 's11', dur: 13.15, caps: ['CAP_s11_1', 'CAP_s11_2'], capAt: [0.3, 5.52], build: s11 },
+    { id: 's12', dur: 12.07, caps: ['CAP_s12_1', 'CAP_s12_2'], capAt: [0.3, 5.07], build: s12 },
+    { id: 's13', dur: 16.93, caps: ['CAP_s13_1', 'CAP_s13_2'], capAt: [0.3, 7.11], build: s13 },
+    { id: 's14', dur: 11.35, caps: ['CAP_s14_1'], capAt: [0.2], build: s14 },
+    { id: 's15', dur: 11.35, caps: ['CAP_s15_1'], capAt: [0.2], build: s15 },
+    { id: 's16', dur: 13.15, caps: ['CAP_s16_1', 'CAP_s16_2'], capAt: [0.3, 5.52], build: s16 },
+    { id: 's17', dur: 11.35, caps: ['CAP_s17_1'], capAt: [0.2], build: s17 },
+    { id: 's18', dur: 16.39, caps: ['CAP_s18_1', 'CAP_s18_2'], capAt: [0.3, 6.88], build: s18 },
+    { id: 's19', dur: 23.855, caps: ['CAP_s19_1', 'CAP_s19_2'], capAt: [0.3, 14.51], build: s19 },
+    { id: 's20', dur: 23.27, caps: ['CAP_s20_1', 'CAP_s20_2'], capAt: [0.3, 11.67], build: s20 },
+    { id: 's21', dur: 18.25, caps: ['CAP_s21_1', 'CAP_s21_2'], capAt: [0.3, 9.12], build: s21 },
+    { id: 's22', dur: 7.448, caps: ['CAP_s22_1'], capAt: [0.3], build: s22 },
+  ],
+});
+</script>
+</html>
