@@ -1,7 +1,7 @@
 {
  "film": "film_a.html",
  "status": "PASS",
- "time": "2026-10-27T21:21:41",
+ "time": "2026-10-27T23:02:04",
  "samples": 143,
  "findings": [
   {
@@ -29,12 +29,13 @@
   "beat_3": "D:/video-projects/kolhalashon-avshalom-schneider/_shorts_tools/ketzarim/k13_review/verify/_view/verify_beat_sheet_3.jpg",
   "phone_2": "D:/video-projects/kolhalashon-avshalom-schneider/_shorts_tools/ketzarim/k13_review/verify/_view/verify_phone_sheet_2.jpg",
   "seam_2": "D:/video-projects/kolhalashon-avshalom-schneider/_shorts_tools/ketzarim/k13_review/verify/_view/verify_seams_2.jpg",
-  "seam_3": "D:/video-projects/kolhalashon-avshalom-schneider/_shorts_tools/ketzarim/k13_review/verify/_view/verify_seams_3.jpg"
+  "seam_3": "D:/video-projects/kolhalashon-avshalom-schneider/_shorts_tools/ketzarim/k13_review/verify/_view/verify_seams_3.jpg",
+  "seam_4": "D:/video-projects/kolhalashon-avshalom-schneider/_shorts_tools/ketzarim/k13_review/verify/_view/verify_seams_4.jpg"
  },
  "timing": {
-  "ready_s": 5.4,
-  "gates_s": 375.0,
-  "sheets_s": 244.4,
-  "total_s": 625.5
+  "ready_s": 4.3,
+  "gates_s": 336.0,
+  "sheets_s": 193.8,
+  "total_s": 539.0
  }
 }
