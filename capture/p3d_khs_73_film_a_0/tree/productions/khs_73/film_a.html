@@ -1,0 +1,446 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>khs 73 film a</title>
+<style>html,body{margin:0;background:#000}canvas{display:block;width:100vw;height:auto}</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+// khs_73 / film_a - portrait 1080x1920, 6 shots, objects only (no characters), vault captions only (zero Hebrew in code)
+import { film, world, path, THREE, prog, ease, clamp, lerp, rng, cyl, ball, mesh, box, toon, canvasTex, cloud } from '../../lib/stage3d.js';
+import * as P from '../../lib/props3d.js';
+import { tween, bob } from '../../lib/motion3d.js';
+
+// ---------------- palette + layout constants ----------------
+const NAVY = 0x1f3a5a, TEAL = 0x3f8f8a, GOLD = 0xf2c14e, CORAL = 0xe8825a, CORAL2 = 0xc9663f, CREAM = 0xf6efe0, WOOD = 0x8a5a3a, STONE = 0xdacdb0;
+const cCoral = new THREE.Color(CORAL), cGold = new THREE.Color(GOLD);
+const ORB = [0, 4.8, -2.2], ORB_R = .6;
+const GLB = [2.6, 0, .5], SEAL = [1.15, 0, .5];
+const TILE_GLB = [2.6, 2.95, .5], TILE_SEAL = [1.15, 2.7, .5];
+const SPH = [0, 3.15, -2.2], SPH_R = 1.05, SPH_N = 36;
+const BOOK_TOP = [0, 1.45, .1];
+const UPV = new THREE.Vector3(0, 1, 0);
+const sm = (t, a, b) => ease.sm(prog(t, a, b));
+
+// ---------------- generic glow sprite + dot ----------------
+let GT = null, DT = null;
+const glowTex = () => GT || (GT = canvasTex(128, 128, (g, w, h) => { const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,244,205,1)'); r.addColorStop(.3, 'rgba(255,214,120,.55)'); r.addColorStop(1, 'rgba(255,190,80,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }));
+const dotTex = () => DT || (DT = canvasTex(64, 64, (g, w, h) => { const r = g.createRadialGradient(32, 32, 0, 32, 32, 32); r.addColorStop(0, 'rgba(242,193,78,1)'); r.addColorStop(.55, 'rgba(242,193,78,.8)'); r.addColorStop(1, 'rgba(242,193,78,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }));
+const glow = (size, op) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false, opacity: op === undefined ? .8 : op })); s.scale.set(size, size, 1); return s; };
+const dot = (size, op) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: dotTex(), depthWrite: false, transparent: true, fog: false, opacity: op === undefined ? .6 : op })); s.scale.set(size, size, 1); return s; };
+const setEm = (mat, col, k) => { mat.emissive.set(col).multiplyScalar(k); };
+const bez = (S, C, E, e) => { const q = 1 - e; return [q * q * S[0] + 2 * q * e * C[0] + e * e * E[0], q * q * S[1] + 2 * q * e * C[1] + e * e * E[1], q * q * S[2] + 2 * q * e * C[2] + e * e * E[2]]; };
+
+// ---------------- world + backdrop ----------------
+function newWorld() {
+  return world({ skyTop: 0xbfe3df, skyBottom: 0xfbf4e6, fogColor: 0xf3ecdc, fogNear: 28, fogFar: 62, sunColor: 0xfff4e0, sun: 1.5, sunPos: [-14, 20, 10],
+    hemiSky: 0xfff8ec, hemiGround: 0xe3d8c0, hemi: 1.15, shadowExt: 12 });
+}
+function setting(Wd) {
+  const fl = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), new THREE.MeshLambertMaterial({ color: 0xefe6d2 })); fl.rotation.x = -Math.PI / 2; fl.receiveShadow = true; Wd.add(fl);
+  Wd.add(cyl(2.7, 2.8, .05, 0xe6dcc6, { pos: [0, .025, 0], ink: false, cast: false }));
+  Wd.add(cyl(4.3, 4.35, .03, 0xeadfc8, { pos: [0, .015, 0], ink: false, cast: false }));
+  [[-26, -4, -46, 16, 0xcfe6df], [30, -3, -50, 18, 0xd8ebe3], [2, -5, -58, 24, 0xe4efe6]].forEach(([x, y, z, r, c]) => Wd.add(ball(r, c, { pos: [x, y, z], scale: [1.5, .45, 1], ink: false, cast: false })));
+  [[-13, 8, -24, 2.2, 3], [15, 11, -28, 2.6, 6], [-3, 14, -32, 2.2, 9]].forEach(([x, y, z, s, sd]) => Wd.add(cloud({ seed: sd, size: s, color: 0xffffff, pos: [x, y, z], cast: false })));
+  // foreground pebbles (parallax)
+  [[-2.6, 3.4, 5], [3.3, 3.0, 8], [-1.2, 4.6, 12]].forEach(([x, z, sd], i) => P.rock(Wd, { pos: [x, 0, z], seed: sd, scale: .28 + i * .05, color: 0xe1d8c2 }));
+  // floating motes (deterministic drift)
+  const r = rng(21), motes = [];
+  for (let i = 0; i < 26; i++) { const s = dot(.1 + r() * .14, .5); Wd.add(s); motes.push({ s, x: (r() - .5) * 7, y: .6 + r() * 5, z: -1.5 + r() * 4, ph: r() * 6.28, sp: .05 + r() * .07 }); }
+  Wd.on(t => motes.forEach(m => { const u = ((t * m.sp + m.ph) % 1 + 1) % 1; m.s.position.set(m.x + .3 * Math.sin(t * .4 + m.ph), m.y + u * 1.2 - .6, m.z); m.s.material.opacity = .5 * Math.sin(Math.PI * u); }));
+}
+
+// ---------------- reading stand + open book + lamp ----------------
+function stand(Wd, o) {
+  const G = new THREE.Group(); Wd.add(G);
+  G.add(cyl(.55, .62, .12, WOOD, { pos: [0, .06, 0] }));
+  G.add(box(.24, 1.0, .2, WOOD, { pos: [0, .6, -.05] }));
+  const tilt = new THREE.Group(); tilt.position.set(0, 1.1, 0); tilt.rotation.x = .4; G.add(tilt);
+  tilt.add(box(1.7, .07, 1.0, 0x6e4429, { pos: [0, 0, 0] }));
+  tilt.add(box(1.7, .06, .06, 0x6e4429, { pos: [0, .05, .5] }));
+  const book = P.bookOpen(Wd, { pos: [0, .06, 0], scale: 2, color: NAVY }); tilt.add(book);
+  book.add(box(.03, .05, .4, NAVY, { pos: [0, .02, 0] }));
+  const pm = [book.children[1].material, book.children[3].material];
+  const flips = (o.flips || []).map(tf => { const pv = new THREE.Group(); pv.position.set(0, .05, 0); pv.add(box(.27, .008, .36, 0xfffaf0, { pos: [.14, 0, 0], ink: false })); book.add(pv); return { pv, tf }; });
+  const bg = glow(2.6, 0); bg.position.set(0, .5, .1); G.add(bg); bg.position.set(0, 1.7, .15);
+  // lamp (upright inside the tilted board)
+  const lamp = new THREE.Group(); lamp.position.set(-.74, .04, -.3); lamp.rotation.x = -.4; tilt.add(lamp);
+  lamp.add(cyl(.07, .08, .03, NAVY, { pos: [0, .015, 0] })); lamp.add(cyl(.015, .015, .3, NAVY, { pos: [0, .18, 0], ink: false }));
+  const bulbM = toon(CREAM); const bulb = mesh(new THREE.SphereGeometry(.065, 16, 12), bulbM, { pos: [0, .36, 0], inkW: .008, cast: false }); lamp.add(bulb);
+  lamp.add(cyl(.02, .1, .1, NAVY, { pos: [0, .46, 0], inkW: .008 }));
+  const lg = glow(1.3, 0); lg.position.set(0, .36, 0); lamp.add(lg);
+  Wd.on(t => {
+    for (const f of flips) { const u = prog(t, f.tf, f.tf + .7); f.pv.visible = u > 0 && u < 1; f.pv.rotation.z = lerp(-.12, Math.PI + .12, ease.io(u)); f.pv.position.y = .05 + .004 * Math.sin(Math.PI * u); }
+    const w = o.warm ? o.warm(t) : 0, gk = o.glowK ? o.glowK(t) : 0, lk = o.lit ? o.lit(t) : 0;
+    pm.forEach(m => { m.color.setRGB(.97 + .03 * w, .95 - .04 * w, .89 - .22 * w); setEm(m, 0xf2c14e, .55 * w + .35 * gk); });
+    bg.material.opacity = .85 * Math.max(gk, w * .8); bg.scale.setScalar(2.6 * (1 + .1 * Math.sin(t * 1.7)));
+    setEm(bulbM, 0xf2c14e, lk * 1.4); lg.material.opacity = .9 * lk; lg.scale.setScalar(1.3 * (1 + .06 * Math.sin(t * 5)));
+  });
+  return G;
+}
+
+// ---------------- tiles ----------------
+function lawTile(body, gold) {
+  const g = new THREE.Group(), f = new THREE.Group(); f.rotation.x = Math.PI / 2; g.add(f);
+  const rimM = toon(gold ? 0xe9a93a : GOLD, { emissive: 0x4a3508 });
+  f.add(mesh(new THREE.CylinderGeometry(.18, .18, .045, 6), rimM, { box: true, inkW: .012, cast: false }));
+  f.add(mesh(new THREE.CylinderGeometry(.152, .152, .07, 6), toon(body), { ink: false, cast: false }));
+  f.add(mesh(new THREE.CylinderGeometry(.06, .06, .08, 6), toon(CREAM), { ink: false, cast: false }));
+  g.userData.rimM = rimM; return g;
+}
+function shapeStar(R, r, n) { const s = new THREE.Shape(); for (let i = 0; i < n * 2; i++) { const a = Math.PI / 2 + i * Math.PI / n, rr = i % 2 ? r : R, x = Math.cos(a) * rr, y = Math.sin(a) * rr; i ? s.lineTo(x, y) : s.moveTo(x, y); } s.closePath(); return s; }
+function shapePoly(R, n, rot) { const s = new THREE.Shape(); for (let i = 0; i < n; i++) { const a = (rot === undefined ? Math.PI / 2 : rot) + i * 2 * Math.PI / n, x = Math.cos(a) * R, y = Math.sin(a) * R; i ? s.lineTo(x, y) : s.moveTo(x, y); } s.closePath(); return s; }
+function extr(shape, depth) { const geo = new THREE.ExtrudeGeometry(shape, { depth, bevelEnabled: false, curveSegments: 18 }); geo.center(); return geo; }
+// odd (strange case) tile: coral, 11 different forms, nominal radius ~0.2, faces +z
+function oddTile(kind) {
+  const g = new THREE.Group(), mats = []; const cm = c => { const m = toon(c); mats.push(m); return m; };
+  const add = (geo, o, c) => { const m = mesh(geo, cm(c || CORAL), Object.assign({ cast: false }, o)); g.add(m); return m; };
+  switch (kind % 11) {
+    case 0: for (let i = 0; i < 6; i++) { const sl = new THREE.Group(); sl.position.z = (i - 2.5) * .03; sl.rotation.z = i * .2; const m = mesh(new THREE.CylinderGeometry(.17, .17, .026, 6), cm(i % 2 ? CORAL : CORAL2), { cast: false, box: true, inkW: .008 }); m.rotation.x = Math.PI / 2; sl.add(m); g.add(sl); } break;
+    case 1: for (let i = 0; i < 18; i++) { const a = i * .62, rr = .03 + i * .0105; g.add(ball(.034 + i * .0009, i > 15 ? GOLD : CORAL, { pos: [Math.cos(a) * rr, Math.sin(a) * rr, 0], inkW: .006, cast: false })); } break;
+    case 2: add(extr(shapeStar(.2, .085, 5), .07), { box: true, inkW: .012 }); break;
+    case 3: add(new THREE.BoxGeometry(.2, .2, .2), { box: true, inkW: .012, rot: [.6155, .7854, 0] }); break;
+    case 4: { const s = shapePoly(.18, 6); const h = new THREE.Path(); h.absarc(0, 0, .07, 0, Math.PI * 2, true); s.holes.push(h); add(extr(s, .05), { box: true, inkW: .012 }); break; }
+    case 5: add(extr(shapePoly(.23, 3), .06), { box: true, inkW: .012 }); break;
+    case 6: add(new THREE.TorusGeometry(.12, .05, 14, 28), { inkW: .01 }); break;
+    case 7: { const s = new THREE.Shape(); s.moveTo(0, .25); s.lineTo(.15, 0); s.lineTo(0, -.25); s.lineTo(-.15, 0); s.closePath(); add(extr(s, .07), { box: true, inkW: .012 }); break; }
+    case 8: { const m = add(new THREE.ConeGeometry(.15, .32, 5), { inkW: .01 }); m.rotation.x = .5; break; }
+    case 9: add(new THREE.TorusKnotGeometry(.1, .036, 64, 8, 2, 3), { inkW: .008 }); break;
+    default: { const m = add(new THREE.CapsuleGeometry(.07, .2, 6, 14), { inkW: .01 }); m.rotation.z = .6; }
+  }
+  g.userData.mats = mats; return g;
+}
+const goldify = (tile, k) => tile.userData.mats.forEach(m => { m.color.lerpColors(cCoral, cGold, k); setEm(m, 0x6a4a00, k); });
+
+// tile that flies from S to E (quadratic arc), settles, bobs; optional exit
+function flier(Wd, g, o) {
+  g.visible = false; Wd.add(g);
+  const C = [(o.S[0] + o.E[0]) / 2 + (o.E[0] - o.S[0]) * .15, Math.max(o.S[1], o.E[1]) + .55, (o.S[2] + o.E[2]) / 2 + .3];
+  Wd.on(t => {
+    const u = prog(t, o.t0, o.t0 + o.dur), gone = o.t1 === undefined ? 0 : prog(t, o.t1, o.t1 + (o.d1 || .7));
+    g.visible = t >= o.t0 && gone < 1; if (!g.visible) return;
+    const e = ease.out(u), p = bez(o.S, C, o.E, e), b = (o.bob || 0) * Math.sin(t * 1.2 + o.ph) * e;
+    g.position.set(p[0], p[1] + b + (o.rise || 0) * ease.in(gone), p[2]);
+    g.scale.setScalar((o.s || 1) * (.15 + .85 * ease.out(prog(u, 0, .35))) * (1 - ease.in(gone)));
+    g.rotation.z = (1 - e) * (o.turns || 2) * 6.283 + (o.tilt || .15) * Math.sin(t * .7 + o.ph); g.rotation.y = .35 * Math.sin(t * .6 + o.ph * 1.3) * e; g.rotation.x = .12 * Math.sin(t * .5 + o.ph);
+  });
+}
+
+// the cloud of tiles that leaves the book in shot 1
+const CLOUD = (() => {
+  const r = rng(11), arr = [], P0 = () => [(r() - .5) * .5, 1.45, .05];
+  const place = () => { for (let k = 0; k < 80; k++) { const x = (r() * 2 - 1) * 1.5, y = 2.3 + r() * 2.1, z = -.5 + r() * 1.0; if (Math.abs(x) < .8 && y > 2.7 && y < 3.9) continue; if (arr.some(a => Math.hypot(a.E[0] - x, a.E[1] - y) < .5)) continue; return [x, y, z]; } return [(r() * 2 - 1) * 1.5, 2.3 + r() * 2.1, -.5]; };
+  for (let i = 0; i < 20; i++) arr.push({ law: true, body: i % 2 ? NAVY : TEAL, S: P0(), E: place(), t0: 4.4 + i * .12, dur: .9, turns: 1 + r() * 1.5, ph: r() * 6.28 });
+  [0, 1, 3, 4, 10].forEach((kd, j) => arr.push({ law: false, kind: kd, S: P0(), E: place(), t0: 6.5 + j * .3, dur: .8, turns: 1.5 + r(), ph: r() * 6.28 }));
+  return arr;
+})();
+function buildCloud(Wd, fade) {
+  CLOUD.forEach((c, i) => {
+    const g = c.law ? lawTile(c.body) : oddTile(c.kind);
+    flier(Wd, g, fade ? { S: c.S, E: c.E, t0: -10, dur: .5, s: c.law ? 1.3 : 1.25, bob: .07, ph: c.ph, t1: .15 + (i % 12) * .1, d1: .8, rise: .8 }
+      : { S: c.S, E: c.E, t0: c.t0, dur: c.dur, s: c.law ? 1.3 : 1.25, turns: c.turns, bob: .07, ph: c.ph });
+  });
+}
+
+// ---------------- hero star tile (the strange case) + question mark + seal plate ----------------
+function heroStar(Wd, posFn, o) {
+  const g = oddTile(2); g.userData.scale = o.scale || 1.6; Wd.add(g);
+  Wd.on(t => { const p = posFn(t); g.visible = p !== null; if (!g.visible) return; g.position.set(p[0], p[1], p[2]); g.scale.setScalar((o.scaleFn ? o.scaleFn(t) : 1) * g.userData.scale);
+    const tt = t - (o.spin0 || 0); g.rotation.z = .5 * tt; g.rotation.y = .6 * Math.sin(1.2 * tt); goldify(g, o.gold ? o.gold(t) : 0); });
+  return g;
+}
+let QT = null;
+const qTex = () => QT || (QT = canvasTex(256, 256, (c, w, h) => { c.font = '900 210px Arial, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round'; c.strokeStyle = '#1f3a5a'; c.lineWidth = 30; c.strokeText('?', w / 2, h / 2 + 10); c.fillStyle = '#f2c14e'; c.fillText('?', w / 2, h / 2 + 10); }));
+function qmark(Wd, fn) {
+  const q = new THREE.Sprite(new THREE.SpriteMaterial({ map: qTex(), transparent: true, fog: false, depthWrite: false })); Wd.add(q);
+  Wd.on(t => { const r = fn(t); q.visible = !!r && r.s > .01; if (!q.visible) return; q.position.set(...r.pos); q.scale.set(r.s, r.s, 1); });
+}
+function sealPedestal(Wd, litFn) {
+  Wd.add(cyl(.2, .27, 1.9, STONE, { pos: [SEAL[0], .95, SEAL[2]] }));
+  Wd.add(cyl(.32, .32, .05, NAVY, { pos: [SEAL[0], 1.92, SEAL[2]] }));
+  const pm = toon(0xcfc6ae); const plate = mesh(extr(shapeStar(.36, .16, 5), .035), pm, { box: true, inkW: .014, cast: false });
+  plate.rotation.x = -Math.PI / 2; plate.position.set(SEAL[0], 1.97, SEAL[2]); Wd.add(plate);
+  const gl = glow(2.0, 0); gl.position.set(SEAL[0], 2.1, SEAL[2]); Wd.add(gl);
+  const cDim = new THREE.Color(0xcfc6ae);
+  Wd.on(t => { const k = litFn(t); pm.color.lerpColors(cDim, cGold, k); setEm(pm, 0x8a6a10, k); gl.material.opacity = .85 * k; gl.scale.setScalar(2.0 * (1 + .08 * Math.sin(t * 3))); });
+}
+
+// ---------------- orb, beam, thread ----------------
+function orb(Wd, kFn) {
+  const g = new THREE.Group(); g.position.set(...ORB); Wd.add(g);
+  const core = new THREE.Mesh(new THREE.SphereGeometry(ORB_R, 32, 20), new THREE.MeshBasicMaterial({ color: 0xffd45e, fog: false })); g.add(core);
+  const inner = new THREE.Mesh(new THREE.SphereGeometry(ORB_R * .62, 24, 16), new THREE.MeshBasicMaterial({ color: 0xfff3c4, fog: false })); g.add(inner);
+  const h1 = glow(ORB_R * 6, .45), h2 = glow(ORB_R * 10, .1); g.add(h2, h1);
+  const rays = new THREE.Group(); g.add(rays);
+  for (let i = 0; i < 12; i++) { const a = i / 12 * 6.2832, c = new THREE.Mesh(new THREE.ConeGeometry(ORB_R * .1, ORB_R * .5, 4), new THREE.MeshBasicMaterial({ color: 0xf2b630, fog: false })); c.position.set(Math.cos(a) * ORB_R * 1.4, Math.sin(a) * ORB_R * 1.4, 0); c.rotation.z = a - Math.PI / 2; rays.add(c); }
+  Wd.on(t => { const k = kFn ? kFn(t) : 1; g.visible = k > .01; g.scale.setScalar(Math.max(.01, k) * (1 + .03 * Math.sin(t * 1.6))); rays.rotation.z = t * .15; h1.material.opacity = .45 * k; h2.material.opacity = .1 * k; });
+  return g;
+}
+const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _d = new THREE.Vector3();
+const BEAM_GEO = new THREE.CylinderGeometry(.14, 1, 1, 32, 1, true);
+function beam(Wd, Bfn, kFn, opFn) {
+  const mk = (c, op) => new THREE.Mesh(BEAM_GEO, new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: op, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, fog: false }));
+  const outer = mk(0xffd778, .25), core = mk(0xfff0c0, .3), g = new THREE.Group(); g.add(outer, core); Wd.add(g);
+  const gl = glow(2.4, 0); Wd.add(gl);
+  Wd.on(t => {
+    const k = kFn(t), op = opFn(t); outer.material.opacity = .3 * op; core.material.opacity = .45 * op;
+    _a.set(...ORB); _b.set(...Bfn(t)); _d.subVectors(_b, _a); const L = Math.max(_d.length() * k, .01);
+    const dir = _d.clone().normalize(), bot = _a.clone().addScaledVector(dir, L), mid = _a.clone().addScaledVector(dir, L / 2);
+    const q = new THREE.Quaternion().setFromUnitVectors(UPV, dir.clone().negate());
+    for (const [m, rr] of [[outer, .55], [core, .22]]) { m.position.copy(mid); m.quaternion.copy(q); const r = rr * (.35 + .65 * k); m.scale.set(r, L, r); }
+    g.visible = k > .01; gl.position.copy(bot); gl.material.opacity = .85 * op * prog(k, .9, 1); gl.scale.setScalar(2.2 + .5 * op);
+  });
+  return g;
+}
+const CGEO = new THREE.CylinderGeometry(1, 1, 1, 8, 1, true);
+function thread(Wd, A, B, o) {
+  o = o || {}; const r = o.r || .035, grow = o.grow || (() => 1), pulseF = o.pulse || (() => 1), nd = o.dashes === undefined ? 3 : o.dashes, sp = o.speed || .3;
+  const core = new THREE.Mesh(CGEO, new THREE.MeshBasicMaterial({ color: GOLD, fog: false }));
+  const hm = new THREE.MeshBasicMaterial({ color: 0xffd98a, transparent: true, opacity: .3, blending: THREE.AdditiveBlending, depthWrite: false, fog: false });
+  const halo = new THREE.Mesh(CGEO, hm), g = new THREE.Group(); g.add(core, halo);
+  const ds = []; for (let i = 0; i < nd; i++) { const s = glow(r * 9, 1); g.add(s); ds.push(s); }
+  Wd.add(g); const a = new THREE.Vector3(), b = new THREE.Vector3(), d = new THREE.Vector3(), n = new THREE.Vector3();
+  Wd.on(t => {
+    const k = clamp(grow(t), 0, 1); g.visible = k > .005; if (!g.visible) return;
+    a.set(...A(t)); b.set(...B(t)); d.subVectors(b, a).multiplyScalar(k); const L = d.length(); if (L < 1e-3) { g.visible = false; return; }
+    n.copy(d).normalize(); const pl = pulseF(t);
+    for (const [m, rr] of [[core, r * (.7 + .4 * pl)], [halo, r * (1.3 + .5 * pl)]]) { m.position.copy(a).addScaledVector(d, .5); m.quaternion.setFromUnitVectors(UPV, n); m.scale.set(rr, L, rr); }
+    hm.opacity = .08 + .16 * pl;
+    ds.forEach((s, i) => { const u = ((t * sp + i / nd + (o.phase || 0)) % 1 + 1) % 1; s.position.copy(a).addScaledVector(d, u); s.material.opacity = .95 * Math.sin(Math.PI * u) * (.55 + .45 * pl); });
+  });
+}
+
+// ---------------- globe on a pedestal with an empty dashed landing ring ----------------
+let GLT = null;
+const globeTex = () => GLT || (GLT = canvasTex(256, 128, (g, w, h) => { g.fillStyle = '#3f8f8a'; g.fillRect(0, 0, w, h); const r = rng(5); g.fillStyle = '#f6efe0';
+  for (let i = 0; i < 9; i++) { const x = r() * w, y = 20 + r() * (h - 40); g.beginPath(); g.ellipse(x, y, 14 + r() * 22, 8 + r() * 12, r() * 3, 0, 7); g.fill(); g.beginPath(); g.ellipse(x + w, y, 14 + r() * 22, 8 + r() * 12, r() * 3, 0, 7); g.fill(); } }));
+function globe(Wd, dimFn) {
+  Wd.add(cyl(.17, .27, 1.45, STONE, { pos: [GLB[0], .725, GLB[2]] })); Wd.add(cyl(.3, .3, .06, GOLD, { pos: [GLB[0], 1.46, GLB[2]] }));
+  const gm = toon(0xffffff, { map: globeTex() }); const body = mesh(new THREE.SphereGeometry(.45, 32, 20), gm, { pos: [GLB[0], 1.93, GLB[2]], inkW: .014 }); Wd.add(body);
+  const ring = new THREE.Group(); ring.position.set(GLB[0], 2.3, GLB[2]); Wd.add(ring); const dm = [];
+  for (let i = 0; i < 14; i++) { const a = i / 14 * 6.2832, d = box(.085, .022, .035, 0xf9e7a8, { pos: [Math.cos(a) * .27, 0, Math.sin(a) * .27], rot: [0, Math.atan2(-Math.cos(a), -Math.sin(a)), 0], inkW: .006, cast: false }); ring.add(d); dm.push(d.material); }
+  const cD = new THREE.Color(0x7d8d90);
+  Wd.on(t => { const k = dimFn ? dimFn(t) : 0; gm.color.setRGB(1, 1, 1).lerp(cD, k); dm.forEach(m => m.color.set(0xf9e7a8).lerp(cD, k)); body.rotation.y = t * .25; });
+  return body;
+}
+function hourglass(Wd, flips) {
+  const HG = [1.7, 0, 1.2], gg = new THREE.Group(); gg.position.set(HG[0], .45 + .38, HG[2]); Wd.add(gg);
+  Wd.add(cyl(.22, .26, .45, STONE, { pos: [HG[0], .225, HG[2]] }));
+  gg.add(cyl(.18, .18, .04, GOLD, { pos: [0, .3, 0] })); gg.add(cyl(.18, .18, .04, GOLD, { pos: [0, -.3, 0] }));
+  for (let i = 0; i < 3; i++) { const a = i * 2.094; gg.add(cyl(.012, .012, .6, GOLD, { pos: [Math.cos(a) * .16, 0, Math.sin(a) * .16], ink: false })); }
+  const glass = new THREE.MeshToonMaterial({ color: 0xd3eef0, transparent: true, opacity: .4, depthWrite: false });
+  const top = new THREE.Mesh(new THREE.ConeGeometry(.15, .28, 18), glass), bot = new THREE.Mesh(new THREE.ConeGeometry(.15, .28, 18), glass);
+  top.position.y = .15; top.rotation.x = Math.PI; bot.position.y = -.15; gg.add(top, bot);
+  const sM = toon(GOLD), sTop = new THREE.Mesh(new THREE.ConeGeometry(.15, .28, 18), sM), sBot = new THREE.Mesh(new THREE.ConeGeometry(.15, .28, 18), sM);
+  sTop.rotation.x = Math.PI; sTop.position.y = .15; sBot.position.y = -.15; gg.add(sTop, sBot);
+  Wd.on(t => {
+    gg.rotation.z = Math.PI * (ease.io(prog(t, flips[0], flips[0] + .6)) + ease.io(prog(t, flips[1], flips[1] + .6)));
+    const a = lerp(.2, .7, prog(t, 1.6, 10)); sTop.scale.set(Math.max(a, .02), Math.max(a, .02), Math.max(a, .02)); sTop.position.y = .29 - .14 * Math.max(a, .02); sBot.scale.setScalar(Math.max(1 - a, .02)); sBot.position.y = -.29 + .14 * Math.max(1 - a, .02);
+  });
+}
+
+// ---------------- gears + magnifying lens ----------------
+function gear(R, n, col) {
+  const g = new THREE.Group(), f = new THREE.Group(); g.add(f);
+  const hub = mesh(new THREE.CylinderGeometry(R * .78, R * .78, .12, 28), toon(col), { box: false, inkW: .012, cast: false }); hub.rotation.x = Math.PI / 2; f.add(hub);
+  for (let i = 0; i < n; i++) { const a = i / n * 6.2832, tb = box(R * .3, R * .34, .12, col, { pos: [Math.cos(a) * R * .9, Math.sin(a) * R * .9, 0], rot: [0, 0, a], inkW: .01, cast: false }); f.add(tb); }
+  const hole = mesh(new THREE.CylinderGeometry(R * .22, R * .22, .14, 16), toon(CREAM), { ink: false, cast: false }); hole.rotation.x = Math.PI / 2; f.add(hole);
+  g.userData.f = f; return g;
+}
+function lensObj() {
+  const g = new THREE.Group();
+  g.add(mesh(new THREE.TorusGeometry(.26, .04, 14, 36), toon(GOLD, { emissive: 0x4a3508 }), { inkW: .01, cast: false }));
+  const disc = new THREE.Mesh(new THREE.CircleGeometry(.25, 32), new THREE.MeshBasicMaterial({ color: 0xe6fbff, transparent: true, opacity: .28, depthWrite: false, side: THREE.DoubleSide })); g.add(disc);
+  const h = cyl(.035, .045, .5, NAVY, { pos: [.27, -.27, 0], rot: [0, 0, Math.PI / 4 * 1 + Math.PI / 2], inkW: .01, cast: false }); g.add(h);
+  const gl = new THREE.Mesh(new THREE.TorusGeometry(.17, .012, 8, 20, 1.0), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .8 })); gl.rotation.z = 1.6; g.add(gl);
+  return g;
+}
+
+// ---------------- the sphere of light made of hex slots ----------------
+let HXT = null;
+const hexTex = () => HXT || (HXT = canvasTex(128, 128, (c, w, h) => { c.setLineDash([11, 9]); c.lineWidth = 8; c.strokeStyle = 'rgba(255,250,235,.95)'; c.lineCap = 'round'; c.beginPath(); for (let i = 0; i < 6; i++) { const a = Math.PI / 2 + i * Math.PI / 3, x = 64 + Math.cos(a) * 56, y = 64 - Math.sin(a) * 56; i ? c.lineTo(x, y) : c.moveTo(x, y); } c.closePath(); c.stroke(); }));
+const SLOTS = (() => { const a = []; for (let i = 0; i < SPH_N; i++) { const y = 1 - 2 * (i + .5) / SPH_N, rr = Math.sqrt(1 - y * y), ph = i * 2.39996; a.push([rr * Math.cos(ph), y, rr * Math.sin(ph)]); } return a; })();
+const ORDER = (() => { const r = rng(5), sh = arr => { for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; } return arr; };
+  const idx = [...Array(SPH_N).keys()], front = sh(idx.filter(i => SLOTS[i][2] > .4 && Math.abs(SLOTS[i][1]) < .75)), init = front.slice(0, 6), rest = sh(idx.filter(i => !init.includes(i))); return init.concat(rest); })();
+// sched: [{k: order position, dep, arr, S (array or fn(t)), kind: 'law' | oddKind, body}] ; init = number of slots already filled at t=0
+function sphereLight(Wd, init, sched, o) {
+  o = o || {};
+  const G = new THREE.Group(); G.position.set(...SPH); Wd.add(G);
+  const shell = new THREE.Mesh(new THREE.SphereGeometry(SPH_R * .97, 32, 20), new THREE.MeshBasicMaterial({ color: 0xfff1c8, transparent: true, opacity: .16, depthWrite: false, fog: false })); G.add(shell);
+  const gl = glow(SPH_R * 5.5, .3); G.add(gl); const gl2 = glow(SPH_R * 9, 0); G.add(gl2);
+  const ft = new Array(SPH_N).fill(Infinity);
+  for (let k = 0; k < init; k++) ft[ORDER[k]] = -99;
+  sched.forEach(s => { ft[ORDER[s.k]] = s.arr; });
+  const hexM = new THREE.MeshBasicMaterial({ map: hexTex(), transparent: true, depthWrite: false, side: THREE.DoubleSide, fog: false, opacity: .9 });
+  const slots = SLOTS.map((n, i) => {
+    const sg = new THREE.Group(); sg.position.set(n[0] * SPH_R, n[1] * SPH_R, n[2] * SPH_R); sg.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), new THREE.Vector3(...n)); G.add(sg);
+    const outline = new THREE.Mesh(new THREE.PlaneGeometry(.64, .64), hexM); sg.add(outline);
+    const tile = lawTile(i % 2 ? 0xf2c14e : 0xf6dd8a, true); tile.scale.setScalar(1.55); tile.position.z = .02; sg.add(tile);
+    const rg = new THREE.Mesh(new THREE.RingGeometry(.18, .24, 24), new THREE.MeshBasicMaterial({ color: 0xffe9a0, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false })); rg.position.z = .08; sg.add(rg);
+    const fg = glow(.9, 0); fg.position.z = .1; sg.add(fg);
+    return { sg, outline, tile, rg, fg, wy: SPH[1] + n[1] * SPH_R };
+  });
+  const fl = sched.map(s => { const g = s.kind === 'law' ? lawTile(s.body || NAVY) : oddTile(s.kind); g.visible = false; Wd.add(g); return { s, g, C: null }; });
+  const ry = t => .35 + .06 * t, v = new THREE.Vector3();
+  const api = { G, filled: t => ft.reduce((a, x) => a + (t >= x ? 1 : 0), 0) / SPH_N };
+  Wd.on(t => {
+    G.rotation.y = ry(t); G.updateMatrixWorld(true);
+    const band = o.bandY ? o.bandY(t) : null;
+    slots.forEach((sl, i) => {
+      const dt = t - ft[i], filled = dt >= 0; sl.tile.visible = filled; sl.outline.visible = !filled;
+      const bump = band === null ? 0 : Math.exp(-Math.pow((sl.wy - band) / .3, 2));
+      if (filled) { const pk = ease.out(prog(dt, 0, .35)) * (1 + .22 * Math.sin(Math.PI * prog(dt, 0, .5))); sl.tile.scale.setScalar(1.55 * Math.max(pk, .001) * (1 + .2 * bump)); setEm(sl.tile.userData.rimM, 0xffd060, .35 + 1.2 * bump); }
+      const pr = prog(dt, 0, .65), live = dt >= 0 && dt < .65 && dt > -50 + 1;
+      sl.rg.visible = sl.fg.visible = live; if (live) { sl.rg.scale.setScalar(.5 + 2.4 * ease.out(pr)); sl.rg.material.opacity = .95 * Math.pow(1 - pr, 1.5); sl.fg.material.opacity = .9 * (1 - pr); sl.fg.scale.setScalar(.9 + 1.6 * pr); }
+    });
+    fl.forEach(f => {
+      const s = f.s, u = prog(t, s.dep, s.arr); f.g.visible = t >= s.dep && t < s.arr; if (!f.g.visible) return;
+      const S = typeof s.S === 'function' ? s.S(s.dep) : s.S; v.set(...SLOTS[ORDER[s.k]]).multiplyScalar(SPH_R); G.localToWorld(v);
+      const E = [v.x, v.y, v.z], C = [(S[0] + E[0]) / 2 + (E[0] - S[0]) * .1 + (s.bend || 0), Math.max(S[1], E[1]) - .4, (S[2] + E[2]) / 2 + .8], e = ease.io(u), p = bez(S, C, E, e);
+      f.g.position.set(p[0], p[1], p[2]); f.g.scale.setScalar(lerp(.7, 1.35, ease.out(u)) * (1 - .35 * ease.in(prog(u, .85, 1)))); f.g.rotation.z = u * 5; f.g.rotation.y = .4 * Math.sin(u * 6);
+    });
+    const fr = api.filled(t); gl.material.opacity = (.25 + .5 * fr) * (o.glowMul ? o.glowMul(t) : 1); gl2.material.opacity = o.glow2 ? o.glow2(t) : 0; gl2.scale.setScalar(SPH_R * 9 * (1 + .04 * Math.sin(t * 2)));
+    shell.material.opacity = .12 + .1 * fr;
+  });
+  return api;
+}
+
+// ---------------- hero proxy: union of boxes [cx,cy,cz,hx,hy,hz] (so the hero gate sees the action) ----------------
+function heroCluster(Wd, fn) {
+  const g = new THREE.Group(), m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()); m.visible = false; g.add(m); Wd.add(g);
+  Wd.on(t => { const bs = fn(t).filter(Boolean); if (!bs.length) return; const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (const b of bs) for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], b[k] - b[k + 3]); hi[k] = Math.max(hi[k], b[k] + b[k + 3]); }
+    g.position.set((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2); g.scale.set(Math.max(hi[0] - lo[0], .01), Math.max(hi[1] - lo[1], .01), Math.max(hi[2] - lo[2], .01)); });
+  Wd.hero = g; return g;
+}
+const STAND_BOX = [0, .95, 0, .85, .95, .5];
+
+// carousel of odd tiles around the book (shot 4 + shot 6 start)
+const RING_C = [0, 2.35, 0], RING_R = 1.3, RING_TILT = .28;
+const ringPos = (ang) => { const x = Math.cos(ang) * RING_R, z = Math.sin(ang) * RING_R; return [RING_C[0] + x, RING_C[1] - z * Math.sin(RING_TILT), RING_C[2] + z * Math.cos(RING_TILT)]; };
+const ringAng = (i, n, t) => i / n * 6.2832 + t * .55;
+
+film({
+  W: 1080, H: 1920, xf: .4, vault: 'captions_vault.json',
+  shots: [
+    // ===================== s01: the book, the laws fly out, one strange tile =====================
+    { id: 's01', dur: 9.35, wide: true, caps: ['CAP_A_01', 'CAP_A_02'], capAt: [0.0, 4.4, 99], build() {
+      const Wd = newWorld(); setting(Wd);
+      stand(Wd, { flips: [.4, 1.1, 1.8, 2.5, 3.2], glowK: t => .9 * sm(t, .3, 3.0) * (1 - .35 * sm(t, 4.4, 7)), warm: t => .25 * sm(t, .3, 3.5), lit: () => 0 });
+      buildCloud(Wd, false);
+      const heroPos = t => t < 7.2 ? null : (t < 8.2 ? bez(BOOK_TOP, [.6, 4.4, .9], [1.1, 3.9, .6], ease.out(prog(t, 7.2, 8.0))) : (() => { const k = ease.io(prog(t, 8.2, 9.0)); return [lerp(1.1, 0, k), lerp(3.9, 3.25, k), lerp(.6, 1.3, k)]; })());
+      heroStar(Wd, heroPos, { scaleFn: t => (.2 + .8 * ease.out(prog(t, 7.2, 7.7))) * (1 + .12 * ease.io(prog(t, 8.2, 9.0))), spin0: 7.2 });
+      qmark(Wd, t => { const p = heroPos(t); if (!p || t < 8.4) return null; const k = ease.out(prog(t, 8.4, 8.75)); return { pos: [p[0], p[1] + .62 + bob(t, .05, .6), p[2] + .1], s: .75 * k * (1 + .25 * Math.sin(Math.PI * prog(t, 8.4, 8.9))) }; });
+      heroCluster(Wd, t => [STAND_BOX, t > 5 ? [0, 3.3, .2, 1.8, 1.2, .8] : null]);
+      return Object.assign(Wd, { cam: path([[0, [0, 2.3, 5.9], [0, .5, 0], 65], [3.8, [0, 2.0, 4.7], [0, .6, 0], 65], [5.2, [0, 2.4, 5.4], [0, 1.7, .2], 65], [8.0, [0, 2.6, 5.4], [0, 1.9, .2], 65], [9.35, [0, 2.7, 5.2], [0, 2.0, .2], 65]]) });
+    } },
+    // ===================== s02: never happens in the world; still, it is His will =====================
+    { id: 's02', dur: 10.25, wide: true, caps: ['CAP_A_03', 'CAP_A_04'], capAt: [0.0, 5.65, 99], build() {
+      const Wd = newWorld(); setting(Wd);
+      stand(Wd, { warm: () => .2 });
+      buildCloud(Wd, true);
+      globe(Wd, () => 0); hourglass(Wd, [.3, 1.0]);
+      const gk = t => ease.io(prog(t, 5.7, 7.4));
+      sealPedestal(Wd, t => sm(t, 5.8, 7.6));
+      const tp = tween([[0, [0, 3.25, 1.3]], [1.2, TILE_GLB], [4.3, TILE_GLB], [5.4, TILE_SEAL], [99, TILE_SEAL]], 'io');
+      const tilePos = t => { const p = tp(t); return [p[0], p[1] + bob(t, .05, .5), p[2]]; };
+      heroStar(Wd, tilePos, { gold: gk, scaleFn: () => 1.05, spin0: 0 });
+      qmark(Wd, t => { const p = tilePos(t), s = (.75 + .25 * Math.sin(Math.PI * prog(t, 1.7, 2.4))) * (1 - ease.in(prog(t, 2.7, 3.2))); return { pos: [p[0], p[1] + .62 + bob(t, .05, .6), p[2] + .1], s }; });
+      orb(Wd, t => ease.out(prog(t, 3.0, 4.2)));
+      const bk = t => ease.io(prog(t, 3.4, 4.8)), bo = t => .55 + .45 * sm(t, 3.4, 4.8) + .3 * sm(t, 7.6, 8.6);
+      beam(Wd, tilePos, bk, t => (.4 + .6 * bk(t)) * (.9 + .1 * Math.sin(t * 3)));
+      heroCluster(Wd, t => [[1.9, 2.4, .5, 1.1, .75, .4], t > 3.6 ? [.9, 3.8, -.9, .9, 1.6, 1.4] : null]);
+      return Object.assign(Wd, { cam: path([[0, [0, 2.7, 5.2], [0, 2.0, .2], 65], [1.2, [1.5, 2.3, 4.7], [1.9, 2.1, .5], 65], [3.0, [1.5, 2.3, 4.8], [1.9, 2.1, .5], 65], [4.7, [1.6, 3.0, 5.9], [1.6, 2.65, .3], 65], [10.25, [1.5, 3.1, 5.7], [1.5, 2.7, .3], 65]]) });
+    } },
+    // ===================== s03: understanding attaches you to His will =====================
+    { id: 's03', dur: 10.35, wide: true, caps: ['CAP_A_05', 'CAP_A_06'], capAt: [0.0, 5.35, 99], build() {
+      const Wd = newWorld(); setting(Wd);
+      const warm = t => .35 + .45 * sm(t, 1.0, 2.4) + .2 * sm(t, 5.6, 6.5);
+      stand(Wd, { flips: [7.9, 8.6, 9.3], warm, glowK: t => .5 * sm(t, 1.4, 2.4) + .3 * sm(t, 7.8, 9), lit: t => sm(t, 7.8, 8.4) });
+      globe(Wd, () => 0); sealPedestal(Wd, () => 1);
+      const tp = t => [TILE_SEAL[0], TILE_SEAL[1] + bob(t, .05, .5), TILE_SEAL[2]];
+      heroStar(Wd, tp, { gold: () => 1, scaleFn: () => 1.05, spin0: 0 });
+      orb(Wd);
+      const bo = t => .75 + .4 * sm(t, 5.6, 6.5);
+      beam(Wd, tp, () => 1, t => bo(t) * (.9 + .1 * Math.sin(t * 3)));
+      thread(Wd, () => ORB, tp, { grow: t => ease.io(prog(t, 0, 1.2)), pulse: t => .5 + .5 * sm(t, 5.6, 6.5), speed: .5, dashes: 3 });
+      thread(Wd, tp, () => BOOK_TOP, { grow: t => ease.io(prog(t, 1.0, 2.2)), pulse: t => .5 + .5 * sm(t, 5.6, 6.5), speed: .5, dashes: 2, phase: .3 });
+      // dashed path toward the globe: appears, fades out (not about a practical result)
+      const dashes = []; for (let i = 0; i < 9; i++) { const d = box(.1, .035, .035, 0xf9e7a8, { inkW: .006, cast: false }); d.material.transparent = true; Wd.add(d); dashes.push(d); }
+      Wd.on(t => dashes.forEach((d, i) => { const u = (i + .5) / 9, a = prog(t, 2.7 + i * .1, 3.1 + i * .1) * (1 - prog(t, 3.9 + i * .06, 4.9)); d.visible = a > .01; d.material.opacity = a;
+        const p = tp(0); d.position.set(lerp(p[0] + .35, GLB[0] - .3, u), lerp(p[1], 2.5, u) + .35 * Math.sin(Math.PI * u), GLB[2]); d.rotation.z = -.15 + (u - .5) * -.9 * 0; }));
+      // sparks travelling up the thread: book -> tile -> orb
+      const sp = []; for (let i = 0; i < 5; i++) { const s = glow(.5, 0); Wd.add(s); sp.push(s); }
+      const L1 = Math.hypot(TILE_SEAL[0] - BOOK_TOP[0], TILE_SEAL[1] - BOOK_TOP[1], TILE_SEAL[2] - BOOK_TOP[2]), L2 = Math.hypot(ORB[0] - TILE_SEAL[0], ORB[1] - TILE_SEAL[1], ORB[2] - TILE_SEAL[2]);
+      Wd.on(t => sp.forEach((s, i) => { const u = (((t - 7.8) * .42 + i / 5) % 1 + 1) % 1, a = sm(t, 7.8, 8.5); s.visible = a > .01; const d = u * (L1 + L2); let p;
+        if (d < L1) { const k = d / L1; p = [lerp(BOOK_TOP[0], TILE_SEAL[0], k), lerp(BOOK_TOP[1], TILE_SEAL[1], k), lerp(BOOK_TOP[2], TILE_SEAL[2], k)]; } else { const k = (d - L1) / L2; p = [lerp(TILE_SEAL[0], ORB[0], k), lerp(TILE_SEAL[1], ORB[1], k), lerp(TILE_SEAL[2], ORB[2], k)]; }
+        s.position.set(...p); s.material.opacity = a * Math.sin(Math.PI * Math.min(1, u * 1.05)); s.scale.setScalar(.45 + .15 * Math.sin(t * 9 + i)); }));
+      heroCluster(Wd, () => [[.6, 3.0, -.7, 1.3, 2.2, 1.6]]);
+      const C = [.7, 2.2, 0], az = tween([[0, -8], [2.2, -8], [7.4, -8], [10.35, 17]], 'io');
+      return Object.assign(Wd, { cam: t => { const a = az(t) * Math.PI / 180, r = lerp(7.4, 7.0, prog(t, 0, 10.35)); return { pos: [C[0] + Math.sin(a) * r, 3.4, C[2] + Math.cos(a) * r], look: [C[0], C[1], C[2]], fov: 65 }; } });
+    } },
+    // ===================== s04: so many strange cases - to understand and toil =====================
+    { id: 's04', dur: 9.55, wide: true, caps: ['CAP_A_07', 'CAP_A_08'], capAt: [0.0, 4.45, 99], build() {
+      const Wd = newWorld(); setting(Wd);
+      stand(Wd, { warm: () => .6, glowK: () => .35, lit: () => 1 });
+      globe(Wd, t => sm(t, 3.1, 3.8) * .9);
+      orb(Wd);
+      const N = 10, tiles = [], LP = [0, 2.55, 1.35], SEL = 4;
+      for (let i = 0; i < N; i++) { const g = oddTile(i); Wd.add(g); tiles.push(g); }
+      Wd.on(t => tiles.forEach((g, i) => {
+        const rp = ringPos(ringAng(i, N, t)), pop = ease.out(prog(t, .3 + i * .15, .9 + i * .15)); let p = rp.slice(), sc = 1.15;
+        if (i === SEL) { const k = ease.io(prog(t, 5.6, 6.6)); p = [lerp(rp[0], LP[0], k), lerp(rp[1], LP[1], k), lerp(rp[2], LP[2], k)]; sc = 1.15 + .55 * k; }
+        g.visible = pop > .01; g.position.set(lerp(BOOK_TOP[0], p[0], pop), lerp(BOOK_TOP[1], p[1], pop) + (i === SEL && t > 6.6 ? bob(t, .03, .5) : 0), lerp(BOOK_TOP[2], p[2], pop)); g.scale.setScalar(Math.max(.01, sc * pop));
+        g.rotation.z = t * .3 + i; g.rotation.y = i === SEL ? ease.io(prog(t, 7.3, 9.4)) * 7.85 : .3 * Math.sin(t * .6 + i * 1.7); }));
+      // gears under the book
+      const gears = [[gear(.34, 10, NAVY), [-.55, .72, .62], 1], [gear(.26, 8, TEAL), [.12, .52, .62], -1.3], [gear(.2, 7, GOLD), [.52, .86, .62], 1.7]];
+      gears.forEach(([g, p], i) => { g.position.set(...p); Wd.add(g); });
+      Wd.on(t => gears.forEach(([g, p, sp], i) => { const k = ease.out(prog(t, 4.4 + i * .25, 5.0 + i * .25)); g.visible = k > .01; g.scale.setScalar(Math.max(.01, k)); g.userData.f.rotation.z = (t - 4.4) * sp * 1.1 + i; }));
+      // magnifying lens sweeps in and stops over the chosen tile
+      const lens = lensObj(); Wd.add(lens);
+      Wd.on(t => { const k = ease.io(prog(t, 4.7, 6.4)); lens.visible = k > .005; const S = [3.4, 3.8, 1.9], E = [LP[0] + .02, LP[1] + .02, LP[2] + .5];
+        lens.position.set(lerp(S[0], E[0], k), lerp(S[1], E[1], k) + .5 * Math.sin(Math.PI * k), lerp(S[2], E[2], k) + (t > 6.4 ? bob(t, .02, .6) : 0)); lens.scale.setScalar(1.15); lens.rotation.z = lerp(-.5, -.12, k); });
+      heroCluster(Wd, t => [[0, 2.2, .4, 1.8, 1.0, 1.7]]);
+      return Object.assign(Wd, { cam: path([[0, [0, 2.7, 4.4], [0, 1.7, 0], 65], [2.9, [0, 3.2, 6.6], [0, 1.9, .2], 65], [4.4, [.2, 3.0, 6.2], [0, 1.9, .3], 65], [6.3, [.3, 3.2, 4.4], [0, 2.3, .8], 63], [9.55, [.2, 3.1, 3.9], [0, 2.55, 1.0], 60]]) });
+    } },
+    // ===================== s05: piece after piece - tiles lock into the sphere of light =====================
+    { id: 's05', dur: 9.8, wide: true, caps: ['CAP_A_09', 'CAP_A_10'], capAt: [0.0, 4.5, 99], build() {
+      const Wd = newWorld(); setting(Wd);
+      stand(Wd, { warm: () => .6, glowK: () => .35, lit: () => 1 });
+      orb(Wd);
+      const r = rng(17), sc = [], locks = [3.9, 4.9, 6.4, 7.0, 7.4];
+      locks.forEach((a, j) => sc.push({ k: 6 + j, dep: a - .9, arr: a, S: [(r() - .5) * .4, 1.45, .1], kind: 'law', body: j % 2 ? NAVY : TEAL }));
+      for (let j = 0; j < 14; j++) { const a = 7.3 + j * .115 + .5; sc.push({ k: 11 + j, dep: a - .7, arr: a, S: [(r() - .5) * .6, 1.45, .1], kind: 'law', body: j % 2 ? NAVY : TEAL, bend: (r() - .5) * .8 }); }
+      sc.sort((x, y) => x.arr - y.arr);
+      const sph = sphereLight(Wd, 6, sc);
+      heroCluster(Wd, t => [[0, 3.6, -1.6, 1.3, 1.6, 1.2], [0, 1.5, 0, 1.0, .6, .5]]);
+      return Object.assign(Wd, { cam: path([[0, [0, 2.3, 5.0], [0, .95, 0], 65], [2.9, [0, 2.7, 5.6], [0, 2.15, -.3], 65], [9.8, [.1, 2.8, 5.3], [0, 2.3, -.3], 65]]) });
+    } },
+    // ===================== s06: the whole Torah - no point left out =====================
+    { id: 's06', dur: 8.31, wide: true, caps: ['CAP_A_11'], capAt: [0.0, 99], build() {
+      const Wd = newWorld(); setting(Wd);
+      stand(Wd, { warm: () => .6, glowK: () => .35, lit: () => 1 });
+      globe(Wd, () => .8);
+      orb(Wd);
+      const N = 10, tiles = [], r = rng(23), sc = [];
+      for (let i = 0; i < N; i++) { const dep = i * .11; sc.push({ k: 25 + i, dep, arr: dep + 1.0, S: ringPos(ringAng(i, N, dep)), kind: i, bend: (r() - .5) * .8 }); }
+      sc.push({ k: 35, dep: 2.1, arr: 3.1, S: [0, 1.45, .1], kind: 'law', body: NAVY });
+      // carousel tiles still orbiting until they depart (their flying copies take over)
+      for (let i = 0; i < N; i++) { const g = oddTile(i); g.scale.setScalar(1.15); Wd.add(g); tiles.push(g); }
+      Wd.on(t => tiles.forEach((g, i) => { const dep = i * .11; g.visible = t < dep; if (!g.visible) return; const p = ringPos(ringAng(i, N, t)); g.position.set(...p); g.rotation.z = t * .3 + i; }));
+      const sph = sphereLight(Wd, 25, sc, { bandY: t => (t > 4.1 && t < 6.5) ? lerp(SPH[1] + SPH_R + .3, SPH[1] - SPH_R - .3, ease.io(prog(t, 4.1, 6.3))) : null, glowMul: t => 1 + .7 * sm(t, 3.0, 3.8), glow2: t => .5 * sm(t, 2.7, 3.8) });
+      // the orb and the sphere join in one soft light
+      const jn = glow(5.5, 0); jn.position.set(0, 4.2, -2.2); Wd.add(jn); Wd.on(t => { jn.material.opacity = .75 * sm(t, 2.7, 3.8) * (1 + .1 * Math.sin(t * 1.5)); });
+      // scan band
+      const bandM = new THREE.MeshBasicMaterial({ color: 0xffeeb0, transparent: true, opacity: .5, depthWrite: false, side: THREE.DoubleSide, fog: false });
+      const band = new THREE.Mesh(new THREE.CylinderGeometry(SPH_R * 1.12, SPH_R * 1.12, .2, 48, 1, true), bandM); Wd.add(band);
+      Wd.on(t => { const y = (t > 4.1 && t < 6.5) ? lerp(SPH[1] + SPH_R + .3, SPH[1] - SPH_R - .3, ease.io(prog(t, 4.1, 6.3))) : null; band.visible = y !== null; if (y !== null) { band.position.set(SPH[0], y, SPH[2]); const e = Math.sqrt(Math.max(0, 1 - Math.pow((y - SPH[1]) / (SPH_R * 1.12), 2))); band.scale.set(Math.max(e, .05), 1, Math.max(e, .05)); bandM.opacity = .5 * Math.sin(Math.PI * prog(t, 4.1, 6.3)); } });
+      heroCluster(Wd, t => [[0, 3.15, -2.2, 1.3, 1.3, 1.1], [0, 4.8, -2.2, .8, .8, .5], [0, 1.2, 0, .8, .8, .5], [2.6, 1.7, .5, .5, .8, .5]]);
+      return Object.assign(Wd, { cam: path([[0, [0, 2.7, 5.6], [0, 2.15, -.3], 65], [4.1, [.1, 2.8, 5.8], [0, 2.1, -.3], 65], [6.3, [.9, 2.4, 9.3], [.9, 1.6, -.5], 65], [8.31, [.95, 2.45, 9.4], [.9, 1.65, -.5], 65]]) });
+    } },
+  ],
+});
+</script>
+</html>
