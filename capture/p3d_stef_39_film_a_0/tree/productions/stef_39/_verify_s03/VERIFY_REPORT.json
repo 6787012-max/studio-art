@@ -1,0 +1,22 @@
+{
+ "film": "film_a.html",
+ "status": "PASS",
+ "time": "2026-10-27T18:46:57",
+ "samples": 7,
+ "findings": [],
+ "sheets": {
+  "beat": "C:/projects/_studio-animatzia/productions/stef_39/_verify_s03/_view/_verify_s03_beat_sheet_1.jpg",
+  "seam": "C:/projects/_studio-animatzia/productions/stef_39/_verify_s03/_view/_verify_s03_seams_1.jpg",
+  "phone": "C:/projects/_studio-animatzia/productions/stef_39/_verify_s03/_view/_verify_s03_phone_sheet_1.jpg"
+ },
+ "partial": {
+  "shot": "s03",
+  "note": "one-shot run, NOT a whole-film report"
+ },
+ "timing": {
+  "ready_s": 1.5,
+  "gates_s": 26.8,
+  "sheets_s": 11.9,
+  "total_s": 40.5
+ }
+}

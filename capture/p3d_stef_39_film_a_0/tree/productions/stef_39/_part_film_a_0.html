@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>stef_39 film A</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>window.__T0=0.0000; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": {
+  "three": "../../node_modules/three/build/three.module.js",
+  "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+// stef_39 / film A: graphics layer (369.38 s, silent). No Hebrew here: captions, title and kicker are vault IDs only.
+import { film, THREE, ease, prog, clamp, lerp, orbit, rng } from '../../lib/stage3d.js';
+import { K, PAL, sm, lp3, A3, POP, CAM, mkWorld, motes, ground, house, crate, thread, halo, fbasket, horn, river, coin, pouch, sack, grain, square4,
+  field, bundle, sheaf, fprint, unit, checkMark, prohib, balance, clockRing, heroProxy, glow, scroll, topiary } from './ye.js';
+
+// ---------- helpers ----------
+function mkS(o) {
+  o = o || {}; const cx = o.cx || 0, Wd = mkWorld(Object.assign({ cx, ext: o.ext || 18, span: o.span }, o.world));
+  motes(Wd, o.motes || 36, o.seed || 1, Object.assign({ cx, w: 28, z0: -6, z1: 7 }, o.moteO));
+  if (!o.noTop) { topiary(Wd, cx - 11.5, 6.5, 1.15); topiary(Wd, cx + 11.8, 7.2, 1.3); }
+  return { Wd };
+}
+function heroOn(Wd, obj, w, h) { w = w || 8; h = h || 5.6; const p = heroProxy(Wd, [0, h / 2, 0], [w, h, 2]); Wd.on(() => { p.position.set(obj.position.x, h / 2, obj.position.z); }); Wd.hero = p; return p; }
+const kf = (t, keys) => { if (t <= keys[0][0]) return keys[0][1]; for (let i = 0; i < keys.length - 1; i++) { if (t <= keys[i + 1][0]) return lerp(keys[i][1], keys[i + 1][1], ease.io(prog(t, keys[i][0], keys[i + 1][0]))); } return keys[keys.length - 1][1]; };
+const pulse = (t, a, b, c, d) => sm(t, a, b) * (1 - sm(t, c, d));
+const HOME = [0, .06, 1.6];
+const dimTo = (t, a, b, lo) => 1 - (1 - (lo === undefined ? .15 : lo)) * sm(t, a, b);
+
+// ---------- s01 : title - house, crate on the path, thread, basket ----------
+function s01() {
+  const { Wd } = mkS({ seed: 1, motes: 48 }); ground(Wd, {}); const u = unit(Wd, {}); heroOn(Wd, u.c.g);
+  Wd.on(t => { u.draw(t, { cp: [0, .06 + .05 * Math.abs(Math.sin(t * 1.1)) * sm(t, 3, 4), 1.6], cry: .25 * Math.sin(t * .6), sag: .55 + .08 * Math.sin(t * .9) }); });
+  return Object.assign(Wd, { cam: CAM([-1.5, 13, 19], [0, 1.6, .5], [0, 6.4, 16], [0, 1.7, .5], 7.65) });
+}
+
+// ---------- s02 : verse scroll unrolls; crate glides home along the thread ----------
+function s02() {
+  const { Wd } = mkS({ seed: 2 }); ground(Wd, {}); const u = unit(Wd, {}); heroOn(Wd, u.c.g);
+  const sc = scroll(Wd, 6.4, 4.0); sc.g.position.set(0, 9.6, -5);
+  Wd.on(t => {
+    sc.set(prog(t, .4, 3.8)); const gu = ease.io(prog(t, 3.8, 9.2));
+    u.draw(t, { lit: .6 + .4 * sm(t, 8.8, 9.6), cp: A3(HOME, u.home(), gu, .45), cry: 1.1 * gu, sag: .5 * (1 - .6 * gu), ckH: POP(t, 9.8, 10.5) });
+  });
+  return Object.assign(Wd, { cam: CAM([-1, 6.8, 17], [-1.5, 3.2, 0], [-1.5, 6.0, 13.5], [-2.5, 2.6, 0], 12.47) });
+}
+
+// ---------- s03 : crate returns home; then a second crate: thread snaps, hops into the basket ----------
+function s03() {
+  const { Wd } = mkS({ seed: 3 }); ground(Wd, {}); const u1 = unit(Wd, {}), u2 = unit(Wd, { house: u1.h, basket: u1.bk }); heroOn(Wd, u2.c.g);
+  Wd.on(t => {
+    const gu = ease.io(prog(t, .6, 4.8)), lit = dimTo(t, 8.0, 8.7, .25) + .15 * sm(t, 12.2, 13.0);
+    u1.draw(t, { lit, cp: A3(HOME, u1.home(), gu, .45), cry: 1.1 * gu, sag: .5 * (1 - .6 * gu), thr: 1 - sm(t, 5.0, 5.5), ckH: POP(t, 4.9, 5.4) * (1 - sm(t, 5.9, 6.4)) });
+    const bu = POP(t, 5.8, 6.5), mv = ease.io(prog(t, 10.0, 12.0)), bp = A3([2.6, .06, 1.9], u1.bk.inside(), mv, 1.3);
+    u2.draw(t, { lit, cp: bp, cs: Math.max(bu * (1 - .45 * mv), 1e-4), thr: bu * (1 - sm(t, 10.1, 10.4)), br: 1 - .5 * sm(t, 7.2, 7.8), flick: pulse(t, 7.2, 7.5, 7.9, 8.0), thin: 1 - .6 * sm(t, 7.2, 7.9), snap: prog(t, 7.9, 8.8), sag: .5 + .6 * sm(t, 7, 7.8),
+      halo: sm(t, 8.8, 9.6) * (1 - sm(t, 10.0, 10.6)), ckB: POP(t, 12.2, 12.9) });
+  });
+  return Object.assign(Wd, { cam: CAM([-3, 6.5, 15.5], [-1.5, 1.8, .5], [3.5, 6.5, 15], [2.5, 1.8, .5], 13.69) });
+}
+
+// ---------- s04 : close on one crate: window dims, thread flickers, thins, snaps; halo; crate to the basket ----------
+function s04() {
+  const { Wd } = mkS({ seed: 4 }); ground(Wd, { pw: 18, px: -1 }); const u = unit(Wd, { hx: -6, hz: -1.2, cx: -.4, bx: 4.4, bz: 1.8 }); heroOn(Wd, u.c.g);
+  Wd.on(t => {
+    const mv = ease.io(prog(t, 10.6, 14.6));
+    u.draw(t, { lit: dimTo(t, 1.0, 6.8, .12), br: 1 - .55 * sm(t, 2.5, 6.4), thin: 1 - .7 * sm(t, 3.0, 6.2), flick: pulse(t, 2.6, 3.0, 6.3, 6.5) * (.6 + .4 * Math.sin(t)), sag: .45 + .5 * sm(t, 3, 6.2), snap: prog(t, 6.3, 7.5),
+      cp: A3([-.4, .06, 1.6], u.bk.inside(), mv, 1.3), cs: 1 - .45 * mv, halo: sm(t, 8.0, 8.8) * (1 - sm(t, 10.5, 11.2)), ckB: POP(t, 15.0, 15.7) });
+  });
+  return Object.assign(Wd, { cam: orbit([-1.2, 1.7, 1.0], 11.5, 4.4, -10, 10, 0, 18.55, 44) });
+}
+
+// ---------- s05 : flood - river rises, sweeps the crate, thread stretches and snaps, basket at the bend ----------
+function s05() {
+  const { Wd } = mkS({ seed: 5, ext: 22, span: 80, cx: 6 }); ground(Wd, { path: false, w: 80, cx: 6 });
+  Wd.add(box_(10, 1.5, 6, 0xE5D7B6, [-9, .65, -7]));
+  const hs = house(Wd, 1); hs.place(-9, -7, .55, 1.4); const rv = river(Wd, 90, 7); rv.g.position.set(10, 0, -.2); const bk = fbasket(Wd, 1.3);
+  const u = unit(Wd, { house: hs, basket: bk }); heroOn(Wd, u.c.g);
+  const cpAt = (t, wt) => { const dr = ease.io(prog(t, 3.4, 13.0)), sw = sm(t, 3.4, 4.6);
+    return [lerp(-3, 16.2, dr), lerp(.06, wt - .12, sw) + .07 * Math.sin(t * 2.4) * sw, lerp(3.9, 1.3, ease.out(prog(t, 3.4, 5.2))) + .18 * Math.sin(t * 1.6) * sw]; };
+  Wd.on(t => {
+    const lvl = ease.io(prog(t, 1.8, 5.0)); rv.level(lvl, t); const wt = .42 * (1 + .55 * lvl);
+    bk.g.position.set(17.6, wt - .3 + .1 * Math.sin(t * 1.7), 1.0); bk.g.rotation.z = .05 * Math.sin(t * 1.3);
+    const p0 = cpAt(Math.min(t, 13.0), wt), mv = ease.io(prog(t, 13.0, 14.2)), cp = A3(p0, bk.inside(), mv, 1.2);
+    u.draw(t, { lit: dimTo(t, 6.9, 7.9, .12), cp, cs: 1 - .45 * mv, cry: .5 * Math.sin(t * .9) * sm(t, 3.4, 4.6), thin: 1 - .6 * sm(t, 5.5, 7.2), flick: pulse(t, 6.3, 6.6, 7.1, 7.2), sag: .7 * (1 - sm(t, 4.5, 7)) + .2, snap: prog(t, 7.2, 8.2),
+      hp: [p0[0], wt + .03, p0[2]], halo: sm(t, 8.4, 9.2) * (1 - sm(t, 13.0, 13.5)), ckB: POP(t, 14.6, 15.3) });
+  });
+  return Object.assign(Wd, { cam: t => { const e = ease.io(prog(t, 0, 17.47)), x = lerp(-2, 12, e); return { pos: [x, lerp(5, 11.5, e), 17], look: [x + 1.5, lerp(1.6, .8, e), 0], fov: 44 }; } });
+}
+function box_(w, h, d, c, p) { const m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), new THREE.MeshLambertMaterial({ color: c })); m.position.set(...p); m.receiveShadow = true; return m; }
+
+// ---------- calm backdrop under a clip ----------
+function calm(seed, dur, v) {
+  const { Wd } = mkS({ seed, motes: 64, moteO: { w: 30, z0: -8, z1: 6 } }); ground(Wd, {});
+  const u = unit(Wd, { hx: -8.4, hz: -1.4, hry: .35, cx: 6.3, cz: 1.9, bx: 9.0, bz: 1.7 }); heroOn(Wd, u.c.g);
+  Wd.on(t => { u.draw(t, { lit: .6 + .3 * Math.sin(t * .7 + v), thr: 0, cp: [6.3, .06, 1.9], cry: .3 * v }); });
+  const dir = v % 2 ? 1 : -1;
+  return Object.assign(Wd, { cam: CAM([-.3 * dir, 4.4, 13.2], [0, 1.8, 0], [.3 * dir, 4.7, 13.7], [0, 1.8, 0], dur) });
+}
+const s06 = () => calm(6, 15.55, 1), s07 = () => calm(7, 16.55, 2), s08 = () => calm(8, 25.55, 3), s09 = () => calm(9, 14.55, 4), s11 = () => calm(11, 20.55, 5),
+  s13 = () => calm(13, 13.85, 6), s15 = () => calm(15, 6.05, 7), s18 = () => calm(18, 17.05, 8), s19 = () => calm(19, 5.75, 9);
+
+// ---------- coin scene (s10 and s21) ----------
+function coinScene(Wd, P) {
+  ground(Wd, {}); const hs = house(Wd, 1); hs.place(-7.5, -1.5, .45); const po = pouch(hs.g); po.g.position.set(1.22, 1.62, 1.74);
+  const th = thread(Wd), bk = fbasket(Wd, 1.3); bk.g.position.set(7.6, 0, 1.7); const ck = checkMark(1.4); Wd.add(ck.g);
+  const LX = [-3.6, -2.4, -1.2, 0, 1.2, 2.4, 3.6], LZ = [1.2, 2.1, 1.35, 2.2, 1.1, 1.95, 1.5], cn = LX.map(() => coin(Wd)), hl = LX.map(() => halo(Wd, .62));
+  const n = LX.length, lastRoll = P.roll + .35 * (n - 1) + 1.5;
+  const upd = t => {
+    hs.lit(dimTo(t, P.dim, P.dim + .4, .12)); const sh = pulse(t, P.shake, P.shake + .12, P.shake + .75, P.shake + 1.0); po.shake(sh, t);
+    cn.forEach((c, i) => {
+      const ts = P.ts0 + P.gap * i, u = prog(t, ts, ts + .9), land = [LX[i], .06, LZ[i]], ru = prog(t, P.roll + .35 * i, P.roll + .35 * i + 1.5);
+      if (t < ts) { c.set(land, 0, 0, 0); } else if (ru <= 0) {
+        const p = A3(hs.hp, land, u, 1.5), lb = .12 * Math.sin(Math.PI * prog(t, ts + .9, ts + 1.25)); c.set([p[0], p[1] + lb, p[2]], 0, t * 9 * (1 - u) + i, 1);
+      } else if (ru < 1) {
+        const rl = prog(ru, 0, .7);
+        if (rl < 1 || ru < .7) { const x = lerp(land[0], 5.3, ease.io(prog(ru, 0, .7))), z = lerp(land[2], 1.7, ease.io(prog(ru, 0, .7))); c.set([x, .06, z], sm(ru, 0, .1) * (1 - sm(ru, .66, .7)), (x - land[0]) / .34, 1); }
+        if (ru >= .7) { const hu = prog(ru, .7, 1), p = A3([5.3, .06, 1.7], bk.inside(), ease.io(hu), 1.2); c.set(p, 0, hu * 6, 1 - .5 * hu); }
+      } else c.set(land, 0, 0, 0);
+      hl[i].set(sm(t, P.snap + .4, P.snap + 1.1) * (1 - sm(ru, 0, .1)), t, land);
+    });
+    const thr = sm(t, P.ts0 + .3, P.ts0 + 1.2) * (1 - sm(t, lastRoll - 1, lastRoll - .5));
+    th.set(hs.wp, [.3, .5, 1.7], { br: .45 + .55 * sm(t, P.ts0, P.ts0 + 4), snap: prog(t, P.snap, P.snap + .45), sag: .55, vis: thr, flick: pulse(t, P.snap - .3, P.snap - .2, P.snap - .05, P.snap) }, t);
+    ck.set(POP(t, lastRoll + .1, lastRoll + .8)); ck.g.position.set(bk.rim()[0], bk.rim()[1] + 1.9 + .06 * Math.sin(t * 1.8), bk.rim()[2] + .3);
+  };
+  return { hs, po, upd };
+}
+function s10() {
+  const { Wd } = mkS({ seed: 10 }); const S = coinScene(Wd, { ts0: 1.0, gap: .75, dim: 6.75, shake: 6.45, snap: 7.0, roll: 9.0 }); heroOn(Wd, S.hs.g, 10, 5.6); Wd.on(S.upd);
+  return Object.assign(Wd, { cam: t => { const a = ease.io(prog(t, 0, 6.4)), b = ease.io(prog(t, 6.4, 15.31));
+    return { pos: lp3(lp3([-1, 5.5, 15], [-3.2, 3.6, 9.5], a), [1, 6.2, 16], b), look: lp3(lp3([-2, 2, .5], [-5.6, 1.6, 1.0], a), [.5, 1.6, 1.2], b), fov: 44 }; } });
+}
+function s21() {
+  const { Wd } = mkS({ seed: 21 }); const S = coinScene(Wd, { ts0: -20, gap: .1, dim: 12.9, shake: 12.55, snap: 13.0, roll: 14.4 }); heroOn(Wd, S.hs.g, 10, 5.6); Wd.on(S.upd);
+  const ck = clockRing(Wd, { pos: [-.5, 7.2, -.5], R: 1.1 });
+  Wd.on(t => { ck.set(prog(t, 6.48, 12.48)); ck.g.position.y = 7.2 + .05 * Math.sin(t * 1.3); ck.fade(POP(t, 4.6, 5.4) * (1 - sm(t, 12.5, 13.2))); });
+  return Object.assign(Wd, { cam: t => { const u = ease.io(prog(t, 0, 22.28)); return { pos: [lerp(-2, 2, u), 8.6, 15.4], look: [0, 3.0, .6], fov: 44 }; } });
+}
+
+// ---------- s12 : a kav in four cubits - sack tips, grain spreads thin, thread sags and snaps ----------
+function s12() {
+  const { Wd } = mkS({ seed: 12, ext: 20 }); ground(Wd, { path: false }); const hs = house(Wd, 1); hs.place(-9.5, -2.2, .5);
+  const sq = square4(Wd, 2, .8, 3.6), sk = sack(Wd); sk.g.position.set(-3.1, 0, 1.0); const gr = grain(Wd, 46, 12); gr.setup(2, .8, 3.6, 1.6, 5.4);
+  const th = thread(Wd), ha = halo(Wd, 1.2), hb = halo(Wd, 4.6); heroOn(Wd, sk.g);
+  const tilt = t => -1.3 * ease.io(prog(t, 1.0, 2.6)) + .06 * Math.sin(t * 3) * pulse(t, 1.6, 2.2, 5.6, 6.0);
+  Wd.on(t => {
+    sq.set(POP(t, .1, 1.0), t); sk.tilt(tilt(t)); const mouthAt = ts => { sk.tilt(tilt(ts)); return sk.mouth(); }; gr.set(t, mouthAt, sm(t, 8.2, 9));
+    sk.tilt(tilt(t)); const sg = .5 + 1.7 * sm(t, 3.5, 6.4);
+    hs.lit(dimTo(t, 6.6, 7.4, .12)); th.set(hs.wp, [-3.1, 1.3, 1.0], { sag: sg, thin: 1 - .6 * sm(t, 5, 6.6), br: 1 - .4 * sm(t, 5, 6.6), flick: pulse(t, 6.0, 6.3, 6.6, 6.7), snap: prog(t, 6.7, 8.0) }, t);
+    ha.set(sm(t, 8.0, 8.8), t, [-3.1, 0, 1.0]); hb.set(sm(t, 8.6, 9.6) * .8, t, [2, 0, .8]);
+  });
+  return Object.assign(Wd, { cam: t => { const e = ease.io(prog(t, 0, 13.69)); return { pos: [lerp(-5, 3, e), lerp(8.5, 13.5, e), lerp(14.5, 13, e)], look: [lerp(0, 1.5, e), 0.8, 1.2], fov: 44 }; } });
+}
+
+// ---------- s14 : gleanings - baskets leave, threads snap, new basket picks the loose stalks ----------
+function s14() {
+  const { Wd } = mkS({ seed: 14, ext: 22, cx: 4, span: 70 }); ground(Wd, { path: true, pz: 2.9, pd: 4.2, cx: 4, pw: 40 });
+  const fd = field(Wd, -10, 12, -5.2, -.4, 14); Wd.hero = heroProxy(Wd, [3, 2.8, -2.5], [10, 5.6, 4]);
+  const BX = [0, 2.3, 4.6, 6.9], bu = BX.map(() => bundle(Wd)), th = BX.map(() => thread(Wd)), hl = BX.map(() => halo(Wd, .8));
+  const gb = [0, 1, 2, 3].map(() => fbasket(Wd, .62)), nb = fbasket(Wd, 1.0), ck = checkMark(1.3); Wd.add(ck.g);
+  const bxK = [[9.2, -6.5], [10.2, 0], [10.9, 0], [11.5, 2.3], [12.2, 2.3], [12.8, 4.6], [13.5, 4.6], [14.1, 6.9], [14.8, 6.9]];
+  Wd.on(t => {
+    fd.set(t); const X = lerp(-10, 24, ease.io(prog(t, .3, 11.5)));
+    gb.forEach((b, j) => { b.g.position.set(X - 2.2 * j, 0, 4.0); b.g.visible = true; });
+    const nbx = kf(t, bxK); nb.g.position.set(nbx, 0, 3.7);
+    BX.forEach((x, i) => {
+      const rest = [x, .08, 2.5], tp = 10.2 + 1.0 + 0; const arr = [10.2, 11.5, 12.8, 14.1][i], hu = prog(t, arr, arr + .6), inside = nb.inside();
+      const p = hu <= 0 ? rest : A3(rest, [inside[0], inside[1] + .1, inside[2]], ease.io(hu), 1.0);
+      bu[i].g.position.set(p[0], p[1], p[2]); bu[i].g.scale.setScalar(hu >= 1 ? .6 : 1 - .4 * hu); bu[i].g.rotation.y = hu >= 1 ? 1.2 : 0;
+      const sn = prog(t, 7.9 + .12 * i, 8.9 + .12 * i), tgt = gb[i].rim();
+      th[i].set([x, .5, 2.5], tgt, { br: 1, thin: 1 - .5 * sm(t, 7.0, 7.9), flick: pulse(t, 7.3, 7.5, 7.9, 8.0), sag: .6, snap: sn, vis: 1 - sm(t, arr - .3, arr) }, t);
+      hl[i].set(sm(t, 9.0 + .1 * i, 9.8 + .1 * i) * (1 - sm(t, arr - .1, arr + .3)), t, rest);
+    });
+    ck.set(POP(t, 15.0, 15.7)); const r = nb.rim(); ck.g.position.set(r[0], r[1] + 1.8 + .06 * Math.sin(t * 1.8), r[2] + .3);
+  });
+  return Object.assign(Wd, { cam: CAM([-1, 7.2, 15.5], [1, 1.5, 1.8], [6, 7.2, 15.5], [5, 1.5, 1.8], 16.39) });
+}
+
+// ---------- sign scenes (s16 and s22) ----------
+function signScene(Wd, P) {
+  ground(Wd, {}); const u = unit(Wd, { tag: true, noBasket: true, cx: -1, cz: 1.7 }); const hn = horn(Wd); hn.g.position.set(3.2, 0, 3.4); hn.g.rotation.y = -.55; heroOn(Wd, u.c.g);
+  const pg = glow(Wd, 2.4, 0x3FE8D8);
+  const upd = t => {
+    const fl = t > P.fl0 && t < P.fl1 ? ((Math.sin(t * 11) + Math.sin(t * 7.3)) > .3 ? 1 : .3) : 1;
+    const ha = pulse(t, P.horn, P.horn + .3, P.hornEnd, P.hornEnd + .6); hn.ringFx(ha, t);
+    const pu = prog(t, P.pulse, P.pulse + 1.8), gu = ease.io(prog(t, P.glide, P.glide + 3.2));
+    const tg = sm(t, P.fl0 + .5, P.fl0 + 1.5) * .55 + .45 * sm(t, P.horn - .2, P.horn + .6) + .0;
+    u.draw(t, { lit: fl, cp: A3([-1, .06, 1.7], u.home(), gu, .5), cry: 1.0 * gu, tagG: Math.min(1, tg) * (.85 + .15 * Math.sin(t * 5)) , sag: .5 * (1 - .6 * gu), ckH: POP(t, P.glide + 3.3, P.glide + 4.0) });
+    const q = pu > 0 && pu < 1 ? u.th.at(1 - pu) : [0, -9, 0]; pg.s.position.set(q[0], q[1], q[2]); pg.set(pu > 0 && pu < 1 ? .95 * Math.sin(Math.PI * pu) : 0);
+  };
+  return { upd, u, hn };
+}
+function s16() {
+  const { Wd } = mkS({ seed: 16 }); const S = signScene(Wd, { fl0: 1.0, fl1: 7.3, horn: 7.6, hornEnd: 12.0, pulse: 10.4, glide: 12.8 }); Wd.on(S.upd);
+  return Object.assign(Wd, { cam: t => { const e = ease.io(prog(t, 2, 15)); return { pos: lp3([5.6, 4.0, 11], [-2.2, 4.4, 13], e), look: lp3([2.4, 2.5, 3.2], [-5, 1.8, .5], e), fov: 44 }; } });
+}
+function s22() {
+  const { Wd } = mkS({ seed: 22 }); const S = signScene(Wd, { fl0: .8, fl1: 11.6, horn: 11.9, hornEnd: 16.0, pulse: 14.3, glide: 16.4 }); Wd.on(S.upd);
+  const ck = clockRing(Wd, { pos: [-1, 5.9, -.5], R: 1.0 });
+  Wd.on(t => { ck.set(prog(t, 5.67, 11.67)); ck.g.position.y = 5.9 + .05 * Math.sin(t * 1.3); ck.fade(POP(t, 3.6, 4.4) * (1 - sm(t, 11.72, 12.4))); });
+  return Object.assign(Wd, { cam: CAM([-3, 9.2, 14.2], [-1, 2.0, 1.4], [2.5, 9.6, 13.6], [0, 2.0, 1.4], 21.02) });
+}
+
+// ---------- s17 : small sheaf on a busy road - trampled, thread snaps, slides to the basket ----------
+function s17() {
+  const { Wd } = mkS({ seed: 17 }); ground(Wd, { pd: 4.6, pz: 1.7 }); const u = unit(Wd, { hx: -7.5, hz: -2.2, hry: .5, cz: 1.7 }); const sh = sheaf(Wd), fp = []; for (let i = 0; i < 16; i++) fp.push(fprint(Wd));
+  u.c.g.visible = false; heroOn(Wd, sh.g);
+  Wd.on(t => {
+    fp.forEach((f, k) => { const ts = 1.6 + .42 * k, x = -4.6 + .6 * k, z = 1.7 + (k % 2 ? .38 : -.38); f.set(x, z, prog(t, ts, ts + .22), 0); });
+    const tr = sm(t, 3.8, 5.4), mv = ease.io(prog(t, 9.0, 11.4)); sh.trample(tr * (1 - .35 * mv));
+    const bp = A3([0, .06, 1.7], [u.bk.g.position.x, u.bk.rim()[1] - .2, u.bk.g.position.z], mv, 1.2); sh.g.position.set(bp[0], bp[1], bp[2]); sh.g.scale.setScalar(1 - .35 * mv);
+    u.draw(t, { lit: dimTo(t, 7.0, 7.9, .12), cs: .0001, b: [bp[0], bp[1] + 1.3, bp[2]], cp: [0, .06, 1.7], br: 1 - .55 * sm(t, 4.4, 6.0), thin: 1 - .6 * sm(t, 4.6, 6.4), flick: pulse(t, 4.8, 5.1, 6.9, 7.0) * .8, sag: .6, snap: prog(t, 6.9, 7.9),
+      hp: [0, .06, 1.7], halo: sm(t, 8.0, 8.8) * (1 - sm(t, 9.2, 9.8)), ckB: POP(t, 11.7, 12.4) });
+  });
+  return Object.assign(Wd, { cam: t => { const e = ease.io(prog(t, 1.5, 10)); return { pos: [lerp(-4.5, 0, e), lerp(2.3, 7.8, e), lerp(10, 15.5, e)], look: [lerp(2, 1, e), lerp(1.1, 1.5, e), 1.7], fov: 44 }; } });
+}
+
+// ---------- s20 : yeush without knowing - dotted thread, scales tip to the red bar, solid thread, crate goes home ----------
+function s20() {
+  const { Wd } = mkS({ seed: 20 }); ground(Wd, {}); const u = unit(Wd, { cx: 1.8, noBasket: true }); heroOn(Wd, u.c.g);
+  const bl = balance(Wd, 1.0); bl.g.position.set(5.6, 0, -.6); const rd = prohib(Wd, .55), gk = checkMark(.9); Wd.add(gk.g);
+  Wd.on(t => {
+    const ap = POP(t, 1.0, 2.0); bl.g.scale.setScalar(Math.max(ap, 1e-4)); bl.g.visible = ap > .01;
+    const tilt = t < 7.2 ? .05 * Math.sin(t * 1.4) * sm(t, 2, 3) : lerp(.05 * Math.sin(7.2 * 1.4), .32, ease.out(prog(t, 7.2, 9.2))) + .015 * Math.sin(t * 2) * sm(t, 9.2, 10); bl.set(tilt);
+    const tk = POP(t, 2.3, 3.1); const L = bl.panTop(0), R = bl.panTop(1);
+    rd.g.position.set(L[0], L[1] + .65, L[2]); rd.pop(tk); rd.bar(ease.io(prog(t, 2.6, 3.4))); gk.g.position.set(R[0], R[1] + .62, R[2]); gk.set(tk * ap);
+    const gu = ease.io(prog(t, 10.6, 14.6)), sol = ease.io(prog(t, 9.0, 10.4));
+    u.draw(t, { lit: 1, dot: 1 - sol, br: .75 + .25 * sol, cp: A3([1.8, .06, 1.7], u.home(), gu, .5), cry: gu, sag: .5 * (1 - .5 * gu), ckH: POP(t, 14.9, 15.6) });
+  });
+  return Object.assign(Wd, { cam: orbit([-.5, 1.8, .5], 17, 6.4, -13, 13, 0, 16.93, 44) });
+}
+
+// ---------- s23 : summary glide - four mini stations ----------
+function s23() {
+  const WP = [[0, 0], [3.0, 0], [4.6, 16], [8.4, 16], [9.9, 32], [12.6, 32], [14.2, 48], [18.25, 48]];
+  const cxf = t => { for (let i = 0; i < WP.length - 1; i++) { if (t <= WP[i + 1][0]) return lerp(WP[i][1], WP[i + 1][1], ease.io(prog(t, WP[i][0], WP[i + 1][0]))); } return 48; };
+  const { Wd } = mkS({ seed: 23, cx: 24, ext: 30, span: 70, motes: 80, moteO: { w: 80, z0: -6, z1: 5 }, noTop: true }); ground(Wd, { cx: 24, w: 100, path: false });
+  const sunRef = Wd.sun; const mini = (c, o) => unit(Wd, Object.assign({ hx: c - 5.4, hz: -1.4, hs: .8, cx: c + .3, cz: 1.7, bx: c + 4.9, bz: 1.8, bs: 1.0, ck: 1.0, hr: .9 }, o || {}));
+  [0, 16, 48].forEach(c => ground(Wd, { cx: c + 1, w: 1, d: 1, pw: 14, pd: 2.6, px: 0, pz: 1.7 }));
+  const A = mini(0), B = mini(16), C = mini(32, { noBasket: true, cx: 32 - 2.6 }), D = mini(48, { tag: true, noBasket: true, cx: 48 - .5 });
+  const rv = river(Wd, 4.6, 3.4); rv.g.position.set(31.1, 0, .3); const th2 = thread(Wd), cn = [0, 1, 2, 3].map(() => coin(Wd)), hl = [0, 1, 2, 3].map(() => halo(Wd, .5));
+  const hn = horn(Wd); hn.g.position.set(50.6, 0, 3.2); hn.g.rotation.y = -.55; const hh = heroProxy(Wd, [0, 2.2, 0], [9, 4.4, 2]); Wd.hero = hh;
+  Wd.on(t => {
+    const cx = cxf(t); hh.position.x = cx; sunRef.position.set(cx - 6, 14, 9); sunRef.target.position.set(cx, 0, 0); sunRef.target.updateMatrixWorld();
+    // A: crate returns home
+    const ga = ease.io(prog(t, .5, 2.8)); A.draw(t, { cp: A3([.3, .06, 1.7], A.home(), ga, .4), cry: ga, sag: .5 * (1 - .6 * ga), ckH: POP(t, 2.9, 3.5) });
+    // B: snap and basket
+    const mv = ease.io(prog(t, 6.4, 8.0)), lb = dimTo(t, 4.8, 5.6, .25);
+    B.draw(t, { lit: lb, cp: A3([16.3, .06, 1.7], B.bk.inside(), mv, 1.0), cs: 1 - .45 * mv, br: 1 - .4 * sm(t, 4.6, 5.0), flick: pulse(t, 4.6, 4.8, 5.1, 5.2), snap: prog(t, 5.1, 6.0), halo: sm(t, 6.0, 6.6) * (1 - sm(t, 6.6, 7.0)), thr: 1, ckB: POP(t, 8.1, 8.7) });
+    // C: river with drifting crate (snapped thread) and coins with snapped thread
+    rv.level(.6, t); const dx = 32 - 3.2 + 3.4 * ((t * .45) % 1); const wt = .42 * 1.33;
+    C.draw(t, { lit: dimTo(t, 9.9, 10.6, .15), cp: [dx, wt - .1 + .05 * Math.sin(t * 2), .3], br: 1, snap: prog(t, 10.0, 10.9), hp: [dx, wt + .03, .3], halo: sm(t, 10.9, 11.6) });
+    cn.forEach((c, i) => { c.set([35.0 + 1.1 * i, .06, 1.9 + .4 * (i % 2)], 0, 0, 1); hl[i].set(sm(t, 11.0 + .1 * i, 11.7 + .1 * i), t, [35.0 + 1.1 * i, 0, 1.9 + .4 * (i % 2)]); });
+    th2.set(C.h.wp, [36.5, .4, 2.0], { snap: prog(t, 10.2, 11.0), sag: .6, flick: pulse(t, 9.95, 10.1, 10.2, 10.3) * .8, vis: 1 }, t);
+    // D: tag, strong thread, horn
+    D.draw(t, { lit: t > 14.4 && t < 16.4 ? ((Math.sin(t * 11) + Math.sin(t * 7.3)) > .3 ? 1 : .35) : 1, cp: [47.5, .06, 1.7], tagG: sm(t, 14.6, 15.4) * (.85 + .15 * Math.sin(t * 5)), br: 1 });
+    hn.ringFx(pulse(t, 15.4, 15.7, 17.9, 18.2), t);
+  });
+  return Object.assign(Wd, { cam: t => { const x = cxf(t); return { pos: [x, 6.4, 14.6], look: [x, 1.9, .6], fov: 44 }; } });
+}
+
+// ---------- s24 : credits, evening ----------
+function s24() {
+  const { Wd } = mkS({ seed: 24, motes: 60, moteO: { w: 22 }, world: { skyTop: 0xF3D5A8, skyBottom: 0xF7E3C0, fogColor: 0xF3DDB8, hemi: 1.15, sun: .9, sunColor: 0xFFC890, floor: ['#EBD9B8', '#E2CFA9', '#E6D3AF'], arch: [0xE8CFA8, 0xDFC499], glass: 0xF6C99B } });
+  ground(Wd, {}); const u = unit(Wd, { hx: -3.4, hz: -1.0, hs: 1.25, hry: .3, cx: 0, bx: 8.5, bs: 1.1 }); heroOn(Wd, u.c.g); const hm = u.home();
+  Wd.on(t => { u.draw(t, { lit: .92 + .08 * Math.sin(t * 1.4), cp: [hm[0] - .1, .06, hm[2] + .3], cry: .5, thr: 0 }); });
+  return Object.assign(Wd, { cam: CAM([-.4, 4.8, 13.8], [-.5, 1.8, 0], [.5, 4.2, 15.6], [-.3, 1.8, 0], 7.45) });
+}
+
+film({
+  title: 'TITLE', kicker: 'KICKER', vault: 'captions_vault.json',
+  shots: [
+    { id: 's01', dur: 7.65, caps: [], build: s01 },
+    { id: 's02', dur: 12.47, caps: ['CAP_s02_1'], capAt: [0.3], build: s02 },
+    { id: 's03', dur: 13.69, caps: ['CAP_s03_1', 'CAP_s03_2'], capAt: [0.3, 5.75], build: s03 },
+    { id: 's04', dur: 18.55, caps: ['CAP_s04_1', 'CAP_s04_2'], capAt: [0.3, 7.79], build: s04 },
+    { id: 's05', dur: 17.47, caps: ['CAP_s05_1', 'CAP_s05_2'], capAt: [0.3, 7.34], build: s05 },
+    { id: 's06', dur: 15.55, caps: ['CAP_s06_1', 'CAP_s06_2'], capAt: [0.2, 7.4], build: s06 },
+    { id: 's07', dur: 16.55, caps: ['CAP_s07_1', 'CAP_s07_2'], capAt: [0.2, 8.0], build: s07 },
+    { id: 's08', dur: 25.55, caps: ['CAP_s08_1', 'CAP_s08_2', 'CAP_s08_3'], capAt: [0.2, 8.3, 16.6], build: s08 },
+    { id: 's09', dur: 14.55, caps: ['CAP_s09_1', 'CAP_s09_2'], capAt: [0.2, 7.0], build: s09 },
+    { id: 's10', dur: 15.31, caps: ['CAP_s10_1', 'CAP_s10_2'], capAt: [0.3, 6.43], build: s10 },
+    { id: 's11', dur: 20.55, caps: ['CAP_s11_1', 'CAP_s11_2'], capAt: [0.2, 10.0], build: s11 },
+    { id: 's12', dur: 13.69, caps: ['CAP_s12_1', 'CAP_s12_2'], capAt: [0.3, 5.75], build: s12 },
+    { id: 's13', dur: 13.85, caps: ['CAP_s13_1', 'CAP_s13_2'], capAt: [0.2, 6.6], build: s13 },
+    { id: 's14', dur: 16.39, caps: ['CAP_s14_1', 'CAP_s14_2'], capAt: [0.3, 6.88], build: s14 },
+    { id: 's15', dur: 6.05, caps: ['CAP_s15_1'], capAt: [0.2], build: s15 },
+    { id: 's16', dur: 17.47, caps: ['CAP_s16_1', 'CAP_s16_2'], capAt: [0.3, 7.34], build: s16 },
+    { id: 's17', dur: 15.31, caps: ['CAP_s17_1', 'CAP_s17_2'], capAt: [0.3, 6.43], build: s17 },
+    { id: 's18', dur: 17.05, caps: ['CAP_s18_1', 'CAP_s18_2'], capAt: [0.2, 8.2], build: s18 },
+    { id: 's19', dur: 5.75, caps: ['CAP_s19_1'], capAt: [0.2], build: s19 },
+    { id: 's20', dur: 16.93, caps: ['CAP_s20_1', 'CAP_s20_2'], capAt: [0.3, 7.11], build: s20 },
+    { id: 's21', dur: 22.28, caps: ['CAP_s21_1', 'CAP_s21_2'], capAt: [0.3, 12.48], build: s21 },
+    { id: 's22', dur: 21.02, caps: ['CAP_s22_1', 'CAP_s22_2'], capAt: [0.3, 11.67], build: s22 },
+    { id: 's23', dur: 18.25, caps: ['CAP_s23_1', 'CAP_s23_2'], capAt: [0.3, 9.12], build: s23 },
+    { id: 's24', dur: 7.45, caps: ['CAP_s24_1'], capAt: [0.3], build: s24 },
+  ],
+});
+</script>
+</html>
