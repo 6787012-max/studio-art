@@ -1,0 +1,17 @@
+{
+  "render_includes": [
+    "lib/figure3d.js",
+    "lib/geo_eretz.js",
+    "lib/glb3d.js",
+    "lib/motion3d.js",
+    "lib/people_pro.js",
+    "lib/stage3d.js",
+    "node_modules/three/build/three.core.js",
+    "node_modules/three/build/three.module.js",
+    "node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js",
+    "node_modules/three/examples/jsm/loaders/GLTFLoader.js",
+    "node_modules/three/examples/jsm/utils/BufferGeometryUtils.js",
+    "node_modules/three/examples/jsm/utils/SkeletonUtils.js",
+    "productions/stef_38/wt.js"
+  ]
+}
