@@ -1,0 +1,4 @@
+05:03:00 render_all: production=khs_74 films=film_a part=50s hq=True dry_run=False
+05:03:06 budget WARN: ahead of pace - continue sparingly: spent $1729 of $2600 (cap $2340), allowed by now $1491 (116% of pace) [render]
+05:03:06 verify gate: PASS for film_a
+05:03:06 film_a: length 57.4s, rendering (part 50 s, 7 includes)
