@@ -1,0 +1,40 @@
+{
+ "film": "film_a.html",
+ "status": "PASS",
+ "time": "2026-10-27T21:21:41",
+ "samples": 143,
+ "findings": [
+  {
+   "sev": "P2",
+   "code": "HERO_SMALL",
+   "t": 375.95,
+   "shot": "s22",
+   "detail": "hero height 26% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  },
+  {
+   "sev": "P2",
+   "code": "HERO_SMALL",
+   "t": 400.3,
+   "shot": "s23",
+   "detail": "hero height 19% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  }
+ ],
+ "sheets": {
+  "beat": "D:/video-projects/kolhalashon-avshalom-schneider/_shorts_tools/ketzarim/k13_review/verify/_view/verify_beat_sheet_1.jpg",
+  "seam": "D:/video-projects/kolhalashon-avshalom-schneider/_shorts_tools/ketzarim/k13_review/verify/_view/verify_seams_1.jpg",
+  "phone": "D:/video-projects/kolhalashon-avshalom-schneider/_shorts_tools/ketzarim/k13_review/verify/_view/verify_phone_sheet_1.jpg",
+  "beat_2": "D:/video-projects/kolhalashon-avshalom-schneider/_shorts_tools/ketzarim/k13_review/verify/_view/verify_beat_sheet_2.jpg",
+  "beat_3": "D:/video-projects/kolhalashon-avshalom-schneider/_shorts_tools/ketzarim/k13_review/verify/_view/verify_beat_sheet_3.jpg",
+  "phone_2": "D:/video-projects/kolhalashon-avshalom-schneider/_shorts_tools/ketzarim/k13_review/verify/_view/verify_phone_sheet_2.jpg",
+  "seam_2": "D:/video-projects/kolhalashon-avshalom-schneider/_shorts_tools/ketzarim/k13_review/verify/_view/verify_seams_2.jpg",
+  "seam_3": "D:/video-projects/kolhalashon-avshalom-schneider/_shorts_tools/ketzarim/k13_review/verify/_view/verify_seams_3.jpg"
+ },
+ "timing": {
+  "ready_s": 5.4,
+  "gates_s": 375.0,
+  "sheets_s": 244.4,
+  "total_s": 625.5
+ }
+}
