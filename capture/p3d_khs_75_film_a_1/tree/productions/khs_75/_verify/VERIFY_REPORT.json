@@ -1,0 +1,28 @@
+{
+ "film": "film_a.html",
+ "status": "PASS",
+ "time": "2026-10-27T11:17:18",
+ "samples": 28,
+ "findings": [
+  {
+   "sev": "P2",
+   "code": "HERO_SMALL",
+   "t": 27.05,
+   "shot": "s03",
+   "detail": "hero height 26% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  }
+ ],
+ "sheets": {
+  "beat": "C:/projects/_studio-animatzia/productions/khs_75/_verify/_view/_verify_beat_sheet_1.jpg",
+  "seam": "C:/projects/_studio-animatzia/productions/khs_75/_verify/_view/_verify_seams_1.jpg",
+  "phone": "C:/projects/_studio-animatzia/productions/khs_75/_verify/_view/_verify_phone_sheet_1.jpg",
+  "phone_2": "C:/projects/_studio-animatzia/productions/khs_75/_verify/_view/_verify_phone_sheet_2.jpg"
+ },
+ "timing": {
+  "ready_s": 1.7,
+  "gates_s": 99.3,
+  "sheets_s": 33.4,
+  "total_s": 134.8
+ }
+}
