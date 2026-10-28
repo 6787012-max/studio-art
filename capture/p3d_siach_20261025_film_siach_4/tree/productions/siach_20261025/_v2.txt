@@ -1,0 +1,14 @@
+PASS
+
+P2 notes:
+P2 | HERO_SMALL | t=6.46 | s01 | hero height 23% of frame in the key shot (< 35%)
+P2 | HERO_SMALL | t=131.83 | s12 | hero height 28% of frame in the key shot (< 35%)
+P2 | HERO_SMALL | t=153.88 | s14 | hero height 33% of frame in the key shot (< 35%)
+
+Sheets (CLEAN, safe to Read):
+  beat: C:/projects/_studio-animatzia/productions/siach_20261025/_verify/_view/_verify_beat_sheet_1.jpg
+  seam: C:/projects/_studio-animatzia/productions/siach_20261025/_verify/_view/_verify_seams_1.jpg
+  phone: C:/projects/_studio-animatzia/productions/siach_20261025/_verify/_view/_verify_phone_sheet_1.jpg
+  seam_2: C:/projects/_studio-animatzia/productions/siach_20261025/_verify/_view/_verify_seams_2.jpg
+  seam_3: C:/projects/_studio-animatzia/productions/siach_20261025/_verify/_view/_verify_seams_3.jpg
+SUMMARY | PASS | samples=98 | dur=239.4 | P0=0 P1=0 P2=3 | {"ready_s": 17.0, "gates_s": 444.5, "sheets_s": 186.7, "total_s": 650.0}

@@ -1,0 +1,4 @@
+10:03:19 render_all: production=siach_20261025 films=film_siach part=50s hq=True dry_run=False
+10:03:35 budget WARN: ahead of pace - continue sparingly: spent $2254 of $2600 (cap $2340), allowed by now $1895 (119% of pace) [render]
+10:03:35 verify gate: PASS for film_siach
+10:03:35 film_siach: length 239.4s, rendering (part 50 s, 8 includes)
