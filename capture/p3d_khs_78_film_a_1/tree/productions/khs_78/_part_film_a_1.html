@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>khs 78 film a</title>
+<style>html,body{margin:0;background:#000}canvas{display:block;width:100vw;height:auto}</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script>window.__T0=29.1800; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+// khs_78 / film_a - portrait 1080x1920, objects only: a navy sphere held away from its golden socket; spring + blocks release it home.
+// shot durations + caption times from khs_78/timeline.json (58.36 s). Captions are vault IDs only (zero Hebrew in code).
+import { film, world, path, THREE, prog, ease, clamp, lerp, rng, mesh, toon, canvasTex, ink } from '../../lib/stage3d.js';
+
+const NAVY = 0x23407a, GOLD = 0xf2b33d, GOLDD = 0xea9f14, TERRA = 0xc8643c, TERRA2 = 0xa4472b, SAGE = 0x7fb597, SAGE2 = 0x9fcbb0, FLOOR = 0xf4f1e8, INKC = 0x2b3a44;
+const TAU = Math.PI * 2, PI = Math.PI, UPV = new THREE.Vector3(0, 1, 0);
+const sm = (t, a, b) => ease.sm(prog(t, a, b));
+const SOCK = [-2.2, 1.3, 0], SPH_IN = [-2.2, 1.92, 0], SPH_R = [2.2, 1.22, 0], SR = .72, PEND = [-.6, 0, 1.6], PYAW = -PI / 3;
+const NB = 40, HS = 1.0;
+
+let GT = null;
+const glowTex = () => GT || (GT = canvasTex(128, 128, (g, w, h) => { const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.35, 'rgba(255,255,255,.5)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }));
+const glow = (size, op, tint) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), color: tint === undefined ? 0xffc94d : tint, depthWrite: false, transparent: true, fog: false, opacity: op === undefined ? .6 : op })); s.scale.set(size, size, 1); s.renderOrder = 10; return s; };
+const mk = (geo, color, o) => { o = o || {}; return mesh(geo, toon(color, o.mat), Object.assign({ inkW: .016, inkColor: INKC }, o)); };
+
+function cam(keys) {
+  return path(keys.map(([t, p, tg, f, raw]) => {
+    f = f || 68; const d = Math.hypot(p[0] - tg[0], p[1] - tg[1], p[2] - tg[2]), off = raw ? 0 : .30 * Math.tan(f * PI / 360) * d;
+    return [t, p, [tg[0], tg[1] - off, tg[2]], f];
+  }));
+}
+function heroCluster(Wd, fn) {
+  const g = new THREE.Group(), m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()); m.visible = false; g.add(m); Wd.add(g);
+  Wd.on(t => { const bs = fn(t).filter(Boolean); if (!bs.length) return; const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (const b of bs) for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], b[k] - b[k + 3]); hi[k] = Math.max(hi[k], b[k] + b[k + 3]); }
+    g.position.set((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2); g.scale.set(Math.max(hi[0] - lo[0], .01), Math.max(hi[1] - lo[1], .01), Math.max(hi[2] - lo[2], .01)); });
+  Wd.hero = g; return g;
+}
+const BARGEO = new THREE.CylinderGeometry(1, 1, 1, 8);
+function makeBar(S, r) {
+  const core = new THREE.Mesh(BARGEO, new THREE.MeshBasicMaterial({ color: 0xf0a81c, transparent: true, opacity: 1, depthWrite: false, fog: false })),
+    halo = new THREE.Mesh(BARGEO, new THREE.MeshBasicMaterial({ color: 0xffcf5a, transparent: true, opacity: .3, depthWrite: false, fog: false }));
+  core.visible = halo.visible = false; core.renderOrder = 12; halo.renderOrder = 11; S.add(core); S.add(halo); const d = new THREE.Vector3();
+  return { set(A, B, k, a, hop) { a = a === undefined ? 1 : a; hop = hop === undefined ? 1 : hop; const on = k > .01 && a > .01; core.visible = halo.visible = on; if (!on) return;
+    d.set(B[0] - A[0], B[1] - A[1], B[2] - A[2]); const L = Math.max(d.length(), 1e-4); d.multiplyScalar(1 / L);
+    for (const m of [core, halo]) { m.position.set(A[0] + d.x * L * k / 2, A[1] + d.y * L * k / 2, A[2] + d.z * L * k / 2); m.quaternion.setFromUnitVectors(UPV, d); }
+    core.scale.set(r, L * k, r); halo.scale.set(r * (2 + 2.5 * hop), L * k, r * (2 + 2.5 * hop)); core.material.opacity = a; halo.material.opacity = .35 * a * hop; } };
+}
+function makeThread(S, N, rad) {
+  const bars = []; for (let i = 0; i < N; i++) bars.push(makeBar(S, rad)); const P = []; for (let i = 0; i <= N; i++) P.push([0, 0, 0]);
+  return { set(A, B, k, amp, t, a, hop) {
+    if (k < .01) { bars.forEach(b => b.set(A, B, 0)); return; }
+    for (let j = 0; j <= N; j++) { const u = j / N * k, e = Math.sin(PI * u), p = P[j];
+      p[0] = A[0] + (B[0] - A[0]) * u; p[1] = A[1] + (B[1] - A[1]) * u + amp * e * Math.sin(t * 26); p[2] = A[2] + (B[2] - A[2]) * u + amp * .7 * e * Math.cos(t * 19); }
+    for (let i = 0; i < N; i++) bars[i].set(P[i], P[i + 1], 1, a, hop); } };
+}
+const bez = (A, C, B, u) => { const a = (1 - u) * (1 - u), b = 2 * (1 - u) * u, c = u * u; return [a * A[0] + b * C[0] + c * B[0], a * A[1] + b * C[1] + c * B[1], a * A[2] + b * C[2] + c * B[2]]; };
+function rrShape(w, h, r) { const s = new THREE.Shape(), a = w / 2, b = h / 2; s.moveTo(-a + r, -b); s.lineTo(a - r, -b); s.quadraticCurveTo(a, -b, a, -b + r); s.lineTo(a, b - r); s.quadraticCurveTo(a, b, a - r, b); s.lineTo(-a + r, b); s.quadraticCurveTo(-a, b, -a, b - r); s.lineTo(-a, -b + r); s.quadraticCurveTo(-a, -b, -a + r, -b); return s; }
+const blockGeo = (w, h, d) => { const g = new THREE.ExtrudeGeometry(rrShape(w - .2, h - .2, .12), { depth: d - .2, bevelEnabled: true, bevelThickness: .1, bevelSize: .1, bevelSegments: 3, curveSegments: 6 }); g.center(); return g; };
+function placeSeg(m, A, B, r) { const d = new THREE.Vector3(B[0] - A[0], B[1] - A[1], B[2] - A[2]), L = Math.max(d.length(), 1e-4); d.multiplyScalar(1 / L); m.position.set((A[0] + B[0]) / 2, (A[1] + B[1]) / 2, (A[2] + B[2]) / 2); m.quaternion.setFromUnitVectors(UPV, d); m.scale.set(r, L, r); }
+// crack lines (dark) with optional gold leak, drawn progressively; local coords on a face
+function makeCracks(parent, paths, z, w, gw) {
+  const segs = []; let tot = 0; const dk = new THREE.MeshBasicMaterial({ color: 0x1c2630 }), gl = new THREE.MeshBasicMaterial({ color: 0xffc43a, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending });
+  for (const p of paths) for (let i = 0; i < p.length - 1; i++) { const a = p[i], b = p[i + 1], L = Math.hypot(b[0] - a[0], b[1] - a[1]), ang = Math.atan2(b[1] - a[1], b[0] - a[0]);
+    const m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), dk), g = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), gl.clone()); m.visible = g.visible = false; parent.add(m); parent.add(g); segs.push({ a, ang, L, m, g, c0: tot }); tot += L; }
+  return { set(k, gk) { const run = k * tot;
+    for (const s of segs) { const f = clamp((run - s.c0) / s.L, 0, 1), on = f > .001; s.m.visible = on; s.g.visible = on && gk > .01 && !!gw; if (!on) continue; const l = s.L * f, cx = s.a[0] + Math.cos(s.ang) * l / 2, cy = s.a[1] + Math.sin(s.ang) * l / 2;
+      s.m.position.set(cx, cy, z); s.m.rotation.z = s.ang; s.m.scale.set(l + w * .6, w, .02);
+      if (s.g.visible) { s.g.position.set(cx, cy, z - .004); s.g.rotation.z = s.ang; s.g.scale.set(l + w, gw, .02); s.g.material.opacity = .8 * gk; } } } };
+}
+
+// ---------------- the scene (shared by every shot; each shot supplies a state function of local time) ----------------
+const DEF = { sph: SPH_R, sq: 1, jit: 0, sphGlow: 0, inSock: false, sockGlow: .5, burst: -1, tagK: 0, thK: 0, thAmp: 0, thGlow: .4, dots: 0, dotsA: 1, clampY: null, ripT: [], spring: null, blocks: null, cr4: 0, cr4g: 0, pend: null,
+  beads: false, inch: 0, flyT: null, lines: null, ringOp: 0, shaft: 0, tilt: 0 };
+function makeScene(Wd, st) {
+  const S = Wd.scene, r = rng(7), out = {};
+  // ---- environment
+  const gnd = new THREE.Mesh(new THREE.CircleGeometry(130, 64), toon(FLOOR, { emissive: 0xf4f1e8, emissiveIntensity: .28 })); gnd.rotation.x = -PI / 2; gnd.receiveShadow = true; S.add(gnd);
+  for (let n = 0; n < 7; n++) { const m = new THREE.Mesh(new THREE.RingGeometry(3.2 + n * 2.2, 3.28 + n * 2.2, 80), new THREE.MeshBasicMaterial({ color: n % 2 ? SAGE2 : 0xd9ead9, transparent: true, opacity: .55 })); m.rotation.x = -PI / 2; m.position.set(-2.2, .012, 0); S.add(m); }
+  for (let n = 0; n < 44; n++) { const a = r() * TAU, R = 4 + r() * 20, m = new THREE.Mesh(new THREE.CircleGeometry(.35 + r() * .7, 18), new THREE.MeshBasicMaterial({ color: n % 3 ? SAGE2 : 0xe3efdc })); m.rotation.x = -PI / 2; m.position.set(-2.2 + Math.cos(a) * R * .9, .014, Math.sin(a) * R); S.add(m); }
+  for (let n = 0; n < 16; n++) { const a = n / 16 * TAU + r() * .3, R = 52 + r() * 16, sc = 10 + r() * 9, h = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 12), toon(n % 2 ? SAGE : SAGE2)); h.scale.set(sc * 1.7, sc * .38, sc * 1.1); h.position.set(Math.sin(a) * R, -sc * .05, Math.cos(a) * R); h.rotation.y = a; S.add(h); }
+  [[-13, -9], [14, -8], [-20, -18], [22, -20], [-9, -24], [6, -28], [0, -36], [-26, -30], [28, -34], [17, -16], [-17, -14], [-24, 8], [25, 6]].forEach(([x, z], n) => { const g = new THREE.Group(); g.position.set(x, 0, z); g.scale.setScalar(1.3 + (n % 3) * .4); S.add(g);
+    g.add(mk(new THREE.CylinderGeometry(.12, .15, .9, 10), 0xd9c7a6, { pos: [0, .45, 0], inkW: .02 })); g.add(mk(new THREE.SphereGeometry(.8, 18, 12), n % 2 ? SAGE : SAGE2, { pos: [0, 1.45, 0], inkW: .025 })); });
+  [[-8, -5], [9, -4], [-12, 2], [12, 5], [-5, -9], [5, -10], [0, -14], [-15, -6], [18, -4], [-3, 9]].forEach(([x, z], n) => S.add(mk(new THREE.SphereGeometry(.6, 16, 10), n % 2 ? SAGE2 : SAGE, { pos: [x, .35, z], scale: [1.3, .8, 1.1], inkW: .02 })));
+  for (let n = 0; n < 6; n++) { const g = new THREE.Group(); [[0, 0, 1], [1.1, -.1, .7], [-1.1, -.15, .7]].forEach(([x, y, s]) => { const m = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .92 })); m.scale.set(s * 2.2, s * .6, s * 1.2); m.position.set(x * 2, y, 0); g.add(m); });
+    g.position.set(-40 + n * 17, 20 + (n % 2) * 5, -52 - (n % 3) * 6); g.scale.setScalar(2.2); S.add(g); }
+  // ---- pedestal + socket
+  S.add(mk(new THREE.CylinderGeometry(1.15, 1.2, .18, 40), 0xffffff, { pos: [-2.2, .09, 0], inkW: .02 }));
+  S.add(mk(new THREE.CylinderGeometry(.72, .86, 1.0, 40), 0xffffff, { pos: [-2.2, .68, 0], inkW: .02 }));
+  S.add(mk(new THREE.CylinderGeometry(.98, .98, .12, 40), 0xffffff, { pos: [-2.2, 1.2, 0], inkW: .02 }));
+  const ringG = new THREE.Mesh(new THREE.TorusGeometry(.62, .13, 12, 40), toon(GOLD, { emissive: GOLD, emissiveIntensity: .6 })); ringG.rotation.x = PI / 2; ringG.position.set(-2.2, 1.3, 0); ringG.castShadow = true; ink(ringG, .015, INKC); S.add(ringG);
+  const sockDisc = new THREE.Mesh(new THREE.CircleGeometry(.52, 32), new THREE.MeshBasicMaterial({ color: 0xffd36b })); sockDisc.rotation.x = -PI / 2; sockDisc.position.set(-2.2, 1.32, 0); S.add(sockDisc);
+  const sockGl = glow(3.6, .5, 0xffc94d); sockGl.position.set(-2.2, 1.6, 0); S.add(sockGl);
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(.9, 1.9, 9, 32, 1, true), new THREE.MeshBasicMaterial({ color: 0xffe08a, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide, fog: false })); shaft.position.set(-2.2, 5.6, 0); shaft.renderOrder = 5; S.add(shaft);
+  // ---- terracotta platform
+  S.add(mk(new THREE.CylinderGeometry(1.5, 1.55, .5, 48), TERRA, { pos: [2.2, .25, 0], inkW: .02 }));
+  S.add(mk(new THREE.TorusGeometry(1.5, .08, 10, 48), 0xd77a50, { pos: [2.2, .5, 0], rot: [PI / 2, 0, 0], inkW: .012 }));
+  // ---- sphere + highlight + tag
+  const sph = new THREE.Group(); S.add(sph);
+  const bodyMat = toon(NAVY, { emissive: 0x3a63c0, emissiveIntensity: 0 }), body = new THREE.Mesh(new THREE.SphereGeometry(SR, 40, 28), bodyMat); body.castShadow = true; ink(body, .03, INKC); sph.add(body);
+  const hl = new THREE.Mesh(new THREE.CircleGeometry(.2, 20), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .55, depthWrite: false })); const hn = new THREE.Vector3(.25, .65, .72).normalize().multiplyScalar(SR * 1.006); hl.position.copy(hn); hl.lookAt(hn.clone().multiplyScalar(2)); sph.add(hl);
+  const tag = new THREE.Group(); S.add(tag); const TN = new THREE.Vector3(-.4, .3, .87).normalize();
+  tag.add(mk(new THREE.TorusGeometry(.25, .055, 10, 28), GOLD, { inkW: .012, mat: { emissive: GOLD, emissiveIntensity: .5 } }));
+  tag.add(mk(new THREE.CylinderGeometry(.19, .19, .06, 24), 0xffe08a, { rot: [PI / 2, 0, 0], pos: [0, 0, .01], inkW: .01, mat: { emissive: 0xffd36b, emissiveIntensity: .3 } }));
+  tag.visible = false;
+  // ---- thread + dots
+  const thread = makeThread(S, 20, .04);
+  const dots = []; for (let i = 0; i < 16; i++) { const m = new THREE.Mesh(new THREE.SphereGeometry(.1, 10, 8), new THREE.MeshBasicMaterial({ color: GOLDD, transparent: true })); m.visible = false; m.renderOrder = 12; S.add(m); dots.push(m); }
+  // ---- clamp (two crossing arches)
+  const clamp3 = new THREE.Group(); clamp3.position.set(2.2, 0, 0); S.add(clamp3);
+  const a1 = mk(new THREE.TorusGeometry(1.0, .1, 10, 40, PI), TERRA2, { pos: [0, 1.22, 0], inkW: .02 }); clamp3.add(a1);
+  const a2 = mk(new THREE.TorusGeometry(1.0, .1, 10, 40, PI), TERRA2, { pos: [0, 1.22, 0], rot: [0, PI / 2, 0], inkW: .02 }); clamp3.add(a2);
+  for (const [x, z] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) clamp3.add(mk(new THREE.CylinderGeometry(.1, .1, .72, 12), TERRA2, { pos: [x, .86, z], inkW: .02 }));
+  clamp3.visible = false;
+  // ---- ripples
+  const rip = [0, 1, 2, 3].map(() => { const m = new THREE.Mesh(new THREE.RingGeometry(.94, 1, 48), new THREE.MeshBasicMaterial({ color: 0xf0a81c, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide })); m.rotation.y = PI / 2; m.visible = false; m.renderOrder = 12; S.add(m); return m; });
+  // ---- spring
+  const spG = new THREE.Group(); spG.position.set(2.2, .5, 0); S.add(spG);
+  const spMat = toon(GOLD, { emissive: 0xffb830, emissiveIntensity: 0 });
+  { const pts = []; for (let i = 0; i <= 90; i++) { const a = i / 90 * 5 * TAU; pts.push(new THREE.Vector3(Math.cos(a) * .46, i / 90, Math.sin(a) * .46)); }
+    const sp = new THREE.Mesh(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 220, .08, 8, false), spMat); sp.castShadow = true; ink(sp, .012, INKC); spG.add(sp); }
+  const spTop = mk(new THREE.CylinderGeometry(.58, .58, .07, 28), GOLD, { inkW: .012, mat: { emissive: GOLD, emissiveIntensity: .3 } }); S.add(spTop);
+  const spBot = mk(new THREE.CylinderGeometry(.6, .6, .06, 28), GOLD, { pos: [2.2, .53, 0], inkW: .012 }); S.add(spBot);
+  const spGl = glow(3.4, 0, 0xffc94d); S.add(spGl); spG.visible = spTop.visible = spBot.visible = spGl.visible = false;
+  // ---- blocks
+  const BS = [[1.35, .55, 1.1, 0xb5583a], [1.45, .6, 1.15, 0xa04c33], [1.55, .65, 1.2, 0x8c4130], [1.95, .95, 1.4, 0x7a3a2a]], blocks = [];
+  BS.forEach((b, i) => { const g = new THREE.Group(), m = new THREE.Mesh(blockGeo(b[0], b[1], b[2]), toon(b[3])); m.castShadow = m.receiveShadow = true; ink(m, .025, INKC, true); g.add(m); g.visible = false; S.add(g); blocks.push({ g, m, base: new THREE.Color(b[3]) }); });
+  const b4 = blocks[3], cr4 = makeCracks(b4.g, [[[-.1, .47], [-.22, .2], [.05, -.05], [-.12, -.47]], [[.5, .47], [.36, .22], [.58, 0], [.48, -.47]], [[-.62, .47], [-.5, .12], [-.72, -.2], [-.66, -.47]], [[.05, -.05], [.3, -.2], [.26, -.47]]], 0.71, .045, .12);
+  const b4gl = glow(3.2, 0, 0xffc43a); b4.g.add(b4gl); b4gl.position.z = .9;
+  // ---- pendulum
+  const pg = new THREE.Group(); pg.position.set(...PEND); pg.rotation.y = PYAW; S.add(pg); pg.visible = false;
+  for (const x of [-1.1, 1.1]) { pg.add(mk(new THREE.CylinderGeometry(.075, .075, 1.6, 12), 0xffffff, { pos: [x, .8, 0], inkW: .018 })); pg.add(mk(new THREE.BoxGeometry(.55, .1, .55), 0xffffff, { pos: [x, .05, 0], box: true, inkW: .015 })); }
+  pg.add(mk(new THREE.TorusGeometry(1.1, .075, 10, 40, PI), 0xffffff, { pos: [0, 1.6, 0], inkW: .018 })); pg.add(mk(new THREE.SphereGeometry(.11, 12, 8), 0xffffff, { pos: [0, 2.7, 0], inkW: .012 }));
+  const PL = 2.0, TH0 = .62, PIV = [0, 2.7, 0];
+  const ball = mk(new THREE.SphereGeometry(.36, 24, 16), SAGE, { inkW: .022 }); pg.add(ball);
+  const strMat = new THREE.MeshBasicMaterial({ color: 0x55656e }), str = new THREE.Mesh(BARGEO, strMat), pull = new THREE.Mesh(BARGEO, new THREE.MeshBasicMaterial({ color: 0x55656e })); pg.add(str); pg.add(pull);
+  pg.add(mk(new THREE.CylinderGeometry(.2, .24, 1.3, 16), TERRA2, { pos: [3.0, .65, 0], inkW: .02 }));
+  const hookG = new THREE.Group(); hookG.position.set(2.4, 1.07, 0); pg.add(hookG);
+  hookG.add(mk(new THREE.BoxGeometry(.9, .24, .24), TERRA, { box: true, inkW: .02 }));
+  const hookRing = mk(new THREE.TorusGeometry(.22, .07, 10, 24), TERRA, { pos: [-.55, 0, 0], inkW: .016 }); hookG.add(hookRing);
+  const hcr = makeCracks(hookG, [[[-.12, .12], [-.04, .02], [-.14, -.12]], [[.1, .12], [.2, 0], [.1, -.12]], [[.3, .12], [.24, -.02]]], .125, .034, 0);
+  const pcA = mk(new THREE.BoxGeometry(.5, .24, .24), TERRA, { box: true, inkW: .02 }), pcB = mk(new THREE.TorusGeometry(.22, .07, 10, 24), TERRA, { inkW: .016 }); pg.add(pcA); pg.add(pcB); pcA.visible = pcB.visible = false;
+  // ---- beads + pull lines + ring outline
+  const bd = [], lines = [], SC = [], HM = [], rb = rng(21);
+  const avoid = [[-8, -5], [9, -4], [-12, 2], [12, 5], [-5, -9], [5, -10], [-3, 9], [2.2, 0]];
+  for (let i = 0; i < NB; i++) {
+    let p, tries = 0; do { const a = rb() * TAU, rr = 3.6 + rb() * 8.5; p = [-2.2 + Math.cos(a) * rr * .85, .17, Math.sin(a) * rr * 1.1]; tries++; } while (tries < 30 && (Math.abs(p[0] + 2.2) > 8.4 || avoid.some(([x, z]) => Math.hypot(p[0] - x, p[2] - z) < 2.0)));
+    SC.push(p); const ha = i / NB * TAU; HM.push([-2.2 + Math.cos(ha) * 2.5, .17, Math.sin(ha) * 2.5]);
+    const m = mk(new THREE.SphereGeometry(.14 + .04 * ((i * 7) % 3) / 2, 16, 12), NAVY, { inkW: .018 }); m.visible = false; S.add(m); bd.push(m); lines.push(makeBar(S, .03)); }
+  const ringO = new THREE.Mesh(new THREE.TorusGeometry(2.5, .045, 8, 80), new THREE.MeshBasicMaterial({ color: 0xf0a81c, transparent: true, opacity: 0, depthWrite: false })); ringO.rotation.x = PI / 2; ringO.position.set(-2.2, .05, 0); S.add(ringO);
+  const ringH = new THREE.Mesh(new THREE.TorusGeometry(2.5, .16, 8, 80), new THREE.MeshBasicMaterial({ color: 0xffcf5a, transparent: true, opacity: 0, depthWrite: false })); ringH.rotation.x = PI / 2; ringH.position.set(-2.2, .04, 0); S.add(ringH);
+  // ---- burst
+  const bR = new THREE.Mesh(new THREE.RingGeometry(.94, 1, 56), new THREE.MeshBasicMaterial({ color: 0xf0a81c, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide })); bR.rotation.x = -PI / 2; bR.position.set(-2.2, 1.35, 0); bR.visible = false; S.add(bR);
+  const bGl = glow(7, 0, 0xffd36b); bGl.position.set(...SOCK); S.add(bGl);
+  const bp = [], rr2 = rng(5); for (let i = 0; i < 14; i++) { const a = i / 14 * TAU, e = .3 + rr2() * .9, m = new THREE.Mesh(new THREE.SphereGeometry(.1, 8, 6), new THREE.MeshBasicMaterial({ color: GOLDD, transparent: true })); m.visible = false; S.add(m); bp.push({ m, d: [Math.cos(a), e, Math.sin(a)], sp: 1.6 + rr2() * 1.6 }); }
+
+  const beadPos = (i, inch, flyU) => { const A = SC[i], H = HM[i], q = [lerp(A[0], H[0], inch), lerp(A[1], H[1], inch), lerp(A[2], H[2], inch)]; if (flyU <= 0) return q; if (flyU >= 1) return H; return bez(q, [(q[0] + H[0]) / 2, 2.4, (q[2] + H[2]) / 2], H, ease.io(flyU)); };
+  const tmp = new THREE.Color(), grey = new THREE.Color(0xcdbdb0);
+
+  Wd.on(t => {
+    const d = Object.assign({}, DEF, st(t)), sp = d.sph;
+    sph.position.set(sp[0] + (d.jit ? d.jit * Math.sin(t * 38) : 0), sp[1] + (d.jit ? d.jit * .7 * Math.sin(t * 31 + 1) : 0), sp[2]);
+    sph.scale.set(1 + (1 - d.sq) * .5, d.sq, 1 + (1 - d.sq) * .5); bodyMat.emissiveIntensity = d.sphGlow;
+    // socket
+    sockDisc.visible = !d.inSock; sockGl.material.opacity = clamp(d.sockGlow, 0, 1) * (d.inSock ? .9 : .75); sockGl.scale.setScalar(d.inSock ? 5.2 : 3.6); ringG.material.emissiveIntensity = .4 + .5 * d.sockGlow;
+    shaft.material.opacity = .22 * d.shaft; shaft.visible = d.shaft > .01;
+    // tag
+    const tk = d.tagK; tag.visible = tk > .01;
+    if (tag.visible) { const e = ease.out(tk), sc = e * (1 + .2 * Math.sin(PI * tk)), dist = .8 + .9 * (1 - e); tag.position.set(sph.position.x + TN.x * dist, sph.position.y + TN.y * dist, sph.position.z + TN.z * dist); tag.scale.setScalar(Math.max(sc, .001)); tag.lookAt(tag.position.x + TN.x, tag.position.y + TN.y, tag.position.z + TN.z); }
+    // thread
+    const A = [sph.position.x + TN.x * .8, sph.position.y + TN.y * .8, sph.position.z + TN.z * .8], B = [-2.2, 1.55, 0];
+    thread.set(A, B, tk > .9 ? d.thK : 0, d.thAmp, t, 1, d.thGlow);
+    // dots
+    for (let i = 0; i < 16; i++) { const k = clamp(d.dots * 17 - i, 0, 1), m = dots[i]; m.visible = k > .01 && d.dotsA > .01; if (!m.visible) continue; const p = bez([2.0, 2.15, 0], [0, 5.0, 0], [-2.0, 1.75, 0], (i + .5) / 16); m.position.set(...p); m.scale.setScalar(ease.out(k) * (1 + .15 * Math.sin(t * 6 + i))); m.material.opacity = d.dotsA; }
+    // clamp
+    clamp3.visible = d.clampY !== null && d.clampY < 5.5; clamp3.position.y = d.clampY || 0;
+    // ripples
+    rip.forEach((m, i) => { const T = d.ripT[i], u = T === undefined ? -1 : (t - T) / 1.3; m.visible = u > 0 && u < 1; if (!m.visible) return; m.position.set(sph.position.x, sph.position.y, sph.position.z); m.scale.setScalar(.85 + 1.2 * ease.out(u)); m.material.opacity = .8 * (1 - u); });
+    // spring
+    const S0 = d.spring; spG.visible = spTop.visible = spBot.visible = spGl.visible = !!S0;
+    if (S0) { const h = Math.max(S0.h, .05); spG.scale.set(1, h, 1); spTop.position.set(2.2, .5 + h, 0); spMat.emissiveIntensity = S0.glow * 1.1; spTop.material.emissiveIntensity = .3 + S0.glow; spGl.position.set(2.2, .5 + h / 2, 0); spGl.material.opacity = S0.glow * .7; }
+    // blocks
+    blocks.forEach((b, i) => { const q = d.blocks && d.blocks[i]; b.g.visible = !!(q && q.vis); if (!q || !q.vis) return; b.g.position.set(...q.pos); b.g.rotation.set(...(q.rot || [0, 0, 0])); tmp.copy(b.base).lerp(grey, .55 * (q.dim || 0)); b.m.material.color.copy(tmp); });
+    cr4.set(d.cr4, d.cr4g); b4gl.material.opacity = d.cr4g * .55;
+    // pendulum
+    const P = d.pend; pg.visible = !!(P && P.vis);
+    if (pg.visible) {
+      pg.position.y = P.rise || 0; const th = P.th, bx = PIV[0] + PL * Math.sin(th), by = PIV[1] - PL * Math.cos(th); ball.position.set(bx, by, 0); placeSeg(str, PIV, [bx, by, 0], .025);
+      const snapped = P.snapD >= 0, jx = P.strain ? P.strain * .012 * Math.sin(t * 47) : 0; hookG.position.set(2.4 + jx, 1.07 + (P.strain ? P.strain * .008 * Math.sin(t * 39) : 0), 0); hookG.visible = !snapped;
+      pull.visible = !snapped; if (!snapped) placeSeg(pull, [bx, by, 0], [hookG.position.x - .55, hookG.position.y, 0], .03);
+      hcr.set(P.crack || 0, 0);
+      pcA.visible = pcB.visible = snapped; if (snapped) { const u = prog(P.snapD, 0, .55), e = u * u;
+        pcA.position.set(lerp(2.4, 2.3, e), lerp(1.07, .12, e), lerp(0, .75, e)); pcA.rotation.set(0, 0, .5 * e); pcB.position.set(lerp(1.85, 1.4, e), lerp(1.07, .08, e), lerp(0, 1.1, e)); pcB.rotation.set(PI / 2 * e, 0, 0); }
+    }
+    // beads + lines
+    const bi = d.beads; const L = d.lines; const wf = new THREE.Vector3();
+    for (let i = 0; i < NB; i++) { bd[i].visible = !!bi; if (!bi) { lines[i].set([0, 0, 0], [0, 0, 0], 0); continue; }
+      let fu = d.flyT ? prog(t, d.flyT[0] + i / NB * d.flyT[1], d.flyT[0] + i / NB * d.flyT[1] + d.flyT[2]) : 0; const p = beadPos(i, d.inch, fu); bd[i].position.set(p[0], p[1], p[2]);
+      if (L) { const k = prog(t, L.t0 + i * L.step, L.t0 + i * L.step + L.dur), al = (L.alpha === undefined ? 1 : L.alpha) * (1 - (fu > .6 ? (fu - .6) / .4 : 0)); lines[i].set(p, SOCK, ease.out(k), al, .3 + .9 * (L.bright || 0)); } else lines[i].set(p, SOCK, 0); }
+    ringO.material.opacity = d.ringOp * .85; ringH.material.opacity = d.ringOp * .22; ringO.visible = ringH.visible = d.ringOp > .01;
+    // burst
+    const bt = d.burst; bR.visible = bt >= 0 && bt < 1.1; if (bR.visible) { bR.scale.setScalar(.6 + 2.2 * ease.out(bt / 1.1)); bR.material.opacity = .9 * (1 - bt / 1.1); }
+    bGl.material.opacity = bt >= 0 && bt < 1.2 ? .9 * Math.exp(-bt * 3.2) : 0; bGl.visible = bGl.material.opacity > .01;
+    bp.forEach(o => { o.m.visible = bt >= 0 && bt < 1.1; if (!o.m.visible) return; const q = o.sp * ease.out(bt / 1.1); o.m.position.set(SOCK[0] + o.d[0] * q, SOCK[1] + .4 + o.d[1] * q * .9, SOCK[2] + o.d[2] * q); o.m.material.opacity = 1 - bt / 1.1; o.m.scale.setScalar(1 - .5 * bt / 1.1); });
+    Wd.sun.color.setRGB(1, 1 - .08 * d.shaft, 1 - .28 * d.shaft);
+  });
+  out.sph = t => Object.assign({}, DEF, st(t)).sph;
+  return out;
+}
+
+// ---------------- state helpers ----------------
+const BH = [.55, .6, .65, .95], COMP = [.14, .16, .2, .26], DROPH = 7;
+function stackAt(t, T, base, lift, shud) {
+  let hs = base; for (let i = 0; i < 4; i++) hs -= COMP[i] * ease.out(prog(t, T[i], T[i] + .18)); hs += lift;
+  const sy = .5 + hs + SR, x = shud ? shud * Math.sin(t * 45) : 0, blocks = []; let b0 = sy + SR;
+  for (let i = 0; i < 4; i++) { const rest = b0 + BH[i] / 2, u = prog(t, T[i] - .5, T[i]), dd = t - T[i], bounce = dd > 0 ? .06 * Math.exp(-dd * 9) * Math.abs(Math.sin(dd * 26)) : 0;
+    blocks.push({ vis: t > T[i] - .5, pos: [2.2 + x, rest + DROPH * (1 - u * u) + bounce, 0], rot: [0, 0, 0] }); b0 += BH[i]; }
+  return { hs, sy, blocks, x };
+}
+const RELB = [[5.0, .28, 3.0], [6.9, .3, -1.3], [4.6, .33, -3.6], [7.9, .48, 1.3]], RX = [TAU, 0, TAU, 0], RY = [.5, -.4, .9, .3], RZ = [0, TAU, 0, -TAU];
+function pendTh(t, o) { o = o || {}; const q = o.q === undefined ? 0 : o.q; return TH0v + q; }
+const TH0v = .62;
+
+// ---------------- the film ----------------
+const DUR = [11.4, 11.4, 8.8, 9.6, 9.7, 7.46];
+film({
+  W: 1080, H: 1920, xf: .4, vault: 'captions_vault.json',
+  shots: [
+    // ===== s01: empty socket, sphere far away, dotted arc, tag + thread, clamp =====
+    { id: 's01', dur: DUR[0], wide: true, caps: ['CAP_A_01', 'CAP_A_02'], capAt: [0.0, 6.3, 99], build() {
+      const Wd = world({ skyTop: 0xcfeee0, skyBottom: 0xf6fbf7, fogColor: 0xf0f9f4, fogNear: 30, fogFar: 72, sunColor: 0xfffaf0, sun: 1.15, sunPos: [-9, 16, 8], hemiSky: 0xf4fbff, hemiGround: 0xcfe8c8, hemi: 1.35, shadowExt: 16 });
+      const sc = makeScene(Wd, t => ({ sockGlow: .6 + .15 * Math.sin(t * 2.2), dots: prog(t, 6.5, 8.2), dotsA: 1 - sm(t, 9.3, 10.1), tagK: prog(t, 8.6, 9.2), thK: ease.out(prog(t, 8.9, 9.6)), thAmp: .012 * sm(t, 9.6, 11.4), thGlow: .3 + .3 * sm(t, 9, 11),
+        clampY: t < 10.3 ? null : 3.6 * (1 - ease.out(prog(t, 10.3, 11.1))), jit: t > 11.0 ? .015 : 0 }));
+      heroCluster(Wd, t => t < 3.2 ? [[-2.2, 1.0, 0, 1.0, 1.1, 1.0]] : [[2.2, 1.3, 0, .85, .85, .85]]);
+      return Object.assign(Wd, { cam: cam([[0, [-4.4, 3.4, 9.2], [-2.2, 1.3, 0]], [3.0, [-3.0, 2.7, 5.2], [-2.2, 1.4, 0]], [4.8, [1.5, 2.8, 8.0], [0, 1.4, 0]], [6.3, [4.8, 3.0, 8.4], [0, 1.4, -.2]], [11.4, [4.4, 3.2, 8.8], [0, 1.5, -.2]]]) });
+    } },
+    // ===== s02: tremble, ripples, thread stretches, pendulum, camera widens, beads at the edges =====
+    { id: 's02', dur: DUR[1], wide: true, caps: ['CAP_A_03', 'CAP_A_04'], capAt: [0.0, 5.1, 99], build() {
+      const Wd = world({ skyTop: 0xcfeee0, skyBottom: 0xf6fbf7, fogColor: 0xf0f9f4, fogNear: 30, fogFar: 72, sunColor: 0xfffaf0, sun: 1.15, sunPos: [-9, 16, 8], hemiSky: 0xf4fbff, hemiGround: 0xcfe8c8, hemi: 1.35, shadowExt: 16 });
+      makeScene(Wd, t => { const rp = sm(t, 3.4, 6.8), qb = t > 7.1 ? .09 * Math.exp(-(t - 7.1) * 2.2) * Math.sin(t * 34) : 0;
+        return { jit: .01 + .012 * sm(t, 1.9, 2.6) + .006 * rp, ripT: [1.9, 2.4, 2.9, 3.4], tagK: 1, thK: 1, thAmp: .015 + .1 * rp + (t > 7.1 ? .05 * Math.exp(-(t - 7.1) * 2) : 0), thGlow: .3 + .7 * rp, clampY: 0, sockGlow: .6 + .3 * rp,
+          beads: t > 8.0, inch: 0, pend: { vis: t >= 5.1, rise: -3.6 * (1 - ease.out(prog(t, 5.1, 6.0))), th: TH0v + .02 * sm(t, 6, 7) * Math.sin(t * 24) + qb, strain: sm(t, 6, 9), snapD: -1, crack: 0 } }; });
+      heroCluster(Wd, () => [[2.2, 1.3, 0, .85, .85, .85]]);
+      return Object.assign(Wd, { cam: cam([[0, [8.0, 4.0, 2.8], [-2.2, 1.6, .4]], [5.1, [7.6, 3.8, 2.6], [-2.0, 1.6, .6]], [8.3, [6.2, 3.8, 3.2], [-1.0, 1.4, .8]], [11.4, [5.0, 6.8, 9.5], [-1.5, 1.0, -1.0]]]) });
+    } },
+    // ===== s03: scattered beads, gold pull-lines, ring outline, beads inch in, top-down convergence =====
+    { id: 's03', dur: DUR[2], wide: true, caps: ['CAP_A_05', 'CAP_A_06'], capAt: [0.0, 4.4, 99], build() {
+      const Wd = world({ skyTop: 0xcfeee0, skyBottom: 0xf6fbf7, fogColor: 0xf0f9f4, fogNear: 30, fogFar: 72, sunColor: 0xfffaf0, sun: 1.15, sunPos: [-9, 16, 8], hemiSky: 0xf4fbff, hemiGround: 0xcfe8c8, hemi: 1.35, shadowExt: 16 });
+      makeScene(Wd, t => ({ tagK: 1, thK: 1, thAmp: .04, thGlow: .5, clampY: 0, beads: true, inch: .35 * ease.io(prog(t, 3.2, 8.0)), jit: .01,
+        lines: { t0: .4, step: .045, dur: .4, bright: sm(t, 3.2, 6.5) + .5 * Math.max(0, Math.sin((t - 7.9) * 6)) * (t > 7.9 ? 1 : 0) }, ringOp: sm(t, 1.5, 2.3) * (.8 + .2 * Math.sin(t * 3)) }));
+      heroCluster(Wd, () => [[-2.2, .8, 0, 2.2, 1.0, 2.2]]);
+      return Object.assign(Wd, { cam: cam([[0, [-2.2, 4.5, 10.5], [-2.2, .8, -2]], [3.2, [-2.2, 6.0, 10.0], [-2.2, .6, -1.5]], [4.8, [-2.2, 9.0, 8.0], [-2.2, .4, -.5]], [7.2, [-2.2, 15.0, 4.2], [-2.2, 0, 3.4], 68, true], [8.8, [-2.2, 15.5, 4.2], [-2.2, 0, 3.4], 68, true]]) });
+    } },
+    // ===== s04: pendulum close-up, hook cracks, camera to sphere on spring, four blocks drop =====
+    { id: 's04', dur: DUR[3], wide: true, caps: ['CAP_A_07', 'CAP_A_08'], capAt: [0.0, 4.8, 99], build() {
+      const Wd = world({ skyTop: 0xcfeee0, skyBottom: 0xf6fbf7, fogColor: 0xf0f9f4, fogNear: 30, fogFar: 72, sunColor: 0xfffaf0, sun: 1.15, sunPos: [-9, 16, 8], hemiSky: 0xf4fbff, hemiGround: 0xcfe8c8, hemi: 1.35, shadowExt: 16 });
+      const T4 = [5.0, 5.5, 6.0, 6.8];
+      const stt = t => { const base = HS * ease.out(prog(t, 3.6, 4.6)), sk = stackAt(t, T4, base, 0, .03 * sm(t, 8.4, 9.2));
+        return { sph: [2.2 + sk.x, sk.sy, 0], sq: 1 - .12 * (1 - sk.hs / HS) * .6, spring: t > 3.5 ? { h: sk.hs, glow: sm(t, 8.4, 9.4) } : null, blocks: sk.blocks, tagK: 1, thK: 1, thAmp: .04, thGlow: .6,
+          clampY: t < 3.4 ? 0 : t < 4.2 ? 6 * ease.in(prog(t, 3.4, 4.2)) : null, sphGlow: 0,
+          pend: { vis: true, th: TH0v + .012 * Math.sin(t * 21) * sm(t, 0, 1), strain: .5 + .5 * sm(t, 0, 1.8), snapD: -1, crack: sm(t, 1.8, 2.5) } }; };
+      const sc = makeScene(Wd, stt);
+      heroCluster(Wd, t => t < 2.8 ? [[.2, 1.2, 2.9, 1.3, 1.1, 1.5]] : [[sc.sph(t)[0], sc.sph(t)[1], 0, .85, .85, .85], t > 5.0 ? [2.2, sc.sph(t)[1] + 1.8, 0, .9, 1.3, .8] : null]);
+      return Object.assign(Wd, { cam: cam([[0, [-6.4, 2.6, 8.0], [.4, 1.2, 2.8]], [2.4, [-5.6, 2.4, 7.2], [.4, 1.2, 2.8]], [4.8, [4.4, 3.4, 8.2], [2.2, 2.4, 0]], [9.6, [4.2, 3.7, 8.8], [2.2, 2.9, 0]]]) });
+    } },
+    // ===== s05: cracks + gold leak, glow peak, release, sphere arcs into the socket, beads settle, orbit =====
+    { id: 's05', dur: DUR[4], wide: true, caps: ['CAP_A_09', 'CAP_A_10'], capAt: [0.0, 4.9, 99], build() {
+      const Wd = world({ skyTop: 0xcfeee0, skyBottom: 0xf6fbf7, fogColor: 0xf0f9f4, fogNear: 30, fogFar: 72, sunColor: 0xfffaf0, sun: 1.15, sunPos: [-9, 16, 8], hemiSky: 0xf4fbff, hemiGround: 0xcfe8c8, hemi: 1.35, shadowExt: 16 });
+      const REL = 5.1, LAND = 6.3;
+      const stt = t => {
+        const lift = .15 * sm(t, 4.2, 4.8), sk = stackAt(t, [-10, -10, -10, -10], HS, Math.min(lift, t < REL ? lift : 0), t < REL ? .025 * sm(t, 0, 4) + .02 : 0);
+        const cr = prog(t, 1.1, 2.8), crg = cr * (.5 + .5 * sm(t, 2.2, 4.2)) * (t < REL ? 1 : 1 - sm(t, 5.8, 7.5) * .7);
+        const o = { tagK: 1, thAmp: .03, thGlow: .8, cr4: cr, cr4g: crg, beads: true, inch: .35, pend: { vis: true, th: TH0v, strain: 1, snapD: -1, crack: 1 } };
+        let sph, blocks = sk.blocks, hs = sk.hs, sq = 1, sphG = 0;
+        const sprGlow = t < REL ? .6 + .4 * sm(t, 3.8, 4.4) : .9 * Math.exp(-(t - REL) * 4);
+        if (t >= REL) {
+          const A = [2.2, .5 + sk.hs + SR, 0], u = prog(t, REL, LAND), e = ease.io(u);
+          sph = u >= 1 ? SPH_IN.slice() : bez(A, [0, 6.2, .6], SPH_IN, e); if (u < 1) sq = 1 + .12 * Math.sin(PI * Math.min(1, u * 2));
+          const dl = t - LAND; if (dl > 0) { sq = 1 - .18 * Math.exp(-dl * 7) * Math.abs(Math.sin(dl * 14)); sph = [SPH_IN[0], SPH_IN[1] - .1 * Math.exp(-dl * 7) * Math.abs(Math.sin(dl * 14)), 0]; }
+          blocks = [0, 1, 2, 3].map(i => { const du = t - REL, u2 = prog(du, 0, 1.0 + .12 * i), e2 = ease.out(u2), s0 = sk.blocks[i].pos; const E = RELB[i], y = lerp(s0[1], E[1], e2 * e2) + 3.2 * Math.sin(PI * u2) * (1 - .15 * i);
+            return { vis: true, pos: [lerp(s0[0], E[0], e2), y, lerp(0, E[2], e2)], rot: [e2 * RX[i], e2 * RY[i], e2 * RZ[i]], dim: sm(t, LAND, 9) }; });
+          hs = lerp(sk.hs, HS, ease.out(prog(t, REL, REL + .35))) + .08 * Math.exp(-(t - REL) * 3) * Math.sin((t - REL) * 18);
+          o.thK = t < LAND + .3 ? 1 : 1 - ease.out(prog(t, LAND + .3, LAND + 1.0)); o.burst = t - LAND; o.inSock = t >= LAND; o.sockGlow = t >= LAND ? 1 : .8; o.sphGlow = t >= LAND ? .35 : 0;
+          o.pend.snapD = t - REL; o.pend.th = TH0v * Math.exp(-(t - REL) * 1.3) * Math.cos((t - REL) * 6); o.pend.strain = 0;
+        } else { sph = [2.2 + sk.x, sk.sy, 0]; o.thK = 1; o.sockGlow = .8; sq = 1 - .12 * (1 - sk.hs / HS) * .6; o.jit = 0; }
+        const L = { t0: -10, step: 0, dur: .1, bright: 1, alpha: t < 7.3 ? 0 : sm(t, 7.3, 7.7) };
+        Object.assign(o, { sph, sq, blocks, spring: { h: Math.max(hs, .2), glow: sprGlow }, lines: L, flyT: [7.5, 1.0, 1.0], ringOp: .85 });
+        return o; };
+      const sc = makeScene(Wd, stt);
+      heroCluster(Wd, t => { const p = sc.sph(t); return [[p[0], p[1], p[2], .85, .85, .85], t < REL ? [2.2, p[1] + 1.8, 0, .9, 1.3, .8] : null]; });
+      const orb = (a, h, R) => [-2.2 + Math.sin(a) * R, h, Math.cos(a) * R];
+      return Object.assign(Wd, { cam: cam([[0, [4.2, 3.7, 8.8], [2.2, 2.9, 0]], [4.6, [4.2, 4.0, 8.8], [2.2, 3.1, 0]], [5.9, [.2, 3.8, 10.6], [0, 2.8, 0]], [6.8, [-1.0, 3.4, 9.0], [-2.2, 1.9, 0]], [7.5, orb(0, 4.4, 8.6), [-2.2, 1.0, 0]], [9.7, orb(.95, 5.2, 8.4), [-2.2, 1.0, 0]]]) });
+    } },
+    // ===== s06: ordered scene, slow wide pull-back, warm light from the socket =====
+    { id: 's06', dur: DUR[5], wide: true, caps: ['CAP_A_11'], capAt: [0.0, 99], build() {
+      const Wd = world({ skyTop: 0xcfeee0, skyBottom: 0xf6fbf7, fogColor: 0xf0f9f4, fogNear: 30, fogFar: 72, sunColor: 0xfffaf0, sun: 1.15, sunPos: [-9, 16, 8], hemiSky: 0xf4fbff, hemiGround: 0xcfe8c8, hemi: 1.35, shadowExt: 16 });
+      const stt = t => ({ sph: [SPH_IN[0], SPH_IN[1] + .02 * Math.sin(t * 1.3), 0], inSock: true, sockGlow: 1, sphGlow: .35 + .1 * sm(t, 0, 5), tagK: 1, thK: 0, beads: true, inch: 1, flyT: [-10, 0, 1], ringOp: .6 * (1 - sm(t, 2, 5)) + .15,
+        shaft: sm(t, .3, 5.0), spring: { h: HS, glow: 0 }, cr4: 1, cr4g: .25,
+        blocks: [0, 1, 2, 3].map(i => ({ vis: true, pos: RELB[i], rot: [RX[i] ? TAU : 0, RY[i], RZ[i] ? TAU : 0], dim: 1 })), pend: { vis: true, th: .008 * Math.sin(t * 1.1), snapD: 30, crack: 1 } });
+      makeScene(Wd, stt);
+      heroCluster(Wd, () => [[-2.2, 1.5, 0, 1.2, 1.3, 1.2]]);
+      return Object.assign(Wd, { cam: cam([[0, [-.8, 3.2, 7.6], [-2.2, 1.9, 0]], [3.0, [.2, 4.6, 12.5], [-.8, 1.5, -.5]], [6.4, [1.4, 5.8, 16.5], [.8, 1.0, -1.0]], [7.46, [1.4, 5.8, 16.5], [.8, 1.0, -1.0]]]) });
+    } },
+  ],
+});
+</script>
+</html>

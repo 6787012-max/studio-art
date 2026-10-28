@@ -1,0 +1,60 @@
+{
+ "film": "film_a.html",
+ "status": "PASS",
+ "time": "2026-10-28T11:27:59",
+ "samples": 28,
+ "findings": [
+  {
+   "sev": "P2",
+   "code": "HERO_SMALL",
+   "t": 5.7,
+   "shot": "s01",
+   "detail": "hero height 19% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  },
+  {
+   "sev": "P2",
+   "code": "HERO_SMALL",
+   "t": 17.1,
+   "shot": "s02",
+   "detail": "hero height 29% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  },
+  {
+   "sev": "P2",
+   "code": "HERO_SMALL",
+   "t": 27.2,
+   "shot": "s03",
+   "detail": "hero height 29% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  },
+  {
+   "sev": "P2",
+   "code": "HERO_SMALL",
+   "t": 36.4,
+   "shot": "s04",
+   "detail": "hero height 18% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  },
+  {
+   "sev": "P2",
+   "code": "HERO_SMALL",
+   "t": 54.63,
+   "shot": "s06",
+   "detail": "hero height 17% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  }
+ ],
+ "sheets": {
+  "beat": null,
+  "seam": "C:/projects/_studio-animatzia/productions/khs_78/_verify/_view/_verify_seams_1.jpg",
+  "phone": "C:/projects/_studio-animatzia/productions/khs_78/_verify/_view/_verify_phone_sheet_1.jpg",
+  "phone_2": "C:/projects/_studio-animatzia/productions/khs_78/_verify/_view/_verify_phone_sheet_2.jpg"
+ },
+ "timing": {
+  "ready_s": 2.3,
+  "gates_s": 168.6,
+  "sheets_s": 37.0,
+  "total_s": 208.3
+ }
+}
