@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>khs 76 film a</title>
+<style>html,body{margin:0;background:#000}canvas{display:block;width:100vw;height:auto}</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script>window.__T0=32.8050; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+// khs_76 / film_a - portrait 1080x1920, objects only (gallery, seeds in frosted shells), vault captions only (zero Hebrew in code)
+// shot durations + caption times from khs_76/timeline.json (65.61 s)
+import { film, world, path, THREE, prog, ease, clamp, lerp, rng, cyl, ball, mesh, box, toon, canvasTex } from '../../lib/stage3d.js';
+
+// ---------------- palette ----------------
+const PL = 0x5b3b5c, CREAM = 0xf5ece0, GOLD = 0xf2b33d, ICE = 0xa9d6e5, CORAL = 0xf27a5e, TEAL = 0x3fa7a0, MUST = 0xe8b04a, OCEAN = 0x2f8fc9, SILV = 0xcfe3ea, INKC = 0x2a1a2c;
+const TAU = Math.PI * 2, PI = Math.PI;
+const sm = (t, a, b) => ease.sm(prog(t, a, b));
+const bell = (t, a, b, c, d) => sm(t, a, b) * (1 - sm(t, c, d));
+const UPV = new THREE.Vector3(0, 1, 0);
+const cc = h => new THREE.Color(h);
+
+// ---------------- generic helpers ----------------
+let GT = null;
+const glowTex = () => GT || (GT = canvasTex(128, 128, (g, w, h) => { const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.3, 'rgba(255,255,255,.5)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }));
+const glow = (size, op, tint) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), color: tint === undefined ? 0xffc977 : tint, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false, opacity: op === undefined ? .8 : op })); s.scale.set(size, size, 1); return s; };
+const bm = (color, op, add) => new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op === undefined ? 1 : op, depthWrite: false, blending: add ? THREE.AdditiveBlending : THREE.NormalBlending });
+const tm = (color, op, o) => toon(color, Object.assign({ transparent: true, opacity: op, depthWrite: false, side: THREE.DoubleSide }, o || {}));
+
+// camera helper: look target is lowered so the hero sits around 34% from the top of the portrait frame
+function cam(keys) {
+  return path(keys.map(([t, p, tg, f, raw]) => {
+    f = f || 65; const d = Math.hypot(p[0] - tg[0], p[1] - tg[1], p[2] - tg[2]), off = raw ? 0 : .32 * Math.tan(f * PI / 360) * d;
+    return [t, p, [tg[0], tg[1] - off, tg[2]], f];
+  }));
+}
+function heroCluster(Wd, fn) {
+  const g = new THREE.Group(), m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()); m.visible = false; g.add(m); Wd.add(g);
+  Wd.on(t => { const bs = fn(t).filter(Boolean); if (!bs.length) return; const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (const b of bs) for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], b[k] - b[k + 3]); hi[k] = Math.max(hi[k], b[k] + b[k + 3]); }
+    g.position.set((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2); g.scale.set(Math.max(hi[0] - lo[0], .01), Math.max(hi[1] - lo[1], .01), Math.max(hi[2] - lo[2], .01)); });
+  Wd.hero = g; return g;
+}
+function bar(a, b, r, color) {
+  const A = new THREE.Vector3(...a), B = new THREE.Vector3(...b), d = B.clone().sub(A), L = d.length();
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, L, 8), toon(color)); m.position.copy(A).addScaledVector(d, .5); m.quaternion.setFromUnitVectors(UPV, d.normalize()); return m;
+}
+const FLASH = new THREE.Vector3();
+
+// ---------------- world: the gallery ----------------
+function pedestal(parent, x, z, h, r) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); parent.add(g);
+  g.add(cyl(r, r * 1.1, h - .08, PL, { pos: [0, (h - .08) / 2, 0], inkW: .014, inkColor: INKC }));
+  g.add(cyl(r * 1.08, r * 1.08, .08, CREAM, { pos: [0, h - .04, 0], inkW: .012, inkColor: INKC }));
+  return g;
+}
+function newWorld(decor) {
+  const Wd = world({ skyTop: 0xffd9c2, skyBottom: 0xfff4ea, fogColor: 0xfff4ea, fogNear: 22, fogFar: 62, sunColor: 0xfff2e4, sun: 1.25, sunPos: [-10, 16, 9], hemiSky: 0xfff3ea, hemiGround: 0xe9e1d8, hemi: 1.25, shadowExt: 11 });
+  const S = Wd.scene, lam = (c, o) => new THREE.MeshLambertMaterial(Object.assign({ color: c }, o || {}));
+  const fl = new THREE.Mesh(new THREE.PlaneGeometry(500, 500), lam(0xe9e1d8, { emissive: 0x7d776e })); fl.rotation.x = -PI / 2; fl.receiveShadow = true; S.add(fl);
+  const gm = lam(0xd6ccc0, { emissive: 0x77716a, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2 });
+  for (let r = 2.5; r < 30; r += 2.5) { const m = new THREE.Mesh(new THREE.RingGeometry(r, r + .05 + r * .004, 96, 1), gm); m.rotation.x = -PI / 2; m.position.y = .008; m.receiveShadow = true; S.add(m); }
+  for (let i = 0; i < 8; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(60, .004, .045), gm); m.position.y = .008; m.rotation.y = i * PI / 8; S.add(m); }
+  for (let i = 0; i < 9; i++) { const a = i * TAU / 9 + .35, r = 17 + (i % 3) * 2.5; S.add(cyl(.9, 1, 15, 0xf3c9b0, { pos: [Math.sin(a) * r, 7.5, Math.cos(a) * r], inkW: .03, inkColor: 0xe0a98c, cast: false })); }
+  (decor || []).forEach(([x, z, h]) => pedestal(S, x, z, h, .5));
+  return Wd;
+}
+
+// ---------------- the essence seed ----------------
+function makeSeed(parent, x, y, z, r) {
+  const g = new THREE.Group(); g.position.set(x, y, z); parent.add(g);
+  const core = new THREE.Mesh(new THREE.SphereGeometry(r, 20, 14), new THREE.MeshBasicMaterial({ color: GOLD, transparent: true, depthWrite: false })); core.renderOrder = 9; g.add(core);
+  const shell = new THREE.Mesh(new THREE.SphereGeometry(r * 1.9, 20, 14), tm(0xffffff, .22)); shell.renderOrder = 3; g.add(shell);
+  const gl = glow(r * 10, .8, 0xffc860); gl.renderOrder = 10; g.add(gl);
+  return { g, core, set(t, k, ph) { k = k === undefined ? 1 : k; const p = 1 + .1 * Math.sin(t * 2.2 + (ph || 0));
+    core.scale.setScalar(p); gl.material.opacity = clamp(.5 * k * p, 0, 1); gl.scale.setScalar(r * 10 * (.8 + .2 * Math.min(k, 1.2))); core.material.color.setHex(GOLD).lerp(cc(0xb89a6a), clamp(1 - k, 0, 1)); } };
+}
+
+// ---------------- crystal cube / sphere / pyramid ----------------
+function makeCrystal(parent, x, z) {
+  const root = new THREE.Group(); root.position.set(x, 0, z); parent.add(root);
+  pedestal(root, 0, 0, .8, .66);
+  const cy = .8 + .78, body = new THREE.Group(); body.position.y = cy; root.add(body);
+  const seed = makeSeed(body, 0, 0, 0, .17);
+  const frost = new THREE.Mesh(new THREE.SphereGeometry(.4, 16, 12), tm(0xe6f3f8, .5)); frost.renderOrder = 2; body.add(frost);
+  const skin = tm(ICE, .55);
+  const gC = new THREE.Group(), gS = new THREE.Group(), gP = new THREE.Group(); body.add(gC, gS, gP);
+  const S = 1.35, h = S / 2, EC = 0x6fa3b8;
+  const cube = new THREE.Mesh(new THREE.BoxGeometry(S, S, S), skin); cube.renderOrder = 5; gC.add(cube);
+  const V = []; for (const a of [-1, 1]) for (const b of [-1, 1]) for (const c of [-1, 1]) V.push([a * h, b * h, c * h]);
+  for (let i = 0; i < 8; i++) for (let j = i + 1; j < 8; j++) { let d = 0; for (let k = 0; k < 3; k++) if (V[i][k] !== V[j][k]) d++; if (d === 1) gC.add(bar(V[i], V[j], .022, EC)); }
+  const sph = new THREE.Mesh(new THREE.SphereGeometry(.82, 36, 22), skin); sph.renderOrder = 5; gS.add(sph);
+  const eq = new THREE.Mesh(new THREE.TorusGeometry(.82, .02, 6, 48), toon(EC)); eq.rotation.x = PI / 2; gS.add(eq);
+  const eq2 = new THREE.Mesh(new THREE.TorusGeometry(.82, .02, 6, 48), toon(EC)); gS.add(eq2);
+  const pyr = new THREE.Mesh(new THREE.ConeGeometry(.98, 1.5, 4), skin); pyr.rotation.y = PI / 4; pyr.renderOrder = 5; gP.add(pyr);
+  for (const [sx, sz] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) gP.add(bar([0, .75, 0], [sx * .693, -.75, sz * .693], .022, EC));
+  return { root, body, seed, gC, gS, gP, pos: [x, cy, z], set(a, b, c) { for (const [g, k] of [[gC, a], [gS, b], [gP, c]]) { g.visible = k > .01; g.scale.setScalar(Math.max(.001, k)); } } };
+}
+
+// ---------------- magnifier ----------------
+function makeMagnifier(parent) {
+  const g = new THREE.Group(); parent.add(g); const mats = [];
+  const pm = tm(PL, 1, { side: THREE.FrontSide, depthWrite: true }); mats.push([pm, 1]);
+  g.add(new THREE.Mesh(new THREE.TorusGeometry(.62, .075, 12, 48), pm));
+  const lm = tm(0xcfe9f5, .25); mats.push([lm, .25]); const lens = new THREE.Mesh(new THREE.CircleGeometry(.6, 40), lm); lens.renderOrder = 7; g.add(lens);
+  const gm = new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .45, depthWrite: false }); mats.push([gm, .45]); const gl = new THREE.Mesh(new THREE.CircleGeometry(1, 16), gm); gl.scale.set(.05, .24, 1); gl.position.set(-.3, .22, .01); gl.rotation.z = .6; g.add(gl);
+  const d = new THREE.Vector3(.707, -.707, 0), hm = tm(PL, 1, { side: THREE.FrontSide, depthWrite: true }); mats.push([hm, 1]);
+  const hd = new THREE.Mesh(new THREE.CylinderGeometry(.075, .085, 1, 12), hm); hd.scale.y = .95; hd.position.copy(d).multiplyScalar(.62 + .48); hd.quaternion.setFromUnitVectors(UPV, d); g.add(hd);
+  const kb = new THREE.Mesh(new THREE.SphereGeometry(.1, 12, 8), hm); kb.position.copy(d).multiplyScalar(.62 + .98); g.add(kb);
+  return { g, fade(k) { mats.forEach(([m, o]) => { m.opacity = o * k; }); g.visible = k > .01; } };
+}
+
+// ---------------- speech tokens ----------------
+function makeToken(parent, x, z, color, o) {
+  o = o || {}; const root = new THREE.Group(); root.position.set(x, 0, z); parent.add(root);
+  pedestal(root, 0, 0, .8, .62);
+  const cy = .8 + .87, pivot = new THREE.Group(); pivot.position.y = cy; root.add(pivot);
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(.4, .9, 10, 24), tm(color, .6)); body.renderOrder = 5; pivot.add(body);
+  const coat = new THREE.Mesh(new THREE.CapsuleGeometry(.47, .98, 10, 24), tm(color, .22)); coat.renderOrder = 6; pivot.add(coat);
+  const bd = new THREE.Mesh(new THREE.SphereGeometry(.09, 12, 8), toon(CREAM)); bd.scale.z = .5; bd.position.set(0, .22, .41); pivot.add(bd);
+  const col = new THREE.Mesh(new THREE.TorusGeometry(.42, .045, 8, 32), toon(CREAM)); col.rotation.x = PI / 2; col.position.y = .3; pivot.add(col);
+  let seed = null, spot = null;
+  if (o.reflect) { spot = new THREE.Mesh(new THREE.SphereGeometry(.13, 14, 10), new THREE.MeshBasicMaterial({ color: 0x3a2b3d })); spot.position.set(0, .1, 0); root.add(spot); spot.position.y = cy + .1; }
+  else seed = makeSeed(root, 0, cy + .1, 0, .15);
+  return { root, pivot, body, coat, seed, pos: [x, cy + .1, z], top: cy + .9 };
+}
+
+// ---------------- water drop ----------------
+const DR = .95, DP = [];
+for (let i = 0; i <= 48; i++) { const t = PI * (1 - i / 48); DP.push([DR * Math.sin(t) * Math.sqrt(Math.sin(t / 2)) / .763, DR * Math.cos(t) + DR * .9 * Math.pow((1 + Math.cos(t)) / 2, 3)]); }
+function dropR(y) { for (let i = 0; i < DP.length - 1; i++) { const a = DP[i], b = DP[i + 1]; if (y >= a[1] && y <= b[1]) return lerp(a[0], b[0], (y - a[1]) / Math.max(1e-6, b[1] - a[1])); } return 0; }
+function makeWater(parent, x, z) {
+  const root = new THREE.Group(); root.position.set(x, 0, z); parent.add(root);
+  pedestal(root, 0, 0, .8, .62);
+  const cy = .8 + .3 + DR, body = new THREE.Group(); body.position.y = cy; root.add(body);
+  const seed = makeSeed(body, 0, -.2, 0, .17);
+  const fr = new THREE.Mesh(new THREE.SphereGeometry(.36, 16, 12), tm(0xe6f3f8, .3)); fr.position.y = -.2; fr.renderOrder = 2; body.add(fr);
+  const spin = new THREE.Group(); body.add(spin);
+  const mat = tm(OCEAN, .6, { emissive: 0x1a6fb0, emissiveIntensity: 0 });
+  const shell = new THREE.Mesh(new THREE.LatheGeometry(DP.map(p => new THREE.Vector2(p[0], p[1])), 56), mat); shell.renderOrder = 5; spin.add(shell);
+  const hl = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .55, depthWrite: false })); hl.scale.set(.08, .22, .05); hl.position.set(-.42, .2, .76); hl.rotation.z = .35; hl.rotation.y = -.5; hl.renderOrder = 8; body.add(hl);
+  return { root, body, spin, seed, mat, cy, pos: [x, cy, z], seedPos: [x, cy - .2, z], top: cy + 1.9 * DR };
+}
+function makeToys(parent, cx, cy, cz) {
+  const steam = [0, 1, 2, 3, 4, 5].map(() => { const m = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0, depthWrite: false })); m.visible = false; parent.add(m); return m; });
+  const ice = mesh(new THREE.BoxGeometry(.34, .34, .34), toon(0xdff2f7), { inkW: .012, box: true, inkColor: INKC }); ice.visible = false; parent.add(ice);
+  const rip = [0, 1, 2].map(() => { const m = new THREE.Mesh(new THREE.TorusGeometry(.3, .025, 8, 36), new THREE.MeshBasicMaterial({ color: OCEAN, transparent: true, opacity: 0 })); m.visible = false; parent.add(m); return m; });
+  const rings = [[1.9, CORAL, .5, 0], [2.25, TEAL, -.4, 1.6], [2.6, MUST, .3, 3.1]].map(([r, c, tilt, ph]) => { const g = new THREE.Group(); g.position.set(cx, cy + .25, cz); parent.add(g);
+    const m = new THREE.Mesh(new THREE.TorusGeometry(r, .03, 8, 72), new THREE.MeshBasicMaterial({ color: c, transparent: true, opacity: 0 })); m.rotation.x = PI / 2 + tilt * .7; g.add(m); g.visible = false; return { g, m, ph }; });
+  const top = cy + 1.8 * DR;
+  return { set(tt, ks, ki, kr) {
+    steam.forEach((m, i) => { const u = (((tt - 7.2) / 2.3 + i / 6) % 1 + 1) % 1, on = ks > .01 && tt > 7.2; m.visible = on; if (!on) return; const a = u * 5 + i * 1.3;
+      m.position.set(cx + Math.cos(a) * (.1 + .32 * u), top - .15 + u * 2.1, cz + Math.sin(a) * (.1 + .32 * u)); m.scale.setScalar(.1 + .34 * u); m.material.opacity = .75 * ks * Math.sin(PI * u); });
+    const ii = ki > .01; ice.visible = ii; if (ii) { const a = tt * .85; ice.position.set(cx + Math.cos(a) * 1.55, cy + .55 + .25 * Math.sin(tt * 1.7), cz + Math.sin(a) * 1.55); ice.rotation.set(tt * 1.3, tt * .9, .4); ice.scale.setScalar(Math.max(.001, ki)); }
+    rip.forEach((m, i) => { m.visible = ki > .01; if (!m.visible) return; const a = tt * .7 + i * 2.1 + 1; m.position.set(cx + Math.cos(a) * 2.1, cy + .1 + .35 * Math.sin(tt * 1.4 + i), cz + Math.sin(a) * 2.1); m.rotation.x = PI / 2; m.scale.setScalar((.8 + .3 * Math.sin(tt * 3 + i)) * Math.max(.001, ki)); m.material.opacity = .9 * ki; });
+    rings.forEach((o, i) => { o.g.visible = kr > .01; if (!o.g.visible) return; o.g.rotation.y = tt * (.28 + .06 * i) + o.ph; o.m.material.opacity = .85 * kr; }); } };
+}
+
+// ---------------- golden thread + light above ----------------
+function makeThread(parent, x, y0, z) {
+  const geo = new THREE.CylinderGeometry(1, 1, 1, 8); geo.translate(0, .5, 0);
+  const core = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xffd36b, transparent: true, opacity: 1, depthWrite: false })); core.scale.set(.03, .001, .03); core.position.set(x, y0, z); core.visible = false; parent.add(core);
+  const halo = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ color: 0xffc247, transparent: true, opacity: .25, depthWrite: false, blending: THREE.AdditiveBlending })); halo.scale.set(.09, .001, .09); halo.position.set(x, y0, z); halo.visible = false; parent.add(halo);
+  return { set(len, k) { const on = len > .02 && k > .01; core.visible = halo.visible = on; if (!on) return; core.scale.y = halo.scale.y = len; core.material.opacity = clamp(k, 0, 1); halo.material.opacity = .3 * clamp(k, 0, 1); } };
+}
+function makeLight(parent) {
+  const a = glow(12, 0, 0xffe2a0), b = glow(5.5, 0, 0xfff6dc); a.position.set(0, 8.8, -2); b.position.set(0, 8.6, -2); parent.add(a); parent.add(b);
+  return { set(k) { a.material.opacity = .85 * k; b.material.opacity = .8 * k; a.visible = b.visible = k > .01; } };
+}
+function makeSpark(parent) {
+  const s = glow(.8, 0, 0xfff0b0); s.visible = false; parent.add(s);
+  return { set(t, tc, p) { const a = t - tc, on = a > 0 && a < 1.2; s.visible = on; if (!on) return; s.position.set(p[0], p[1], p[2]); s.material.opacity = .95 * Math.exp(-a * 3.5); s.scale.setScalar(.5 + 1.0 * Math.min(1, a * 4)); } };
+}
+function makeProbe(parent) {
+  const geo = new THREE.CylinderGeometry(.03, .03, 1, 8); geo.translate(0, .5, 0); const m = new THREE.Mesh(geo, toon(PL)); m.visible = false; parent.add(m);
+  return { set(A, C, k) { m.visible = k > .01; if (!m.visible) return; const d = new THREE.Vector3(C[0] - A[0], C[1] - A[1], C[2] - A[2]), L = d.length(); m.position.set(...A); m.quaternion.setFromUnitVectors(UPV, d.normalize()); m.scale.set(1, Math.max(.001, L * k), 1); } };
+}
+
+// ---------------- tools ----------------
+function gearGeo(r, n, depth) {
+  const s = new THREE.Shape(), pitch = TAU / n, td = r * .2, w1 = pitch * .28, w2 = pitch * .15; let first = true;
+  for (let i = 0; i < n; i++) { const a = i * pitch; for (const [da, rr] of [[-w1, r], [-w2, r + td], [w2, r + td], [w1, r]]) { const x = Math.cos(a + da) * rr, y = Math.sin(a + da) * rr; if (first) { s.moveTo(x, y); first = false; } else s.lineTo(x, y); } }
+  s.closePath(); const h = new THREE.Path(); h.absarc(0, 0, r * .22, 0, TAU, true); s.holes.push(h);
+  const g = new THREE.ExtrudeGeometry(s, { depth, bevelEnabled: false, curveSegments: 10 }); g.translate(0, 0, -depth / 2); return g;
+}
+function makeGear(parent, r, n, color) { const m = mesh(gearGeo(r, n, .22), toon(color), { box: true, inkW: .02, inkColor: INKC }); parent.add(m); return m; }
+function makeRuler(parent, x, z) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); parent.add(g);
+  g.add(box(.34, 3.0, .07, CREAM, { pos: [0, 1.5, 0], inkW: .012, inkColor: INKC }));
+  for (let i = 0; i < 14; i++) { const L = i % 5 === 0 ? .2 : .12; g.add(box(L, .03, .02, PL, { pos: [-.17 + L / 2 + .01, .2 + i * .2, .045], ink: false })); }
+  g.add(box(.62, .08, .34, PL, { pos: [0, .04, 0], inkW: .01, inkColor: INKC })); return g;
+}
+function makeThermo(parent, x, z) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); parent.add(g);
+  g.add(cyl(.24, .26, .08, PL, { pos: [0, .04, 0], inkW: .01, inkColor: INKC }));
+  const tube = new THREE.Mesh(new THREE.CylinderGeometry(.1, .1, 2.4, 20), tm(0xdff0f5, .35)); tube.position.y = 1.3; tube.renderOrder = 6; g.add(tube);
+  g.add(ball(.22, CORAL, { pos: [0, .38, 0], inkW: .012, inkColor: INKC }));
+  const fg = new THREE.CylinderGeometry(.055, .055, 1, 12); fg.translate(0, .5, 0); const fluid = new THREE.Mesh(fg, toon(CORAL)); fluid.position.y = .4; g.add(fluid);
+  for (let i = 0; i < 9; i++) g.add(box(i % 2 ? .1 : .16, .025, .02, PL, { pos: [.17, .8 + i * .22, 0], ink: false }));
+  return { g, fluid };
+}
+function makeScale(parent, x, z) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); parent.add(g);
+  g.add(cyl(.55, .65, .12, MUST, { pos: [0, .06, 0], inkW: .012, inkColor: INKC })); g.add(cyl(.07, .09, 1.55, MUST, { pos: [0, .9, 0], inkW: .01, inkColor: INKC }));
+  const beam = new THREE.Group(); beam.position.y = 1.7; g.add(beam); beam.add(ball(.11, MUST, { inkW: .01, inkColor: INKC })); beam.add(box(2.2, .09, .09, MUST, { inkW: .01, inkColor: INKC }));
+  const pans = [-1, 1].map(s => { const p = new THREE.Group(); p.position.x = s * 1.1; beam.add(p); p.add(cyl(.012, .012, .55, PL, { pos: [0, -.27, 0], ink: false })); p.add(cyl(.4, .34, .07, MUST, { pos: [0, -.58, 0], inkW: .01, inkColor: INKC })); return p; });
+  return { g, beam, pans };
+}
+function makeStopwatch(parent, x, z) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); parent.add(g);
+  g.add(cyl(.3, .38, .1, PL, { pos: [0, .05, 0], inkW: .01, inkColor: INKC }));
+  const d = new THREE.Group(); d.position.y = 1.0; g.add(d); const dc = cyl(.62, .62, .2, TEAL, { inkW: .015, inkColor: INKC }); dc.rotation.x = PI / 2; d.add(dc);
+  const face = new THREE.Mesh(new THREE.CircleGeometry(.5, 32), new THREE.MeshBasicMaterial({ color: CREAM })); face.position.z = .105; d.add(face);
+  for (let i = 0; i < 12; i++) { const a = i * TAU / 12; d.add(box(.035, i % 3 === 0 ? .1 : .06, .02, PL, { pos: [Math.sin(a) * .42, Math.cos(a) * .42, .12], rot: [0, 0, -a], ink: false })); }
+  const crown = cyl(.1, .1, .2, TEAL, { pos: [0, .72, 0], inkW: .01, inkColor: INKC }); d.add(crown);
+  const nd = new THREE.Group(); nd.position.z = .13; d.add(nd); const nb = box(.045, .4, .02, CORAL, { pos: [0, .16, 0], ink: false }); nd.add(nb); nd.add(ball(.05, PL, { ink: false }));
+  return { g, needle: nd };
+}
+
+// ---------------- bowl (s03) ----------------
+function makeBowl(parent, x, z) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); parent.add(g);
+  g.add(cyl(.3, .34, .09, CREAM, { pos: [0, .045, 0], inkW: .01, inkColor: INKC }));
+  g.add(mesh(new THREE.SphereGeometry(.62, 32, 16, 0, TAU, PI / 2, PI / 2), toon(CREAM, { side: THREE.DoubleSide }), { pos: [0, .46, 0], scale: [1, .6, 1], inkW: .014, inkColor: INKC }));
+  const w = new THREE.Mesh(new THREE.CircleGeometry(.56, 32), new THREE.MeshBasicMaterial({ color: OCEAN })); w.rotation.x = -PI / 2; w.position.y = .34; g.add(w);
+  return { g, water: w };
+}
+function tubeOf(parent, curve, rad, col) {
+  const segs = 48, rs = 8, geo = new THREE.TubeGeometry(curve, segs, rad, rs, false), m = new THREE.Mesh(geo, toon(col, { emissive: 0x1a6fb0, emissiveIntensity: .35 })); m.visible = false; parent.add(m);
+  return { m, set(k) { m.visible = k > .01; geo.setDrawRange(0, Math.floor(clamp(k, 0, 1) * segs) * rs * 6); } };
+}
+
+// ---------------- mirror (s02) ----------------
+function makeMirror(parent, x, z) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); parent.add(g);
+  const H = 3.5, Wz = 1.7, cy = H / 2 + .15;
+  const gl = new THREE.Mesh(new THREE.BoxGeometry(.04, H - .2, Wz - .2), tm(SILV, .42)); gl.position.y = cy; gl.renderOrder = 8; g.add(gl);
+  for (const s of [-1, 1]) g.add(box(.14, H, .14, PL, { pos: [0, cy, s * Wz / 2], inkW: .01, inkColor: INKC }));
+  for (const s of [-1, 1]) g.add(box(.14, .14, Wz + .14, PL, { pos: [0, cy + s * H / 2, 0], inkW: .01, inkColor: INKC }));
+  g.add(box(.6, .1, Wz + .5, PL, { pos: [0, .05, 0], inkW: .01, inkColor: INKC }));
+  const sh = new THREE.Mesh(new THREE.PlaneGeometry(.16, 2.2), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .4, depthWrite: false, side: THREE.DoubleSide })); sh.rotation.set(0, PI / 2, .5); sh.position.set(.03, cy + .3, .2); sh.renderOrder = 9; g.add(sh);
+  return g;
+}
+
+// ---------------- the film ----------------
+film({
+  W: 1080, H: 1920, xf: .4, vault: 'captions_vault.json',
+  shots: [
+    // ===================== s01 (10.25 s): crystal cube, magnifier, rays, then the tokens =====================
+    { id: 's01', dur: 10.25, wide: true, caps: ['CAP_A_01', 'CAP_A_02'], capAt: [0.0, 4.8, 99], build() {
+      const Wd = newWorld([[-3.6, -2.2, 1.1], [-5.4, -4.5, .7], [6.4, -6, 1.0], [-1.8, -5.5, .6], [2.0, -4.6, .9]]), S = Wd.scene;
+      const cr = makeCrystal(S, 0, 0), mag = makeMagnifier(S); cr.set(1, 0, 0);
+      const A = makeToken(S, 3.1, .5, CORAL), B = makeToken(S, 5.0, -1.7, TEAL); A.pivot.rotation.y = .5; B.pivot.rotation.y = -.6;
+      const RAYG = new THREE.ConeGeometry(.1, 1, 4); RAYG.translate(0, .5, 0);
+      const RW = [4.9, 5.65, 6.4], rays = [], rr = rng(5), C0 = [0, 1.58, 0];
+      RW.forEach((T, w) => { for (let i = 0; i < 7; i++) { const a = (i / 7 + w * .07 + (rr() - .5) * .08) * TAU, d = new THREE.Vector3(Math.cos(a) * .85, Math.sin(a) * .8 + .05, .5 + rr() * .25).normalize();
+        const g = new THREE.Group(), col = [CORAL, TEAL, MUST][(i + w) % 3], m = new THREE.Mesh(RAYG, new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0, depthWrite: false })); g.add(m); g.quaternion.setFromUnitVectors(UPV, d); g.visible = false; S.add(g);
+        rays.push({ g, m, d, T: T + i * .03, L: .55 + rr() * .35 }); } });
+      Wd.on(t => {
+        cr.gC.rotation.y = t * .22; cr.body.position.y = cr.pos[1] + .03 * Math.sin(t * 1.2); cr.seed.set(t, .6 + .25 * sm(t, 4.5, 6) , 0);
+        let mx, my;
+        if (t < 2.2) { const u = ease.out(prog(t, 1.0, 2.2)); mx = lerp(3.8, .1, u); my = lerp(2.2, 1.55, u); }
+        else if (t < 4.5) { mx = .1 + .55 * Math.sin((t - 2.2) * 1.7); my = 1.5 + .3 * Math.sin((t - 2.2) * 2.3 + .8); }
+        else { const u = ease.in(prog(t, 4.5, 5.3)); mx = lerp(.1 + .55 * Math.sin(2.3 * 1.7), 3.9, u); my = lerp(1.5 + .3 * Math.sin(2.3 * 2.3 + .8), 2.8, u); }
+        mag.g.position.set(mx, my, .85 + .15 * ease.in(prog(t, 4.5, 5.3))); mag.g.rotation.z = -.2 + .1 * Math.sin(t * .9); mag.g.visible = t > .9 && t < 5.4;
+        rays.forEach(o => { const u = prog(t, o.T, o.T + 1.25), on = t >= o.T && u < 1; o.g.visible = on; if (!on) return; const s = lerp(.85, 3.6, ease.out(u));
+          o.g.position.set(C0[0] + o.d.x * s, C0[1] + o.d.y * s, C0[2] + o.d.z * s); o.m.scale.set(1, o.L * (.6 + .6 * u), .22); o.m.material.opacity = .9 * Math.pow(1 - u, .8) * Math.min(1, u * 8); });
+        A.seed.set(t, 1, 1); B.seed.set(t, 1, 2.2); A.coat.material.opacity = .22 + .06 * Math.sin(t * 3); B.coat.material.opacity = .22 + .06 * Math.sin(t * 3 + 1);
+      });
+      heroCluster(Wd, t => t < 7.9 ? [[0, 1.2, 0, .7, 1.2, .7]] : [[3.1, 1.6, .5, .6, 1.6, .6]]);
+      return Object.assign(Wd, { cam: cam([[0, [-.3, 1.8, 7.6], [0, 1.45, 0], 62], [1.5, [-.1, 1.75, 7.2], [0, 1.45, 0], 62], [4.8, [.2, 1.7, 6.0], [0, 1.45, 0], 60], [6.9, [.5, 1.7, 5.4], [.3, 1.45, 0], 60],
+        [8.2, [2.1, 1.75, 5.6], [3.2, 1.45, .2], 60], [10.25, [2.8, 1.75, 6.0], [3.9, 1.45, -.4], 60]]) });
+    } },
+    // ===================== s02 (10.85 s): tokens talk, rings hit the coat; the mirror =====================
+    { id: 's02', dur: 10.85, wide: true, caps: ['CAP_A_03', 'CAP_A_04'], capAt: [0.0, 5.15, 99], build() {
+      const Wd = newWorld([[3.8, -3.6, 1.0], [-2.8, -5, .7], [7, -1, .6], [-1, -7, .9]]), S = Wd.scene;
+      const A = makeToken(S, -1.0, 0, CORAL), B = makeToken(S, 1.0, 0, TEAL), mir = makeMirror(S, -3.0, 0), R = makeToken(S, -5.0, 0, CORAL, { reflect: true });
+      const sp = [], wr = [];
+      for (let i = 0; i < 6; i++) { const col = i % 2 ? TEAL : CORAL;
+        const m = new THREE.Mesh(new THREE.TorusGeometry(1, .03, 8, 40), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0, depthWrite: false })); m.rotation.y = PI / 2; m.visible = false; S.add(m); sp.push({ m, T: .35 + .8 * i, from: i % 2 ? .45 : -.45, to: i % 2 ? -.45 : .45 });
+        const w = new THREE.Mesh(new THREE.TorusGeometry(.52, .035, 8, 40), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: 0, depthWrite: false })); w.rotation.x = PI / 2; w.visible = false; S.add(w); wr.push(w); }
+      Wd.on(t => {
+        let boostA = 0, boostB = 0;
+        sp.forEach((o, i) => { const u = prog(t, o.T, o.T + .9), on = t >= o.T && u < 1; o.m.visible = on; if (on) { o.m.position.set(lerp(o.from, o.to, u), 1.9, 0); o.m.scale.setScalar(.2 + .12 * u); o.m.material.opacity = .95 * Math.min(1, u * 6, (1 - u) * 6 + .4); }
+          const w = wr[i], a = prog(t, o.T + .9, o.T + 1.6), won = t >= o.T + .9 && a < 1 && t < 5.4; w.visible = won; if (won) { w.position.set(o.to > 0 ? 1.0 : -1.0, lerp(2.4, 1.0, ease.out(a)), 0); w.scale.setScalar(1 + .06 * a); w.material.opacity = .9 * (1 - a); if (o.to > 0) boostB = Math.max(boostB, 1 - a); else boostA = Math.max(boostA, 1 - a); } });
+        const th = lerp(PI / 2, -PI / 2, ease.io(prog(t, 5.15, 6.5))); A.pivot.rotation.y = th; B.pivot.rotation.y = -PI / 2 + .06 * Math.sin(t * 1.3); R.pivot.rotation.y = -th;
+        const shA = .2 + .07 * Math.sin(t * 4.1) + .3 * boostA; A.coat.material.opacity = shA; R.coat.material.opacity = shA; B.coat.material.opacity = .2 + .07 * Math.sin(t * 4.1 + 1.5) + .3 * boostB;
+        A.seed.set(t, 1, 0); B.seed.set(t, 1, 1.4);
+      });
+      heroCluster(Wd, t => t < 6.4 ? [[-1.0, 1.6, 0, .5, 1.0, .5], [1.0, 1.6, 0, .5, 1.0, .5]] : [[-1.0, 1.65, 0, .5, .9, .5], [-3.0, 1.8, 0, .15, 1.7, .8]]);
+      const O = (a, r, h) => [Math.sin(a * PI / 180) * r, h, Math.cos(a * PI / 180) * r];
+      return Object.assign(Wd, { cam: cam([[0, O(-26, 7.6, 1.6), [0, 1.7, 0], 62], [2.6, O(-4, 7.4, 1.7), [0, 1.7, 0], 62], [5.15, O(20, 7.0, 1.8), [-.3, 1.7, 0], 62], [6.6, [2.8, 2.0, 3.4], [-1.0, 1.7, 0], 62],
+        [8.3, [2.4, 2.1, 1.0], [-3.0, 1.6, 0], 61], [10.85, [1.8, 2.2, -1.0], [-4.2, 1.6, .15], 60]]) });
+    } },
+    // ===================== s03 (12.0 s): the water drop and its phenomena =====================
+    { id: 's03', dur: 12.0, wide: true, caps: ['CAP_A_05', 'CAP_A_06'], capAt: [0.0, 5.3, 99], build() {
+      const Wd = newWorld([[-4.4, -3, 1.0], [4.6, -3.6, .7], [-7, -6, .6], [6.5, -8, 1.1]]), S = Wd.scene;
+      const W = makeWater(S, 0, 0), toys = makeToys(S, 0, W.cy, 0), bowl = makeBowl(S, 1.9, .5);
+      const c1 = new THREE.CatmullRomCurve3([new THREE.Vector3(.88, 1.95, 0), new THREE.Vector3(1.35, 2.1, .12), new THREE.Vector3(1.75, 1.45, .3), new THREE.Vector3(1.9, .5, .5)]);
+      const c2 = new THREE.CatmullRomCurve3([new THREE.Vector3(1.9, .5, .5), new THREE.Vector3(2.4, 1.2, .4), new THREE.Vector3(2.0, 2.8, .2), new THREE.Vector3(.55, 3.35, .05)]);
+      const t1 = tubeOf(S, c1, .07, OCEAN), t2 = tubeOf(S, c2, .045, OCEAN);
+      const beads = [0, 1, 2, 3].map(() => { const m = new THREE.Mesh(new THREE.SphereGeometry(.09, 10, 8), toon(OCEAN, { emissive: 0x1a6fb0, emissiveIntensity: .4 })); m.visible = false; S.add(m); return m; });
+      const beads2 = [0, 1, 2, 3].map(() => { const m = new THREE.Mesh(new THREE.SphereGeometry(.07, 10, 8), toon(OCEAN, { emissive: 0x1a6fb0, emissiveIntensity: .4 })); m.visible = false; S.add(m); return m; });
+      Wd.on(t => {
+        W.spin.rotation.y = t * .35; W.body.position.y = W.cy + .05 * Math.sin(t * 1.1); W.seed.set(t, 1, 0);
+        toys.set(t, sm(t, 7.2, 7.7), sm(t, 9.6, 10.2), sm(t, 0, .6));
+        const k1 = prog(t, 8.0, 8.6), k2 = prog(t, 8.9, 9.6); t1.set(k1); t2.set(k2);
+        beads.forEach((m, i) => { m.visible = k1 >= 1; if (m.visible) m.position.copy(c1.getPoint((((t * .55 + i / 4) % 1) + 1) % 1)); });
+        beads2.forEach((m, i) => { m.visible = k2 >= 1; if (m.visible) m.position.copy(c2.getPoint((((t * .45 + i / 4) % 1) + 1) % 1)); });
+        bowl.water.position.y = .33 + .05 * sm(t, 8.6, 12);
+      });
+      heroCluster(Wd, () => [[0, 2.0, 0, 1.0, 2.0, 1.0]]);
+      const O = a => [Math.sin(a * PI / 180) * 8.8, 2.7, Math.cos(a * PI / 180) * 8.8];
+      return Object.assign(Wd, { cam: cam([[0, O(-20), [0, 2.0, 0], 62], [4, O(-5), [0, 2.0, 0], 62], [8, O(14), [0, 2.0, 0], 62], [12, O(32), [0, 2.0, 0], 62]]) });
+    } },
+    // ===================== s04 (10.5 s): into the drop; golden threads rise to the light =====================
+    { id: 's04', dur: 10.5, wide: true, caps: ['CAP_A_07', 'CAP_A_08'], capAt: [0.0, 4.8, 99], build() {
+      const Wd = newWorld([[-4.8, -4, 1.0], [5.2, -3.6, .7], [-1.5, -8, .8], [2.5, -7, 1.1]]), S = Wd.scene;
+      const W = makeWater(S, 0, 0), toys = makeToys(S, 0, W.cy, 0);
+      const cr = makeCrystal(S, -4.0, -2.0), A = makeToken(S, -2.9, 1.2, CORAL), B = makeToken(S, 2.9, 1.2, TEAL); A.pivot.rotation.y = .5; B.pivot.rotation.y = -.5;
+      const mag = makeMagnifier(S), light = makeLight(S), spark = makeSpark(S);
+      const TOP = 8.4, thW = makeThread(S, W.seedPos[0], W.seedPos[1], W.seedPos[2]), thC = makeThread(S, cr.pos[0], cr.pos[1], cr.pos[2]), thA = makeThread(S, A.pos[0], A.pos[1], A.pos[2]), thB = makeThread(S, B.pos[0], B.pos[1], B.pos[2]);
+      Wd.on(t => {
+        W.spin.rotation.y = 12 * .35 + t * .35; W.body.position.y = W.cy; W.seed.set(t, 1 + .25 * sm(t, 2, 5), 0);
+        const fk = 1 - sm(t, 0.2, 1.8); toys.set(12 + t, fk, fk, fk);
+        const hW = t < 4.8 ? (W.top - W.seedPos[1]) * sm(t, 2.3, 4.8) : (W.top - W.seedPos[1]) + (TOP - W.top) * sm(t, 4.8, 7.4);
+        thW.set(hW, 1);
+        const d = 7.7; thC.set((TOP - cr.pos[1]) * sm(t, d, d + 1.7), 1); thA.set((TOP - A.pos[1]) * sm(t, d + .25, d + 2.0), 1); thB.set((TOP - B.pos[1]) * sm(t, d + .45, d + 2.2), 1);
+        light.set(.1 + .9 * sm(t, 3.0, 7.2));
+        cr.gC.rotation.y = t * .22; cr.seed.set(t, 1, .5); A.seed.set(t, 1, 1); B.seed.set(t, 1, 2); A.coat.material.opacity = .22 + .06 * Math.sin(t * 3); B.coat.material.opacity = .22 + .06 * Math.sin(t * 3 + 1);
+        const mu = prog(t, 8.1, 10.5); mag.g.position.set(-3.35, lerp(2.0, 5.6, ease.io(mu)), -1.6); mag.g.rotation.z = -.2; mag.fade(t < 8.1 ? 0 : 1 - sm(t, 9.3, 10.4));
+        spark.set(t, 99, [0, 0, 0]);
+      });
+      heroCluster(Wd, t => t < 7.6 ? [[0, 2.1, 0, 1.0, 1.9, 1.0]] : [[-.5, 1.9, -.3, 3.8, 1.9, 1.5]]);
+      return Object.assign(Wd, { cam: cam([[0, [0, 2.2, 7.2], [0, 1.9, 0], 62], [2.3, [0, 2.1, 2.9], [0, 1.9, 0], 60], [4.8, [0, 2.6, 3.6], [0, 3.8, 0], 62], [6.0, [0, 4.0, 5.6], [0, 6.0, 0], 64],
+        [7.4, [0, 4.4, 9.5], [0, 5.2, 0], 68], [10.5, [0, 3.8, 13.5], [0, 2.4, 0], 70]]) });
+    } },
+    // ===================== s05 (9.2 s): tools measure the outside =====================
+    { id: 's05', dur: 9.2, wide: true, caps: ['CAP_A_09', 'CAP_A_10'], capAt: [0.0, 4.4, 99], build() {
+      const Wd = newWorld([[-4.8, -4, 1.0], [5.2, -3.6, .7], [-1.5, -8, .8], [2.5, -7, 1.1]]), S = Wd.scene;
+      const W = makeWater(S, 0, 0), cr = makeCrystal(S, -4.0, -2.0), A = makeToken(S, -2.9, 1.2, CORAL), B = makeToken(S, 2.9, 1.2, TEAL); A.pivot.rotation.y = .5; B.pivot.rotation.y = -.5;
+      const light = makeLight(S), TOP = 8.4;
+      const thW = makeThread(S, W.seedPos[0], W.seedPos[1], W.seedPos[2]), thC = makeThread(S, cr.pos[0], cr.pos[1], cr.pos[2]), thA = makeThread(S, A.pos[0], A.pos[1], A.pos[2]), thB = makeThread(S, B.pos[0], B.pos[1], B.pos[2]);
+      const gA = makeGlowHalo(S, A.pos, 1.6), gB = makeGlowHalo(S, B.pos, 1.6), gC = makeGlowHalo(S, cr.pos, 2.0), gW = makeGlowHalo(S, W.pos, 3.2);
+      function makeGlowHalo(P, pos, size) { const g = glow(size, 0, 0xffe9b8); g.position.set(pos[0], pos[1], pos[2]); g.renderOrder = 10; P.add(g); return g; }
+      const ruler = makeRuler(S, -2.0, .1), th = makeThermo(S, 2.0, .1), sc = makeScale(S, -1.5, 3.4), sw = makeStopwatch(S, 1.5, 3.4);
+      const gg = new THREE.Group(); gg.position.set(0, 0, 2.6); S.add(gg); const g1 = makeGear(gg, .55, 12, MUST), g2 = makeGear(gg, .36, 8, TEAL); g1.position.set(-.45, .85, 0); g2.position.set(.55, .85, 0);
+      const pr1 = makeProbe(S), pr2 = makeProbe(S), sp = [makeSpark(S), makeSpark(S), makeSpark(S), makeSpark(S)];
+      const Cm = (dir) => { const v = new THREE.Vector3(...dir).normalize().multiplyScalar(.9); return [v.x, W.seedPos[1] + v.y, v.z]; };
+      const cSc = Cm([-.5, -.1, .85]), cSw = Cm([.5, -.05, .86]);
+      const yC = W.seedPos[1], rC = dropR(yC - W.cy) + .02;
+      const TOOLS = [[ruler, .2], [th.g, .9], [sc.g, 1.6], [sw.g, 2.3], [gg, 3.0]];
+      Wd.on(t => {
+        W.spin.rotation.y = 12 * .35 + 3.2 + t * .35; W.seed.set(t, 1, 0); cr.gC.rotation.y = t * .22; cr.seed.set(t, 1, .5); A.seed.set(t, 1, 1); B.seed.set(t, 1, 2);
+        const dim = sm(t, 0, 4.4); const tk = 1 - .85 * dim;
+        thW.set(TOP - W.seedPos[1], tk); thC.set(TOP - cr.pos[1], tk); thA.set(TOP - A.pos[1], tk); thB.set(TOP - B.pos[1], tk); light.set(.9 - .75 * dim);
+        const gl = sm(t, 0.5, 4.4); gA.material.opacity = .55 * gl; gB.material.opacity = .55 * gl; gC.material.opacity = .6 * gl; gW.material.opacity = .45 * gl; W.mat.emissiveIntensity = .55 * gl;
+        TOOLS.forEach(([g, T]) => { g.position.y = -3.6 * (1 - ease.out(prog(t, T, T + 1.5))); g.visible = t > T - .05; });
+        const rx = lerp(2.0, rC + .18, ease.io(prog(t, 4.4, 6.0))); ruler.position.x = -rx; const tx = lerp(2.0, rC + .1, ease.io(prog(t, 4.9, 6.6))); th.g.position.x = tx;
+        th.fluid.scale.y = .25 + 1.55 * ease.io(prog(t, 4.6, 8.8));
+        const bt = t - 4.4, ang = bt > 0 ? .3 * Math.exp(-bt * .45) * Math.cos(bt * 2.6) : 0; sc.beam.rotation.z = ang; sc.pans.forEach(p => { p.rotation.z = -ang; });
+        const sa = Math.max(0, t - 4.4); sw.needle.rotation.z = -(sa * sa * 1.6 + sa * 3);
+        g1.rotation.z = t * .9; g2.rotation.z = -t * .9 * 12 / 8 + PI / 8; g2.rotation.z = -t * .9 * 1.5 + PI / 8;
+        const k3 = ease.io(prog(t, 5.4, 7.4)), k4 = ease.io(prog(t, 5.9, 7.9));
+        pr1.set([-1.5, 1.7, 3.4], cSc, k3); pr2.set([1.5, 2.0, 3.4], cSw, k4);
+        sp[0].set(t, 6.0, [-rC, yC, 0.1]); sp[1].set(t, 6.6, [tx - .1, yC, 0.1]); sp[2].set(t, 7.4, cSc); sp[3].set(t, 7.9, cSw);
+      });
+      heroCluster(Wd, () => [[0, 2.0, 0, 1.0, 2.0, 1.0]]);
+      return Object.assign(Wd, { cam: cam([[0, [0, 3.8, 13.5], [0, 2.4, 0], 70], [4.4, [0, 2.1, 11.2], [0, 2.0, 0], 66], [9.2, [0, 1.7, 10.0], [0, 2.0, 0], 64]]) });
+    } },
+    // ===================== s06 (12.81 s): how, not why; engineering; the crystal morph =====================
+    { id: 's06', dur: 12.81, wide: true, caps: ['CAP_A_11', 'CAP_A_12', 'CAP_A_13'], capAt: [0.0, 4.5, 8.75, 99], build() {
+      const Wd = newWorld([[-5.2, -6, 1.0], [7, -7, .8], [-1.5, -9, .7]]), S = Wd.scene;
+      const W = makeWater(S, -2.0, 0), cr = makeCrystal(S, 5.0, 1.0);
+      // gear machine
+      const base = box(4.4, .6, 1.1, PL, { pos: [1.7, .3, 0], inkW: .012, inkColor: INKC }); S.add(base);
+      const GA = [[.6, 1.5, .8, 12, MUST], [2.02, 1.5, .52, 8, TEAL], [3.02, 1.5, .38, 6, MUST]], gears = [];
+      GA.forEach(([x, y, r, n, col], i) => { const g = makeGear(S, r, n, col); S.add(g); gears.push({ g, x, y, i }); S.add(cyl(.06, .06, y - .6, PL, { pos: [x, .6 + (y - .6) / 2, -.2], inkW: .008, inkColor: INKC })); });
+      const cone1 = new THREE.Mesh(new THREE.ConeGeometry(.9, 1, 24, 1, true), bm(0xfff0b8, .22, true)), cone2 = new THREE.Mesh(new THREE.ConeGeometry(.6, 1, 24, 1, true), bm(0xfff0b8, .14, true));
+      cone1.visible = cone2.visible = false; S.add(cone1); S.add(cone2);
+      const Cpt = new THREE.Vector3(-2.0 + .56, W.seedPos[1] + .46, .6), Src = new THREE.Vector3(2.8, 5.4, 2.2), Out = new THREE.Vector3(-3.4, 5.0, 3.0), spark = makeSpark(S);
+      function aimCone(m, from, to, k) { const d = to.clone().sub(from), L = d.length(); m.position.copy(from).addScaledVector(d, .5); m.quaternion.setFromUnitVectors(UPV, d.clone().normalize().negate()); m.scale.set(1, L * k, 1); m.position.copy(from).addScaledVector(d, .5 * k); }
+      // blueprint + blocks + crane
+      const bpT = canvasTex(512, 256, (g, w, h) => { g.fillStyle = '#cfe6f3'; g.fillRect(0, 0, w, h); g.strokeStyle = '#86b6d4'; g.lineWidth = 2; for (let x = 0; x <= w; x += 32) { g.beginPath(); g.moveTo(x, 0); g.lineTo(x, h); g.stroke(); } for (let y = 0; y <= h; y += 32) { g.beginPath(); g.moveTo(0, y); g.lineTo(w, y); g.stroke(); } g.strokeStyle = '#5f97bb'; g.lineWidth = 4; g.strokeRect(2, 2, w - 4, h - 4); });
+      const bp = new THREE.Mesh(new THREE.PlaneGeometry(15, 6.5), new THREE.MeshBasicMaterial({ map: bpT, transparent: true, opacity: .9 })); bp.rotation.x = -PI / 2; bp.position.set(-.2, .03, -5.4); S.add(bp);
+      const BZ = -5.4, BL = [];
+      const addB = (x, y, w, h, d, col) => BL.push({ x, y, w, h, d, col });
+      [-4.3, -1.7].forEach(px => { for (let k = 0; k < 3; k++) addB(px, .275 + k * .55, .55, .55, .55, [CREAM, PL, CREAM][k]); });
+      addB(-3.0, 3 * .55 + .15, 3.4, .3, .8, TEAL); addB(-3.7, 3 * .55 + .45, .45, .3, .45, PL); addB(-2.3, 3 * .55 + .45, .45, .3, .45, PL);
+      [[.9, CREAM], [.76, TEAL], [.62, PL], [.5, CREAM], [.4, TEAL]].reduce((y, [s, col]) => { addB(1.2, y + s / 2, s, s, s, col); return y + s; }, 0);
+      const blocks = BL.map((b, i) => { const m = box(b.w, b.h, b.d, b.col, { inkW: .012, inkColor: INKC }); m.visible = false; S.add(m); return { m, b, T: 4.9 + i * .2 }; });
+      const roof = mesh(new THREE.ConeGeometry(.3, .45, 4), toon(MUST), { inkW: .012, inkColor: INKC }); roof.visible = false; S.add(roof); const roofY = [.9, .76, .62, .5, .4].reduce((a, b) => a + b, 0) + .22;
+      const crane = new THREE.Group(); crane.position.set(3.6, 0, BZ); S.add(crane);
+      crane.add(box(.9, .3, .9, TEAL, { pos: [0, .15, 0], inkW: .012, inkColor: INKC })); crane.add(box(.22, 3.4, .22, MUST, { pos: [0, 2.0, 0], inkW: .012, inkColor: INKC }));
+      const arm = new THREE.Group(); arm.position.y = 3.75; crane.add(arm); arm.add(box(2.8, .18, .22, TEAL, { pos: [-.8, 0, 0], inkW: .012, inkColor: INKC })); arm.add(box(.5, .3, .3, PL, { pos: [.6, 0, 0], inkW: .012, inkColor: INKC }));
+      const cab = cyl(.012, .012, 1, PL, { pos: [-1.9, -.5, 0], ink: false }); arm.add(cab); const hb = box(.34, .34, .34, CREAM, { pos: [-1.9, -1.1, 0], inkW: .012, inkColor: INKC }); arm.add(hb);
+      Wd.on(t => {
+        W.spin.rotation.y = t * .3; W.seed.set(t, 1, 0); W.body.position.y = W.cy + .04 * Math.sin(t * 1.1); W.mat.emissiveIntensity = .25;
+        const wa = t * 1.0;
+        gears.forEach(o => { const T = .3 + o.i * .6, u = ease.out(prog(t, T, T + 1.8)); o.g.position.set(o.x + (o.i === 1 ? 0 : (o.i ? 5 : -5)) * (1 - u), o.y + (o.i === 1 ? 5 : 0) * (1 - u), 0); o.g.visible = t > T - .05; });
+        gears[0].g.rotation.z = wa; gears[1].g.rotation.z = -wa * 1.5 + PI / 8; gears[2].g.rotation.z = wa * 2;
+        const ck = sm(t, 2.4, 3.3) * (1 - sm(t, 4.4, 5.0)); cone1.visible = cone2.visible = ck > .01;
+        if (ck > .01) { aimCone(cone1, Src, Cpt, ck); cone1.material.opacity = .22 * ck; const rk = sm(t, 3.3, 3.9); aimCone(cone2, Cpt, Out, rk); cone2.material.opacity = .14 * ck * rk; cone2.visible = rk > .01; }
+        spark.set(t, 3.3, [Cpt.x, Cpt.y, Cpt.z]);
+        const bk = ease.out(prog(t, 4.5, 6.0)); bp.visible = bk > .01; bp.scale.set(Math.max(.001, bk), Math.max(.001, bk), 1);
+        blocks.forEach(o => { const u = ease.out(prog(t, o.T, o.T + .35)); o.m.visible = t >= o.T; o.m.position.set(o.b.x, o.b.y + (1 - u) * 2.2, BZ); o.m.scale.setScalar(.8 + .2 * u); });
+        const ru = ease.out(prog(t, 7.4 - 0, 7.4 + .01)); roof.visible = t >= 7.5; roof.position.set(1.2, roofY, BZ);
+        const sw = 5.0 + .9 * Math.sin(t * 1.1); arm.rotation.y = sw * .12 + (t > 5.2 ? .5 * Math.sin((t - 5.2) * 1.2) : 0); cab.scale.y = 1 + .3 * Math.sin(t * 2); hb.position.y = -1.1 - .15 * Math.sin(t * 2) + .0;
+        const m1 = sm(t, 9.0, 9.8), m2 = sm(t, 9.8, 10.6), m3 = sm(t, 10.6, 11.4);
+        cr.set(1 - m1 + m3, m1 - m2, m2 - m3); cr.gC.rotation.y = t * .22; cr.gP.rotation.y = t * .22; cr.seed.set(t, 1.15, 0); cr.body.position.y = cr.pos[1] + .03 * Math.sin(t * 1.2);
+      });
+      heroCluster(Wd, t => t < 7.9 ? [[-2.0, 2.0, 0, 1.0, 1.9, 1.0], [1.7, 1.2, 0, 1.9, 1.2, .6]] : [[5.0, 1.2, 1.0, .7, 1.2, .7]]);
+      return Object.assign(Wd, { cam: cam([[0, [-.2, 2.6, 10.4], [-.2, 1.9, 0], 64], [4.5, [0.2, 4.8, 12.6], [0.2, 1.6, -.6], 66], [6.4, [0.4, 9.5, 15.0], [0.4, 1.0, -2.0], 70], [7.6, [0.6, 9.2, 14.4], [0.7, 1.0, -1.6], 70],
+        [8.9, [5.0, 1.9, 6.3], [5.0, 1.58, 1.0], 60], [11.8, [5.25, 1.95, 6.0], [5.0, 1.58, 1.0], 60], [12.81, [5.3, 1.95, 5.9], [5.0, 1.58, 1.0], 60]]) });
+    } },
+  ],
+});
+</script>
+</html>
