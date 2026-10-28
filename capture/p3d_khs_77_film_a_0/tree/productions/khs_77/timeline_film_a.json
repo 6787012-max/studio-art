@@ -1,0 +1,149 @@
+{
+ "fps": 30,
+ "titleDur": 0,
+ "recapDur": 0,
+ "shots": [
+  {
+   "id": "s01",
+   "brief": "s01",
+   "dur": 10.4,
+   "briefDur": 10.4,
+   "captions": [
+    {
+     "id": "CAP_A_01",
+     "at": 0.5,
+     "until": 5.3
+    },
+    {
+     "id": "CAP_A_02",
+     "at": 5.3,
+     "until": 10.1
+    }
+   ],
+   "capAt": [
+    0.5,
+    5.3
+   ],
+   "words": []
+  },
+  {
+   "id": "s02",
+   "brief": "s02",
+   "dur": 9.55,
+   "briefDur": 9.55,
+   "captions": [
+    {
+     "id": "CAP_A_03",
+     "at": 0.5,
+     "until": 4.88
+    },
+    {
+     "id": "CAP_A_04",
+     "at": 4.88,
+     "until": 9.25
+    }
+   ],
+   "capAt": [
+    0.5,
+    4.88
+   ],
+   "words": []
+  },
+  {
+   "id": "s03",
+   "brief": "s03",
+   "dur": 9.05,
+   "briefDur": 9.05,
+   "captions": [
+    {
+     "id": "CAP_A_05",
+     "at": 0.5,
+     "until": 4.62
+    },
+    {
+     "id": "CAP_A_06",
+     "at": 4.62,
+     "until": 8.75
+    }
+   ],
+   "capAt": [
+    0.5,
+    4.62
+   ],
+   "words": []
+  },
+  {
+   "id": "s04",
+   "brief": "s04",
+   "dur": 9.6,
+   "briefDur": 9.6,
+   "captions": [
+    {
+     "id": "CAP_A_07",
+     "at": 0.5,
+     "until": 4.9
+    },
+    {
+     "id": "CAP_A_08",
+     "at": 4.9,
+     "until": 9.3
+    }
+   ],
+   "capAt": [
+    0.5,
+    4.9
+   ],
+   "words": []
+  },
+  {
+   "id": "s05",
+   "brief": "s05",
+   "dur": 8.9,
+   "briefDur": 8.9,
+   "captions": [
+    {
+     "id": "CAP_A_09",
+     "at": 0.5,
+     "until": 4.55
+    },
+    {
+     "id": "CAP_A_10",
+     "at": 4.55,
+     "until": 8.6
+    }
+   ],
+   "capAt": [
+    0.5,
+    4.55
+   ],
+   "words": []
+  },
+  {
+   "id": "s06",
+   "brief": "s06",
+   "dur": 11.28,
+   "briefDur": 11.28,
+   "captions": [
+    {
+     "id": "CAP_A_11",
+     "at": 0.5,
+     "until": 5.74
+    },
+    {
+     "id": "CAP_A_12",
+     "at": 5.74,
+     "until": 10.98
+    }
+   ],
+   "capAt": [
+    0.5,
+    5.74
+   ],
+   "words": []
+  }
+ ],
+ "audio": {
+  "narration": null,
+  "music": null
+ }
+}
