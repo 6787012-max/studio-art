@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>film_siach</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script>window.__T0=47.8860; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import { film, world, path, orbit, cloud, ease, prog, lerp, clamp, rng, THREE, box, cyl, ball, mesh, toon, ink, canvasTex } from '../../lib/stage3d.js';
+import * as P from '../../lib/props3d.js';
+import * as S from './shared.js';
+import * as K from './kit.js';
+import * as H from './sh25.js';
+import * as W from './world25.js';
+import * as Q from './props25.js';
+
+const PI = Math.PI, C = Q.C, bell = H.bell;
+const cap = n => 'CAP_S_' + String(n).padStart(2, '0');
+const B = {};
+const SKY = o => W.sunnySky(Object.assign({ ground: 'grass', sunColor: 0xFFFFFF, hemiSky: 0xFFFFFF, hemiGround: 0xEFE6D2, sun: 1.7, hemi: 1.35, shadowExt: 16, fogNear: 140, fogFar: 420, groundSize: 500, groundRep: [80, 80] }, o || {}));
+function hallWorld(o) { const Wd = world(SKY(o)); const Hl = Q.hall(Wd); Hl.glow(0); return { Wd, Hl }; }
+const _v = new THREE.Vector3();
+function followHand(Wd, Pp, side, obj, off, vis) { Wd.add(obj); Wd.on(t => { if (!Pp.figure) { obj.visible = false; return; } S.wpos(Pp.figure.bones['hand' + side].userData.hand, _v); obj.position.set(_v.x + off[0], _v.y + off[1], _v.z + off[2]); obj.visible = vis ? vis(t) : true; }); }
+const faceTo = (x, z, tx, tz) => Math.atan2(tx - x, tz - z);
+// walk along waypoints [[t,x,z],...]: pos, facing (along the path), walk (distance based), moving flag
+function route(t, pts) {
+  let i = 0; while (i < pts.length - 2 && t > pts[i + 1][0]) i++;
+  const a = pts[i], b = pts[i + 1], u = clamp((t - a[0]) / (b[0] - a[0] || 1), 0, 1), dx = b[1] - a[1], dz = b[2] - a[2];
+  let d = 0; for (let k = 0; k < i; k++) d += Math.hypot(pts[k + 1][1] - pts[k][1], pts[k + 1][2] - pts[k][2]); d += u * Math.hypot(dx, dz);
+  const moving = t > pts[0][0] && t < pts[pts.length - 1][0] && Math.hypot(dx, dz) > .01 && u < 1;
+  return { x: lerp(a[1], b[1], u), z: lerp(a[2], b[2], u), f: Math.atan2(dx, dz), d, moving };
+}
+// the big table at the middle of the beit midrash: top y .82, x +-1.4, z -1.55..-.05
+const TBL = { y: .82 };
+function gridPos(i) { const r = Math.floor(i / 5), c = i % 5; return [-.56 + c * .28, TBL.y + .006, -1.0 + r * .22]; }
+function cardsOnTable(Wd, shown) { // shown(i,t)->0..1 ; returns the card groups
+  const arr = []; for (let i = 0; i < 20; i++) { const n = Q.note(i, Q.ICOL[i % 6]); n.rotation.x = -PI / 2; const p = gridPos(i); n.position.set(p[0], p[1], p[2]); Wd.add(n); arr.push(n); }
+  Wd.on(t => arr.forEach((n, i) => { const k = shown(i, t); n.visible = k > .01; n.scale.setScalar(Math.max(.001, k)); const p = gridPos(i); n.position.y = p[1] + .25 * (1 - k); }));
+  return arr;
+}
+const GENV = [-.35, TBL.y, -1.38], RENV = [.35, TBL.y, -1.38];
+function envOnTable(Wd, col, dark, pos) { const e = Q.envelope(col, dark); e.position.set(...pos); e.rotation.x = -.1; Wd.add(e); return e; }
+
+// =============================== A: the beit midrash, words that hurt ===============================
+B.s01 = () => {
+  const { Wd, Hl } = hallWorld(); const Tp = Q.teacher(Wd, t => ({ gesture: t % 7 < 4 ? 'explain' : 'wide', talk: .5 + .5 * Math.sin(t * 6) }));
+  Q.seatedBoys(Wd, [0, 1, 2, 3, 5, 6, 8, 9, 10, 11, 13, 15, 16, 18]);
+  const cam = path([[0, [3.2, 5.3, -5.1], [0, 1.6, 1.8], 50], [6.5, [1.6, 3.0, -2.6], [0, 1.4, 2.4], 44], [12.9, [1.2, 2.0, -1.0], [0, 1.3, 2.8], 42]]);
+  return Object.assign(Wd, { hero: Tp, cam });
+};
+const LSLOT = Q.SLOT[19];
+const STONES = [];
+for (let i = 0; i < 8; i++) { const st = [.5 + (i % 4) * .4, 2.4 + .3 * (i % 3), -2 + (i % 5) * .5]; let en;
+  if (i < 5) en = [LSLOT.x + (i % 2 ? .1 : -.1), .56, LSLOT.z - .45 - i * .17]; else en = [LSLOT.x + (i % 2 ? .6 : -.6), .1, LSLOT.z - .25 + (i - 5) * .22];
+  STONES.push({ st, en, ts: .8 + i * .9, dur: 4.5, r: .07 + .012 * (i % 3) }); }
+function stones(Wd, fade) {
+  const arr = STONES.map((s, i) => { const m = new THREE.Mesh(new THREE.IcosahedronGeometry(s.r, 0), toon(Q.GREY)); m.castShadow = true; ink(m, .012); m.userData.sc = [1 + .15 * (i % 3), .8 + .1 * (i % 2), 1.1 - .1 * (i % 3)]; Wd.add(m); return m; });
+  Wd.on(t => arr.forEach((m, i) => { const s = STONES[i], u = clamp((t - s.ts) / s.dur, 0, 1), e = ease.io(u), q = m.userData.sc;
+    m.position.set(lerp(s.st[0], s.en[0], e) + .06 * Math.sin(u * 9 + i), lerp(s.st[1], s.en[1], e) + .45 * Math.sin(PI * u) * (1 - u) + .06, lerp(s.st[2], s.en[2], e));
+    m.rotation.set(u * 3 + i, u * 2, 0); const k = Math.min(1, u * 8) * (fade ? 1 - prog(t, fade[0], fade[1]) : 1); m.visible = k > .01; m.scale.set(q[0] * k, q[1] * k, q[2] * k); }));
+  return arr;
+}
+B.s02 = () => {
+  const { Wd, Hl } = hallWorld(); Hl.glow(0);
+  Q.seatedBoys(Wd, [0, 1, 5, 6, 10, 11, 15]);
+  const Lb = S.man(Wd, Q.LONELY, t => ({ pos: [LSLOT.x, Q.SEATY, LSLOT.z], facing: LSLOT.f, sit: true, groundY: 0, gesture: 'think', smile: 0, brow: .3, look: -.8, seed: .6 }));
+  const g = S.glowSp(Wd, 2.8, .6, 0xFFD9A0); g.position.set(LSLOT.x, 1.0, LSLOT.z); Wd.on(t => { g.material.opacity = lerp(.62, .06, ease.sm(prog(t, 1.5, 10))); });
+  stones(Wd);
+  const cam = path([[0, [3.9, 1.9, .3], [6.2, .75, 2.4], 40], [12.9, [4.7, 1.45, 1.5], [6.25, .8, 2.45], 34]]);
+  return Object.assign(Wd, { hero: Lb, cam });
+};
+
+// =============================== B: why - three pictures ===============================
+B.s03 = () => {
+  const Wd = world(SKY({ ground: 'stone' })); const Hl = Q.hall(Wd); Hl.glow(0); Hl.door.visible = true;
+  const Bp = S.man(Wd, Q.BOY, t => ({ pos: [-1.8, 0, -9.2], facing: t < 1 ? 0 : 0, groundY: 0, gesture: t < 6 ? 'think' : 'hips', smile: .1, brow: .2, look: t > 3 && t < 5 ? .6 : 0, seed: .5 }));
+  const stand = new THREE.Group(); stand.position.set(2.8, 0, -9.2); stand.rotation.y = -PI / 2; Wd.add(stand);
+  stand.add(box(2.6, .7, .08, 0xB98A5A, { pos: [0, 1.5, 0] })); for (const x of [-1.1, 1.1]) stand.add(cyl(.05, .06, 1.2, 0x7a4a2a, { pos: [x, .6, 0], ink: false }));
+  const sq = []; for (let i = 0; i < 7; i++) { const m = new THREE.Mesh(new THREE.PlaneGeometry(.28, .28), new THREE.MeshBasicMaterial({ color: 0xFFF8E6, side: THREE.DoubleSide })); m.position.set(-1.0 + i * .333, 1.5, .05); stand.add(m); sq.push(m); }
+  Wd.on(t => sq.forEach((m, i) => m.material.color.set(0xFFF8E6).lerp(C(Q.GREY), ease.out(prog(t, 1.0 + i * 1.3, 1.6 + i * 1.3)))));
+  for (const [x, z] of [[-6, -12], [7, -13], [-9, -9]]) P.tree(Wd, { pos: [x, 0, z], kind: x > 0 ? 1 : 0, scale: 1.3 });
+  Q.hero;
+  const cam = orbit([.6, 1.4, -8.6], 7, .5, 240, 282, 0, 11.55, 40);
+  return Object.assign(Wd, { hero: Bp, cam });
+};
+const RLX = -2.5, zc = t => -20 + 5.6 * t - .22 * t * t;
+B.s04 = () => {
+  const Wd = world(SKY({ ground: 'stone' })); W.cityStreet(Wd, { len: 220 });
+  const car = H.makeCar(Wd, { warm: false }), st = t => ({ x: RLX, z: zc(t), h: 0, dist: zc(t), t, wr: 0 });
+  Wd.on(t => car.update(st(t)));
+  const Dp = S.man(Wd, Q.DRIVER, t => ({ pos: H.toW(st(t), H.DRV), facing: 0, sit: true, groundY: .2, gesture: t < 7.2 ? 'rest' : 'shrug', smile: t < 7.2 ? .2 : 0, brow: t > 7.2 ? .3 : 0, seed: .3 }));
+  // no-entry sign (red disc with a white bar, no letters) and cones that mark the closed lane
+  const sg = new THREE.Group(); sg.position.set(-4.5, 0, 1.2); Wd.add(sg); sg.add(cyl(.05, .06, 2.4, 0x6a6a72, { pos: [0, 1.2, 0], inkW: .01 }));
+  sg.add(cyl(.42, .42, .05, 0xD83A32, { rot: [PI / 2, 0, 0], pos: [0, 2.5, 0], inkW: .02 })); sg.add(box(.56, .14, .06, 0xFFFFFF, { pos: [0, 2.5, -.03], ink: false }));
+  for (let z = 3; z <= 40; z += 3) for (const x of [-1.1, -3.9]) { const c = new THREE.Group(); c.position.set(x, 0, z); Wd.add(c); c.add(mesh(new THREE.ConeGeometry(.17, .55, 14), toon(0xF28A30), { pos: [0, .28, 0], inkW: .012 })); c.add(cyl(.12, .13, .08, 0xFFFFFF, { pos: [0, .3, 0], ink: false })); }
+  for (let i = 0; i < 5; i++) Wd.add(box(.9, .2, .06, i % 2 ? 0xFFFFFF : 0xD83A32, { pos: [-2.5 + (i - 2) * .9, .75, 41], inkW: .01 }));
+  // ticket flutters down onto the windshield (car-local)
+  const tk = new THREE.Mesh(new THREE.PlaneGeometry(.26, .18), new THREE.MeshBasicMaterial({ color: 0xFFF8E6, side: THREE.DoubleSide })); const bar = new THREE.Mesh(new THREE.PlaneGeometry(.26, .03), new THREE.MeshBasicMaterial({ color: 0xF28A30, side: THREE.DoubleSide })); bar.position.set(0, -.07, .001); tk.add(bar); car.g.add(tk);
+  const th = Math.atan2(.63, .78), cs = Math.cos(th), sn = Math.sin(th), ly = .5, lz = .012, fx = .28;
+  const fin = [fx, .84 + ly * cs + lz * sn, .95 - ly * sn + lz * cs];
+  Wd.on(t => { const u = prog(t, 5.6, 8.0), e = ease.out(u); tk.visible = t > 5.6;
+    tk.position.set(lerp(1.1, fin[0], e) + .25 * Math.sin(u * 12) * (1 - u), lerp(3.0, fin[1], u * u * (3 - 2 * u)) , lerp(2.0, fin[2], e) + .1 * Math.sin(u * 9) * (1 - u));
+    tk.rotation.set(lerp(2.2 + Math.sin(u * 10), -th, e), lerp(1.5, 0, e), lerp(1.2, 0, e)); });
+  const cam = t => { const z = zc(t); return { pos: [RLX + 4.7, 1.55, z + lerp(2.4, -.2, prog(t, 0, 11.5))], look: [RLX + .3, 1.1, z + .3], fov: 30 }; };
+  return Object.assign(Wd, { hero: Dp, cam });
+};
+B.s05 = () => {
+  const Wd = world(SKY({ ground: 'stone', skyBottom: 0xFFF1C9 }));
+  const fl = new THREE.Mesh(new THREE.PlaneGeometry(14, 12), new THREE.MeshLambertMaterial({ map: canvasTex(128, 128, (g, w, h) => { g.fillStyle = '#F4EEE2'; g.fillRect(0, 0, w, h); g.fillStyle = '#E6DCC8'; g.fillRect(0, 0, w / 2, h / 2); g.fillRect(w / 2, h / 2, w / 2, h / 2); }, [10, 8]) })); fl.rotation.x = -PI / 2; fl.position.set(0, .02, -.5); fl.receiveShadow = true; Wd.add(fl);
+  Wd.add(box(14, 3.2, .2, 0xF7EEDC, { pos: [0, 1.6, -3.2], inkW: .02 })); Wd.add(box(.2, 3.2, 12, 0xF3E8D0, { pos: [-5.5, 1.6, 0], inkW: .02 }));
+  Wd.add(box(3.4, .9, .65, 0xDFC9A0, { pos: [-3.2, .45, -2.8] })); Wd.add(box(3.5, .06, .7, 0xB98A5A, { pos: [-3.2, .93, -2.8] })); Wd.add(box(3.4, .8, .35, 0xDFC9A0, { pos: [-3.2, 2.2, -3.0] }));
+  const win = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 1.4), new THREE.MeshBasicMaterial({ color: 0xCFE8F8 })); win.position.set(2.2, 1.9, -3.08); Wd.add(win); Wd.add(box(2.0, 1.6, .05, 0xFFFFFF, { pos: [2.2, 1.9, -3.12], ink: false }));
+  const gl = S.glowSp(Wd, 5, .35, 0xFFF1C9); gl.position.set(2.2, 1.9, -2.6);
+  Wd.add(box(1.7, .06, .95, 0xB98A5A, { pos: [0, .75, 0] })); for (const dx of [-.75, .75]) for (const dz of [-.4, .4]) Wd.add(box(.07, .72, .07, 0x7a4a2a, { pos: [dx, .38, dz], ink: false }));
+  const Bp = S.man(Wd, Q.BOY, t => ({ pos: [1.75, 0, -.7], facing: faceTo(1.75, -.7, .98, 0), groundY: 0, gesture: 'think', smile: 0, brow: .15, look: t > 6 ? -.4 : .4, seed: .4 }));
+  const cup = Q.glassCup(); cup.scale.setScalar(2.2); Wd.add(cup);
+  const SH = []; const r = rng(7); for (let i = 0; i < 16; i++) { const m = new THREE.Mesh(new THREE.BoxGeometry(.05 + r() * .08, .008, .05 + r() * .1), new THREE.MeshBasicMaterial({ color: i % 3 ? 0xCFE8F8 : 0xFFFFFF, transparent: true, opacity: .85 })); const a = r() * 6.28, sp = .12 + r() * .3; m.userData = { a, sp, vy: .2 + r() * .45, rx: r() * 6, rz: r() * 6 }; Wd.add(m); SH.push(m); }
+  const IX = .98, IZ = 0;
+  Wd.on(t => {
+    const u = prog(t, 1.0, 4.6), x = .1 + .72 * Math.pow(u, 1.6); let y = TBL.y - .04 + .0, rz = 0, show = true;
+    if (t < 4.6) { rz = -1.3 * clamp((x - .7) / .12, 0, 1) * 0; cup.position.set(x, .78, IZ); cup.rotation.set(0, 0, -.9 * prog(t, 4.0, 4.6)); }
+    else if (t < 5.8) { const f = (t - 4.6) / 1.2; cup.position.set(.82 + .16 * f, lerp(.78, .0, f * f), IZ); cup.rotation.set(0, 0, -.9 - 1.9 * f); }
+    else show = false;
+    cup.visible = show;
+    const tau = Math.max(0, t - 5.8); SH.forEach((m, i) => { const d = m.userData, k = tau > 0 ? 1 : 0, s = 1 - Math.exp(-tau * 1.1), px = IX + Math.cos(d.a) * d.sp * s * 1.7, pz = IZ + Math.sin(d.a) * d.sp * s * 1.7, py = .006 + Math.max(0, d.vy * (1 - Math.exp(-tau * 1.1)) * .8 - .16 * Math.min(tau, 2.4) * Math.min(tau, 2.4)) * (tau < 2.4 ? 1 : 0);
+      m.visible = k > 0; m.position.set(px, py + .005, pz); m.rotation.set(tau < 2.4 ? d.rx * s : 0, d.a, tau < 2.4 ? d.rz * s : 0); });
+  });
+  const cam = path([[0, [.2, 1.0, 3.0], [1.15, .6, -.1], 42], [5.5, [.6, .9, 2.5], [1.2, .5, -.1], 40], [11.55, [.9, .8, 2.1], [1.25, .35, -.1], 38]]);
+  return Object.assign(Wd, { hero: Q.proxy(Wd, [1.2, .7, -.2], [1.6, 1.5, 1.4]), cam });
+};
+B.s06 = () => {
+  const { Wd, Hl } = hallWorld(); Hl.glow(0);
+  const L2 = LSLOT; const bx = L2.x + .25;
+  const rts = [[0, 3.7, -.6], [.6, 3.7, -.5], [2.2, 3.7, 3.5], [4.4, 7.0, 3.5], [5.8, 7.0, 1.2], [5.801, 7.0, 1.2]];
+  const Bp = S.man(Wd, Q.BOY, t => { const r = route(t, rts), s = ease.io(prog(t, 5.8, 6.7)); const walkF = r.moving ? r.f : -PI / 2;
+    if (t < 5.8) return { pos: [r.x, 0, r.z], facing: t < .6 ? 0 : walkF, walk: r.moving ? r.d * 7.2 : undefined, groundY: 0, gesture: 'rest', smile: .3, seed: .5, look: t < 1 ? -.6 : 0 };
+    return { pos: [lerp(7.0, 6.28, s), lerp(0, Q.SEATY, s), 1.2], facing: lerp(-PI / 2, -PI / 2, s), sit: s > .5, groundY: 0, gesture: t > 7.0 ? 'offer' : 'rest', smile: .95, seed: .5 }; });
+  followHand(Wd, Bp, 'A', Q.openBook(), [0, -.04, .04], t => t > 6.0);
+  const Lb = S.man(Wd, Q.LONELY, t => ({ pos: [L2.x, Q.SEATY, L2.z], facing: L2.f, sit: true, groundY: 0, gesture: t < 7.2 ? 'think' : 'rest', smile: t < 7.2 ? 0 : .9, brow: t < 7.2 ? .3 : 0, look: t > 7.4 ? .6 : -.8, seed: .6 }));
+  Q.seatedBoys(Wd, [0, 1, 5, 6, 10, 11, 12, 15, 16]);
+  stones(Wd, [6.3, 9.3]);
+  const g = S.glowSp(Wd, 3.6, 0, 0xFFD54A); g.position.set(6.4, 1.0, 1.8); Wd.on(t => { g.material.opacity = .75 * ease.sm(prog(t, 6.8, 10)); });
+  const g0 = S.glowSp(Wd, 2.6, .06, 0xFFD9A0); g0.position.set(L2.x, 1.0, L2.z);
+  const Lf = S.lightField(Wd, 26, { r: .05, glow: .8 });
+  Lf.frame((t, cam, L) => { S.stream(L, t, { t0: 7.0, t1: 11, N: 18, life: 3.2, size: 1, pos: (u, i) => { const a = i * 2.4 + u * 2, rr = .3 + .5 * ((i * 37) % 10) / 10; return [6.4 + rr * Math.cos(a), .6 + 1.4 * u, 1.8 + rr * Math.sin(a)]; } }); });
+  const cam = orbit([6.2, 1.0, 2.0], 3.8, .7, 250, 300, 0, 11.55, 40);
+  return Object.assign(Wd, { hero: Q.heroGroup(Wd, [Bp, Lb]), cam });
+};
+B.s07 = () => {
+  const { Wd, Hl } = hallWorld(); const Tp = Q.teacher(Wd, t => ({ gesture: 'rest', smile: .4 }));
+  Q.seatedBoys(Wd, [0, 1, 2, 3, 5, 6, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18]);
+  Wd.on(t => Hl.glow(.28 + .06 * Math.sin(t * 1.3)));
+  const cam = path([[0, [-3, 3.0, -5.0], [0, 1.5, 1.5], 52], [6.0, [-1.5, 4.6, -3.5], [0, 1.2, .5], 50], [11.56, [0, 5.2, 1.6], [0, .8, -.8], 46]]);
+  return Object.assign(Wd, { hero: Q.proxy(Wd, [0, 1.6, 0], [8, 3.2, 8]), cam });
+};
+
+// =============================== C: two envelopes ===============================
+B.s08 = () => {
+  const { Wd, Hl } = hallWorld(); Hl.glow(.25);
+  cardsOnTable(Wd, (i, t) => ease.out(prog(t, .4 + i * .38, .9 + i * .38)));
+  Q.seatedBoys(Wd, [0, 1, 5, 6, 10, 11, 15, 16]);
+  const cam = path([[0, [0, 5.2, 1.6], [0, .8, -.8], 46], [10.72, [0, 2.4, .5], [0, .85, -.8], 38]]);
+  return Object.assign(Wd, { hero: Q.proxy(Wd, [0, .95, -.8], [3.0, 1.0, 1.7]), cam });
+};
+function seatedBoy(Wd, fn) { return S.man(Wd, Q.BOY, t => Object.assign({ pos: [0, .11, -1.95], facing: 0, sit: true, groundY: 0, smile: .6, seed: .4 }, fn(t))); }
+function tableScene(o) {
+  const { Wd, Hl } = hallWorld(); Hl.glow(.25); Hl.stool(); cardsOnTable(Wd, () => 1); Q.seatedBoys(Wd, [0, 1, 5, 6, 10, 11, 15, 16]); return { Wd, Hl };
+}
+B.s09 = () => {
+  const { Wd } = tableScene(); const Bp = seatedBoy(Wd, t => ({ gesture: t < 4.5 ? 'up' : 'count', smile: .7, look: t > 5.5 ? Math.sin((t - 5.5) * 1.6) * .7 : 0 }));
+  followHand(Wd, Bp, 'A', Q.envelope(Q.GOLDE, 0xC9921A), [0, -.13, .06]); followHand(Wd, Bp, 'B', Q.envelope(Q.GREENE, 0x3F8A32), [0, -.13, .06]);
+  const cam = path([[0, [.2, 1.75, 2.2], [0, 1.0, -1.7], 44], [10.72, [.1, 1.5, .55], [0, 1.05, -1.8], 38]]);
+  return Object.assign(Wd, { hero: Bp, cam });
+};
+const FROM = [[-.28, TBL.y + .006, -.56], [0, TBL.y + .006, -.56], [.28, TBL.y + .006, -.56]];
+function noteFlights(Wd, env, ep, col, t0s, fromIdx, glowSp, sparks) {
+  const top = TBL.y + .22 * 1 + .01, ex = ep[0], ez = ep[2];
+  const ns = [0, 1, 2].map(k => { const n = Q.note(fromIdx[k], col); Wd.add(n); return n; });
+  const posAt = (k, t) => { const tb = t0s[k], f = FROM[k]; let u = t - tb;
+    if (u < 0) return { p: [f[0], f[1], f[2]], r: [-PI / 2, 0, 0], v: false, k: 0 };
+    if (u < .8) { const e = ease.io(u / .8); return { p: [f[0], lerp(f[1], 1.45, e), f[2]], r: [lerp(-PI / 2, 0, e), 0, 0], v: true, k: 0 }; }
+    if (u < 1.8) { const e = ease.io((u - .8) / 1), a = e; return { p: [lerp(f[0], ex, a), 1.45 + .12 * Math.sin(PI * e), lerp(f[2], ez, a)], r: [0, 0, 0], v: true, k: 0 }; }
+    if (u < 2.6) { const e = ease.io((u - 1.8) / .8); return { p: [ex, lerp(1.45, top - .12, e), ez], r: [0, 0, 0], v: true, k: e }; }
+    return { p: [ex, top - .12, ez], r: [0, 0, 0], v: false, k: 1 }; };
+  Wd.on(t => ns.forEach((n, k) => { const s = posAt(k, t); n.visible = s.v; n.position.set(...s.p); n.rotation.set(...s.r); }));
+  sparks.frame((t, cam, L) => { for (let k = 0; k < 3; k++) for (let j = 0; j < 7; j++) { const s = posAt(k, t - j * .06); if (!s.v) continue; L.put(s.p[0] + .02 * Math.sin(j * 3 + k), s.p[1] + .02 * j, s.p[2], (.7 - j * .09) * (1 - s.k), C(0xFFD54A)); } });
+  Wd.on(t => { let c = 0; for (let k = 0; k < 3; k++) c += prog(t, t0s[k] + 1.8, t0s[k] + 2.6); glowSp.material.opacity = .15 + .55 * (c / 3); });
+}
+B.s10 = () => {
+  const { Wd } = tableScene(); const Bp = seatedBoy(Wd, t => ({ gesture: t > 6.8 ? 'heart' : 'rest', smile: t > 6.8 ? 1 : .6, look: t > 1 && t < 6 ? .35 : 0 }));
+  const eg = envOnTable(Wd, Q.GOLDE, 0xC9921A, GENV), er = envOnTable(Wd, Q.GREENE, 0x3F8A32, RENV);
+  const gl = S.glowSp(Wd, 1.2, .15, 0xFFD54A); gl.position.set(GENV[0], TBL.y + .14, GENV[2] + .05);
+  const sp = S.lightField(Wd, 30, { r: .018, glow: .5 });
+  noteFlights(Wd, eg, GENV, 0xF5B820, [1.0, 2.7, 4.4], [0, 4, 7], gl, sp);
+  const cam = orbit([-.3, 1.0, -1.5], 1.9, .55, 28, -22, 0, 10.72, 38);
+  return Object.assign(Wd, { hero: Q.proxy(Wd, [-.15, 1.15, -1.7], [1.6, 1.4, 1.0]), cam });
+};
+B.s11 = () => {
+  const { Wd } = tableScene(); const Bp = seatedBoy(Wd, t => ({ gesture: t < 5.8 ? 'think' : 'up', smile: t < 5.8 ? .3 : .8, look: t < 5.8 ? -.5 : 0 }));
+  const eg = envOnTable(Wd, Q.GOLDE, 0xC9921A, GENV), er = envOnTable(Wd, Q.GREENE, 0x3F8A32, RENV);
+  const g0 = S.glowSp(Wd, 1.2, .5, 0xFFD54A); g0.position.set(GENV[0], TBL.y + .14, GENV[2] + .05);
+  const gl = S.glowSp(Wd, 1.0, .15, 0x7FCB62); gl.position.set(RENV[0], TBL.y + .14, RENV[2] + .05);
+  const sp = S.lightField(Wd, 30, { r: .018, glow: .5 });
+  noteFlights(Wd, er, RENV, 0x5CAA4A, [.8, 2.2, 3.6], [3, 5, 1], gl, sp);
+  const sprout = new THREE.Group(); sprout.position.set(RENV[0], TBL.y + .22, RENV[2]); Wd.add(sprout);
+  const stem = cyl(.012, .016, 1, 0x4C8A40, { pos: [0, .5, 0], ink: false }); sprout.add(stem); const lv = [-1, 1].map(s => { const l = ball(.05, 0x7DB551, { scale: [1.5, .45, 1], rot: [0, 0, s * .5], ink: false }); sprout.add(l); return l; });
+  Wd.on(t => { const k = ease.out(prog(t, 5.2, 8.6)), h = Math.max(.001, .55 * k); stem.scale.y = h; stem.position.y = h / 2; lv.forEach((l, i) => { l.position.set((i ? 1 : -1) * .05 * k, h * .96, 0); l.scale.setScalar(Math.max(.001, k)); l.scale.set(1.5 * k + .001, .45 * k + .001, k + .001); }); sprout.visible = k > .005; });
+  const cam = path([[0, [.9, 1.5, .5], [.3, .95, -1.5], 40], [10.7, [.55, 1.35, -.55], [.35, 1.05, -1.55], 34]]);
+  return Object.assign(Wd, { hero: Q.proxy(Wd, [.2, 1.2, -1.7], [1.6, 1.4, 1.0]), cam });
+};
+B.s12 = () => {
+  const { Wd, Hl } = hallWorld(); Hl.glow(.25); Hl.door.visible = false; cardsOnTable(Wd, () => 1); Q.seatedBoys(Wd, [0, 1, 5, 6, 10, 11, 15, 16]);
+  eg: { envOnTable(Wd, Q.GOLDE, 0xC9921A, GENV); envOnTable(Wd, Q.GREENE, 0x3F8A32, RENV); }
+  Wd.on(t => Hl.setClock(-.9 * (1 - ease.io(prog(t, 0, 4.8))), 0));
+  const pts = [[0, 0, -9.4], [4.8, 0, -6.25], [8.0, 0, -2.8], [8.001, 0, -2.8]];
+  const Bp = S.man(Wd, Q.BOY, t => { const r = route(t, pts); const walking = r.moving; return { pos: [0, 0, r.z], facing: walking ? 0 : 0, walk: walking ? r.d * 7.2 : undefined, groundY: 0, gesture: t < 8 ? 'rest' : t < 9.4 ? 'up' : 'think', smile: .7, seed: .5, look: t > 9.4 ? Math.sin((t - 9.4) * 2.4) * .8 : 0 }; });
+  followHand(Wd, Bp, 'A', Q.note(2, 0x3C7FD8), [0, .12, .05], t => t > 8.0 && t < 9.5);
+  const cam = path([[0, [0, 1.8, -.4], [0, 3.0, -5.6], 54], [6, [0, 1.6, -.5], [0, 1.9, -4.2], 44], [10.73, [0, 1.5, 1.6], [0, 1.2, -3.0], 42]]);
+  return Object.assign(Wd, { hero: Bp, cam });
+};
+
+// =============================== D: the secret vote ===============================
+const BC = { x: -6.2, z: 5.1 };
+function booth(Wd) {
+  Wd.add(box(1.7, 1.3, .06, 0xB98A5A, { pos: [-6.05, .65, 3.85] })); Wd.add(box(.06, 1.1, 1.3, 0xB98A5A, { pos: [-6.9, .55, 4.5] }));
+  Wd.add(box(.5, .6, .4, 0x9A6A3C, { pos: [BC.x, .3, BC.z] })); const bb = Q.ballotBox(false); bb.position.set(BC.x, .6, BC.z); Wd.add(bb);
+}
+B.s13 = () => {
+  const { Wd, Hl } = hallWorld(); Hl.glow(.1); booth(Wd); Q.seatedBoys(Wd, [0, 1, 5, 6, 10, 11, 15, 16]);
+  const pts = [[0, -3.4, 4.4], [4.4, -6.0, 4.4], [4.401, -6.0, 4.4]];
+  const Bp = S.man(Wd, Q.BOY, t => { const r = route(t, pts), f = ease.io(prog(t, 4.0, 5.0)); return { pos: [r.x, 0, r.z], facing: r.moving ? -PI / 2 : lerp(-PI / 2, 0, f), walk: r.moving ? r.d * 7.2 : undefined, groundY: 0, gesture: t < 5.0 ? 'rest' : 'offer', smile: .5, seed: .5 }; });
+  const slot = [BC.x, 1.14, BC.z];
+  const mk = (col, dark, side, t0) => { const e = Q.envelope(col, dark); e.scale.setScalar(.7); Wd.add(e);
+    Wd.on(t => { if (!Bp.figure) { e.visible = false; return; } S.wpos(Bp.figure.bones['hand' + side].userData.hand, _v); const u = ease.io(prog(t, t0, t0 + 1.0)), v = prog(t, t0 + 1.0, t0 + 1.5);
+      e.visible = v < 1; e.position.set(lerp(_v.x, slot[0], u), lerp(_v.y - .12, slot[1] + .22, u) + .12 * bell(u) - lerp(0, .3, v), lerp(_v.z, slot[2], u)); e.rotation.set(0, 0, 0); }); };
+  mk(Q.GOLDE, 0xC9921A, 'A', 6.0); mk(Q.GREENE, 0x3F8A32, 'B', 7.4);
+  const cam = orbit([-6.0, 1.0, 4.6], 3.4, .6, 105, 75, 0, 11.12, 42);
+  return Object.assign(Wd, { hero: Bp, cam });
+};
+B.s14 = () => {
+  const { Wd, Hl } = hallWorld(); Hl.glow(.1); booth(Wd);
+  const mine = 8; const others = [0, 1, 2, 3, 4, 5, 6, 7, 10, 11, 12, 13, 15, 16, 17];
+  Q.seatedBoys(Wd, others);
+  const pts = [[0, -5.9, 4.4], [.6, -5.9, 4.4], [2.9, -3.6, 4.2], [5.8, -3.6, 1.2], [7.0, -3.6, 1.2]];
+  const S0 = Q.SLOT[mine];
+  const Bp = S.man(Wd, Q.BOY, t => { const r = route(t, pts), s = ease.io(prog(t, 6.6, 7.8)); if (t < 6.6) return { pos: [r.x, 0, r.z], facing: r.moving ? r.f : 0, walk: r.moving ? r.d * 7.2 : undefined, groundY: 0, gesture: 'rest', smile: .5, seed: .5 };
+    return { pos: [lerp(-3.6, S0.x, s), lerp(0, Q.SEATY, s), 1.2], facing: lerp(PI, S0.f, s) * 0 + S0.f, sit: s > .5, groundY: 0, gesture: 'rest', smile: .6, seed: .5 }; });
+  const cam = path([[0, [1.2, 2.6, -.8], [-4.8, 1.0, 3.5], 48], [11.12, [-1.2, 2.2, 1.4], [-4.4, 1.0, 2.6], 44]]);
+  return Object.assign(Wd, { hero: Bp, cam });
+};
+const STK = [[.7, -.4], [.7, -.8], [.7, -1.2]];
+function around(Wd, list, fn) { return list.map(([x, z], i) => S.man(Wd, Q.bl(i + 3), t => Object.assign({ pos: [x, 0, z], facing: faceTo(x, z, 0, -.8), groundY: 0, gesture: 'count', smile: .5, seed: .2 + i * .09 }, fn ? fn(t, i) : {}))); }
+const AROUND = [[-2.1, -.4], [2.1, -1.2], [-2.1, -1.2], [2.1, -.4], [-.8, .6], [.8, .6], [-.8, -2.2], [.8, -2.2]];
+function stackBoxes(Wd, grow) {
+  const arr = []; for (const sx of [1, -1]) for (let k = 0; k < 3; k++) { const m = box(.2, 1, .14, sx > 0 ? 0xFFDF8A : 0xBFE5A8, { inkW: .004 }); m.position.set(sx * STK[k][0], 0, STK[k][1]); Wd.add(m); arr.push({ m, sx, k }); }
+  Wd.on(t => arr.forEach(o => { const h = Math.max(.004, grow(o.sx, o.k, t)); o.m.scale.y = h; o.m.position.y = TBL.y + h / 2; })); return arr;
+}
+B.s15 = () => {
+  const { Wd, Hl } = hallWorld(); Hl.glow(.15);
+  const bb = Q.ballotBox(true); bb.position.set(0, TBL.y, -.8); Wd.add(bb);
+  const N = 36, fl = []; for (let i = 0; i < N; i++) { const gold = i % 2 === 0, n = Q.note(i, gold ? 0xF5B820 : 0x5CAA4A, gold ? 0xF5B820 : 0x5CAA4A); Wd.add(n); fl.push({ n, gold, k: Math.floor(i / 2) % 3, tb: .6 + i * .27 }); }
+  const landed = (sx, k, t) => fl.filter(f => (f.gold ? 1 : -1) === sx && f.k === k && t >= f.tb + .9).length;
+  stackBoxes(Wd, (sx, k, t) => .012 * landed(sx, k, t) + .006);
+  Wd.on(t => fl.forEach(f => { const u = (t - f.tb) / .9, sx = f.gold ? 1 : -1, dst = STK[f.k], top = TBL.y + .012 * (landed(sx, f.k, t) + 1);
+    if (u < 0 || u >= 1) { f.n.visible = false; return; } f.n.visible = true; const e = ease.io(u);
+    f.n.position.set(lerp(0, sx * dst[0], e), lerp(1.0, top, e) + .55 * Math.sin(PI * e), lerp(-.8, dst[1], e)); f.n.rotation.set(lerp(0, -PI / 2, e), u * 6, 0); }));
+  const bs = around(Wd, AROUND);
+  const cam = path([[0, [0, 5.5, 2.2], [0, .9, -.8], 50], [11.1, [.8, 2.5, 1.4], [0, .95, -.8], 42]]);
+  return Object.assign(Wd, { hero: Q.proxy(Wd, [0, 1.3, -.8], [3.0, 1.2, 1.7]), cam });
+};
+B.s16 = () => {
+  const { Wd, Hl } = hallWorld(); Hl.glow(.25);
+  const bb = Q.ballotBox(true); bb.position.set(0, TBL.y, -.8); Wd.add(bb);
+  const gr = (sx, k, t) => { const base = .078; if (k === 1) return lerp(base, .55, ease.out(prog(t, .6, 5.5))); return base + .01 * Math.sin(t + k); };
+  stackBoxes(Wd, gr);
+  const g1 = S.glowSp(Wd, 1.6, 0, 0xFFD54A), g2 = S.glowSp(Wd, 1.6, 0, 0x7FCB62); g1.position.set(STK[1][0], TBL.y + .35, STK[1][1]); g2.position.set(-STK[1][0], TBL.y + .35, STK[1][1]);
+  Wd.on(t => { const o = .65 * ease.sm(prog(t, 2.5, 6)); g1.material.opacity = o; g2.material.opacity = o; });
+  const bs = around(Wd, AROUND, t => ({ gesture: 'heart', smile: .9, look: .5 * Math.sin(t * 2.2) }));
+  const cam = path([[0, [0, 1.9, 1.8], [0, 1.1, -.9], 40], [11.11, [0, 1.55, .5], [0, 1.15, -.9], 34]]);
+  return Object.assign(Wd, { hero: Q.proxy(Wd, [0, 1.15, -.8], [2.4, 1.3, 1.6]), cam });
+};
+
+// =============================== E: growth ===============================
+B.s17 = () => {
+  const { Wd, Hl } = hallWorld(); Hl.glow(.3);
+  const seated = Q.seatedBoys(Wd, [0, 1, 2, 5, 6, 7, 10, 11, 12, 15, 16, 17]);
+  const st = [[-1.3, -1.5], [1.2, -1.2], [-.2, -2.3], [.2, .2]];
+  const pp = st.map(([x, z], i) => S.man(Wd, Q.bl(i + 6), t => ({ pos: [x, 0, z], facing: faceTo(x, z, 0, -1.0) + .5 * Math.sin(t * .6 + i), groundY: 0, gesture: ['explain', 'wide', 'heart', 'explainA'][(Math.floor(t / 3) + i) % 4], talk: .4 + .3 * Math.sin(t * 5 + i), smile: .9, seed: .3 + i * .1 })));
+  const L = S.lightField(Wd, 70, { r: .05, glow: 1.0 });
+  L.frame((t, cam, L) => { S.stream(L, t, { t0: .5, t1: 12, N: 22, life: 4.5, size: 1, col: C(0xFFD54A), pos: (u, i) => { const a = i * 2.4 + u * 2, rr = .5 + 3.2 * ((i * 37) % 10) / 10; return [rr * Math.cos(a), 1.9 + 1.6 * u, -1 + rr * .8 * Math.sin(a)]; } });
+    S.stream(L, t, { t0: 1.2, t1: 12, N: 22, life: 4.5, size: 1, col: C(0x7FCB62), pos: (u, i) => { const a = i * 2.9 + 1 + u * 2, rr = .5 + 3.2 * ((i * 53) % 10) / 10; return [rr * Math.cos(a), 1.7 + 1.8 * u, -1 + rr * .8 * Math.sin(a)]; } }); });
+  const cam = orbit([0, 1.4, -.8], 4.8, 1.6, -40, 30, 0, 12.19, 55);
+  return Object.assign(Wd, { hero: Q.heroGroup(Wd, pp), cam });
+};
+B.s18 = () => {
+  const { Wd, Hl } = hallWorld(); Hl.glow(.3); Hl.stool(); Q.seatedBoys(Wd, [0, 1, 5, 6, 10, 11, 15, 16]);
+  const Bp = seatedBoy(Wd, t => ({ gesture: 'heart', smile: .9, look: t > 3 ? .15 : 0 }));
+  const sun = new THREE.Mesh(new THREE.SphereGeometry(1, 24, 16), new THREE.MeshBasicMaterial({ color: 0xFFD54A })); sun.position.set(.3, 1.02, -1.5); Wd.add(sun);
+  const g = S.glowSp(Wd, 1.8, .8, 0xFFE08A); g.position.copy(sun.position);
+  Wd.on(t => { const k = ease.out(prog(t, .8, 7)); sun.scale.setScalar(Math.max(.001, .085 * k)); g.scale.set(.15 + .8 * k, .15 + .8 * k, 1); g.material.opacity = .6 * ease.sm(prog(t, .5, 4)); sun.position.y = 1.02 + .015 * Math.sin(t * 1.5); g.position.y = sun.position.y; });
+  const cam = path([[0, [.3, 1.7, 1.9], [0, 1.05, -1.7], 42], [12.19, [.1, 1.45, .2], [0, 1.1, -1.7], 36]]);
+  return Object.assign(Wd, { hero: Bp, cam });
+};
+B.s19 = () => {
+  const { Wd, Hl } = hallWorld(); Hl.glow(.3); Q.seatedBoys(Wd, [0, 1, 5, 6, 10, 11, 15, 16]);
+  const Bp = S.man(Wd, Q.BOY, t => { const s = ease.io(prog(t, .2, 2.0)); return { pos: [-.7, lerp(.11, 0, s), -2.3], facing: PI / 2, sit: s < .5, groundY: 0, gesture: t > 3 ? 'up' : 'rest', smile: .9, look: t > 3 ? -.2 : 0, seed: .4 }; });
+  // pot + growing tree
+  const px = 1.0, pz = -2.3, tree = new THREE.Group(); tree.position.set(px, 0, pz); Wd.add(tree);
+  tree.add(cyl(.28, .2, .3, 0xC9754A, { pos: [0, .15, 0], inkW: .02 })); tree.add(cyl(.24, .24, .02, 0x5a3a22, { pos: [0, .3, 0], ink: false }));
+  const trunk = cyl(1, 1, 1, 0x8A5A34, { pos: [0, .3, 0], inkW: .02 }); tree.add(trunk);
+  const can = new THREE.Group(); tree.add(can); const cb = [[0, 0, 0, .55, 0x5CAA4A], [.5, -.25, .1, .42, 0x7DB551], [-.5, -.2, -.1, .45, 0x4C8A40], [.15, .38, .15, .4, 0x7DB551], [-.2, .3, -.3, .38, 0x5CAA4A], [.3, -.5, -.3, .36, 0x66A64A]];
+  cb.forEach(([x, y, z, r, c]) => can.add(ball(r, c, { pos: [x, y, z], inkW: .02 })));
+  Wd.on(t => { const k = ease.io(prog(t, .8, 10.5)), h = .05 + 2.9 * k; trunk.scale.set(.025 + .06 * k, h, .025 + .06 * k); trunk.position.y = .3 + h / 2; can.position.y = .3 + h; can.scale.setScalar(Math.max(.001, .12 + .88 * k)); });
+  const cam = path([[0, [2.6, 1.4, -.1], [.2, 1.0, -2.2], 44], [6, [3.0, 2.3, -.2], [.4, 1.9, -2.3], 48], [12.19, [3.3, 3.4, -.1], [.5, 2.8, -2.3], 54]]);
+  return Object.assign(Wd, { hero: Q.heroGroup(Wd, [Bp, tree]), cam });
+};
+B.s20 = () => {
+  const Wd = world(SKY({ ground: 'grass' })); const Hl = Q.hall(Wd);
+  for (const [x, z, k, s] of [[-14, -6, 0, 1.6], [14, -8, 1, 1.5], [-13, 11, 1, 1.4], [15, 10, 0, 1.6], [-4, 17, 0, 1.4], [6, -16, 1, 1.4]]) P.tree(Wd, { pos: [x, 0, z], kind: k, scale: s });
+  H.hills(Wd, [[-60, 40, 28, 0x8DB070], [70, 30, 30, 0x7FA35A], [10, 90, 36, 0x97B878], [-80, -50, 30, 0x97B878], [90, -60, 32, 0x8DB070]]);
+  for (const [x, y, z, s, sd] of [[-50, 40, 40, 4, 3], [30, 44, 70, 5, 5], [70, 38, -40, 3.5, 8]]) Wd.add(cloud({ seed: sd, size: s, pos: [x, y, z], puffs: 6, cast: false }));
+  Wd.on(t => Hl.WIN.forEach((_, i) => { const k = ease.out(prog(t, 1.2 + i * .45, 2.0 + i * .45)); Hl.setWin(i, i % 2 === 0 ? k : 0, i % 2 ? k : 0); }));
+  const cam = path([[0, [-9, 10.5, -14], [0, 6, 0], 46], [6, [-18, 16, -24], [0, 5, 0], 48], [12.19, [-30, 24, -34], [0, 4, 0], 50]]);
+  return Object.assign(Wd, { hero: Q.proxy(Wd, [0, 3.6, 0], [18, 7.5, 13.5]), cam });
+};
+
+// ---------------------------------------------------------------------------------
+const TL = [['s01', 12.92, [.5, 6.56], 1], ['s02', 12.91, [.5, 6.55]], ['s03', 11.55, [.5, 5.88], 1], ['s04', 11.55, [.5, 5.88]], ['s05', 11.55, [.5, 5.88]], ['s06', 11.55, [.5, 5.88]], ['s07', 11.56, [.5, 5.88], 1],
+  ['s08', 10.72, [.5, 5.46]], ['s09', 10.72, [.5, 5.46]], ['s10', 10.72, [.5, 5.46]], ['s11', 10.72, [.5, 5.46]], ['s12', 10.73, [.5, 5.46], 1],
+  ['s13', 11.12, [.5, 5.66]], ['s14', 11.12, [.5, 5.66], 1], ['s15', 11.12, [.5, 5.66]], ['s16', 11.11, [.5, 5.65]],
+  ['s17', 12.19, [.5, 6.19], 1], ['s18', 12.19, [.5, 6.19]], ['s19', 12.19, [.5, 6.19]], ['s20', 12.19, [.5, 6.19], 1]];
+film({
+  title: 'TITLE', kicker: 'KICKER', recap: ['RECAP_1', 'RECAP_2', 'RECAP_3'], vault: 'captions_vault.json', recapDur: 9, xf: .3, veilEnd: 1.5,
+  shots: TL.map(([id, dur, at, wide], i) => ({ id, dur, caps: [cap(2 * i + 1), cap(2 * i + 2)], capAt: at, wide: !!wide, build: B[id] })),
+});
+</script>
+</html>

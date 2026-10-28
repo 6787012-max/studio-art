@@ -1,0 +1,22 @@
+{
+ "film": "film_siach.html",
+ "status": "PASS",
+ "time": "2026-10-28T09:43:41",
+ "samples": 7,
+ "findings": [],
+ "sheets": {
+  "beat": "C:/projects/_studio-animatzia/productions/siach_20261025/_verify_s05/_view/_verify_s05_beat_sheet_1.jpg",
+  "seam": "C:/projects/_studio-animatzia/productions/siach_20261025/_verify_s05/_view/_verify_s05_seams_1.jpg",
+  "phone": "C:/projects/_studio-animatzia/productions/siach_20261025/_verify_s05/_view/_verify_s05_phone_sheet_1.jpg"
+ },
+ "partial": {
+  "shot": "s05",
+  "note": "one-shot run, NOT a whole-film report"
+ },
+ "timing": {
+  "ready_s": 5.8,
+  "gates_s": 65.2,
+  "sheets_s": 30.8,
+  "total_s": 102.7
+ }
+}
