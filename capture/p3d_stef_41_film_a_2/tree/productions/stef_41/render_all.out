@@ -1,0 +1,4 @@
+01:04:36 render_all: production=stef_41 films=film_a part=50s hq=True dry_run=False
+01:05:25 budget WARN: cap reached but OVERRIDE file is present - continuing: spent $2533 of $2600 (cap $2340), allowed by now $2104 (120% of pace) [render]
+01:05:25 verify gate: PASS for film_a
+01:05:35 film_a: length 244.3s, rendering (part 50 s, 14 includes)

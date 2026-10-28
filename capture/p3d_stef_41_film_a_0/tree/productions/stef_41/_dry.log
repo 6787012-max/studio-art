@@ -1,0 +1,12 @@
+01:03:18 render_all: production=stef_41 films=film_a part=50s hq=True dry_run=True
+01:03:54 budget WARN: cap reached but OVERRIDE file is present - continuing: spent $2532 of $2600 (cap $2340), allowed by now $2104 (120% of pace) [render]
+01:03:54 verify gate: PASS for film_a
+01:04:27 PLAN film_a: length 244.3s -> 5 part(s) of 48.9s, canvas 1920x1080, dispatch stagger 20 s, retry = split 2 (2 rounds), HQ injection=True
+01:04:27    part 0: t0=0.0 d=48.9 page=_part_film_a_0.html job=p3d_stef_41_film_a_0
+01:04:27    part 1: t0=48.9 d=48.9 page=_part_film_a_1.html job=p3d_stef_41_film_a_1
+01:04:27    part 2: t0=97.7 d=48.9 page=_part_film_a_2.html job=p3d_stef_41_film_a_2
+01:04:27    part 3: t0=146.6 d=48.9 page=_part_film_a_3.html job=p3d_stef_41_film_a_3
+01:04:27    part 4: t0=195.5 d=48.9 page=_part_film_a_4.html job=p3d_stef_41_film_a_4
+01:04:27    includes (render.json, 14 + production folder): lib/figure3d.js lib/geo_eretz.js lib/glb3d.js lib/motion3d.js lib/people_pro.js lib/stage3d.js node_modules/three/build/three.core.js node_modules/three/build/three.module.js node_modules/three/examples/jsm/geometries/RoundedBoxGeometry.js node_modules/three/examples/jsm/loaders/GLTFLoader.js node_modules/three/examples/jsm/utils/BufferGeometryUtils.js node_modules/three/examples/jsm/utils/SkeletonUtils.js productions/stef_41/lh.js productions/stef_41/lh_base.js
+01:04:27    output: C:/projects/_studio-animatzia/productions/stef_41/render/film_a/out.mp4
+01:04:27 DONE {"film_a": "dry-run 244.3s / 5 parts"}

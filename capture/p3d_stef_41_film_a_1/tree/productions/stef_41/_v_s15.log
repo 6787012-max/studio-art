@@ -1,0 +1,8 @@
+PARTIAL RUN (shot s15) - not a whole-film report
+PASS
+
+Sheets (CLEAN, safe to Read):
+  beat: C:/projects/_studio-animatzia/productions/stef_41/_verify_s15/_view/_verify_s15_beat_sheet_1.jpg
+  seam: C:/projects/_studio-animatzia/productions/stef_41/_verify_s15/_view/_verify_s15_seams_1.jpg
+  phone: C:/projects/_studio-animatzia/productions/stef_41/_verify_s15/_view/_verify_s15_phone_sheet_1.jpg
+SUMMARY | PASS | samples=7 | dur=244.3 | P0=0 P1=0 P2=0 | {"ready_s": 2.1, "gates_s": 36.2, "sheets_s": 27.1, "total_s": 65.7}
