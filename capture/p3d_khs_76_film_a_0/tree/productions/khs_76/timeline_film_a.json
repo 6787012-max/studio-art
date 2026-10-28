@@ -1,0 +1,155 @@
+{
+ "fps": 30,
+ "titleDur": 0,
+ "recapDur": 0,
+ "shots": [
+  {
+   "id": "s01",
+   "brief": "s01",
+   "dur": 10.25,
+   "briefDur": 10.25,
+   "captions": [
+    {
+     "id": "CAP_A_01",
+     "at": 0.5,
+     "until": 5.22
+    },
+    {
+     "id": "CAP_A_02",
+     "at": 5.22,
+     "until": 9.95
+    }
+   ],
+   "capAt": [
+    0.5,
+    5.22
+   ],
+   "words": []
+  },
+  {
+   "id": "s02",
+   "brief": "s02",
+   "dur": 10.85,
+   "briefDur": 10.85,
+   "captions": [
+    {
+     "id": "CAP_A_03",
+     "at": 0.5,
+     "until": 5.52
+    },
+    {
+     "id": "CAP_A_04",
+     "at": 5.52,
+     "until": 10.55
+    }
+   ],
+   "capAt": [
+    0.5,
+    5.52
+   ],
+   "words": []
+  },
+  {
+   "id": "s03",
+   "brief": "s03",
+   "dur": 12.0,
+   "briefDur": 12.0,
+   "captions": [
+    {
+     "id": "CAP_A_05",
+     "at": 0.5,
+     "until": 6.1
+    },
+    {
+     "id": "CAP_A_06",
+     "at": 6.1,
+     "until": 11.7
+    }
+   ],
+   "capAt": [
+    0.5,
+    6.1
+   ],
+   "words": []
+  },
+  {
+   "id": "s04",
+   "brief": "s04",
+   "dur": 10.5,
+   "briefDur": 10.5,
+   "captions": [
+    {
+     "id": "CAP_A_07",
+     "at": 0.5,
+     "until": 5.35
+    },
+    {
+     "id": "CAP_A_08",
+     "at": 5.35,
+     "until": 10.2
+    }
+   ],
+   "capAt": [
+    0.5,
+    5.35
+   ],
+   "words": []
+  },
+  {
+   "id": "s05",
+   "brief": "s05",
+   "dur": 9.2,
+   "briefDur": 9.2,
+   "captions": [
+    {
+     "id": "CAP_A_09",
+     "at": 0.5,
+     "until": 4.7
+    },
+    {
+     "id": "CAP_A_10",
+     "at": 4.7,
+     "until": 8.9
+    }
+   ],
+   "capAt": [
+    0.5,
+    4.7
+   ],
+   "words": []
+  },
+  {
+   "id": "s06",
+   "brief": "s06",
+   "dur": 12.81,
+   "briefDur": 12.81,
+   "captions": [
+    {
+     "id": "CAP_A_11",
+     "at": 0.5,
+     "until": 4.5
+    },
+    {
+     "id": "CAP_A_12",
+     "at": 4.5,
+     "until": 8.5
+    },
+    {
+     "id": "CAP_A_13",
+     "at": 8.51,
+     "until": 12.51
+    }
+   ],
+   "capAt": [
+    0.5,
+    4.5,
+    8.51
+   ],
+   "words": []
+  }
+ ],
+ "audio": {
+  "narration": null,
+  "music": null
+ }
+}
