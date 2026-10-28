@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>khs 77 film a</title>
+<style>html,body{margin:0;background:#000}canvas{display:block;width:100vw;height:auto}</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script>window.__T0=29.5900; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+// khs_77 / film_a - portrait 1080x1920, objects only: ONE GIANT PUZZLE on a sky island, golden crown at the centre.
+// shot durations + caption times from khs_77/timeline.json (58.78 s). Captions are vault IDs only (zero Hebrew in code).
+import { film, world, path, THREE, prog, ease, clamp, lerp, rng, cyl, ball, mesh, box, toon, canvasTex, ink } from '../../lib/stage3d.js';
+
+// ---------------- palette ----------------
+const CREAM = 0xfaf3e3, LEAF = 0x6fb36a, FOREST = 0x2f6b4f, CORAL = 0xf2785c, TEAL = 0x3fa7a0, GOLD = 0xf2b33d, MEADOW = 0x9fd39a, INKC = 0x24433f;
+const TAU = Math.PI * 2, PI = Math.PI;
+const sm = (t, a, b) => ease.sm(prog(t, a, b));
+const UPV = new THREE.Vector3(0, 1, 0);
+const wrapA = a => a - TAU * Math.round(a / TAU);
+
+// ---------------- generic helpers ----------------
+let GT = null;
+const glowTex = () => GT || (GT = canvasTex(128, 128, (g, w, h) => { const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.3, 'rgba(255,255,255,.5)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }));
+const glow = (size, op, tint) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), color: tint === undefined ? 0xffc977 : tint, blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, fog: false, opacity: op === undefined ? .8 : op })); s.scale.set(size, size, 1); return s; };
+const mk = (geo, color, o) => { o = o || {}; return mesh(geo, toon(color, o.mat), Object.assign({ inkW: .016, inkColor: INKC }, o)); };
+
+// camera helper: look target is lowered so the hero sits around 33% from the top of the portrait frame
+function cam(keys) {
+  return path(keys.map(([t, p, tg, f]) => {
+    f = f || 66; const d = Math.hypot(p[0] - tg[0], p[1] - tg[1], p[2] - tg[2]), off = .30 * Math.tan(f * PI / 360) * d;
+    return [t, p, [tg[0], tg[1] - off, tg[2]], f];
+  }));
+}
+const O = (a, R, h) => [Math.sin(a * PI / 180) * R, h, Math.cos(a * PI / 180) * R];
+function heroCluster(Wd, fn) {
+  const g = new THREE.Group(), m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()); m.visible = false; g.add(m); Wd.add(g);
+  Wd.on(t => { const bs = fn(t).filter(Boolean); if (!bs.length) return; const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (const b of bs) for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], b[k] - b[k + 3]); hi[k] = Math.max(hi[k], b[k] + b[k + 3]); }
+    g.position.set((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2); g.scale.set(Math.max(hi[0] - lo[0], .01), Math.max(hi[1] - lo[1], .01), Math.max(hi[2] - lo[2], .01)); });
+  Wd.hero = g; return g;
+}
+// glowing gold bar between two moving points (drawn progress k)
+const BARGEO = new THREE.CylinderGeometry(1, 1, 1, 8);
+function makeBar(S, r, op) {
+  const core = new THREE.Mesh(BARGEO, new THREE.MeshBasicMaterial({ color: 0xffd36b, transparent: true, opacity: 1, depthWrite: false })), halo = new THREE.Mesh(BARGEO, new THREE.MeshBasicMaterial({ color: 0xffc247, transparent: true, opacity: .3, depthWrite: false, blending: THREE.AdditiveBlending }));
+  core.visible = halo.visible = false; core.renderOrder = 12; halo.renderOrder = 12; S.add(core); S.add(halo); const d = new THREE.Vector3();
+  return { set(A, B, k, a) { a = a === undefined ? 1 : a; const on = k > .01 && a > .01; core.visible = halo.visible = on; if (!on) return; d.set(B[0] - A[0], B[1] - A[1], B[2] - A[2]); const L = Math.max(d.length(), 1e-4); d.multiplyScalar(1 / L);
+    for (const m of [core, halo]) { m.position.set(A[0] + d.x * L * k / 2, A[1] + d.y * L * k / 2, A[2] + d.z * L * k / 2); m.quaternion.setFromUnitVectors(UPV, d); }
+    core.scale.set(r, L * k, r); halo.scale.set(r * 3, L * k, r * 3); core.material.opacity = a; halo.material.opacity = .3 * a * (op === undefined ? 1 : op); } };
+}
+
+// ---------------- puzzle ----------------
+const PITCH = .9, TS = .84, TY = .13;
+const GRIDS = ['ccccrcc', 'ccLLccc', 'TTTTTTT', 'LLLXLLL', 'LFLLLFL', 'FFFLFFF', 'FFFFFFF'];
+const COL = { c: CREAM, L: LEAF, F: FOREST, T: TEAL, r: CORAL, X: GOLD };
+const DIO = [4, 4];                                   // the diorama tile (cell i,j)
+const cx = i => (i - 3) * PITCH, cz = j => (j - 3) * PITCH;
+const LOOSE = [[1, 0], [5, 6], [0, 5], [6, 1]];
+const HP = [[-4.7, 2.7, 1.6], [4.8, 3.4, -.5], [-3.8, 4.3, -2.4], [3.9, 2.4, 2.6]];
+function roundedShape(sz, r) {
+  const s = new THREE.Shape(), h = sz / 2; s.moveTo(-h + r, -h); s.lineTo(h - r, -h); s.quadraticCurveTo(h, -h, h, -h + r); s.lineTo(h, h - r); s.quadraticCurveTo(h, h, h - r, h);
+  s.lineTo(-h + r, h); s.quadraticCurveTo(-h, h, -h, h - r); s.lineTo(-h, -h + r); s.quadraticCurveTo(-h, -h, -h + r, -h); return s;
+}
+const TILEGEO = (() => { const g = new THREE.ExtrudeGeometry(roundedShape(TS - .06, .11), { depth: .16, bevelEnabled: true, bevelThickness: .03, bevelSize: .03, bevelSegments: 2, curveSegments: 5 }); g.rotateX(-PI / 2); g.translate(0, -.08, 0); return g; })();
+const KNOBGEO = new THREE.CylinderGeometry(.06, .06, .16, 14);
+function makeTile(color, withInk) {
+  const mat = toon(color, { emissive: GOLD, emissiveIntensity: 0 }), m = new THREE.Mesh(TILEGEO, mat); m.castShadow = m.receiveShadow = true;
+  if (withInk) ink(m, .012, INKC, true);
+  const k1 = new THREE.Mesh(KNOBGEO, mat); k1.position.set(.44, -.02, 0); m.add(k1); const k2 = new THREE.Mesh(KNOBGEO, mat); k2.position.set(0, -.02, .44); m.add(k2);
+  return { m, mat };
+}
+const bez = (A, C, B, u) => { const a = (1 - u) * (1 - u), b = 2 * (1 - u) * u, c = u * u; return [a * A[0] + b * C[0] + c * B[0], a * A[1] + b * C[1] + c * B[1], a * A[2] + b * C[2] + c * B[2]]; };
+
+// ---------------- world ----------------
+function newWorld() {
+  return world({ skyTop: 0xbfe3f5, skyBottom: 0xf3fbff, fogColor: 0xe6f5fd, fogNear: 32, fogFar: 78, sunColor: 0xfffaf0, sun: 1.15, sunPos: [-9, 16, 8], hemiSky: 0xf4fbff, hemiGround: 0xcfe8c8, hemi: 1.35, shadowExt: 11 });
+}
+function makeEnv(Wd) {
+  const S = Wd.scene, r = rng(3);
+  // floating meadow plateau with cream rim and a cream rocky underside
+  S.add(mk(new THREE.CylinderGeometry(7.55, 7.55, .34, 56), CREAM, { pos: [0, -.17, 0], inkW: .03 }));
+  const gr = new THREE.Mesh(new THREE.CylinderGeometry(7.05, 7.05, .03, 56), toon(MEADOW, { polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 })); gr.position.y = -.003; gr.receiveShadow = true; S.add(gr);
+  const cone = mk(new THREE.ConeGeometry(7.5, 3.4, 40), 0xe6d6b6, { pos: [0, -.34 - 1.7, 0], rot: [PI, 0, 0], inkW: .04, mat: { emissive: 0xd8c8a4, emissiveIntensity: .8 } }); S.add(cone);
+  // trees / bushes at the rim (flat, clean)
+  for (let n = 0; n < 12; n++) { const a = n / 12 * TAU + r() * .3, rr = 5.5 + r() * 1.2, s = .45 + r() * .35, g = new THREE.Group(); g.position.set(Math.sin(a) * rr, 0, Math.cos(a) * rr); S.add(g);
+    if (n % 3) { g.add(mk(new THREE.ConeGeometry(.3 * s * 1.6, .9 * s * 1.6, 12), n % 2 ? FOREST : LEAF, { pos: [0, .45 * s * 1.6 + .08, 0], inkW: .02 })); g.add(mk(new THREE.CylinderGeometry(.05, .06, .18, 8), 0x8b5a3c, { pos: [0, .09, 0], inkW: .01 })); }
+    else g.add(mk(new THREE.SphereGeometry(.3 * s * 1.5, 14, 10), LEAF, { pos: [0, .22 * s * 1.5, 0], scale: [1.2, .8, 1.1], inkW: .02 })); }
+  // far soft clouds
+  const clouds = [];
+  for (let n = 0; n < 18; n++) { const a = n / 18 * TAU + r() * .25, R = 26 + r() * 20, y = (n % 3 === 0 ? -9 : -3) + r() * (n % 3 === 0 ? 8 : 18), g = new THREE.Group(), sc = 1.6 + r() * 1.6;
+    [[0, 0, 0, 1], [1.1, -.1, .2, .75], [-1.1, -.15, -.1, .7], [.4, .35, 0, .6]].forEach(([x, yy, z, s]) => { const m = new THREE.Mesh(new THREE.SphereGeometry(1, 12, 8), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .92 })); m.scale.set(s * 1.7, s * .6, s * .9); m.position.set(x, yy, z); g.add(m); });
+    g.scale.setScalar(sc); S.add(g); clouds.push({ g, a, R, y, sp: .004 + r() * .006 }); }
+  // far floating loose small pieces at different depths
+  const flo = [], cols = [CREAM, LEAF, FOREST, CORAL, TEAL];
+  for (let n = 0; n < 16; n++) { const a = n / 16 * TAU + r() * .4, R = 12 + r() * 16, m = new THREE.Mesh(TILEGEO, toon(cols[n % 5])); m.scale.setScalar(.8 + r() * .9); S.add(m); flo.push({ m, a, R, y: -3 + r() * 14, ph: r() * 6, w: .15 + r() * .3 }); }
+  Wd.on(t => {
+    cone.visible = !(Wd.coneHideT !== undefined && t >= Wd.coneHideT);
+    clouds.forEach(o => { const a = o.a + t * o.sp; o.g.position.set(Math.sin(a) * o.R, o.y, Math.cos(a) * o.R); });
+    flo.forEach(o => { const a = o.a + t * .01; o.m.position.set(Math.sin(a) * o.R, o.y + .5 * Math.sin(t * .7 + o.ph), Math.cos(a) * o.R); o.m.rotation.set(t * o.w, t * o.w * .7 + o.ph, o.ph * .5 + t * .1); });
+  });
+}
+
+// ---------------- crown, rings, island with tiles ----------------
+function makeCrown(S) {
+  const g = new THREE.Group(); S.add(g); const gm = toon(GOLD, { emissive: GOLD, emissiveIntensity: .6, side: THREE.DoubleSide });
+  const band = new THREE.Mesh(new THREE.CylinderGeometry(.38, .33, .22, 28, 1, true), gm); band.castShadow = true; ink(band, .012, INKC); g.add(band);
+  for (const y of [-.11, .11]) { const t = new THREE.Mesh(new THREE.TorusGeometry(y > 0 ? .38 : .33, .03, 8, 28), gm); t.rotation.x = PI / 2; t.position.y = y; t.castShadow = true; g.add(t); }
+  for (let k = 0; k < 5; k++) { const a = k * TAU / 5, x = Math.sin(a) * .36, z = Math.cos(a) * .36;
+    g.add(mk(new THREE.ConeGeometry(.08, .28, 10), GOLD, { pos: [x, .25, z], inkW: .012, mat: { emissive: GOLD, emissiveIntensity: .6 } }));
+    g.add(mk(new THREE.SphereGeometry(.058, 12, 8), GOLD, { pos: [x, .42, z], inkW: .01, mat: { emissive: GOLD, emissiveIntensity: .8 } })); }
+  const gl = glow(2.6, .6, 0xffd878); gl.renderOrder = 10; g.add(gl);
+  return { g, gl };
+}
+function makeIsland(Wd, o) {
+  const S = Wd.scene, tiles = [], r = rng(11);
+  makeEnv(Wd);
+  GRIDS.forEach((row, j) => [...row].forEach((ch, i) => {
+    const di = i === DIO[0] && j === DIO[1], lo = LOOSE.findIndex(l => l[0] === i && l[1] === j);
+    const { m, mat } = makeTile(di ? CREAM : COL[ch], true); S.add(m);
+    tiles.push({ m, mat, i, j, x: cx(i), z: cz(j), lo, d: Math.hypot(cx(i), cz(j)), sx: (r() * 2 - 1) * 6.2, sy: 2.4 + r() * 5.8, sz: -3.5 + r() * 7.5, r0: [r() * TAU, r() * TAU, r() * TAU], w: [(r() - .5) * 2, (r() - .5) * 2, (r() - .5) * 2], ph: r() * 6, gold: ch === 'X' });
+  }));
+  const order = tiles.slice().sort((a, b) => (a.d + (r() - .5) * 1.4) - (b.d + (r() - .5) * 1.4)); order.forEach((tl, n) => { tl.rank = n; });
+  const sp = (tl, t) => [tl.sx + Math.sin(t * .6 + tl.ph) * .45, tl.sy + Math.cos(t * .8 + tl.ph) * .35, tl.sz + Math.sin(t * .5 + tl.ph * 1.3) * .35];
+  const sr = (tl, t) => [tl.r0[0] + tl.w[0] * t, tl.r0[1] + tl.w[1] * t, tl.r0[2] + tl.w[2] * t];
+  const hv = (l, t) => [HP[l][0], HP[l][1] + .25 * Math.sin(t * 1.1 + l * 1.7), HP[l][2]];
+  const hr = (l, t) => [.5 + .3 * Math.sin(t * .9 + l), t * .4 + l, .3 * Math.sin(t * .7 + l * 2)];
+  // crown + rings + waves
+  const crown = makeCrown(S), rings = [[1.15, -.12, .1], [1.55, .2, -.14], [1.95, .52, .12]].map(([R, y, tilt]) => { const g = new THREE.Group(); S.add(g);
+    const m = new THREE.Mesh(new THREE.TorusGeometry(R, .028, 8, 72), new THREE.MeshBasicMaterial({ color: 0xe9dcae, transparent: true, opacity: 0, depthWrite: false })); m.rotation.x = PI / 2 + tilt; g.add(m); return { g, m, R, y }; });
+  const waves = o.pulses.map(() => { const m = new THREE.Mesh(new THREE.RingGeometry(.93, 1, 72), new THREE.MeshBasicMaterial({ color: 0xffd36b, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide })); m.rotation.x = -PI / 2; m.position.y = .29; m.visible = false; S.add(m); return m; });
+  const crownPos = t => { const k = o.crownK(t); return [0, lerp(.3, 1.55, ease.out(k)) + (k > .99 ? .06 * Math.sin(t * 1.7) : 0), 0]; };
+  Wd.on(t => {
+    const base = o.base(t), fl = o.flash(t);
+    const ages = o.pulses.map(T => t - T);
+    tiles.forEach(tl => {
+      let p, rot = [0, 0, 0], sc = 1, seated = false, pe = 0;
+      const F = [tl.x, TY, tl.z];
+      if (o.flight) {
+        const fs = 1.0 + tl.rank * (1.55 / 48), fe = fs + .95, tg = tl.lo >= 0 ? hv(tl.lo, t) : F, tr = tl.lo >= 0 ? hr(tl.lo, t) : [0, 0, 0];
+        if (t < fs) { p = sp(tl, t); rot = sr(tl, t); }
+        else { const u = prog(t, fs, fe), e = ease.io(u), S0 = sp(tl, fs), C = [(S0[0] + tg[0]) / 2 + (tl.x > 0 ? 1.4 : -1.4), Math.max(S0[1], tg[1]) + 1.6, (S0[2] + tg[2]) / 2 + 1.2]; p = bez(S0, C, tg, e); const R0 = sr(tl, fs); rot = [0, 1, 2].map(k => lerp(wrapA(R0[k]), tr[k], ease.out(u))); seated = t >= fe && tl.lo < 0; pe = fe; }
+      } else if (tl.lo >= 0) {
+        const sn = o.loose(tl.lo, t);
+        if (!sn || t < sn[0]) { p = hv(tl.lo, t); rot = hr(tl.lo, t); }
+        else if (t < sn[1]) { const u = prog(t, sn[0], sn[1]), A = hv(tl.lo, sn[0]), e = ease.io(u); p = bez(A, [(A[0] + F[0]) / 2, Math.max(A[1], 1.8) + 1.2, (A[2] + F[2]) / 2], F, e); const R0 = hr(tl.lo, sn[0]); rot = [0, 1, 2].map(k => lerp(wrapA(R0[k]), 0, ease.out(u))); }
+        else { p = F; seated = true; pe = sn[1]; }
+      } else { p = F; seated = true; pe = -9; }
+      if (seated && pe > -5) { const v = clamp((t - pe) / .24, 0, 1); sc = 1 + .15 * Math.sin(PI * v) * (1 - v * .3); if (v < 1) p = [p[0], p[1] + .08 * Math.sin(PI * v), p[2]]; }
+      tl.m.position.set(p[0], p[1], p[2]); tl.m.rotation.set(rot[0], rot[1], rot[2]); tl.m.scale.setScalar(sc);
+      let g = 0; if (seated) { g = base + fl; ages.forEach(a => { if (a > 0 && a < 2.2) g += Math.exp(-Math.pow((tl.d - 5 * a) / .85, 2)) * (1 - a / 2.2) * .95; }); if (tl.gold) g += .2; }
+      tl.mat.emissiveIntensity = clamp(g, 0, 1.4) * .5;
+    });
+    ages.forEach((a, n) => { const w = waves[n], on = a > 0 && a < 1.9; w.visible = on; if (!on) return; w.scale.setScalar(.4 + 5.4 * a); w.material.opacity = .7 * Math.pow(1 - a / 1.9, 1.3) * Math.min(1, a * 8); });
+    // crown
+    const cp = crownPos(t), ck = o.crownK(t); crown.g.visible = ck > .002; crown.g.position.set(cp[0], cp[1], cp[2]); crown.g.scale.setScalar(2.2 * (.3 + .7 * sm(ck, 0, 1))); crown.g.rotation.y = t * .5;
+    let cf = 0; ages.forEach(a => { if (a > 0) cf += Math.exp(-a * 4); }); crown.gl.material.opacity = clamp(.5 + .1 * Math.sin(t * 2.1) + .5 * cf, 0, 1) * sm(ck, 0, .5);
+    rings.forEach((rg, k) => { const cue = o.ringCue ? o.ringCue[k] : -99, app = o.ringCue ? sm(t, o.ringShow, o.ringShow + .4) : 1, lit = o.ringCue ? sm(t, cue, cue + .35) : 1;
+      rg.g.visible = app > .01; rg.g.position.set(cp[0], cp[1] + rg.y, cp[2]); rg.g.rotation.y = t * (.3 + .12 * k); rg.g.scale.setScalar(1 + .22 * lit * (1 - sm(t, cue, cue + .7)));
+      rg.m.material.opacity = app * (.3 + .7 * lit); rg.m.material.color.setHex(0xe9dcae).lerp(new THREE.Color(0xffc93c), lit); });
+  });
+  return { tiles, crownPos };
+}
+
+// ---------------- warm light + layers ----------------
+function makeLight(Wd, kf) {
+  const a = glow(16, 0, 0xffe2a0), b = glow(7, 0, 0xfff6dc); a.position.set(0, 8.6, -1); b.position.set(0, 8.4, -1); Wd.scene.add(a); Wd.scene.add(b);
+  Wd.on(t => { const k = kf(t); a.material.opacity = .6 * k; b.material.opacity = .6 * k; a.visible = b.visible = k > .01; });
+}
+function makeLayers(Wd, kf) {
+  const S = Wd.scene, cols = [CREAM, LEAF, FOREST, CORAL, TEAL, GOLD], L = [[-4.4, .55], [-8.0, .38], [-11.6, .26]];
+  const ls = L.map(([y, op], n) => { const g = new THREE.Group(); g.position.y = y; g.scale.setScalar(1.5); S.add(g);
+    const mats = {}; GRIDS.forEach((row, j) => [...row].forEach((ch, i) => { const c = COL[ch]; mats[c] = mats[c] || toon(c, { transparent: true, opacity: op, depthWrite: false, emissive: GOLD, emissiveIntensity: .12 });
+      const m = new THREE.Mesh(TILEGEO, mats[c]); m.position.set(cx(i), 0, cz(j)); g.add(m); }));
+    const gl = glow(14, 0, 0xffd27a); gl.position.set(0, y + .3, 0); S.add(gl); return { g, mats, op, gl, n }; });
+  const beam = new THREE.Mesh(new THREE.CylinderGeometry(.14, .14, 14, 12), new THREE.MeshBasicMaterial({ color: 0xffd36b, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending })); beam.position.y = -6.5; S.add(beam);
+  Wd.on(t => { const k = kf(t); ls.forEach(o => { o.g.visible = k > .01; o.g.rotation.y = (o.n + 1) * .12 + t * .02; for (const c in o.mats) o.mats[c].opacity = o.op * k; o.gl.material.opacity = .45 * k; o.gl.visible = k > .01; }); beam.visible = k > .01; beam.material.opacity = .16 * k; });
+}
+
+// ---------------- creature tokens ----------------
+function cStone() { const g = new THREE.Group(); g.add(mk(new THREE.IcosahedronGeometry(.34, 1), 0xb4b9be, { scale: [1.15, .82, 1] })); g.add(mk(new THREE.IcosahedronGeometry(.15, 1), 0x9ea4aa, { pos: [.3, -.16, .12] })); return { g, anim() {} }; }
+function cSapling() { const g = new THREE.Group(); g.add(mk(new THREE.SphereGeometry(.24, 14, 8), 0x8b5a3c, { pos: [0, -.32, 0], scale: [1.1, .4, 1.1] })); g.add(mk(new THREE.CylinderGeometry(.035, .05, .5, 8), 0x8b5a3c, { pos: [0, -.1, 0], inkW: .01 }));
+  const a = mk(new THREE.SphereGeometry(.22, 14, 10), LEAF, { pos: [0, .24, 0] }), b = mk(new THREE.SphereGeometry(.15, 12, 8), FOREST, { pos: [.17, .1, .05] }), c = mk(new THREE.SphereGeometry(.14, 12, 8), LEAF, { pos: [-.17, .08, -.03] }); g.add(a, b, c); return { g, anim(t) { g.rotation.z = .05 * Math.sin(t * 1.5); } }; }
+function cBird() { const g = new THREE.Group(), body = new THREE.Group(); g.add(body); body.add(mk(new THREE.SphereGeometry(.24, 16, 12), TEAL, { scale: [1.3, .9, .9] })); body.add(mk(new THREE.SphereGeometry(.13, 12, 10), TEAL, { pos: [.26, .13, 0] }));
+  body.add(mk(new THREE.ConeGeometry(.05, .14, 8), CORAL, { pos: [.4, .12, 0], rot: [0, 0, -PI / 2], inkW: .01 })); body.add(mk(new THREE.ConeGeometry(.08, .28, 8), CORAL, { pos: [-.36, .02, 0], rot: [0, 0, PI / 2 + .3], inkW: .01 }));
+  const wings = [-1, 1].map(s => { const w = new THREE.Group(); w.position.set(0, .08, s * .15); body.add(w); const m = mk(new THREE.SphereGeometry(.2, 12, 8), CORAL, { pos: [0, 0, s * .17], scale: [1.1, .13, .8], inkW: .01 }); w.add(m); return { w, s }; });
+  g.rotation.y = -.5; return { g, anim(t) { wings.forEach(o => { o.w.rotation.x = -o.s * (.45 + .5 * Math.sin(t * 7)); }); body.position.y = .05 * Math.sin(t * 3); } }; }
+function cBubble() { const g = new THREE.Group(); g.add(mk(new THREE.SphereGeometry(.3, 18, 12), CREAM, { scale: [1.4, .95, .5] })); g.add(mk(new THREE.ConeGeometry(.1, .22, 8), CREAM, { pos: [-.16, -.34, 0], rot: [0, 0, PI - .35], scale: [1, 1, .6], inkW: .012 })); return { g, anim(t) { g.rotation.y = .3 * Math.sin(t * 1.1); } }; }
+function cFlame() { const g = new THREE.Group(), a = mk(new THREE.ConeGeometry(.26, .62, 14), CORAL, { mat: { emissive: CORAL, emissiveIntensity: .35 } }), b = mk(new THREE.ConeGeometry(.15, .42, 12), GOLD, { pos: [0, -.06, .02], inkW: .01, mat: { emissive: GOLD, emissiveIntensity: .7 } }), c = mk(new THREE.ConeGeometry(.1, .3, 10), CORAL, { pos: [.17, -.08, 0], inkW: .01 }); g.add(a, b, c); return { g, anim(t) { g.scale.set(1 + .05 * Math.sin(t * 9), 1 + .09 * Math.sin(t * 7), 1); } }; }
+function cWater() { const g = new THREE.Group(); g.add(mk(new THREE.SphereGeometry(.25, 18, 12), 0x3a8fd9, { pos: [0, -.08, 0] })); g.add(mk(new THREE.ConeGeometry(.225, .46, 16), 0x3a8fd9, { pos: [0, .2, 0], inkW: .014 })); g.add(mk(new THREE.SphereGeometry(.06, 8, 6), 0xdff1ff, { pos: [-.1, -.04, .2], ink: false })); return { g, anim(t) { g.rotation.y = t * .6; } }; }
+function cAir() { const g = new THREE.Group(), arcs = [[.2, 0], [.3, 1.4], [.4, 2.8]].map(([R, ph], n) => { const m = mk(new THREE.TorusGeometry(R, .036, 8, 28, 4.3), 0xffffff, { pos: [0, (n - 1) * .13, 0], rot: [PI / 2 + (n - 1) * .25, 0, ph], inkW: .01, mat: { emissive: 0xcfe9ff, emissiveIntensity: .25 } }); g.add(m); return { m, ph }; }); return { g, anim(t) { arcs.forEach((o, n) => { o.m.rotation.z = o.ph + t * (1.6 - n * .3); }); } }; }
+function cEarth() { const g = new THREE.Group(); g.add(mk(new THREE.IcosahedronGeometry(.3, 1), 0x8b5a3c, { scale: [1.2, .75, 1] })); g.add(mk(new THREE.IcosahedronGeometry(.12, 0), 0x6b4429, { pos: [.2, .15, .1], inkW: .01 })); g.add(mk(new THREE.IcosahedronGeometry(.1, 0), 0xa0714d, { pos: [-.18, .12, -.1], inkW: .01 })); return { g, anim() {} }; }
+const CRE = [cStone, cSapling, cBird, cBubble, cFlame, cWater, cAir, cEarth];
+const CELLS = [[3, 0], [2, 2], [0, 3], [-2, 2], [-3, 0], [-2, -2], [0, -3], [2, -2]];
+const CARA = [cx(DIO[0]), .5, cz(DIO[1])];
+
+function makeNet(Wd, o) {
+  const S = Wd.scene;
+  const items = CELLS.map((c, k) => { const g = new THREE.Group(), cr = CRE[k](); S.add(g); cr.g.scale.setScalar(1.25); g.add(cr.g);
+    const hl = glow(2.2, 0, 0xffd878); hl.renderOrder = 10; g.add(hl); const pl = glow(1, 0, 0xfff0b0); pl.renderOrder = 11; g.add(pl); return { g, cr, hl, pl, x: c[0] * PITCH, z: c[1] * PITCH }; });
+  const P = (k, t) => { const r = ease.out(o.rise(k, t)); return [items[k].x, lerp(.45, 2.3, r) + r * .12 * Math.sin(t * 1.3 + k * 1.1) + o.lift(t), items[k].z]; };
+  const chain = items.map(() => makeBar(S, .03)), star = items.map(() => makeBar(S, .022));
+  const carGl = glow(1.2, 0, 0xffe9b8); carGl.position.set(...CARA); carGl.renderOrder = 10; S.add(carGl);
+  Wd.on(t => {
+    const pos = items.map((_, k) => P(k, t));
+    items.forEach((it, k) => { const rr = o.rise(k, t), on = rr > .001; it.g.visible = on; if (!on) return; const e = ease.out(rr);
+      it.g.position.set(...pos[k]); it.cr.g.scale.setScalar(1.25 * (.25 + .75 * e)); it.cr.g.rotation.y = rr < 1 ? 0 : 0; it.cr.anim(t); it.hl.material.opacity = .4 * Math.min(1, rr * 3);
+      const T = o.p0 + k * .11, a = t - T, u = ((a % 1) + 1) % 1, pon = a >= 0; it.pl.visible = pon; if (pon) { it.pl.scale.setScalar(.6 + 2.4 * u); it.pl.material.opacity = .75 * o.amp(t) * Math.pow(1 - u, 1.6); } });
+    items.forEach((_, k) => { chain[k].set(pos[k], pos[(k + 1) % 8], o.chain(k, t)); star[k].set(pos[k], CARA, o.star(k, t)); });
+    carGl.visible = o.star(0, t) > .01; carGl.material.opacity = .8 * Math.min(1, o.star(0, t) * 3) * (.8 + .2 * Math.sin(t * 4)); carGl.scale.setScalar(1.0 + .2 * Math.sin(t * 4));
+  });
+  return { P, items };
+}
+function makeMotes(Wd, f) {
+  const ms = CELLS.map(c => { const s = glow(.55, 0, 0xffe08a); s.position.set(c[0] * PITCH, .4, c[1] * PITCH); Wd.scene.add(s); s.renderOrder = 11; return s; });
+  Wd.on(t => ms.forEach((s, k) => { const [y, op] = f(k, t); s.visible = op > .01; s.position.y = y; s.material.opacity = op; }));
+}
+
+// ---------------- diorama (the car tile) ----------------
+function makeDiorama(Wd, kf) {
+  const S = Wd.scene, root = new THREE.Group(); root.position.set(cx(DIO[0]), TY + .11, cz(DIO[1])); S.add(root);
+  const sb = { inkW: .004, inkColor: INKC };
+  root.add(mk(new THREE.BoxGeometry(.84, .014, .3), 0x8c939c, Object.assign({ pos: [0, .008, .06], box: true }, sb)));
+  for (const x of [-.3, -.1, .1, .3]) root.add(mk(new THREE.BoxGeometry(.1, .004, .02), 0xffffff, { pos: [x, .018, .06], ink: false }));
+  const inner = new THREE.Group(); root.add(inner);
+  const car = new THREE.Group(); inner.add(car);
+  car.add(mk(new THREE.BoxGeometry(.26, .09, .13), CORAL, Object.assign({ pos: [0, .075, 0], box: true }, sb))); car.add(mk(new THREE.BoxGeometry(.13, .075, .115), TEAL, Object.assign({ pos: [-.03, .157, 0], box: true }, sb)));
+  for (const [x, z] of [[.08, .07], [-.08, .07], [.08, -.07], [-.08, -.07]]) car.add(mk(new THREE.CylinderGeometry(.035, .035, .03, 14), 0x1d2326, { pos: [x, .035, z], rot: [PI / 2, 0, 0], inkW: .003 }));
+  car.position.set(-.12, 0, .06);
+  const slip = mk(new THREE.BoxGeometry(.1, .004, .075), 0xffffff, Object.assign({ box: true }, { inkW: .003, inkColor: INKC })); inner.add(slip);
+  const sg = new THREE.Group(); sg.position.set(.22, 0, .3); inner.add(sg);
+  sg.add(mk(new THREE.CylinderGeometry(.01, .012, .3, 8), 0x6b7075, { pos: [0, .15, 0], inkW: .003 })); const disc = mk(new THREE.CylinderGeometry(.075, .075, .012, 24), 0xffffff, { pos: [0, .33, 0], rot: [PI / 2, 0, 0], inkW: .003 }); sg.add(disc);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(.07, .012, 8, 28), new THREE.MeshBasicMaterial({ color: 0xe04545 })); rim.position.set(0, .33, .008); sg.add(rim);
+  const pg = new THREE.Group(); pg.position.set(-.33, 0, -.22); inner.add(pg); pg.add(mk(new THREE.CylinderGeometry(.012, .014, .32, 8), 0x6b7075, { pos: [0, .16, 0], inkW: .003 }));
+  const bm = toon(0x2f7fe0, { emissive: 0x2f7fe0, emissiveIntensity: 0 }), rm = toon(0xe0443f, { emissive: 0xe0443f, emissiveIntensity: 0 });
+  const bl = new THREE.Mesh(new THREE.SphereGeometry(.036, 12, 8), bm); bl.position.set(-.03, .35, 0); pg.add(bl); const rl = new THREE.Mesh(new THREE.SphereGeometry(.036, 12, 8), rm); rl.position.set(.03, .35, 0); pg.add(rl);
+  const bg = glow(.4, 0, 0x4fa0ff), rg = glow(.4, 0, 0xff5a4a); bg.position.copy(bl.position); rg.position.copy(rl.position); pg.add(bg); pg.add(rg);
+  const lines = [0, 1, 2].map(i => { const m = new THREE.Mesh(new THREE.BoxGeometry(.18, .004, .01), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0 })); m.position.set(0, .06 + i * .03, .06 + (i - 1) * .03); inner.add(m); return m; });
+  Wd.on(t => {
+    const k = kf(t); inner.visible = k > .002; inner.scale.setScalar(Math.max(.001, ease.out(k)));
+    // car: parked, zips past the sign at ~6.5, returns slowly
+    let carX = -.12, vis = true;
+    if (t >= 6.2 && t < 6.9) carX = lerp(-.12, 1.1, ease.io(prog(t, 6.2, 6.9))); if (t >= 6.9 && t < 7.5) vis = false; if (t >= 7.5) carX = lerp(-.7, -.12, ease.out(prog(t, 7.5, 8.3)));
+    car.visible = vis && !(t >= 6.75 && t < 7.5); car.position.set(carX, 0, .06); car.rotation.z = t >= 6.2 && t < 6.7 ? .05 * Math.sin(prog(t, 6.2, 6.7) * PI) : 0;
+    // paper slip drops onto the windshield at 4.5, gets blown off when the car leaves
+    const du = prog(t, 4.5, 5.15), fl = t >= 5.15 ? Math.exp(-(t - 5.15) * 2) * Math.sin((t - 5.15) * 9) * .25 : 0, off = prog(t, 6.3, 6.95);
+    slip.visible = t >= 4.4 && off < 1;
+    if (du < 1) { slip.position.set(-.04 + .14 * ease.out(du) + .05 * Math.sin(du * 9), lerp(.75, .17, ease.in(du)), .06 + .03 * Math.sin(du * 7)); slip.rotation.set(.6 * Math.sin(du * 8), du * 2.4, 1.2 * (1 - du) + .5 * Math.sin(du * 10)); }
+    else { slip.position.set(carX + .07 + (off * -.2), .165 + off * .5, .06 + off * .1); slip.rotation.set(fl + off * 3, 0, -1.15 + off * 2 + fl); }
+    // sign + light post
+    const lt = t - 7.1, on = lt > 0 && lt < 1.6, bo = on && Math.floor(lt / .16) % 2 === 0, ro = on && !bo;
+    bm.emissiveIntensity = bo ? 1.1 : .1; rm.emissiveIntensity = ro ? 1.1 : .1; bg.material.opacity = bo ? .9 : 0; rg.material.opacity = ro ? .9 : 0; bg.visible = rg.visible = on;
+    const sk = prog(t, 6.2, 6.7); lines.forEach((m, i) => { m.visible = sk > 0 && sk < 1; if (m.visible) { m.position.x = carX - .22 - i * .05; m.material.opacity = .8 * Math.sin(sk * PI); } });
+  });
+  return { root };
+}
+
+// ---------------- clock (s02) ----------------
+function makeClock(Wd, x, y, z, ticks) {
+  const g = new THREE.Group(); g.position.set(x, y, z); g.rotation.y = .4; Wd.scene.add(g);
+  const disc = mk(new THREE.CylinderGeometry(1, 1, .16, 40), CREAM, { rot: [PI / 2, 0, 0], inkW: .025 }); g.add(disc);
+  for (let i = 0; i < 12; i++) { const a = i * TAU / 12, big = i % 3 === 0; g.add(mk(new THREE.BoxGeometry(big ? .09 : .06, big ? .24 : .15, .03), FOREST, { pos: [Math.sin(a) * .74, Math.cos(a) * .74, .1], rot: [0, 0, -a], ink: false })); }
+  const hand = new THREE.Group(); hand.position.z = .13; g.add(hand); hand.add(mk(new THREE.BoxGeometry(.08, .62, .03), CORAL, { pos: [0, .24, 0], inkW: .008 })); hand.add(mk(new THREE.SphereGeometry(.09, 12, 8), FOREST, { inkW: .008 }));
+  const hub = glow(1.6, 0, 0xffd878); hub.position.z = .2; g.add(hub);
+  Wd.on(t => {
+    const k = sm(t, .2, 1.0); g.visible = k > .01; g.scale.setScalar(.2 + .8 * k); g.position.y = y + .12 * Math.sin(t * 1.3); g.rotation.y = .4 + .12 * Math.sin(t * .5);
+    let a = 0, bump = 0; ticks.forEach(T => { a += (PI / 6) * ease.out(prog(t, T, T + .2)); const d = t - T; if (d > 0) bump += Math.exp(-d * 6); });
+    hand.rotation.z = -a + (t < ticks[0] ? .04 * Math.sin(t * 2) : 0); hub.material.opacity = clamp(bump * .8, 0, 1); });
+  return g;
+}
+
+// ---------------- veil + lantern (s06) ----------------
+function makeVeil(Wd, ci, cj, crownPos) {
+  const S = Wd.scene, x = cx(ci), z = cz(cj), g = new THREE.Group(); S.add(g);
+  [[0, 0, 0, .55], [.38, .05, .1, .4], [-.38, .02, -.05, .42], [.1, .12, -.3, .38], [-.1, .1, .32, .36]].forEach(([px, py, pz, r]) => { const m = new THREE.Mesh(new THREE.SphereGeometry(1, 18, 12), toon(0xfff7ea, { transparent: true, opacity: .88, depthWrite: false })); m.scale.set(r * 1.25, r * .75, r * 1.25); m.position.set(px, py, pz); g.add(m); });
+  const edges = [[.9, .05, 0, -.45], [.9, .05, 0, .45], [.05, .9, -.45, 0], [.05, .9, .45, 0]].map(([w, d, ex, ez]) => { const m = new THREE.Mesh(new THREE.BoxGeometry(w, .02, d), new THREE.MeshBasicMaterial({ color: 0xffc93c, transparent: true, opacity: 0, depthWrite: false, depthTest: false, blending: THREE.AdditiveBlending })); m.position.set(x + ex, .3, z + ez); m.renderOrder = 30; S.add(m); return m; });
+  const gl = glow(1.9, 0, 0xffd060); gl.position.set(x, .45, z); gl.renderOrder = 31; gl.material.depthTest = false; S.add(gl);
+  const thread = makeBar(S, .026);
+  Wd.on(t => {
+    const k = sm(t, 3.6, 4.9); g.visible = k > .002; g.position.set(x, lerp(2.4, .66, ease.out(k)) + .03 * Math.sin(t * 1.6), z); g.scale.setScalar(lerp(.5, 1, k) * (1 + .02 * Math.sin(t * 1.3)));
+    const eo = sm(t, 3.9, 4.8) * (.75 + .25 * Math.sin(t * 2.4)); edges.forEach(m => { m.material.opacity = eo; m.visible = eo > .01; }); gl.material.opacity = .7 * sm(t, 4.0, 5.0) * (.85 + .15 * Math.sin(t * 2.4)); gl.visible = gl.material.opacity > .01;
+    const cp = crownPos(t); thread.set([cp[0], cp[1] - .1, cp[2]], [x, .5, z], sm(t, 4.0, 4.9), .9); });
+}
+function makeLantern(Wd, x, z) {
+  const g = new THREE.Group(); g.position.set(x, .24, z); Wd.scene.add(g);
+  const sb = { inkW: .008, inkColor: INKC };
+  g.add(mk(new THREE.BoxGeometry(.24, .05, .24), FOREST, Object.assign({ pos: [0, .025, 0], box: true }, sb)));
+  for (const [px, pz] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) g.add(mk(new THREE.BoxGeometry(.03, .3, .03), FOREST, Object.assign({ pos: [px * .105, .2, pz * .105], box: true }, sb)));
+  const gm = new THREE.Mesh(new THREE.BoxGeometry(.19, .27, .19), new THREE.MeshBasicMaterial({ color: 0xfff0c0, transparent: true, opacity: .42, depthWrite: false })); gm.position.y = .19; g.add(gm);
+  g.add(mk(new THREE.ConeGeometry(.19, .12, 4), FOREST, { pos: [0, .41, 0], rot: [0, PI / 4, 0], inkW: .008 })); const h = new THREE.Mesh(new THREE.TorusGeometry(.06, .01, 6, 16, PI), toon(FOREST)); h.position.y = .46; g.add(h);
+  const fl = mk(new THREE.ConeGeometry(.045, .13, 10), GOLD, { pos: [0, .14, 0], inkW: .004, mat: { emissive: 0xffc040, emissiveIntensity: 1 } }); g.add(fl); const gl = glow(1.0, 0, 0xffd27a); gl.position.y = .2; g.add(gl); const gl2 = glow(2.4, 0, 0xffe0a0); gl2.position.y = .2; g.add(gl2);
+  Wd.on(t => { const k = sm(t, 5.0, 5.7), ls = sm(t, 5.0, 6.2); g.visible = k > .01; g.scale.setScalar(.3 + .7 * ease.out(k)); g.position.y = .24 + .18 * (1 - ease.out(k));
+    fl.scale.set(1, 1 + .03 * Math.sin(t * 3), 1); gl.material.opacity = .9 * ls; gl2.material.opacity = .3 * ls; });
+  return g;
+}
+
+// ---------------- the film ----------------
+const NOLOOSE = () => null, SNAP5 = l => [[7.1, 7.8], [7.32, 8.0], [7.54, 8.2], [7.76, 8.46]][l], DONE = () => [-10, -9];
+const id = x => x;
+film({
+  W: 1080, H: 1920, xf: .4, vault: 'captions_vault.json',
+  shots: [
+    // ===================== s01 (10.4 s): scattered pieces fly in and lock into one picture; the crown rises; three rings light =====================
+    { id: 's01', dur: 10.4, wide: true, caps: ['CAP_A_01', 'CAP_A_02'], capAt: [0.0, 4.6, 99], build() {
+      const Wd = newWorld();
+      makeIsland(Wd, { flight: true, loose: NOLOOSE, base: t => .1 * sm(t, 3.8, 5.5), flash: () => 0, pulses: [6.1, 7.8, 8.8], crownK: t => prog(t, 4.8, 6.0), ringCue: [6.1, 7.8, 8.8], ringShow: 5.5 });
+      heroCluster(Wd, t => t < 2.4 ? [[0, 3.8, 0, 5.5, 2.8, 3]] : [[0, .8, 0, 3.3, 1.0, 3.3]]);
+      return Object.assign(Wd, { cam: cam([[0, [0, 1.6, 12.5], [0, 3.8, 0], 68], [1.0, [0, 2.0, 12.5], [0, 3.6, 0], 68], [3.6, [0, 8.3, 10.8], [0, .5, 0], 68], [5.2, [1.3, 8.4, 10.7], [0, .8, 0], 68], [7.4, [Math.sin(.3) * 10.8, 8.2, Math.cos(.3) * 10.8], [0, .9, 0], 68], [10.4, [Math.sin(.58) * 10.8, 8.0, Math.cos(.58) * 10.8], [0, .9, 0], 68]]) });
+    } },
+    // ===================== s02 (9.55 s): the clock ticks, light travels from the crown into every piece; all flash together; objects start to rise =====================
+    { id: 's02', dur: 9.55, wide: true, caps: ['CAP_A_03', 'CAP_A_04'], capAt: [0.0, 4.9, 99], build() {
+      const Wd = newWorld(), TK = [2.9, 3.7, 4.5, 5.3, 6.1, 6.9];
+      const isl = makeIsland(Wd, { flight: false, loose: NOLOOSE, base: t => .08 + .3 * sm(t, 5.1, 6.9), flash: t => .95 * sm(t, 6.9, 7.05) * (1 - sm(t, 7.1, 7.8)), pulses: [2.9, 3.7, 4.5, 5.3, 6.1], crownK: () => 1, ringCue: null });
+      makeClock(Wd, -3.3, 2.7, .5, TK);
+      makeMotes(Wd, (k, t) => { const u = prog(t, 8.9 + k * .04, 9.55); return [.35 + .6 * ease.out(u), .8 * Math.sin(PI * Math.min(1, u * 1.4))]; });
+      heroCluster(Wd, () => [[0, .9, 0, 3.3, 1.1, 3.3]]);
+      return Object.assign(Wd, { cam: cam([[0, O(33, 10.8, 8.0), [0, .9, 0], 68], [2.9, O(20, 11.2, 8.3), [-.4, 1.0, 0], 68], [5.1, O(10, 12.0, 9.0), [0, .9, 0], 68], [7.0, O(6, 14.3, 11.0), [0, .6, 0], 68], [9.55, O(0, 14.8, 11.6), [0, .5, 0], 68]]) });
+    } },
+    // ===================== s03 (9.05 s): creature tokens rise out of the pieces, pulse every second, then link into a chain =====================
+    { id: 's03', dur: 9.05, wide: true, caps: ['CAP_A_05', 'CAP_A_06'], capAt: [0.0, 4.65, 99], build() {
+      const Wd = newWorld(), RT = [1.2, 1.6, 2.0, 2.3, 2.8, 3.0, 3.1, 3.2];
+      makeIsland(Wd, { flight: false, loose: NOLOOSE, base: t => .3, flash: () => 0, pulses: [], crownK: () => 1, ringCue: null });
+      makeMotes(Wd, (k, t) => { const u = prog(t, 0, RT[k] + .3); return [.35 + .5 * u, (.4 + .35 * Math.sin(t * 5 + k)) * (1 - sm(t, RT[k] - .1, RT[k] + .3))]; });
+      const net = makeNet(Wd, { rise: (k, t) => prog(t, RT[k], RT[k] + 1.1), chain: (k, t) => k < 7 ? prog(t, 7.6 + k * .15, 7.95 + k * .15) : 0, star: () => 0, lift: () => 0, p0: 3.9, amp: () => 1 });
+      heroCluster(Wd, t => t < 1.2 ? [[0, .9, 0, 3.3, 1.1, 3.3]] : [[0, 1.4, 0, 3.2, 1.6, 3.2]]);
+      return Object.assign(Wd, { cam: cam([[0, O(0, 14.8, 11.6), [0, .8, 0], 68], [3, O(-8, 12.6, 9.2), [0, 1.2, 0], 68], [6, O(-26, 11.4, 8.0), [0, 1.3, 0], 68], [9.05, O(-46, 11.0, 7.4), [0, 1.3, 0], 68]]) });
+    } },
+    // ===================== s04 (9.6 s): chain closes into a ring; dive into one tile = a toy road scene; zoom back out to a speck =====================
+    { id: 's04', dur: 9.6, wide: true, caps: ['CAP_A_07', 'CAP_A_08'], capAt: [0.0, 4.4, 99], build() {
+      const Wd = newWorld();
+      makeIsland(Wd, { flight: false, loose: NOLOOSE, base: t => .3, flash: () => 0, pulses: [], crownK: () => 1, ringCue: null });
+      makeNet(Wd, { rise: () => 1, chain: (k, t) => k < 7 ? 1 : prog(t, .7, 1.3), star: () => 0, lift: () => 0, p0: -50, amp: () => .8 });
+      makeDiorama(Wd, t => prog(t, 1.5, 3.6));
+      heroCluster(Wd, t => t < 1.6 ? [[0, 1.4, 0, 3.2, 1.6, 3.2]] : t < 8.6 ? [[cx(DIO[0]), .4, cz(DIO[1]), .5, .35, .5]] : [[0, 1.0, 0, 3.4, 1.4, 3.4]]);
+      const D = [cx(DIO[0]), .32, cz(DIO[1])];
+      return Object.assign(Wd, { cam: cam([[0, O(-46, 11.0, 7.4), [0, 1.3, 0], 68], [1.5, O(-34, 10.0, 6.6), [.2, 1.0, .3], 66], [2.8, [-1.3, 3.1, 5.0], [.6, .45, 1.2], 64], [4.0, [1.3, 1.1, 2.75], D, 62], [8.6, [1.45, 1.05, 2.65], D, 62], [9.1, [1.0, 3.4, 5.4], [.3, .5, .5], 66], [9.6, O(0, 13.6, 10.6), [0, .8, 0], 68]]) });
+    } },
+    // ===================== s05 (8.9 s): gold threads link every object and the car tile; the network rises to a warm light; the last pieces snap in =====================
+    { id: 's05', dur: 8.9, wide: true, caps: ['CAP_A_09', 'CAP_A_10'], capAt: [0.0, 4.4, 99], build() {
+      const Wd = newWorld();
+      makeIsland(Wd, { flight: false, loose: (l, t) => SNAP5(l), base: t => .3, flash: () => 0, pulses: [], crownK: () => 1, ringCue: null });
+      makeNet(Wd, { rise: () => 1, chain: () => 1, star: (k, t) => prog(t, 2.3 + k * .38, 3.0 + k * .38), lift: t => 3.2 * ease.io(prog(t, 5.7, 7.0)), p0: -50, amp: t => .8 - .3 * sm(t, 5.7, 7) });
+      makeDiorama(Wd, () => 1);
+      makeLight(Wd, t => sm(t, 5.7, 7.2));
+      heroCluster(Wd, t => [[0, 1.4 + 1.6 * sm(t, 5.7, 7.0), 0, 3.4, 1.6 + .8 * sm(t, 5.7, 7.0), 3.4]]);
+      return Object.assign(Wd, { cam: cam([[0, O(0, 13.6, 10.6), [0, .8, 0], 68], [2.3, O(3, 14.4, 11.0), [0, 1.0, 0], 68], [5.7, O(6, 14.8, 11.4), [0, 1.4, 0], 68], [7.0, O(4, 15.8, 12.4), [0, 2.6, 0], 68], [8.9, O(2, 16.2, 12.8), [0, 2.8, 0], 68]]) });
+    } },
+    // ===================== s06 (11.28 s): calm glow; a veil covers one piece, its outline still glows; lantern; the camera tilts down into the depth =====================
+    { id: 's06', dur: 11.28, wide: true, caps: ['CAP_A_11', 'CAP_A_12'], capAt: [0.0, 4.9, 99], build() {
+      const Wd = newWorld(), VC = [1, 4]; Wd.coneHideT = 7.0;
+      const isl = makeIsland(Wd, { flight: false, loose: DONE, base: t => .3 + .05 * Math.sin(t * 1.2), flash: () => 0, pulses: [.3, 1.6], crownK: () => 1, ringCue: null });
+      makeNet(Wd, { rise: () => 1, chain: () => 1, star: () => 1, lift: () => 3.2, p0: -50, amp: () => .5 });
+      makeDiorama(Wd, () => 1);
+      makeLight(Wd, () => .75);
+      makeVeil(Wd, VC[0], VC[1], isl.crownPos);
+      makeLantern(Wd, cx(VC[0]) + .95, cz(VC[1]) + .75);
+      makeLayers(Wd, t => sm(t, 6.0, 7.4));
+      heroCluster(Wd, t => t < 3.6 ? [[0, 1.0, 0, 3.4, 1.4, 3.4]] : t < 6.6 ? [[cx(VC[0]) + .4, .6, cz(VC[1]) + .3, 1.3, .5, 1.0]] : [[0, -4 - 3.5 * sm(t, 7, 9.6), 0, 4.5, 3, 4.5]]);
+      return Object.assign(Wd, { cam: cam([[0, O(2, 14.0, 10.0), [0, 1.2, 0], 68], [2.0, O(-4, 13.4, 9.6), [-.4, 1.0, 0], 68], [3.6, [-1.6, 6.8, 9.6], [-.6, .7, .4], 66], [5.2, [-1.2, 5.8, 8.2], [-.7, .6, .8], 64], [6.6, [-1.0, 6.4, 9.6], [-.4, .6, .6], 66], [8.0, [0, 1.2, 15.5], [0, -3.2, 0], 68], [9.6, [0, -1.0, 15.8], [0, -7.0, 0], 68], [10.3, [0, -2.4, 15.6], [0, -8.4, 0], 68], [11.28, [0, -2.5, 15.6], [0, -8.5, 0], 68]]) });
+    } },
+  ],
+});
+</script>
+</html>

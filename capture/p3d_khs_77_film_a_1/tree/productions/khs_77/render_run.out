@@ -1,0 +1,9 @@
+06:10:45 render_all: production=khs_77 films=film_a part=50s hq=True dry_run=False
+!! BUDGET GUARD FAILED OPEN (render continues): TimeoutExpired: Command '['C:\\Users\\יוסף שניידר\\AppData\\Local\\Programs\\Python\\Python311\\python.exe', 'C:/tools/usage-budget/budget.py']' timed out after 120 seconds
+06:12:56 budget OK: budget unknown (TimeoutExpired: Command '['C:\\Users\\יוסף שניידר\\AppData\\Local\\Programs\\Python\\Python311\\python.exe', 'C:/tools/usage-budget/budget.py']' timed out after 120 seconds)
+06:12:56 verify gate: PASS for film_a
+06:13:08 film_a: length 59.2s, rendering (part 50 s, 6 includes)
+06:22:57 film_a part 1/2 t0=0.0 d=29.6 -> rc=1
+object refcount : 2
+
+exit=120
