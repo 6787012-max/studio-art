@@ -1,0 +1,12 @@
+P0 | HERO_NOT_VISIBLE | t=83.49 | s07 | hero is outside the frame | Fix: reframe: the hero must be on screen in every shot
+
+P2 notes:
+P2 | HERO_SMALL | t=6.46 | s01 | hero height 23% of frame in the key shot (< 35%)
+P2 | HERO_SMALL | t=77.81 | s07 | hero height 24% of frame in the key shot (< 35%)
+P2 | HERO_SMALL | t=131.83 | s12 | hero height 28% of frame in the key shot (< 35%)
+P2 | HERO_SMALL | t=153.88 | s14 | hero height 33% of frame in the key shot (< 35%)
+SUMMARY | FAIL | samples=98 | dur=239.4 | P0=1 P1=0 P2=4 | {"ready_s": 2.6, "gates_s": 394.2, "total_s": 399.8}
+
+real	6m42.470s
+user	0m0.000s
+sys	0m0.031s
