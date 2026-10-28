@@ -12,7 +12,7 @@ window.STORY = function (K) {
     T_RACHIL1 = 'לא תלך', T_RACHIL2 = 'רכיל', T_LH = 'לשון הרע', T_NIS = '₪';
 
   // ---------------------------------------------------------------- people (navy velvet kippot)
-  const boyK = (Wd, i, fn) => { const Pp = K.boyP(Wd, i, fn); Wd.on(() => { const k = Pp.kippa; if (k && !k._rc) { k._rc = 1; k.material = k.material.clone(); k.material.color.set(0x1f2f70); k.scale.multiplyScalar(1.12); } }); return Pp; };
+  const boyK = (Wd, i, fn) => { const Pp = K.boyP(Wd, i, fn); Wd.on(() => { const k = Pp.kippa; if (k && !k._rc) { k._rc = 1; k.material = k.material.clone(); k.material.color.set(0x1f2f70); } }); return Pp; };
   const manK = (Wd, look, fn, seed) => {
     const Pn = person(Wd, Object.assign({ kind: 'man', hat: 'kippa', glasses: false }, look), t => Object.assign({ seed: seed }, fn(t)), { scale: 1 }); (Wd.people = Wd.people || []).push(Pn);
     let fixed = false; Wd.on(() => { if (fixed || !Pn.figure) return; fixed = true; Pn.figure.group.traverse(m => { if (m.isMesh && m.geometry && m.geometry.type === 'SphereGeometry' && m.geometry.parameters.thetaLength === .8) { m.scale.multiplyScalar(1.22); m.scale.y *= .94; m.rotation.x = 0; Pn.kippa = m; } }); });
