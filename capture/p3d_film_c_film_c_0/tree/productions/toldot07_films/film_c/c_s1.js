@@ -28,10 +28,15 @@ const noPour = () => { if (!flags.collect) { sandStream.mesh.visible = true; for
 const bFace = (T, st, off) => Object.assign({ expr: 'smile', blink: blinkAt(T, off || 0.6), look: [0, 0] }, st);
 const GRAIN_HOME = [0, 0, 0];
 
+const titleGrass = (() => { const g = W.G(GB); [[-930, 1330, 2.4], [-620, 1290, 2.0], [-300, 1360, 2.6], [-60, 1300, 2.1]].forEach(([x, z, k], i) => { const t = KT.makeGrassTuft(i + 510, { col: '#8fae56', h: 60, n: 9 }); t.position.set(x, TERR(x, z), z); t.scale.setScalar(k); g.add(t); }); g.visible = false; return g; })();
+/* footprints of the walk (c2) */
+const prints = W.makeParticles(80, '#b99556', new THREE.SphereGeometry(1, 6, 4).scale(0.55, 0.12, 1)); GB.add(prints.mesh);
+export const s1Off = () => { titleGrass.visible = false; prints.mesh.visible = false; };
 export function shot1(lt, T) {
-  show(GB, R, B);
+  show(GB, R, B); titleGrass.visible = false; prints.mesh.visible = false;
   const gold = 1 - ease(lt, 11, 15); skyTo('gold', 'day', 1 - gold);
   beachTick(T, { blow1: lt < 12.3 ? 0.55 : 0.25 });
+  lab.visible = false;
   let cam, handB = null;
   const PH = (o, x, z, yaw, extra) => pose(o, Object.assign({ t: T, x, z, yaw, walk: 0 }, extra), TERR(x, z));
 
@@ -39,7 +44,8 @@ export function shot1(lt, T) {
     const d = 135 * lt, psi = -0.2, wr = walkAlong(R, -760, 330, psi, d + 90), wb = walkAlong(B, -930, 300, psi, d);
     PH(R, wr.x, wr.z, psi, { walk: 1, ph: wr.ph, headYaw: 0.25 }); PH(B, wb.x, wb.z, psi - 0.45, { walk: 1, ph: wb.ph, headYaw: -0.2 });
     fs(R, { expr: 'smile', blink: blinkAt(T, 0.1), look: [0.4, 0] }); fs(B, bFace(T, { look: [0.4, 0] }, 0.5));
-    cam = CAMS(lt, [{ t0: 0, t1: 4.5, p: [-420, 235, 1320], p1: [-230, 222, 1230], l: [-420, 105, 0], l1: [-140, 105, 0], f: 34 }]);
+    const lx = -1040 + 119 * lt; cam = { p: [lx, 238, 1700], l: [lx, 118, 0], fov: 34 };
+    titleGrass.visible = true;
     noPour();
   } else if (lt < 12.27) {
     const yawB = -PI / 2 + 1.0, bx = 80, bz = 430, f = fwd(yawB);
@@ -69,76 +75,105 @@ export function shot1(lt, T) {
     }
   } else if (lt < 18.44) {
     noPour();
-    if (lt < 13.7) {                                  /* ---- S1d the camera turns east: sea -> land, the pair stands ready (seen from behind) */
-      const u = ease(lt, 12.27, 13.5);
-      PH(R, -110, 900, -PI / 2, { headYaw: 0.1, arms: { r: { sz: 0.5 + 0.9 * ease(lt, 13.1, 13.7), sx: 0.1, el: 0.2, point: lt > 13.3 } } });
-      PH(B, 90, 880, -PI / 2 + 0.1, { headYaw: -0.15 });
-      fs(R, { expr: 'explaining', talk: talkL(lt, 12.5, 13.7), blink: blinkAt(T, 0.1), look: [0.2, 0] }); fs(B, bFace(T, {}, 0.5));
-      const c = PAN([-30, 190, 150], 0.72 * PI, PI, u, 150 + 40 * u, 1600); cam = { p: c.p, l: c.l, fov: 32 };
-    } else {
-      const d = lin(lt, 13.7, 17.0) * 560, hold = lt > 17.0, dd = hold ? 560 : d;
-      const wr = walkAlong(R, -120, 900, -PI / 2, dd), wb = walkAlong(B, 80, 860, -PI / 2, dd);
+    {
+      const u = lin(lt, 12.27, 17.0), dd = 900 * (u * u * (3 - 2 * u));
+      const wr = walkAlong(R, -120, 560, -PI / 2, dd), wb = walkAlong(B, 80, 540, -PI / 2, dd);
+      prints.mesh.visible = true;
+      for (let i = 0; i < prints.n; i++) { const k = Math.floor(i / 2), side = i % 2, d = 18 + k * 36; if (d > dd - 40) { prints.hide(i); continue; }
+        const x = side ? -120 + 14 * (k % 2 ? 1 : -1) : 80 + 14 * (k % 2 ? 1 : -1), z = (side ? 560 : 540) + d; prints.set(i, x, TERR(x, z) + 2.4, z, 13); }
+      prints.commit();
       if (lt < 17.0) {
         PH(R, wr.x, wr.z, -PI / 2, { walk: 1, ph: wr.ph, headYaw: 0.35 * Math.sin(T * 0.9), arms: { r: { sz: 1.35, sx: 0.1, el: 0.2, point: true } } });
         PH(B, wb.x, wb.z, -PI / 2 + 0.2, { walk: 1, ph: wb.ph + 0.3, headYaw: -0.2 });
-        fs(R, { expr: 'explaining', talk: talkL(lt, 13.7, 16.5), blink: blinkAt(T, 0.1), look: [0.3, 0.1] }); fs(B, bFace(T, { look: [0.3, 0.2] }, 0.5));
-        const cz = wr.z - 560 + 15 * Math.sin(lt);
-        cam = CAMS(lt, [{ t0: 13.7, t1: 17.0, lin: true, p: [330, 175, wr.z - 520], p1: [330, 175, wr.z - 520 + 560 * 0.0], l: [-20, 150, wr.z + 380], f: 33 }]);
-        cam.p = [300 + 40 * Math.sin(lt * 0.4), 170, wr.z - 560]; cam.l = [-20, 160, wr.z + 420];
+        fs(R, { expr: 'explaining', talk: talkL(lt, 12.5, 16.5), blink: blinkAt(T, 0.1), look: [0.3, 0.1] }); fs(B, bFace(T, { look: [0.3, 0.2] }, 0.5));
+        if (lt < 14.9) cam = { p: [620 - 40 * (lt - 12.27), 300, -330], l: [-20, 140, 900 + 60 * (lt - 12.27)], fov: 34 };
+        else cam = { p: [820, 215, wr.z + 640], l: [-10, 165, wr.z - 20], fov: 34 };
       } else {                                        /* ---- S1f they arrive: turn toward us, the white hills behind them */
         const tu = ease(lt, 17.0, 17.7), z1 = 900 + 560, yawR = lerp(-PI / 2, 0.5, tu), yawB = lerp(-PI / 2 + 0.2, 0.3, tu);
         PH(R, wr.x, z1 + 10, yawR, { headYaw: 0.1, arms: { r: { sz: lerp(1.35, -0.9, tu), sx: 0.2, el: 0.3, point: true } } });
         PH(B, wb.x + 50, z1 - 40, yawB, { headYaw: -0.15, headTilt: 3 });
         fs(R, { expr: 'explaining', talk: talkL(lt, 17.3, 18.4), blink: blinkAt(T, 0.1), look: [0.3, 0] }); fs(B, bFace(T, { expr: 'smile', look: [-0.3, 0.2] }, 0.5));
-        cam = CAMS(lt, [{ t0: 17.0, t1: 18.44, p: [760, 190, z1 - 560], p1: [700, 185, z1 - 520], l: [0, 190, z1 + 20], f: 34 }]);
+        cam = CAMS(lt, [{ t0: 17.0, t1: 18.44, p: [900, 220, z1 - 760], p1: [850, 215, z1 - 720], l: [0, 170, z1 + 20], f: 34 }]);
       }
     }
-  } else if (lt < 29.43) {                            /* ---- c3: MCU - the rabbi holds white limestone and sparkling quartz, the boy leans in; inserts on each */
-    noPour(); lab.visible = false;
-    const { x, y, z } = LAB, rx = x - 20, rz = z + 300, k = lt - 18.44, up = ease(k, 0.4, 1.4);
-    show(GH, R, B);
-    const hold = { sz: 0.3 + 0.06 * Math.sin(T * 1.3), sx: 0.85, el: 0.75, curl: 0.7 };
-    PH(R, rx, rz, -PI / 2 + 0.3, { headYaw: -0.1, headTilt: 3, arms: { l: Object.assign({}, hold), r: Object.assign({}, hold, { sz: 0.3 - 0.06 * Math.sin(T * 1.3) }) } });
-    fs(R, { expr: 'explaining', talk: talkL(lt, 19, 21.8) || talkL(lt, 27.8, 29.2), blink: blinkAt(T, 0.1), look: [0.2, -0.2] });
-    PH(B, rx + 190, rz - 20, -PI / 2 - 0.5, { lean: 14, headTilt: 10, headYaw: 0.15 });
-    fs(B, bFace(T, { expr: lt < 22 ? 'thinking' : 'surprised', look: [-0.5, -0.2] }, 0.4));
-    R.root.updateMatrixWorld(true); const hl = handPos(R, 0), hr = handPos(R, 1);
-    if (!flags.collect) { heldLime.visible = true; heldLime.position.set(hl[0] + 4, hl[1] + 14, hl[2] + 6); heldLime.rotation.y = T * 0.3;
-      heldQuartz.visible = true; heldQuartz.position.set(hr[0] + 4, hr[1] + 8, hr[2] + 6); heldQuartz.rotation.y = -0.4; }
-    const ins = lt >= 22.0 && lt < 27.6, onLime = lt < 25.0;
-    const fx = ins ? (onLime ? hl : hr) : hl;
-    pose(GH, { t: T, x: ins ? fx[0] - 100 : rx + 60, y: ins ? fx[1] - 70 : TERR(rx + 60, rz + 110), z: ins ? fx[2] + 30 : rz + 110, yaw: -PI / 2 + 0.3, walk: 0, shadow: !ins }); GH.root.scale.setScalar(ins ? 0.42 : 0.5);
-    fs(GH, { expr: onLime && ins ? 'curious' : 'happy', blink: blinkAt(T, 0.3), look: [0.5, 0.3] });
-    if (lt >= 25.0) sparkle(lab, hr[0], hr[1] + 40, hr[2], T, 1, 0.8);
-    if (lt >= 27.6) sparkle(lab, rx + 60, TERR(rx + 60, rz + 110) + 90, rz + 110, T, 1, 0.7);
-    if (!ins) cam = CAMS(lt, [{ t0: 18.44, t1: 22.0, p: [x + 50, y + 170, rz + 760], p1: [x + 60, y + 165, rz + 650], l: [x + 60, y + 150, rz], f: 32 }, { t0: 27.6, t1: 29.43, p: [x + 60, y + 170, rz + 700], p1: [x + 60, y + 165, rz + 620], l: [x + 60, y + 150, rz], f: 32 }]);
-    else if (onLime) cam = CAMS(lt, [{ t0: 22.0, t1: 25.0, p: [hl[0] + 80, hl[1] + 30, hl[2] + 330], p1: [hl[0] + 50, hl[1] + 25, hl[2] + 250], l: [hl[0] - 30, hl[1] - 15, hl[2]], f: 32 }]);
-    else cam = CAMS(lt, [{ t0: 25.0, t1: 27.6, p: [hr[0] - 100, hr[1] + 30, hr[2] + 330], p1: [hr[0] - 60, hr[1] + 25, hr[2] + 250], l: [hr[0] - 40, hr[1] - 15, hr[2]], f: 32 }]);
+  } else if (lt < 29.43) {                            /* ---- c3: MCU of the pair with both stones; inserts: chalky limestone, then the sparkling quartz */
+    noPour();
+    const { x, y, z } = LAB, rx = x - 20, rz = z + 300, k = lt - 18.44;
+    show(GH);
+    const ins = lt >= 22.0 && lt < 27.6;
+    lab.visible = ins;
+    if (!ins) {
+      show(R, B);
+      const hold = { sz: 0.3 + 0.06 * Math.sin(T * 1.3), sx: 0.85, el: 0.75, curl: 0.7 };
+      PH(R, rx, rz, -PI / 2 + 0.3, { headYaw: -0.1, headTilt: 3, arms: { l: Object.assign({}, hold), r: Object.assign({}, hold, { sz: 0.3 - 0.06 * Math.sin(T * 1.3) }) } });
+      fs(R, { expr: 'explaining', talk: talkL(lt, 19, 21.8) || talkL(lt, 27.8, 29.2), blink: blinkAt(T, 0.1), look: [0.2, -0.2] });
+      PH(B, rx + 250, rz - 20, -PI / 2 - 0.5, { lean: 10, headTilt: 8, headYaw: 0.15 });
+      fs(B, bFace(T, { expr: lt < 22 ? 'thinking' : 'surprised', look: [-0.5, -0.2] }, 0.4));
+      R.root.updateMatrixWorld(true); const hl = handPos(R, 0), hr = handPos(R, 1);
+      if (!flags.collect) { heldLime.visible = true; heldLime.position.set(hl[0] + 4, hl[1] + 14, hl[2] + 6); heldLime.rotation.y = T * 0.3;
+        heldQuartz.visible = true; heldQuartz.position.set(hr[0] + 4, hr[1] + 8, hr[2] + 6); heldQuartz.rotation.y = -0.4; }
+      pose(GH, { t: T, x: rx + 110, z: rz + 120, y: TERR(rx + 110, rz + 120), yaw: -PI / 2 + 0.3, walk: 0, shadow: true }); GH.root.scale.setScalar(0.5);
+      fs(GH, { expr: 'happy', blink: blinkAt(T, 0.3), look: [0.5, 0.3] });
+      if (lt >= 27.6) sparkle(lab, hr[0], hr[1] + 40, hr[2], T, 1, 0.8);
+      cam = CAMS(lt, [{ t0: 18.44, t1: 22.0, p: [x + 70, y + 190, rz + 880], p1: [x + 80, y + 185, rz + 800], l: [x + 70, y + 150, rz], f: 32 }, { t0: 27.6, t1: 29.43, p: [x + 80, y + 190, rz + 840], p1: [x + 80, y + 185, rz + 780], l: [x + 70, y + 150, rz], f: 32 }]);
+    } else {
+      R.root.visible = false; B.root.visible = false;
+      const lime = lt < 24.6, q = [x + 120, y + 110, z];
+      const gxx = lime ? x + 10 : x + 20;
+      pose(GH, { t: T, x: gxx, z: z + 80, y: y + 44, yaw: -PI / 2 + 0.25, walk: 0, shadow: false, squash: 0.03 * Math.sin(T * 3) }); GH.root.scale.setScalar(0.4);
+      fs(GH, { expr: lime ? 'curious' : 'cheering', blink: blinkAt(T, 0.3), look: [0.5, 0.3] });
+      if (!lime) sparkle(lab, q[0], q[1], q[2] + 40, T, 1, 1.5);
+      else sparkle(lab, x - 120, y + 90, z + 20, T, 0.0, 0.5);
+      const u = ease(lt, 24.0, 25.2);
+      cam = { p: [lerp(x - 30, x + 60, u), y + lerp(130, 150, u), z + lerp(560, 620, u)], l: [lerp(x - 70, x + 70, u), y + lerp(80, 105, u), z], fov: 32 };
+    }
   } else {                                            /* ---- c4: not from our mountains! the grain shakes its head, the boy shrugs, the rabbi unrolls the map */
     noPour(); lab.visible = false;
     const { x, y, z } = LAB, k = lt - 29.43;
     show(GH, R, B);
     const sh = k > 0.5 && k < 2.6 ? 14 * Math.sin((k - 0.5) * 13) * (1 - ease(k, 2.0, 2.6)) : 0;
-    pose(GH, { t: T, x: x, z: z + 130, y: y + 22, yaw: -PI / 2 + 0.25, walk: 0, tilt: sh, shadow: true });
-    GH.root.scale.setScalar(0.55);
+    pose(GH, { t: T, x: x + 20, z: z + 110, y: y + 22, yaw: -PI / 2 + 0.25, walk: 0, tilt: sh, shadow: true }, undefined);
+    GH.root.scale.setScalar(0.5);
     fs(GH, { expr: k < 3.2 ? 'worried' : 'happy', blink: blinkAt(T, 0.3), look: [-0.5, 0.1] });
     const sr = ease(k, 2.8, 3.6), sw = ease(k, 4.6, 5.4), shr = ease(k, 1, 1.5) * (1 - ease(k, 3, 3.6));
-    PH(B, x + 300, z + 100, -PI / 2 - 0.35, { headTilt: 6 * Math.sin(k * 3) * (k > 1 && k < 2.6 ? 1 : 0), arms: { l: { sz: 0.3, sx: 0.7 * shr, el: 1.2 * shr + 0.3 }, r: { sz: 0.3, sx: 0.7 * shr, el: 1.2 * shr + 0.3 } } });
+    PH(B, x + 240, z + 80, -PI / 2 - 0.35, { headTilt: 6 * Math.sin(k * 3) * (k > 1 && k < 2.6 ? 1 : 0), arms: { l: { sz: 0.3, sx: 0.7 * shr, el: 1.2 * shr + 0.3 }, r: { sz: 0.3, sx: 0.7 * shr, el: 1.2 * shr + 0.3 } } });
     fs(B, bFace(T, { expr: k < 3 ? 'worried' : 'smile', look: [-0.3, 0.1] }, 0.4));
-    PH(R, x - 300, z + 110, -PI / 2 + 0.35, { headYaw: 0, arms: { r: { sz: 0.6 + 0.5 * sr, sx: 0.2, el: 1.3 - 0.4 * sr, curl: 0.9 }, l: { sz: 0.2, sx: 0.2, el: 0.5 } } });
+    PH(R, x - 230, z + 100, -PI / 2 + 0.35, { headYaw: 0, arms: { r: { sz: 0.6 + 0.1 * sr - 0.1 * ease(k, 4.4, 4.8), sx: 0.2 + 0.3 * ease(k, 4.4, 4.8), el: 1.3 - 0.3 * sr - 0.1 * ease(k, 4.4, 4.8), curl: 0.9 }, l: { sz: 0.2 + 0.4 * ease(k, 4.4, 4.8), sx: 0.2 + 0.3 * ease(k, 4.4, 4.8), el: 0.5 + 0.6 * ease(k, 4.4, 4.8) } } });
     fs(R, { expr: k < 2.8 ? 'smile' : 'explaining', talk: talkL(lt, 33, 35.6), blink: blinkAt(T, 0.1), look: [0.1, 0] });
     if (!flags.collect) {
-      const sc = scrollClosed(), so = scrollOpen(); R.root.updateMatrixWorld(true); const h = handPos(R, 1);
+      const sc = scrollClosed(), so = scrollOpen(); R.root.updateMatrixWorld(true); const h = handPos(R, 1), hl2 = handPos(R, 0);
       sc.visible = k >= 2.6 && k < 4.6; so.visible = k >= 4.6;
-      sc.position.set(h[0] + 16, h[1] + 4, h[2] + 10); sc.rotation.set(0, -PI / 2 + 0.35, 0.3); sc.scale.setScalar(2.0);
-      so.position.set(x - 300 + 120, y + 150, z + 150); so.rotation.set(0, PI / 2, 0); so.scale.set(2.1, 2.1, 0.3 + 1.8 * sw);
+      sc.position.set(h[0] + 10, h[1] + 4, h[2] + 14); sc.rotation.set(0, 0.25, 0.12); sc.scale.setScalar(1.7);
+      const mx = (h[0] + hl2[0]) / 2, my = (h[1] + hl2[1]) / 2, mz = (h[2] + hl2[2]) / 2;
+      so.position.set(mx, my - 34, mz + 20); so.rotation.set(0, 0.2, 0); so.scale.set(Math.max(0.05, 0.62 * (0.35 + 0.65 * sw)), 0.62, 1);
     }
-    cam = CAMS(lt, [{ t0: 29.43, t1: 32.4, p: [x + 20, y + 140, z + 1000], p1: [x + 10, y + 140, z + 880], l: [x, y + 130, z + 60], f: 32 },
-      { t0: 32.4, t1: 36.8, p: [x - 100, y + 170, z + 760], p1: [x - 150, y + 180, z + 640], l: [x - 200, y + 150, z + 110], l1: [x - 190, y + 150, z + 110], f: 32 }]);
+    cam = CAMS(lt, [{ t0: 29.43, t1: 32.4, p: [x + 10, y + 190, z + 1180], p1: [x + 10, y + 185, z + 1060], l: [x + 10, y + 130, z + 60], f: 32 },
+      { t0: 32.4, t1: 36.8, p: [x - 40, y + 190, z + 960], p1: [x - 60, y + 185, z + 880], l: [x - 60, y + 135, z + 60], f: 32 }]);
   }
   return cam;
 }
 let _sc = null, _so = null;
 function scrollClosed() { if (!_sc) { _sc = KT.makeMapScroll(false); GB.add(_sc); } return _sc; }
-function scrollOpen() { if (!_so) { _so = KT.makeMapScroll(true); GB.add(_so); } return _so; }
+function scrollOpen() { if (!_so) { _so = makeNileScroll(); GB.add(_so); } return _so; }
+function makeNileScroll() {
+  const g = new THREE.Group(), cv = document.createElement('canvas'); cv.width = 512; cv.height = 360; const c = cv.getContext('2d');
+  c.fillStyle = '#f3e4bb'; c.fillRect(0, 0, 512, 360);
+  c.fillStyle = '#e7cf93'; c.fillRect(0, 150, 512, 210);                                   // desert
+  c.fillStyle = '#6fb7e6'; c.beginPath(); c.moveTo(0, 0); c.lineTo(512, 0); c.lineTo(512, 120); for (let x = 512; x >= 0; x -= 16) c.lineTo(x, 112 + 10 * Math.sin(x * 0.03) + (x < 300 ? 0 : (x - 300) * 0.25)); c.closePath(); c.fill();
+  c.fillStyle = '#9bd0f0'; for (let i = 0; i < 6; i++) { c.beginPath(); c.ellipse(60 + i * 80, 40 + (i % 2) * 24, 22, 4, 0, 0, 7); c.fill(); }
+  c.strokeStyle = '#4f9fe0'; c.lineWidth = 24; c.lineCap = 'round'; c.lineJoin = 'round';                 // the Nile, south to the delta
+  const nile = [[250, 360], [235, 300], [270, 240], [248, 190], [256, 150], [258, 128]];
+  c.strokeStyle = '#6aa84f'; c.lineWidth = 46; c.beginPath(); nile.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.stroke();
+  c.strokeStyle = '#4f9fe0'; c.lineWidth = 20; c.beginPath(); nile.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.stroke();
+  c.lineWidth = 12; [[-70, 0], [-34, 12], [0, 18], [36, 12], [70, 0]].forEach(([dx, dy]) => { c.strokeStyle = '#4f9fe0'; c.beginPath(); c.moveTo(258, 130); c.lineTo(258 + dx, 108 + dy); c.stroke(); c.strokeStyle = '#6aa84f'; });
+  c.fillStyle = '#a9835a'; [[110, 330, 46], [160, 345, 36], [380, 335, 50], [330, 350, 34]].forEach(([mx, my, r]) => { c.beginPath(); c.moveTo(mx - r, my + 30); c.lineTo(mx, my - r * 0.9); c.lineTo(mx + r, my + 30); c.closePath(); c.fill(); });
+  c.fillStyle = '#f7f4ec'; [[110, 330, 46], [380, 335, 50]].forEach(([mx, my, r]) => { c.beginPath(); c.moveTo(mx - r * 0.3, my - r * 0.6); c.lineTo(mx, my - r * 0.9); c.lineTo(mx + r * 0.3, my - r * 0.6); c.closePath(); c.fill(); });
+  c.fillStyle = '#e9c987'; c.strokeStyle = '#261c19'; c.lineWidth = 3; c.beginPath(); c.arc(440, 120, 15, 0, 7); c.fill(); c.stroke();        // a grain at the Israeli coast
+  c.strokeStyle = '#261c19'; c.lineWidth = 8; c.strokeRect(4, 4, 504, 352);
+  const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.NoColorSpace;
+  const pl = new THREE.Mesh(new THREE.PlaneGeometry(190, 133), new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide })); g.add(pl);
+  const wood = KT.M('#8a5a3a', '#b08a7a');
+  [-1, 1].forEach(sg => { const r = new THREE.Mesh(new THREE.CylinderGeometry(7, 7, 206, 14).rotateZ(Math.PI / 2), wood); r.position.set(0, sg * 69, 3); g.add(r); });
+  g.visible = false; return g;
+}
 export const scrolls = () => [scrollClosed(), scrollOpen()];

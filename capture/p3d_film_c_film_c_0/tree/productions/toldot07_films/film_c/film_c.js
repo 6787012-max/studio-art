@@ -1,9 +1,9 @@
 /* film_c - "Sand: where does the sand come from?" 250.2 s. Deterministic: every frame is a pure function of t (window.__seek(t) + window.__T0). ASCII only. */
-import { THREE, renderer, scene, cam, sky, hideAll, flags, POST, warmFaces, Q, SW, SHH } from './c_core.js';
+import { THREE, renderer, scene, cam, sky, R, B, hideAll, flags, POST, warmFaces, Q, SW, SHH } from './c_core.js';
 import { TL, DUR } from './c_tl.js';
-import { shot1, scrolls } from './c_s1.js';
-import { shot2 } from './c_s2.js';
-import { shot3 } from './c_s3.js';
+import { shot1, scrolls, s1Off } from './c_s1.js';
+import { shot2, bubbleOff } from './c_s2.js';
+import { shot3, s3Off } from './c_s3.js';
 import { shot4 } from './c_s4.js';
 import { shot4b, shot5, recapOff } from './c_s5.js';
 
@@ -13,7 +13,7 @@ const shotAt = t => { let s = TL[TL.length - 1]; for (const x of TL) if (t < x.t
 const capAt = t => { const s = shotAt(t), lt = t - s.t0; for (const c of s.caps) if (lt >= c[1] && lt < c[2]) return c[0]; return null; };
 function frame(T) {
   const s = shotAt(T), lt = T - s.t0;
-  hideAll(); POST.length = 0; recapOff(); sky.material.uniforms.uHasSun.value = 0;
+  hideAll(); POST.length = 0; recapOff(); bubbleOff(); s3Off(); s1Off(); R.root.scale.setScalar(1); B.root.scale.setScalar(1); sky.material.uniforms.uHasSun.value = 0;
   const fn = FN[s.id]; const c = fn ? fn(lt, T) : { p: [0, 200, 800], l: [0, 100, 0], fov: 32 };
   if (flags.collect) return;
   window.__dbgcam = c; cam.fov = c.fov || 32; cam.updateProjectionMatrix(); cam.position.set(...c.p); cam.lookAt(...c.l);
