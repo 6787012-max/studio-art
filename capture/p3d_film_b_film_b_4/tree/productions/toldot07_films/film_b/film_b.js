@@ -59,6 +59,9 @@ window.__caption = t => capAt(t + (window.__T0 || 0));
 window.__seek = t => { try { frame(Math.min(Math.max(t + (window.__T0 || 0), 0), DUR - 1e-3)); } catch (e) { window.__errors.push(String(e && e.stack || e).slice(0, 500)); console.error(e); throw e; } return true; };
 window.__warmed = 0; window.__dbg = { WORLD, scene, cam, renderer, AC };
 (async () => {
-  try { window.__nwarm = Q.has('nowarm') ? 0 : await warm(); frame(Q.has('t') ? +Q.get('t') : 0); window.__ready = true; }
+  try { window.__nwarm = Q.has('nowarm') ? 0 : await warm();
+    // pre-render one frame per shot so shader compiles happen before __ready (remote screenshot timeout is 30 s)
+    for (const s of shots) frame(Math.min(s.t0 + 0.5, DUR - 1e-3));
+    frame(Q.has('t') ? +Q.get('t') : 0); window.__ready = true; }
   catch (e) { window.__errors.push(String(e && e.stack || e).slice(0, 500)); console.error(e); }
 })();
