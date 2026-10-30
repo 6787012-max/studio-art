@@ -1,0 +1,213 @@
+{
+ "film": "film_a",
+ "width": 1920,
+ "height": 1080,
+ "fps": 30,
+ "dur": 264.0,
+ "title_card": [
+  0.3,
+  4.2
+ ],
+ "shots": [
+  {
+   "id": "a1_two_names",
+   "t0": 0.0,
+   "dur": 37.9,
+   "captions": [
+    {
+     "id": "a1_two_names_c1",
+     "start": 4.5,
+     "end": 14.54
+    },
+    {
+     "id": "a1_two_names_c2",
+     "start": 14.54,
+     "end": 22.19
+    },
+    {
+     "id": "a1_two_names_c3",
+     "start": 22.19,
+     "end": 29.05
+    },
+    {
+     "id": "a1_two_names_c4",
+     "start": 29.05,
+     "end": 37.5
+    }
+   ],
+   "recap_lines": null
+  },
+  {
+   "id": "a2_three_continents",
+   "t0": 37.9,
+   "dur": 32.6,
+   "captions": [
+    {
+     "id": "a2_three_continents_c1",
+     "start": 0.4,
+     "end": 9.31
+    },
+    {
+     "id": "a2_three_continents_c2",
+     "start": 9.31,
+     "end": 16.68
+    },
+    {
+     "id": "a2_three_continents_c3",
+     "start": 16.68,
+     "end": 24.82
+    },
+    {
+     "id": "a2_three_continents_c4",
+     "start": 24.82,
+     "end": 32.2
+    }
+   ],
+   "recap_lines": null
+  },
+  {
+   "id": "a2b_one_gate",
+   "t0": 70.5,
+   "dur": 42.5,
+   "captions": [
+    {
+     "id": "a2b_one_gate_c1",
+     "start": 0.4,
+     "end": 6.93
+    },
+    {
+     "id": "a2b_one_gate_c2",
+     "start": 6.93,
+     "end": 17.23
+    },
+    {
+     "id": "a2b_one_gate_c3",
+     "start": 17.23,
+     "end": 26.02
+    },
+    {
+     "id": "a2b_one_gate_c4",
+     "start": 26.02,
+     "end": 34.06
+    },
+    {
+     "id": "a2b_one_gate_c5",
+     "start": 34.06,
+     "end": 42.1
+    }
+   ],
+   "recap_lines": null
+  },
+  {
+   "id": "a3_western_border",
+   "t0": 113.0,
+   "dur": 32.7,
+   "captions": [
+    {
+     "id": "a3_western_border_c1",
+     "start": 0.4,
+     "end": 7.63
+    },
+    {
+     "id": "a3_western_border_c2",
+     "start": 7.63,
+     "end": 16.35
+    },
+    {
+     "id": "a3_western_border_c3",
+     "start": 16.35,
+     "end": 25.07
+    },
+    {
+     "id": "a3_western_border_c4",
+     "start": 25.07,
+     "end": 32.3
+    }
+   ],
+   "recap_lines": null
+  },
+  {
+   "id": "a3b_sunset_west",
+   "t0": 145.7,
+   "dur": 41.0,
+   "captions": [
+    {
+     "id": "a3b_sunset_west_c1",
+     "start": 0.4,
+     "end": 8.44
+    },
+    {
+     "id": "a3b_sunset_west_c2",
+     "start": 8.44,
+     "end": 16.48
+    },
+    {
+     "id": "a3b_sunset_west_c3",
+     "start": 16.48,
+     "end": 25.28
+    },
+    {
+     "id": "a3b_sunset_west_c4",
+     "start": 25.28,
+     "end": 33.32
+    },
+    {
+     "id": "a3b_sunset_west_c5",
+     "start": 33.32,
+     "end": 40.6
+    }
+   ],
+   "recap_lines": null
+  },
+  {
+   "id": "a4_our_coast",
+   "t0": 186.7,
+   "dur": 55.2,
+   "captions": [
+    {
+     "id": "a4_our_coast_c1",
+     "start": 0.4,
+     "end": 7.74
+    },
+    {
+     "id": "a4_our_coast_c2",
+     "start": 7.74,
+     "end": 15.83
+    },
+    {
+     "id": "a4_our_coast_c3",
+     "start": 15.83,
+     "end": 24.69
+    },
+    {
+     "id": "a4_our_coast_c4",
+     "start": 24.69,
+     "end": 31.27
+    },
+    {
+     "id": "a4_our_coast_c5",
+     "start": 31.27,
+     "end": 39.37
+    },
+    {
+     "id": "a4_our_coast_c6",
+     "start": 39.37,
+     "end": 46.7
+    },
+    {
+     "id": "a4_our_coast_c7",
+     "start": 46.7,
+     "end": 54.8
+    }
+   ],
+   "recap_lines": null
+  },
+  {
+   "id": "a5_recap",
+   "t0": 241.9,
+   "dur": 22.1,
+   "captions": [],
+   "recap_lines": 3
+  }
+ ]
+}
