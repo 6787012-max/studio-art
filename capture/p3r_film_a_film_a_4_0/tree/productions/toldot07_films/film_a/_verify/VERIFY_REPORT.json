@@ -1,0 +1,78 @@
+{
+ "film": "film_a.html",
+ "status": "FAIL",
+ "time": "2026-10-30T12:41:58",
+ "samples": 33,
+ "findings": [
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 4.5,
+   "shot": "a1_two_names",
+   "detail": "caption dir=None",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 38.3,
+   "shot": "a2_three_continents",
+   "detail": "caption dir=None",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 70.9,
+   "shot": "a2b_one_gate",
+   "detail": "caption dir=None",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 113.5,
+   "shot": "a3_western_border",
+   "detail": "caption dir=None",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 146.2,
+   "shot": "a3b_sunset_west",
+   "detail": "caption dir=None",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 187.2,
+   "shot": "a4_our_coast",
+   "detail": "caption dir=None",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P2",
+   "code": "NOT_EXPOSED",
+   "t": null,
+   "shot": null,
+   "detail": "window.__heroBox is not exposed by the page; the hero gate is skipped or degraded",
+   "fix": "rebuild the page against the upgraded lib/stage3d.js (contract in productions/_upgrade/CONTRACT.md)"
+  },
+  {
+   "sev": "P2",
+   "code": "NOT_EXPOSED",
+   "t": null,
+   "shot": null,
+   "detail": "window.__sceneHash is not exposed by the page; the exact-hash determinism gate is skipped or degraded",
+   "fix": "rebuild the page against the upgraded lib/stage3d.js (contract in productions/_upgrade/CONTRACT.md)"
+  }
+ ],
+ "sheets": null,
+ "timing": {
+  "ready_s": 19.6,
+  "gates_s": 97.6,
+  "total_s": 119.4
+ }
+}
