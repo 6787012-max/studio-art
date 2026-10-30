@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>k14</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>window.__T0=191.5127; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+import { film } from '../../lib/stage3d.js';
+import * as K from './k14lib.js';
+import * as X from './k14fx.js';
+const { THREE, COL, PI, sm, sin, cos, bx, cy, bl, mm, bm, grp, rng, clamp, lerp, ease, prog, stageWorld, scatter, glowSprite, sparkle, cm, orb, pop, elastic, dayRibbon, betHouse, dotObj, crown, lightBeam, thread, faceCam, toon } = K;
+const DURS = [17.55, 18.4, 14.6, 19.9, 4.7, 20.1, 12.6, 24.0, 24.4, 16.7, 19.4, 25.15, 15.1, 14.8, 15.3, 13.1, 17.5, 15.6, 14.6, 14.7, 19.1, 16.5, 21.2, 20.5, 15.1, 21.9, 24.7, 14.3, 30.36, 4.8];
+const V3 = THREE.Vector3;
+const rig = (Wd, cam, H) => { Wd.hero = H; return Object.assign(Wd, { cam }); };
+const place = (H, o, x, y, z, s, ry) => { o.position.set(x, y, z); if (s) o.scale.setScalar(s); if (ry) o.rotation.y = ry; H.add(o); return o; };
+const fr = (t, d, a, b) => sm(prog(t, a * d, b * d));
+const W = (seed, o) => stageWorld(Object.assign({ seed }, o || {}));
+// a world with the day ribbon (gap at the centre) and optionally the crown light
+function ribWorld(seed, o) {
+  o = o || {}; const Wd = W(seed), H = grp(Wd), rb = dayRibbon(o.rib); H.add(rb.g);
+  scatter(Wd, { n: 70, area: [-22, 22, -10, 12], avoid: [0, 0, 3.2], seed: seed + 1 });
+  let cr = null, bm_ = null;
+  if (o.crown) { cr = crown({ scale: o.crown.s || 1.4 }); cr.position.set(...o.crown.p); H.add(cr); bm_ = lightBeam(o.crown.p[1], o.crown.bw || 4); bm_.position.set(o.crown.p[0], o.crown.p[1] / 2, o.crown.p[2]); H.add(bm_); }
+  return { Wd, H, rb, cr, beam: bm_ };
+}
+const GOLD3 = [1, .8, .35];
+function putItems(H, n, f) { const a = []; for (let i = 0; i < n; i++) { const o = f(i); H.add(o); a.push(o); } return a; }
+
+film({ shots: [
+  // ===== s01: the bet-house on a plinth with its glowing dot; the toolbox opens and a hammer + wrench lift out (practical) =====
+  { id: 's01', dur: DURS[0], wide: true, build() {
+    const d = DURS[0], Wd = W(1), H = grp(Wd); H.add(X.plinth(3.2, .5, COL.cream)); const hs = betHouse(); hs.position.set(0, .5, 0); H.add(hs);
+    const tb = X.toolbox(); place(H, tb, 5.2, 0, 1.0, 1.2, -.3); const hm = X.hammer(), wr = X.wrench(); hm.visible = wr.visible = false; H.add(hm); H.add(wr);
+    scatter(Wd, { n: 60, area: [-14, 14, -8, 8], avoid: [0, 0, 4.2], seed: 2 });
+    Wd.on(t => { hs.userData.dot.userData.set(.85 + .15 * sin(t * 2.2)); hs.userData.dot.scale.setScalar(1 + .06 * sin(t * 3));
+      tb.userData.lid.rotation.x = -1.8 * ease.out(prog(t, .12 * d, .28 * d));
+      const k1 = ease.out(prog(t, .24 * d, .45 * d)), k2 = ease.out(prog(t, .34 * d, .55 * d)); hm.visible = k1 > .001; wr.visible = k2 > .001;
+      hm.position.set(4.7, 1.0 + 2.6 * k1 + .15 * sin(t * 1.6), 1.2); hm.rotation.set(0, .5 * k1, -.5 * k1 + .1 * sin(t * 1.3)); hm.scale.setScalar(1.25 * Math.max(.01, k1));
+      wr.position.set(6.0, 1.0 + 2.2 * k2 + .15 * sin(t * 1.5 + 1), 1.2); wr.rotation.set(0, -.4 * k2, .5 * k2 + .1 * sin(t * 1.2)); wr.scale.setScalar(1.25 * Math.max(.01, k2)); });
+    return rig(Wd, cm(d, [[0, [2.4, 3.8, 15], [2.2, 2.3, 0], 42], [1, [2.4, 3.4, 10.5], [2.6, 2.4, 0], 42]]), H);
+  } },
+  // ===== s02: a globe of small houses; a large empty picture frame grows above it; a stand shows digits; orbit =====
+  { id: 's02', dur: DURS[1], wide: true, build() {
+    const d = DURS[1], Wd = W(2), H = grp(Wd); const gl = X.globeHouses(2.7, 46, 5); gl.position.set(0, 3.5, 0); H.add(gl); H.add(cy(1.0, 1.4, .8, COL.tealD, { pos: [0, .4, 0] }));
+    const fm = X.emptyFrame(5.0, 3.4); fm.position.set(0, 8.2, 0); H.add(fm); const db = X.digitBoard('1945'); db.position.set(-6.2, 0, 2.2); H.add(db);
+    scatter(Wd, { n: 50, area: [-12, 12, -8, 8], avoid: [0, 0, 3.2], seed: 4 });
+    Wd.on((t, cam) => { gl.rotation.y = t * .12; const k = Math.max(.01, elastic(prog(t, .1 * d, .42 * d))); fm.scale.setScalar(k); fm.position.y = 8.1 + .2 * sin(t * .8); faceCam(fm, cam); faceCam(db, cam); });
+    return rig(Wd, orb([0, 4.2, 0], [18, 15.5], [3, 5.5], -32, 32, d, 44, 1.4), H);
+  } },
+  // ===== s03: the day ribbon pops in, a grey gap in it, a clock whose hand droops, then colourful entertainment boxes pop around the gap =====
+  { id: 's03', dur: DURS[2], wide: true, build() {
+    const d = DURS[2], { Wd, H, rb } = ribWorld(3); const clk = X.clockProp(); place(H, clk, 5.0, 0, -3.0, 1.4);
+    const pos = [[-3.4, 1.8], [3.3, 2.0], [-1.9, 3.3], [2.0, 3.4], [-5.2, -.4], [5.0, 1.5], [0, -3.2]], items = pos.map((p, i) => { const o = X.entItem(i); o.position.set(p[0], 0, p[1]); H.add(o); return o; });
+    Wd.on(t => { for (let i = 0; i < 24; i++) rb.pop(i, i < 5 ? 1 : elastic(prog(t, (.02 + i * .012) * d, (.02 + i * .012 + .09) * d)));
+      clk.userData.hand.rotation.z = -sm(prog(t, .12 * d, .9 * d)) * 2.6; clk.userData.face.position.y = 2.6 - .08 * sm(prog(t, .5 * d, .9 * d));
+      items.forEach((o, i) => { const k = elastic(prog(t, (.42 + .05 * i) * d, (.42 + .05 * i + .08) * d)); o.scale.setScalar(Math.max(.001, 1.15 * k)); o.position.y = .05 * sin(t * 2 + i) * k; o.rotation.y = .4 * sin(t * .8 + i); }); });
+    return rig(Wd, cm(d, [[0, [-9.5, 5.0, 12], [-5.5, 1.3, 0], 44], [1, [3.5, 4.8, 11.5], [.5, 1.3, 0], 44]]), H);
+  } },
+  // ===== s04: a conveyor belt carries colourful boxes into the gap; a stream of coins runs beside it =====
+  { id: 's04', dur: DURS[3], wide: true, build() {
+    const d = DURS[3], { Wd, H, rb } = ribWorld(4); const bt = X.conveyor(11); place(H, bt, -6.5, 1.7, 0, 1); const n = 5, boxes = putItems(H, n, i => X.entItem(i)), coins = putItems(H, 14, () => X.coin()), pile = grp(H, [-13, 0, 1.8]);
+    for (let i = 0; i < 5; i++) { const c = X.coin(); c.position.set((i % 2) * .3, .1 + i * .13, 0); c.rotation.x = 0; pile.add(c); }
+    Wd.on(t => { bt.userData.move(t * 1.5);
+      boxes.forEach((o, j) => { const s = (t * 1.5 + j * 2.8) % 14; if (s < 11) { o.position.set(-12 + s, 1.7, 0); o.scale.setScalar(.95); o.rotation.set(0, 0, 0); } else { const u = (s - 11) / 3; o.position.set(-1 + .8 * u, 1.7 - 1.4 * Math.min(1, u * 1.5) * Math.min(1, u * 1.5), 0); o.rotation.set(0, 0, .5 * u); o.scale.setScalar(Math.max(.001, .95 * (1 - sm(prog(u, .55, 1))))); } });
+      coins.forEach((c, k) => { const s = (t * 2.4 + k * .9) % 12.6; c.position.set(-11 + s, 3.7 + .45 * sin(s * .9), 1.7); c.rotation.set(0, s * 2.5, 0); c.visible = true; }); });
+    return rig(Wd, cm(d, [[0, [-9, 4.6, 13], [-7, 1.7, 0], 44], [1, [2.5, 4.4, 12.5], [-1.5, 1.4, 0], 44]]), H);
+  } },
+  // ===== s05: the boxes drop through the gap and vanish below; the gap stays grey and empty; crane down =====
+  { id: 's05', dur: DURS[4], wide: true, build() {
+    const d = DURS[4], { Wd, H, rb } = ribWorld(5); const bxs = putItems(H, 5, i => X.entItem(i + 1)), xs = [-.7, .6, -.1, .8, -.6];
+    Wd.on(t => { bxs.forEach((o, i) => { const t0 = i * .6, u = prog(t, t0, t0 + 1.7), k = u * u; o.position.set(xs[i], lerp(7.5, .5, k), (i % 2 ? .3 : -.3)); o.rotation.set(.5 * u, .7 * u, .3 * u);
+        o.scale.setScalar(Math.max(.001, .95 * (1 - sm(prog(t, t0 + 1.35, t0 + 1.95))))); }); });
+    return rig(Wd, cm(d, [[0, [0, 9.0, 8.5], [0, 1.6, 0], 44], [1, [0, 3.4, 8.2], [0, .8, 0], 44]]), H);
+  } },
+  // ===== s06: a rail with stations (book stand, candle); a cart rolls along it - the rail passes through the grey gap without filling it =====
+  { id: 's06', dur: DURS[5], wide: true, build() {
+    const d = DURS[5], Wd = W(6), H = grp(Wd); H.add(X.rails(40)); const cr = X.cart(COL.teal); H.add(cr); const gp = K.greyGap(); gp.g.scale.setScalar(1.7); gp.g.position.set(3.5, 0, 0); H.add(gp.g);
+    for (const x of [-10, 12]) place(H, X.bookStand(), x, 0, -2.6, 1.5, .25); for (const x of [-4, 17]) place(H, X.candleHolder(), x, 0, -2.2, 1.7);
+    scatter(Wd, { n: 90, area: [-24, 24, -10, 8], avoid: [0, 0, 1.4], seed: 7 });
+    const cx = t => lerp(-14, 16, ease.io(clamp(t / d, 0, 1)));
+    Wd.on(t => { cr.position.set(cx(t), .1, 0); gp.state({}); });
+    return rig(Wd, t => { const x = cx(t); return { pos: [x - 1.5, 3.9, 11], look: [x + 3.2, 1.2, 0], fov: 44 }; }, H);
+  } },
+  // ===== s07: identical carts in lockstep behind older ones; a stamp press stamps the same mark on every cart =====
+  { id: 's07', dur: DURS[6], wide: true, build() {
+    const d = DURS[6], Wd = W(7), H = grp(Wd); H.add(X.rails(50)); const sp = X.stampPress(); place(H, sp, 0, 0, 0, 1.0);
+    const carts = [], cols = [COL.creamD, COL.creamD, COL.teal, COL.teal, COL.teal, COL.teal, COL.teal, COL.teal]; cols.forEach((c, i) => { const o = X.cart(c); H.add(o); carts.push(o); });
+    scatter(Wd, { n: 70, area: [-20, 20, -10, 8], avoid: [0, 0, 1.4], seed: 9 }); const L = 34, sx = 3.4, v = 2.3;
+    Wd.on(t => { let md = 9; carts.forEach((o, i) => { const x = ((7 - i * sx + v * t + 17) % L + L) % L - 17; o.position.set(x, .1, 0); o.userData.mark.visible = x > 0 || i < 2 && x > -17; md = Math.min(md, Math.abs(x)); });
+      sp.userData.pist.position.y = 3.2 - 1.55 * (1 - sm(clamp(md / 1.4, 0, 1))); });
+    return rig(Wd, cm(d, [[0, [-6.5, 3.9, 10.5], [-1, 1.5, 0], 42], [1, [4.5, 3.8, 10], [1.5, 1.5, 0], 42]]), H);
+  } },
+  // ===== s08: many bet-houses on a globe; one empty socket lights only when this house's golden dot is placed in it; the light spreads =====
+  { id: 's08', dur: DURS[7], wide: true, build() {
+    const d = DURS[7], Wd = W(8), H = grp(Wd); const R = 3.1, gl = grp(H, [0, 3.4, 0]); gl.add(bl(R, COL.mint, { inkW: .03 })); H.add(cy(1.1, 1.5, .8, COL.tealD, { pos: [0, .4, 0] }));
+    const up = new THREE.Vector3(0, 1, 0), r = rng(3), nv0 = new THREE.Vector3(0, .25, 1).normalize(), hs = [];
+    for (let i = 0; i < 34; i++) { const y = 1 - (i + .5) / 34 * 2, rr = Math.sqrt(1 - y * y), a = i * 2.39996, nv = new THREE.Vector3(Math.cos(a) * rr, y, Math.sin(a) * rr); if (nv.angleTo(nv0) < .32) continue;
+      const h = betHouse({ k: .1, dr: .26 }); h.scale.setScalar(.15); h.position.copy(nv).multiplyScalar(R - .02); h.quaternion.setFromUnitVectors(up, nv); h.rotateY(r() * 6); gl.add(h); hs.push({ h, ang: nv.angleTo(nv0) }); }
+    const sock = grp(gl); sock.position.copy(nv0).multiplyScalar(R + .02); sock.quaternion.setFromUnitVectors(up, nv0); sock.add(cy(.5, .5, .1, COL.tealD, { inkW: .015 })); const sockIn = cy(.34, .34, .13, COL.cream, { ink: false, pos: [0, .01, 0] }); sock.add(sockIn);
+    const wave = bm(new THREE.RingGeometry(.9, 1, 40), 0xFFD266, { transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false }); wave.rotation.x = -PI / 2; wave.position.y = .1; sock.add(wave);
+    const dot = dotObj(.42); H.add(dot); const target = nv0.clone().multiplyScalar(R + .35).add(new THREE.Vector3(0, 3.4, 0));
+    Wd.on(t => { const a = ease.io(prog(t, .06 * d, .3 * d)), p = new V3(7, 7.5, 3).lerp(target, a); p.y += 1.6 * sin(PI * a); dot.position.copy(p); dot.userData.set(1); const s = 1 + .5 * sin(PI * prog(t, .3 * d, .37 * d)); sockIn.material.color.set(a >= 1 ? 0xFFD266 : 0xFFF4E0); dot.scale.setScalar(s);
+      const w = prog(t, .33 * d, .72 * d) * PI * 1.05; hs.forEach(o => { o.h.userData.dot.userData.set(sm(clamp((w - o.ang) / .35, 0, 1)) * 1.05); });
+      const wv = prog(t, .33 * d, .47 * d); wave.visible = wv > 0 && wv < 1; wave.scale.setScalar(.5 + 3 * wv); wave.material.opacity = .8 * (1 - wv); gl.rotation.y = .0; });
+    return rig(Wd, cm(d, [[0, [-2, 3.8, 15], [0, 3.1, 0], 42], [.5, [1, 7.0, 13.5], [0, 3.2, 0], 42], [1, [0, 12.5, 10.5], [0, 2.8, 0], 44]]), H);
+  } },
+  // ===== s09: a cup of water is lifted; a golden spark rises to the warm light above, which brightens; crane up with the spark =====
+  { id: 's09', dur: DURS[8], wide: true, build() {
+    const d = DURS[8], Wd = W(9), H = grp(Wd); const tb = grp(H); tb.add(cy(1.5, 1.7, 1.5, COL.cream, { pos: [0, .75, 0], inkW: .02 })); tb.add(cy(1.7, 1.7, .1, COL.mint, { pos: [0, .05, 0], ink: false }));
+    const cup = X.cupWater(); cup.scale.setScalar(1.5); H.add(cup); const cr = crown({ scale: 1.2 }); cr.position.set(0, 7.6, -1); H.add(cr); const bmx = lightBeam(7.6, 5); bmx.position.set(0, 3.8, -1); H.add(bmx);
+    const sp = dotObj(.22); H.add(sp); const ring = bm(new THREE.RingGeometry(.8, 1, 36), 0xBFE3F5, { transparent: true, opacity: 0, side: THREE.DoubleSide, depthWrite: false }); ring.rotation.x = -PI / 2; H.add(ring);
+    scatter(Wd, { n: 40, area: [-8, 8, -5, 6], avoid: [0, 0, 2.6], seed: 3 });
+    const yS = t => lerp(2.9, 7.0, ease.io(prog(t, .2 * d, .8 * d)));
+    Wd.on(t => { const lf = sm(prog(t, .1 * d, .24 * d)) - sm(prog(t, .46 * d, .6 * d)); cup.position.set(0, 1.5 + 1.0 * lf, 0); cup.rotation.z = .12 * lf;
+      const sk = prog(t, .2 * d, .24 * d); sp.visible = sk > 0; sp.position.set(.3 * sin((yS(t) - 3) * .5), yS(t), 0); sp.userData.set(sk); sp.scale.setScalar(1 + .15 * sin(t * 7));
+      const rk = prog(t, .2 * d, .4 * d); ring.visible = rk > 0 && rk < 1; ring.position.y = 2.9 + 1.0 * lf - 1.0 * lf; ring.scale.setScalar(.4 + rk); ring.material.opacity = .7 * (1 - rk);
+      const br = sm(prog(t, .2 * d, .85 * d)); cr.userData.set(.3 + .9 * br); bmx.userData.set(br); });
+    return rig(Wd, t => { const u = ease.io(prog(t, .18 * d, .85 * d)); return { pos: [0, lerp(3.6, 9.0, u), lerp(11, 18, u)], look: [0, lerp(2.2, 6.2, u), 0], fov: 44 }; }, H);
+  } },
+  // ===== s10: back to the ribbon - a ball bounces lazily in the grey gap, a pendulum swings slowly; slow orbit =====
+  { id: 's10', dur: DURS[9], wide: true, build() {
+    const d = DURS[9], { Wd, H, rb } = ribWorld(10); const ball = bl(.38, COL.peach, { inkW: .02 }); H.add(ball); const pd = grp(H, [6.4, 0, -1.6]);
+    pd.add(cy(.12, .16, 4.4, COL.woodD, { pos: [0, 2.2, 0], inkW: .012 })); pd.add(bx(.2, .2, 2.4, COL.woodD, { pos: [0, 4.4, 1.2], inkW: .01 })); const arm = grp(pd, [0, 4.3, 2.2]); arm.add(cy(.03, .03, 3.2, COL.tealD, { pos: [0, -1.6, 0], ink: false })); arm.add(bl(.55, COL.teal, { pos: [0, -3.3, 0], inkW: .02 }));
+    Wd.on(t => { ball.position.set(.7 * sin(t * .7), .42 + .3 * Math.abs(sin(t * 1.35)), 0); ball.scale.set(1, 1 - .15 * Math.pow(1 - Math.abs(sin(t * 1.35)), 6), 1); arm.rotation.x = .75 * sin(t * 1.1); });
+    return rig(Wd, orb([1.5, 1.0, 0], [11.5, 9.5], [4.5, 5.5], -28, 30, d, 44, .1), H);
+  } },
+  // ===== s11: a cracked bowl; warm light from above enters the crack and the golden dot settles inside =====
+  { id: 's11', dur: DURS[10], wide: true, build() {
+    const d = DURS[10], Wd = W(11), H = grp(Wd); H.add(cy(1.7, 1.9, 1.2, COL.cream, { pos: [0, .6, 0], inkW: .02 })); const R = 1.7, by = 1.2 + R;
+    const bowl = grp(H, [0, by, 0]); bowl.add(mm(new THREE.SphereGeometry(R, 32, 18, 0, PI * 2, PI / 2, PI / 2), COL.tealL, { mat: { side: THREE.DoubleSide }, inkW: .025 })); bowl.add(mm(new THREE.TorusGeometry(R, .09, 8, 40), COL.teal, { rot: [PI / 2, 0, 0], inkW: .012 }));
+    const crk = []; for (let k = 0; k <= 18; k++) { const a = PI / 2 + k * .08, b = .3 * (k % 4 < 2 ? 1 : -1) * (k ? 1 : .3); const p = new V3(R * Math.sin(a) * Math.sin(b), R * Math.cos(a), R * Math.sin(a) * Math.cos(b)); const c = bl(.065, COL.ink, { pos: [p.x * 1.03, p.y, p.z * 1.03], ink: false }); bowl.add(c); const g = glowSprite(0xFFC24A, 1.3, 0); g.position.copy(p).multiplyScalar(1.02); bowl.add(g); crk.push(g); }
+    const cr = crown({ scale: 1.2 }); cr.position.set(0, 9.3, -.5); H.add(cr); const bmx = lightBeam(9.3, 2.8, { r0: .8 }); bmx.position.set(0, 4.8, 0); H.add(bmx);
+    const dot = dotObj(.34); H.add(dot);
+    Wd.on(t => { const L = sm(prog(t, .12 * d, .4 * d)); cr.userData.set(.35 + .75 * L); bmx.userData.set(L); crk.forEach((g, i) => { g.material.opacity = .6 * L * (.7 + .3 * sin(t * 3 + i)); });
+      const u = ease.io(prog(t, .3 * d, .72 * d)); dot.position.set(.55 * (1 - u) * sin(u * 5), lerp(8.0, by - R + .62, u) , .1); dot.userData.set(1); dot.scale.setScalar(1 + .1 * sin(t * 4)); });
+    return rig(Wd, cm(d, [[0, [0, 4.2, 13.5], [0, 3.0, 0], 44], [1, [0, 3.4, 9.6], [0, 2.5, 0], 44]]), H);
+  } },
+  // ===== s12: an empty small bed with a blanket, thermometer, pill bottles and a medicine box; a golden thread rises from the bed to the light above while the pills sit aside =====
+  { id: 's12', dur: DURS[11], wide: true, build() {
+    const d = DURS[11], Wd = W(12), H = grp(Wd); const bed = X.bedEmpty(); place(H, bed, -3.6, 0, 0, 1.55, .25); const ns = X.nightStand(); place(H, ns, 2.4, 0, -.2, 1.1);
+    const th = X.thermometer(); place(H, th, 1.6, 1.62 * 1.1 + .1, .25, 1.1, .3); const bots = [[X.pillBottle(COL.coral, .8), 2.5, .1], [X.pillBottle(COL.sky, .6), 3.2, .4], [X.pillBottle(COL.lilac, .7), 3.0, -.5]]; bots.forEach(b => place(H, b[0], b[1], 1.7, b[2], 1.2)); place(H, X.medBox(), 3.7, 1.7, -.1, 1.2, .3);
+    [COL.peach, COL.cream, COL.coral].forEach((c, i) => { const p = X.pill(c); place(H, p, 1.7 + i * .35, 1.72, 1.0 - i * .1, 1.2, i); });
+    const cr = crown({ scale: 1.1 }); cr.position.set(-3.0, 9.3, -.5); H.add(cr);
+    thread(Wd, { a: () => [-3.5, 1.9, 0], b: () => [-3.0, 8.6, -.3], k: t => ease.out(prog(t, .2 * d, .6 * d)), n: 26 });
+    scatter(Wd, { n: 60, area: [-12, 12, -8, 8], avoid: [-1, 0, 3.4], seed: 6 });
+    Wd.on(t => { cr.userData.set(.35 + .75 * sm(prog(t, .25 * d, .7 * d))); });
+    return rig(Wd, cm(d, [[0, [-8, 4.6, 11], [-4, 3.6, 0], 44], [1, [3.6, 4.8, 10.5], [-0.3, 4.4, 0], 44]]), H);
+  } },
+  // ===== s13: three objects on pedestals (coin purse, two candles, medicine bottle); from each a golden thread rises =====
+  { id: 's13', dur: DURS[12], wide: true, build() {
+    const d = DURS[12], Wd = W(13), H = grp(Wd); const xs = [-5.6, 0, 5.6], ps = xs.map(x => { const p = X.plinth(1.5, 1.6, COL.cream); place(H, p, x, 0, 0); return p; });
+    place(H, X.purse(), xs[0], 1.6, 0, 1.2); const cands = grp(H, [xs[1], 1.6, 0]); const c1 = X.candleHolder(), c2 = X.candleHolder(); c1.position.x = -.65; c2.position.x = .65; c1.scale.setScalar(1.1); c2.scale.setScalar(1.1); cands.add(c1); cands.add(c2);
+    place(H, X.pillBottle(COL.lilac, 1.2), xs[2], 1.6, 0, 1.3);
+    scatter(Wd, { n: 60, area: [-12, 12, -6, 6], avoid: [0, 0, 1], seed: 8 });
+    xs.forEach((x, i) => thread(Wd, { a: () => [x, 3.4, 0], b: () => [x + (i - 1) * -.5, 12.2, 0], k: t => ease.out(prog(t, (.12 + .2 * i) * d, (.45 + .2 * i) * d)), n: 24, ph: i * 2 }));
+    return rig(Wd, cm(d, [[0, [-3, 5.0, 14], [-2.5, 4.2, 0], 44], [1, [3, 5.0, 14], [2.5, 4.2, 0], 44]]), H);
+  } },
+  // ===== s14: the three objects lift along their threads to the golden crown of light high above and settle around it; crane up =====
+  { id: 's14', dur: DURS[13], wide: true, build() {
+    const d = DURS[13], Wd = W(14), H = grp(Wd); const xs = [-5.6, 0, 5.6]; xs.forEach(x => place(H, X.plinth(1.5, 1.6, COL.cream), x, 0, 0));
+    const objs = [X.purse(), (() => { const g = grp(); const a = X.candleHolder(), b = X.candleHolder(); a.position.x = -.5; b.position.x = .5; g.add(a); g.add(b); return g; })(), X.pillBottle(COL.lilac, 1.2)];
+    const sc = [1.2, 1.1, 1.3], P0 = xs.map(x => [x, 1.6, 0]), P1 = [[-4.0, 9.6, 1.2], [0, 8.2, 2.4], [4.0, 9.6, 1.2]]; objs.forEach((o, i) => { o.scale.setScalar(sc[i]); H.add(o); });
+    const cr = crown({ scale: 1.2 }); cr.position.set(0, 11.2, 0); H.add(cr); const bmx = lightBeam(11, 5); bmx.position.set(0, 5.6, 0); H.add(bmx);
+    const posAt = (t, i) => { const u = ease.io(prog(t, (.1 + .06 * i) * d, (.72 + .04 * i) * d)); return [lerp(P0[i][0], P1[i][0], u) + .3 * sin(u * 6 + i) * (1 - u), lerp(P0[i][1], P1[i][1], u), lerp(P0[i][2], P1[i][2], u)]; };
+    xs.forEach((x, i) => thread(Wd, { a: t => posAt(t, i), b: () => [0, 10.9, 0], k: () => 1, n: 22, ph: i * 2, wob: .15 }));
+    scatter(Wd, { n: 40, area: [-12, 12, -6, 6], avoid: [0, 0, 1], seed: 8 });
+    Wd.on(t => { objs.forEach((o, i) => { const p = posAt(t, i); o.position.set(...p); o.rotation.y = .6 * sin(t * .8 + i); }); const b = sm(prog(t, .2 * d, .85 * d)); cr.userData.set(.5 + .7 * b); bmx.userData.set(b); });
+    return rig(Wd, cm(d, [[0, [0, 5.0, 17], [0, 4.0, 0], 44], [1, [0, 10.0, 19], [0, 8.4, 0], 44]]), H);
+  } },
+  // ===== s15: the ribbon gap again; the golden dot hovers above it, drifting left and right, unsure where to land =====
+  { id: 's15', dur: DURS[14], wide: true, build() {
+    const d = DURS[15 - 1], { Wd, H, rb } = ribWorld(15); const dot = dotObj(.4); H.add(dot);
+    Wd.on(t => { const x = 3.4 * sin(t * .85) * (1 - .0), hover = .2 * sin(t * 2.1); dot.position.set(x, 3.7 + hover + .5 * Math.abs(sin(t * .85)), .4 * cos(t * .85)); dot.userData.set(1); dot.scale.setScalar(1 + .08 * sin(t * 4)); rb.gap.state({ glow: 0 }); });
+    return rig(Wd, orb([0, 1.8, 0], [13, 11], [3.5, 4.5], 28, -28, d, 44, .6), H);
+  } },
+  // ===== s16 KEY: the grey gap box lifts out of the ribbon and slowly tilts its open side up towards the crown light; a soft glow touches it; crane up =====
+  { id: 's16', dur: DURS[15], wide: true, build() {
+    const d = DURS[15], { Wd, H, rb, cr, beam } = ribWorld(16, { crown: { p: [0, 13.5, -3], s: 1.5, bw: 5 } });
+    Wd.on(t => { const L = ease.io(prog(t, .04 * d, .4 * d)), T = sm(prog(t, .08 * d, .38 * d)), Op = sm(prog(t, .35 * d, .7 * d)); const gk = sm(prog(t, .5 * d, .95 * d));
+      rb.gap.state({ lift: 5.0 * L, tilt: .75 * T, open: .9 * Op, glow: gk * .8, fill: gk * .8 }); cr.userData.set(.5 + .7 * gk); beam.userData.set(.3 + .7 * gk); });
+    return rig(Wd, cm(d, [[0, [-1, 4.0, 14], [0, 2.4, 0], 44], [.45, [.5, 8.6, 13], [0, 5.0, 0], 44], [1, [1.0, 10.5, 13], [0, 7.6, -.5], 44]]), H);
+  } },
+  // ===== s17: a bright cozy kitchen corner; on the wall the day ribbon with a 2-tile grey gap glowing as a question; slow push to the gap =====
+  { id: 's17', dur: DURS[16], wide: true, build() {
+    const d = DURS[16], Wd = W(17, { backdrop: false }), H = grp(Wd), kt = X.kitchen(Wd, 0, { rs: .72, ry: 8.0 });
+    Wd.on(t => { const p = .5 + .5 * sin(t * 2.2); kt.rb.gap.state({ glow: .45 + .4 * p, fill: .25 + .35 * p }); kt.fb.rotation.y = t * .2; });
+    return rig(Wd, cm(d, [[0, [0, 5.0, 16.5], [0, 4.6, 0], 44], [1, [0, 7.0, 9.2], [0, 7.6, -2.6], 44]]), kt.rb.g);
+  } },
+  // ===== s18: colourful entertainment boxes rush at the gap from outside; some slip over a low garden fence into our kitchen; lateral move =====
+  { id: 's18', dur: DURS[17], wide: true, build() {
+    const d = DURS[17], Wd = W(18, { backdrop: false }), H = grp(Wd), kt = X.kitchen(Wd, 6, { rs: .72, ry: 8.0 }); const fe = X.fence(14); place(H, fe, -3.2, 0, -1.0, 1.0);
+    for (let i = 0; i < 7; i++) { const b = bl(1.0 + (i % 3) * .3, i % 2 ? COL.leaf : COL.tealL, { pos: [-9 - i * 1.7, .9, -2 - (i % 2) * .5], inkW: .02 }); H.add(b); }
+    const bxs = putItems(H, 8, i => X.entItem(i)), r = rng(5);
+    const plan = bxs.map((o, i) => { const into = i % 3 === 2, t0 = into ? (.12 + .2 * (i - 2) / 3) * d : (.0 + .035 * i) * d; return { o, into, t0, dur: 3.6 + r() * .6, s: [-16 - r() * 2, .5, 1 + r() * 4], e: into ? [-1 + r() * 4, .05, 1.5 + r() * 3] : [6 + (r() - .5) * 2, 7.6, -2.5], pk: into ? 3.6 : 2.4 }; });
+    Wd.on(t => { plan.forEach(p => { const u = p.into ? clamp((t - p.t0) / p.dur, 0, 1) : (t < p.t0 ? 0 : ((t - p.t0) / p.dur) % 1), e = ease.io(u); p.o.visible = u > 0; const x = lerp(p.s[0], p.e[0], e), y = lerp(p.s[1], p.e[1], e) + p.pk * sin(PI * e) * (p.into ? 1 : .35), z = lerp(p.s[2], p.e[2], e);
+        p.o.position.set(x, y, z); p.o.rotation.set(0, 4 * u, 0); p.o.scale.setScalar(p.into ? 1 : Math.max(.001, 1 - sm(prog(u, .85, 1)))); });
+      kt.rb.gap.state({ glow: .5, fill: .35 + .3 * (.5 + .5 * sin(t * 3)) }); });
+    return rig(Wd, cm(d, [[0, [-11, 5.6, 14.5], [-6, 3.4, 0], 44], [1, [9, 6.2, 14], [4, 4.4, -.5], 44]]), H);
+  } },
+  // ===== s19: an open book on a stand; a heavy weight beside it is lifted step by step and set aside; the desk lamp brightens; push in =====
+  { id: 's19', dur: DURS[18], wide: true, build() {
+    const d = DURS[18], Wd = W(19), H = grp(Wd); H.add(bx(14, .6, 4, COL.wood, { pos: [0, -.3, 0], inkW: .02 })); H.add(bx(14.2, .12, 4.2, COL.woodD, { pos: [0, .0, 0], ink: false }));
+    const bk = X.bookStand(); place(H, bk, -1.6, 0, 0, 2.4); const wt = X.weightObj(); place(H, wt, 2.2, 0, .3, 1.8); const lp = X.deskLamp(); place(H, lp, -5.2, 0, -1.2, 1.5, .3);
+    scatter(Wd, { n: 30, area: [-12, 12, -8, 8], avoid: [0, 0, 8], seed: 9 });
+    Wd.on(t => { const y = .8 * (sm(prog(t, .2 * d, .28 * d)) + sm(prog(t, .34 * d, .42 * d)) + sm(prog(t, .48 * d, .56 * d))) - .9 * sm(prog(t, .84 * d, .92 * d)), x = 2.2 + 3.0 * sm(prog(t, .6 * d, .78 * d));
+      wt.position.set(x, y, .3); wt.rotation.z = -.08 * sin(PI * prog(t, .6 * d, .78 * d)); lp.userData.set(sm(prog(t, .5 * d, .9 * d))); bk.userData.glow.material.opacity = .15 + .4 * sm(prog(t, .5 * d, .9 * d)); });
+    return rig(Wd, cm(d, [[0, [1.0, 5.4, 16], [0.2, 2.6, 0], 44], [1, [-.2, 4.4, 12.5], [.2, 2.6, 0], 44]]), H);
+  } },
+  // ===== s20: an hourglass sits in the gap; the gap with the hourglass tilts up towards the crown light; crane =====
+  { id: 's20', dur: DURS[19], wide: true, build() {
+    const d = DURS[19], { Wd, H, rb, cr, beam } = ribWorld(20, { crown: { p: [0, 13.5, -5], s: 1.5, bw: 5 } }); const hg = X.hourglassK(); hg.scale.setScalar(1.0); rb.gap.inner.add(hg);
+    Wd.on(t => { const L = sm(prog(t, .06 * d, .36 * d)), T = sm(prog(t, .08 * d, .38 * d)), Op = sm(prog(t, .4 * d, .7 * d)); rb.gap.state({ lift: .8 * L, tilt: .75 * T, open: .5 * Op, glow: .15 * T, fill: .0 }); hg.userData.set(fr(t, d, .05, .95)); const k = sm(prog(t, .1 * d, .7 * d)); cr.userData.set(.5 + .6 * k); beam.userData.set(.3 + .5 * k); });
+    return rig(Wd, cm(d, [[0, [-1, 3.8, 12.5], [0, 1.8, 0], 44], [1, [.5, 9.0, 11.5], [0, 3.4, -.5], 44]]), H);
+  } },
+  // ===== s21: the camera slowly circles the tilted gap; inside it a soft light grows from a point to fill the box =====
+  { id: 's21', dur: DURS[20], wide: true, build() {
+    const d = DURS[20], { Wd, H, rb, cr, beam } = ribWorld(21, { crown: { p: [0, 14, -5], s: 1.5, bw: 5 } }); const hg = X.hourglassK(); rb.gap.inner.add(hg); hg.userData.set(.55);
+    Wd.on(t => { const f = sm(prog(t, .05 * d, .9 * d)); rb.gap.state({ lift: .8, tilt: .75, open: .5, glow: .15 + .4 * f, fill: f * .9 }); cr.userData.set(1.0); beam.userData.set(.6 + .2 * sin(t * 1.2)); });
+    return rig(Wd, orb([0, 1.7, 0], [9.5, 8.0], [2.6, 4.2], -62, 55, d, 44, .6), H);
+  } },
+  // ===== s22 KEY: the glowing gap opens like a box and many small task objects pop out and arrange in a fan; push then settle =====
+  { id: 's22', dur: DURS[21], wide: true, build() {
+    const d = DURS[21], { Wd, H, rb, cr, beam } = ribWorld(22, { crown: { p: [0, 14, -5], s: 1.5, bw: 5 } }); const tasks = X.TASKS(), N = tasks.length; tasks.forEach(o => { H.add(o); o.visible = false; });
+    const spark = []; for (let i = 0; i < 10; i++) { const s = sparkle(i % 2 ? 0xFFD266 : 0xFFFFFF, .5 + (i % 3) * .2, 0); H.add(s); spark.push(s); }
+    Wd.on(t => { const Op = sm(prog(t, .06 * d, .26 * d)), f = 1; rb.gap.state({ lift: .8, tilt: .75 * (1 - .5 * Op), open: Math.max(.5, Op), glow: .6 + .4 * Op, fill: .9 }); cr.userData.set(1.1); beam.userData.set(.7);
+      tasks.forEach((o, i) => { const k = elastic(prog(t, (.22 + .05 * i) * d, (.22 + .05 * i + .2) * d)), ph = (i / (N - 1) - .5) * 2.1, R = 3.8, fx = R * sin(ph), fy = 3.8 + R * .5 * cos(ph) + .2, u = ease.out(prog(t, (.22 + .05 * i) * d, (.22 + .05 * i + .24) * d));
+        o.visible = k > .002; o.position.set(lerp(0, fx, u), lerp(2.0, fy, u) + .12 * sin(t * 1.5 + i), lerp(0, 1.2, u)); o.scale.setScalar(Math.max(.001, 1.25 * k)); o.rotation.y = .5 * sin(t * .7 + i) + (1 - u) * 5; o.rotation.z = -ph * .25 * u; });
+      spark.forEach((s, i) => { const u = (t * .5 + i * .1) % 1, a = i * 1.7; s.position.set(Math.sin(a) * (1 + 4.5 * u), 2.4 + 5 * u, 1.2 + Math.cos(a) * .6); s.material.opacity = .8 * Math.sin(PI * u) * Op; }); });
+    return rig(Wd, cm(d, [[0, [0, 5.0, 16], [0, 3.4, 0], 44], [.5, [0, 5.4, 14], [0, 3.8, 0], 44], [1, [0, 5.6, 14.5], [0, 3.9, 0], 44]]), H);
+  } },
+  // ===== s23: the tray with cups travels along a path to a house door; a glowing slice of a clock face (2 hours) detaches and follows into the door =====
+  { id: 's23', dur: DURS[22], wide: true, build() {
+    const d = DURS[22], Wd = W(23), H = grp(Wd); for (let i = 0; i < 26; i++) H.add(bx(1.5, .1, 2.6, i % 2 ? COL.peach : COL.cream, { pos: [-14 + i * 1.5, .05, 1.2], inkW: .01 }));
+    const hs = X.cozyHouse(); place(H, hs, 11.8, 0, 1.2, 1.4, -PI / 2); hs.userData.glow(.5); const tr = X.trayCups(); H.add(tr); tr.scale.setScalar(1.6);
+    const sl = new THREE.Group(); H.add(sl); const wedge = bm(new THREE.CircleGeometry(1.3, 24, PI / 2 - PI / 3, PI / 3), 0xFFD266, { side: THREE.DoubleSide, transparent: true, opacity: .95 }); sl.add(wedge); sl.add(glowSprite(0xFFC24A, 5, .6)); sl.add(mm(new THREE.TorusGeometry(1.3, .06, 6, 24, PI / 3), COL.peachD, { rot: [0, 0, PI / 2 - PI / 3], inkW: .008 }));
+    for (let i = 0; i < 14; i++) { const f = X.flower([COL.coral, COL.peach, COL.lilac][i % 3]); place(H, f, -12 + i * 2.1, 0, 3.7 + (i % 2) * .6, 1.2); }
+    scatter(Wd, { n: 60, area: [-16, 16, -6, 0], seed: 5 });
+    const xs = t => lerp(-11, 9.0, ease.io(prog(t, .04 * d, .86 * d)));
+    Wd.on(t => { const x = xs(t), inr = sm(prog(t, .86 * d, .98 * d)); tr.position.set(x, 1.0 + .12 * Math.abs(sin(t * 3.2)) * (1 - inr), 1.2); tr.scale.setScalar(1.6 * (1 - .9 * inr)); tr.rotation.y = .3 * sin(t * 1.4);
+      const det = sm(prog(t, .1 * d, .3 * d)); sl.position.set(x - 1.6 * det - 1.2 * inr * 0, 2.6 + .3 * sin(t * 2.2) + .6 * det, 1.4); sl.rotation.y = 0; sl.scale.setScalar(Math.max(.001, (.2 + .8 * det) * (1 - .95 * inr))); });
+    return rig(Wd, t => { const x = lerp(-9, 8, ease.io(prog(t, .0, .9 * d))); return { pos: [x - 2, 4.6, 14.5], look: [x + 4.8, 2.1, 1.2], fov: 44 }; }, H);
+  } },
+  // ===== s24: a small cozy house with a lit window and flowers at the end of a short lane; the gift box rolls along the lane to its door; the window glows brighter =====
+  { id: 's24', dur: DURS[23], wide: true, build() {
+    const d = DURS[23], Wd = W(24), H = grp(Wd); for (let i = 0; i < 26; i++) H.add(bx(2.6, .1, 1.4, i % 2 ? COL.peach : COL.cream, { pos: [0, .05, 14 - i * 1.4], inkW: .01 }));
+    const hs = X.cozyHouse(); place(H, hs, 0, 0, -22, 2.0); const gb = X.giftBox(COL.coral, COL.cream); H.add(gb); gb.scale.setScalar(1.6);
+    for (let i = 0; i < 22; i++) for (const s of [-1, 1]) { const f = X.flower([COL.coral, COL.peach, COL.lilac][(i + (s > 0 ? 1 : 0)) % 3]); place(H, f, s * (2.4 + (i % 3) * .5), 0, 14 - i * 1.5, 1.4); }
+    const fl = X.fence(30); place(H, fl, 5.6, 0, -2, 1.0, 0); const fr2 = X.fence(30); place(H, fr2, -5.6, 0, -2, 1.0, 0);
+    Wd.on(t => { const z = lerp(8, -17.6, ease.io(prog(t, .1 * d, .88 * d))); gb.position.set(0, .95 + .2 * Math.abs(sin(t * 2)) * 0, z); gb.rotation.x = -(8 - z) * .5; gb.scale.setScalar(1.6 * (1 - .0 * prog(t, .9 * d, 1))); hs.userData.glow(.15 + .85 * sm(prog(t, .45 * d, .95 * d))); });
+    return rig(Wd, cm(d, [[0, [3.4, 5.0, 24], [0, 3.0, 0], 44], [.55, [1.0, 4.2, 8], [0, 2.8, -22], 44], [1, [-1.6, 3.4, -4], [0, 2.8, -22], 44]]), H);
+  } },
+  // ===== s25: a ring of different keys floats; each turns into its own different lock; orbit =====
+  { id: 's25', dur: DURS[24], wide: true, build() {
+    const d = DURS[24], Wd = W(25), H = grp(Wd); const cs = [COL.coral, COL.sky, COL.lilac, COL.leaf, COL.peach, COL.teal], ks = [], ls = [];
+    H.add(X.plinth(2.0, .6, COL.cream)); const R = 4.6, cY = 5.0;
+    for (let i = 0; i < 6; i++) { const a = i / 6 * PI * 2, kk = X.keyObj(cs[i], 1.2 + (i % 3) * .5, 2 + (i % 4)), lk = X.lockObj(cs[i], .9 + (i % 3) * .35, .8 + ((i + 1) % 3) * .35); const px = Math.sin(a) * R, pz = Math.cos(a) * R;
+      kk.position.set(px, cY, pz); lk.position.set(px, cY - .6, pz); lk.scale.setScalar(.001); H.add(kk); H.add(lk); ks.push(kk); ls.push(lk); }
+    scatter(Wd, { n: 40, area: [-9, 9, -9, 9], avoid: [0, 0, 5], seed: 3 });
+    Wd.on(t => { ks.forEach((kk, i) => { const a = i / 6 * PI * 2 + t * .15, t1 = (.28 + .06 * i) * d, tk = sm(prog(t, t1 + .08 * d, t1 + .2 * d)), RR = lerp(R, 2.3, tk), px = Math.sin(a) * RR, pz = Math.cos(a) * RR, by = cY + .3 * sin(t * 1.5 + i);
+      kk.position.set(px, by, pz); kk.rotation.set(0, t * .9 + i, 1.2 + .3 * sin(t + i)); kk.scale.setScalar(Math.max(.001, 1.5 * (1 - sm(prog(tk, .5, 1)))));
+      ls[i].position.set(Math.sin(a) * 2.3, by - .4, Math.cos(a) * 2.3); ls[i].rotation.y = a; ls[i].scale.setScalar(Math.max(.001, 1.5 * elastic(prog(t, t1, t1 + .12 * d)))); }); });
+    return rig(Wd, orb([0, cY, 0], [15, 12.5], [1.8, 3.4], -55, 85, d, 44, -.4), H);
+  } },
+  // ===== s26: one broad shared path; along it many bet-houses, each with its golden dot in a different spot and facing a slightly different way; crane along the path =====
+  { id: 's26', dur: DURS[25], wide: true, build() {
+    const d = DURS[25], Wd = W(26), H = grp(Wd); for (let i = 0; i < 44; i++) H.add(bx(6.2, .12, 2.1, i % 2 ? COL.cream : COL.peach, { pos: [0, .06, 8 - i * 1.9], inkW: .012 }));
+    for (let i = 0; i < 44; i++) for (const s of [-1, 1]) H.add(bx(.3, .2, 2.1, COL.teal, { pos: [s * 3.25, .1, 8 - i * 1.9], ink: false })); const r = rng(8), hs = [], HG = grp(H), HG2 = grp(H);
+    for (let i = 0; i < 16; i++) { const s = i % 2 ? 1 : -1, h = betHouse({ dr: .26 }); h.scale.setScalar(1.05); const x = s * (5.4 + r() * 1.4), z = 2 - i * 4.4; h.position.set(x, 0, z); h.rotation.y = s * PI / 2 * -1 + (r() - .5) * 1.1; h.userData.dot.position.set((r() - .5) * 1.3, .7 + r() * 1.6, (r() - .5) * 1.2); (i < 6 ? HG : HG2).add(h); hs.push(h); }
+    scatter(Wd, { n: 110, area: [-24, 24, -70, 10], avoid: [0, -30, 4], seed: 12 });
+    Wd.on(t => { hs.forEach((h, i) => { h.userData.dot.userData.set(.8 + .25 * sin(t * 2.2 + i)); }); });
+    return rig(Wd, cm(d, [[0, [0, 3.6, 14], [0, 2.4, -10], 46], [.5, [0, 5.2, -10], [0, 1.8, -30], 46], [1, [0, 10.5, -22], [0, 1.4, -46], 46]]), HG2);
+  } },
+  // ===== s27: the entertainment boxes slide away to the edges; the golden dot descends and lands inside the bet-house; push in =====
+  { id: 's27', dur: DURS[26], wide: true, build() {
+    const d = DURS[26], Wd = W(27), H = grp(Wd); H.add(X.plinth(3.6, .5, COL.cream)); const hs = betHouse({ k: 0 }); hs.position.set(0, .5, 0); hs.scale.setScalar(1.35); H.add(hs); const dot = dotObj(.55); H.add(dot);
+    const r = rng(6), bxs = putItems(H, 8, i => X.entItem(i)), st = bxs.map((o, i) => { const a = (i / 8) * PI * 2 + .3; return { x0: Math.sin(a) * (4.6 + r()), z0: Math.cos(a) * 2.2 + 2.6, x1: (i % 2 ? 1 : -1) * (4.8 + r() * .9), z1: 1 + r() * 3 }; });
+    scatter(Wd, { n: 40, area: [-14, 14, -6, 8], avoid: [0, 0, 4.4], seed: 5 });
+    Wd.on(t => { bxs.forEach((o, i) => { const u = ease.io(prog(t, 0, (.3 + .015 * i) * d)); o.position.set(lerp(st[i].x0, st[i].x1, u), .05 + .12 * Math.abs(sin(u * 8)), lerp(st[i].z0, st[i].z1, u)); o.rotation.y = u * 2; o.scale.setScalar(1.1); });
+      const u = ease.io(prog(t, 0, .4 * d)), pp = lerp(7.4, 2.45, u); dot.position.set(.6 * (1 - u) * sin(u * 5), pp, .3 * (1 - u)); dot.userData.set(1); dot.scale.setScalar(1 + .1 * sin(t * 4)); hs.userData.dot.userData.set(sm(prog(t, .36 * d, .46 * d))); dot.visible = u < .985; });
+    return rig(Wd, cm(d, [[0, [0, 4.2, 15], [0, 2.8, 0], 44], [1, [.8, 3.8, 9.2], [0, 2.7, 0], 42]]), H);
+  } },
+  // ===== s28 KEY: the whole day ribbon lights tile by tile, the grey gap now glowing gold; no grey left; long lateral track =====
+  { id: 's28', dur: DURS[27], wide: true, build() {
+    const d = DURS[27], { Wd, H, rb } = ribWorld(28); const T = i => (.03 + .62 * i / 23) * d;
+    Wd.on(t => { for (let i = 0; i < 24; i++) rb.light(i, sm(prog(t, T(i), T(i) + .07 * d))); const gk = sm(prog(t, T(11), T(11) + .12 * d)); rb.gap.state({ glow: gk, fill: gk * .9 }); });
+    return rig(Wd, t => { const x = lerp(-12, 12, ease.io(clamp(t / d, 0, 1))); return { pos: [x, 4.2, 9.8], look: [x + .6, 1.2, 0], fov: 44 }; }, H);
+  } },
+  // ===== s29: the bet-house large, its dot at full glow; light pours from its open front and spreads over a calm landscape; far small houses each light their own dot; slow pull back =====
+  { id: 's29', dur: DURS[28], wide: true, build() {
+    const d = DURS[28], Wd = W(29), H = grp(Wd); H.add(X.plinth(4.2, .5, COL.cream)); const hs = betHouse({ dr: .34 }); hs.position.set(0, .5, 0); hs.scale.setScalar(1.7); H.add(hs);
+    const pool = bm(new THREE.CircleGeometry(1, 40), 0xFFE3A0, { transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }); pool.rotation.x = -PI / 2; pool.position.set(0, .06, 0); H.add(pool);
+    const cone = new THREE.Mesh(new THREE.ConeGeometry(9, 30, 32, 1, true), new THREE.MeshBasicMaterial({ color: 0xFFE3A0, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false })); cone.rotation.x = PI / 2; cone.position.set(0, 3.0, 17); cone.userData.keep = true; H.add(cone);
+    const r = rng(14), sm_ = []; for (let i = 0; i < 40; i++) { const x = (r() - .5) * 52, z = 9 + r() * 40; if (Math.hypot(x + 16, z - 22) < 8) continue; const h = betHouse({ k: .1, dr: .26 }); h.scale.setScalar(.34 + r() * .12); h.position.set(x, 0, z); h.rotation.y = r() * 6.28; H.add(h); sm_.push(h); }
+    scatter(Wd, { n: 140, area: [-28, 28, -4, 46], avoid: [0, 0, 5], seed: 3 });
+    Wd.on(t => { const L = sm(prog(t, .1 * d, .5 * d)), front = lerp(2, 52, prog(t, .25 * d, .85 * d)); hs.userData.dot.userData.set(.9 + .25 * L + .08 * sin(t * 2)); cone.material.opacity = .05 * L; pool.material.opacity = .08 * L; pool.scale.setScalar(Math.max(.01, 3 + 20 * L)); pool.position.set(0, .06, 2 + 9 * L);
+      sm_.forEach(h => { h.userData.dot.userData.set(sm(clamp((front - h.position.z) / 8, 0, 1)) * 1.05); }); });
+    return rig(Wd, cm(d, [[0, [2.8, 3.0, 9.5], [0, 2.4, 0], 42], [.45, [-6, 6.0, 15], [0, 2.0, 4], 44], [1, [-17, 10.5, 15], [2, 1.2, 12], 46]]), H);
+  } },
+  // ===== s_end: calm wide of the fully glowing day ribbon and the bet-house, slow pull back, no text =====
+  { id: 's_end', dur: DURS[29], wide: true, build() {
+    const d = DURS[29], { Wd, H, rb } = ribWorld(30); const hs = betHouse({ dr: .34 }); hs.position.set(0, 0, -6.5); hs.scale.setScalar(1.6); H.add(hs);
+    Wd.on(t => { for (let i = 0; i < 24; i++) rb.light(i, .85 + .15 * sin(t * 2 + i * .5)); rb.gap.state({ glow: 1, fill: .85 }); hs.userData.dot.userData.set(1 + .08 * sin(t * 2.4)); });
+    return rig(Wd, cm(d, [[0, [0, 4.6, 15], [0, 2.4, 0], 44], [1, [0, 6.6, 21], [0, 2.8, 0], 44]]), H);
+  } },
+] });
+</script>
