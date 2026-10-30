@@ -61,6 +61,8 @@ function updTrail(lt, gs) {
   for (; di < dots.n; di++) dots.hide(di); dots.commit();
 }
 
+const fgGrass = (() => { const g = G(GB); for (let i = 0; i < 6; i++) { const t = KT.makeGrassTuft(i + 880, { col: '#9cae5c', h: 60, n: 9 }); g.add(t); } g.visible = false; return g; })();
+export const s3Off = () => { fgGrass.visible = false; };
 /* ---------------------------------------------------------------- shot 3 */
 const bFace = (T, st, off) => Object.assign({ expr: 'smile', blink: blinkAt(T, off || 0.6), look: [0, 0] }, st);
 export function shot3(lt, T) {
@@ -75,7 +77,7 @@ export function shot3(lt, T) {
       pose(GH, { t: T, x: hl[0] + 3, y: hl[1] + 6, z: hl[2], yaw: yawB, walk: 0, shadow: false }); GH.root.scale.setScalar(0.3);
       fs(GH, { expr: 'curious', blink: blinkAt(T, 0.3), look: [0.4, 0.2] });
       if (!flags.collect) { bottle.visible = true; bottle.scale.setScalar(0.55); bottle.position.set(hr[0] + 6, hr[1] + 40, hr[2]); bottle.rotation.set(0, 0.4, PI / 2 - 0.2); }
-      cm = CAMS(lt, [{ t0: 0.4, t1: 5.2, p: [260, 170, 1120], p1: [200, 165, 1020], l: [bx + 10, 150, bz], f: 32 }]);
+      cm = CAMS(lt, [{ t0: 0.4, t1: 5.2, p: [-300, 150, 960], p1: [-230, 150, 880], l: [bx + 10, 150, bz], f: 30 }]);
     } else {                                              /* insert: the bottle just bobs in the same place, the wave passes under it */
       GH.root.visible = false; B.root.visible = false;
       if (!flags.collect) { const f = sea.float(60, -230, 90); bottle.visible = true; bottle.scale.setScalar(1.6); bottle.position.set(60, f.y + 10, -230); bottle.rotation.set(f.rx, 0.5, f.rz + 0.05); }
@@ -108,7 +110,7 @@ export function shot3(lt, T) {
     else { const u = ease(lt, 32.66, 39.9); cm = { p: [gxx - 100 + 500 * u, lerp(900, 2800, u), lerp(860, 1700, u)], l: [gxx + 400 * u, 0, lerp(150, 120, u)], fov: 34 }; }
     if (lt >= 9.22) { if (typeof cm === 'object' && cm.fov == null) cm.fov = cm.fov || 34; }
   } else {                                                /* c6 - c7: the wind lifts sand off the dry beach and piles it into dunes */
-    show(GB, GUST); skyTo('day'); bottle.visible = false; counter.visible = false;
+    show(GB); if (lt < 48.79) show(GUST); skyTo('day'); bottle.visible = false; counter.visible = false;
     const k0 = lt - 39.97, gk = lt < 48.79 ? 0.05 + 0.15 * lin(lt, 40, 48.79) : 0.2 + 0.8 * ease(lt, 48.79, 54);
     beachTick(T, { blow1: 0, blow2: ease(lt, 41, 43) * (lt < 48.79 ? 1 : 1 - 0.3 * ease(lt, 50, 56)), dune: gk });
     const gx = GD.x - 300 + 60 * Math.sin(T * 0.7);
@@ -120,16 +122,21 @@ export function shot3(lt, T) {
     } else {                                              /* c7: the boy climbs a dune and slides down, the rabbi laughs */
       show(B, R);
       const k = lt - 48.79, kk = gk;
-      const zc = GD.z - 330 + 700 * 0 , climbU = ease(lt, 49.3, 52.4), z = lerp(GD.z - 480, GD.z + 90, climbU), slideU = lin(lt, 52.7, 54.6), zz = lt < 52.7 ? z : lerp(GD.z + 90, GD.z + 360, slideU);
-      const by = gdH(GD.x, zz, kk), slope = (gdH(GD.x, zz + 20, kk) - gdH(GD.x, zz - 20, kk)) / 40;
-      const walking = lt < 52.6, sliding = lt >= 52.7 && lt < 54.9;
-      const d0 = 170 * Math.max(0, lt - 49.3);
-      pose(B, { t: T, x: GD.x, z: zz, yaw: -PI / 2 + 0.3, walk: (walking && lt > 49.3) || sliding ? 1 : 0, ph: sliding ? (d0 + 380 * (lt - 52.7)) / B.cycle : d0 / B.cycle, lean: walking ? 14 : 8, arms: sliding || lt > 54.9 ? { l: { sz: 2.7, sx: 0.3, el: 0.2 }, r: { sz: 2.7, sx: 0.3, el: 0.2 } } : undefined }, by);
-      fs(B, bFace(T, { expr: sliding || lt > 54.9 ? 'laugh' : 'smile', look: [0.3, 0.2] }, 0.6));
-      const rz = GD.z + 600, rx = GD.x + 150; pose(R, { t: T, x: rx, z: rz, yaw: -PI / 2 - 0.5, walk: 0, headTilt: sliding ? 8 * Math.sin(T * 12) : 0, arms: sliding ? { r: { sz: 0.9, sx: 0.2, el: 1.2 }, l: { sz: 0.9, sx: 0.2, el: 1.2 } } : undefined }, gdH(rx, rz, kk));
-      fs(R, { expr: sliding || lt > 54.9 ? 'laugh' : 'smile', blink: blinkAt(T, 0.1), look: [-0.3, 0.1] });
-      cm = CAMS(lt, [{ t0: 48.79, t1: 52.7, p: [GD.x - 1000, 230, GD.z - 120], p1: [GD.x - 950, 240, GD.z + 60], l: [GD.x, 150, GD.z - 20], l1: [GD.x, 170, GD.z + 120], f: 32 },
-        { t0: 52.7, t1: 56.5, p: [GD.x - 760, 130, GD.z + 700], p1: [GD.x - 700, 140, GD.z + 700], l: [GD.x, 90, GD.z + 360], l1: [GD.x + 30, 100, GD.z + 380], f: 33 }]);
+      const climbU = ease(lt, 49.3, 52.0), zc = lerp(GD.z - 480, GD.z + 90, climbU), slideU = lin(lt, 52.2, 55.0), zs = lerp(GD.z + 90, GD.z + 230, slideU * slideU * (3 - 2 * slideU));
+      const zz = lt < 52.2 ? zc : zs;
+      const walking = lt < 52.1 && lt > 49.3, sliding = lt >= 52.2 && lt < 55.0;
+      const by = gdH(GD.x, zz, kk);
+      const d0 = 170 * Math.max(0, Math.min(lt, 52.1) - 49.3);
+      pose(B, { t: T, x: GD.x, z: zz, yaw: sliding || lt >= 55.0 ? -PI / 2 + 0.75 : -PI / 2 + 0.3, walk: walking ? 1 : 0, ph: d0 / B.cycle, lean: walking ? 14 : sliding ? -16 : 0, headTilt: sliding ? -6 : 0, arms: sliding || lt >= 55.0 ? { l: { sz: 1.9, sx: 0.9, el: 0.2 }, r: { sz: 1.9, sx: 0.9, el: 0.2 } } : undefined }, by);
+      fs(B, bFace(T, { expr: sliding || lt >= 55.0 ? 'laugh' : 'smile', look: [0.3, 0.2] }, 0.6));
+      const rz = GD.z + 300, rx = GD.x + 250; pose(R, { t: T, x: rx, z: rz, yaw: -PI / 2 - 1.5, walk: 0, headTilt: lt > 52.2 ? 8 * Math.sin(T * 12) : 0, headYaw: -0.3, arms: lt > 52.2 ? { r: { sz: 0.9, sx: 0.2, el: 1.2 }, l: { sz: 0.9, sx: 0.2, el: 1.2 } } : undefined }, gdH(rx, rz, kk));
+      fs(R, { expr: lt > 52.2 ? 'laugh' : 'smile', blink: blinkAt(T, 0.1), look: [-0.3, 0.1] });
+      if (lt < 52.2) cm = CAMS(lt, [{ t0: 48.79, t1: 52.2, p: [GD.x - 850, 230, GD.z - 420], p1: [GD.x - 800, 240, GD.z - 260], l: [GD.x, 160, GD.z - 150], l1: [GD.x, 170, GD.z - 20], f: 33 }]);
+      else {
+        const px = GD.x - 560, pz = GD.z + 560, py = gdH(px, pz, kk) + 150, ly = gdH(GD.x, zz, kk) + 80; cm = { p: [px, py, pz], l: [GD.x + 60, ly, lerp(GD.z + 130, GD.z + 240, lin(lt, 52.2, 55.0))], fov: 34 };
+        const f = [GD.x + 60 - px, GD.z + 240 - pz], fl = Math.hypot(f[0], f[1]), fx = f[0] / fl, fz = f[1] / fl, rxv = -fz, rzv = fx;
+        fgGrass.visible = true; fgGrass.children.forEach((t, i) => { const lat = [-300, -180, 260, 340, 120, -60][i], dd = [400, 330, 390, 430, 500, 520][i], x = px + fx * dd + rxv * lat, z = pz + fz * dd + rzv * lat; t.position.set(x, gdH(x, z, kk) - 2, z); t.scale.setScalar(i < 4 ? 1.5 : 1.0); });
+      }
     }
   }
   if (!cm.fov) cm.fov = 32;

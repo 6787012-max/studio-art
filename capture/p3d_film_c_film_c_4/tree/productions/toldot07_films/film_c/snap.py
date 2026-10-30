@@ -16,9 +16,9 @@ with sync_playwright() as p:
         errs = []
         pg.on('pageerror', lambda e: errs.append(str(e)[:400]))
         pg.on('console', lambda m: errs.append(m.text[:400]) if m.type == 'error' else None)
-        pg.goto('http://localhost:8790/productions/toldot07_films/film_c/film_c.html?' + q)
+        pg.goto('http://localhost:8790/productions/toldot07_films/film_c/film_c.html?' + q, timeout=600000, wait_until='commit')
         try:
-            pg.wait_for_function('window.__ready === true', timeout=900000)
+            pg.wait_for_function('window.__ready === true', timeout=200000)
         except Exception as e:
             errs.append('TIMEOUT ' + str(e)[:160])
         for t in seeks:
