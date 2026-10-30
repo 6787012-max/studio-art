@@ -1,0 +1,422 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>khs 81 film a</title>
+<style>html,body{margin:0;background:#000}canvas{display:block;width:100vw;height:auto}</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script>window.__T0=33.3700; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+// khs_81 / film_a - portrait 1080x1920, objects only (no people): a golden grain mountain (huge but finite) and an endless
+// beam of light, on a warm sand plain at golden hour seen from a low ground-level camera. Only living thing: one small bird.
+// Shots + caption times from khs_81/timeline.json (66.74 s = 14.5 + 15.9 + 15.6 + 11.6 + 9.14). Captions are vault IDs only.
+// Every animation is a pure function of the local shot time t (no Math.random / Date / rAF).
+import { film, world, THREE, prog, ease, clamp, lerp, rng, mesh, toon, canvasTex } from '../../lib/stage3d.js';
+
+const TAU = Math.PI * 2, PI = Math.PI, V3 = THREE.Vector3;
+const INKC = 0x5c4030;
+const SAND = 0xe8cfa0, DUNEC = 0xd9b98a, STONEC = 0xc8643c, GRAINC = 0xe0a93b, GRAINH = 0xf2c562, RINGC = 0xb98a5e, SUNC = 0xffc94a,
+  MOONC = 0xf4f1ea, BEAMC = 0xfff1c4, BOWLC = 0xb5653f, DOMEC = 0xdff3f2, TEALC = 0x4fb0aa, CAPC = 0x7a4a36, BIRDC = 0x4a5aa8, CREAMC = 0xfff3df;
+const sm = (t, a, b) => ease.sm(prog(t, a, b));
+const L3 = (a, b, u) => [lerp(a[0], b[0], u), lerp(a[1], b[1], u), lerp(a[2], b[2], u)];
+const frac = x => x - Math.floor(x);
+// sky shader outputs raw numbers (no sRGB encode): keep the display value of the hex
+const RAWC = h => new THREE.Color().setRGB(((h >> 16) & 255) / 255, ((h >> 8) & 255) / 255, (h & 255) / 255, THREE.LinearSRGBColorSpace);
+
+// ---------------- layout (world metres; camera looks toward -z) ----------------
+const BOWL = [-0.9, 0, -2], TOWER = [3.5, 0, -52], MT = [-2, 0, -90], BEAM = [48, 0, -150], DIAL = [3, 0, -12];
+const DC = [18, 0, -95], DR = 118;                      // glass dome centre / radius (s04, s05)
+const MR = 36, MHR = 0.75;                              // mountain radius / height ratio (height 21 m)
+const R0 = [-0.4, 0, -1.2], RD = (() => { const a = Math.hypot(-0.5, -1); return [-0.5 / a, -1 / a]; })();   // light road: from the bowl, to the left of the mountain
+const roadPt = d => [R0[0] + RD[0] * d, R0[2] + RD[1] * d];
+const BS = 3.4;                                         // bird scale (body ~4 m)
+const SHADOW_DIR = (() => { const a = Math.hypot(-.97, .2); return [-.97 / a, .2 / a]; })();
+
+// ---------------- small helpers ----------------
+let GT = null;
+const glowTex = () => GT || (GT = canvasTex(128, 128, (g, w, h) => { const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.35, 'rgba(255,255,255,.5)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }));
+const glow = (size, op, tint, blend) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: glowTex(), color: tint === undefined ? SUNC : tint, depthWrite: false, transparent: true, fog: false, opacity: op === undefined ? .6 : op, blending: blend === false ? THREE.NormalBlending : THREE.AdditiveBlending })); s.scale.set(size, size, 1); s.renderOrder = 10; return s; };
+const mk = (geo, color, o) => { o = o || {}; return mesh(geo, toon(color, o.mat), Object.assign({ inkW: .02, inkColor: INKC }, o)); };
+const sph = (r, color, pos, scale, o) => mk(new THREE.SphereGeometry(r, 20, 14), color, Object.assign({ pos, scale }, o));
+const bxm = (w, h, d, color, pos, o) => mk(new THREE.BoxGeometry(w, h, d), color, Object.assign({ pos, box: true }, o));
+const cyl = (r1, r2, h, color, pos, o) => mk(new THREE.CylinderGeometry(r1, r2, h, 16), color, Object.assign({ pos }, o));
+function outMat(color, w) {
+  const m = new THREE.MeshBasicMaterial({ color, side: THREE.BackSide });
+  m.onBeforeCompile = sh => { sh.vertexShader = sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n transformed += normalize(normal) * ' + w.toFixed(4) + ';'); };
+  m.customProgramCacheKey = () => 'ink81' + w.toFixed(4);
+  return m;
+}
+const DUM = new THREE.Object3D();
+// instanced set with an optional shared-matrix ink outline
+function mkInst(S, geo, n, colorFn, o) {
+  o = o || {};
+  const im = new THREE.InstancedMesh(geo, toon(0xffffff, o.mat), n);
+  im.instanceMatrix.setUsage(THREE.DynamicDrawUsage); im.frustumCulled = false; im.castShadow = o.cast !== false; im.receiveShadow = o.receive !== false;
+  const c = new THREE.Color(); for (let i = 0; i < n; i++) im.setColorAt(i, c.set(colorFn(i))); im.instanceColor.needsUpdate = true;
+  S.add(im);
+  let ol = null;
+  if (o.ink !== false) { ol = new THREE.InstancedMesh(geo, outMat(INKC, o.inkW || .02), n); ol.instanceMatrix = im.instanceMatrix; ol.frustumCulled = false; ol.castShadow = false; ol.receiveShadow = false; S.add(ol); }
+  im.count = 0; if (ol) ol.count = 0;
+  return { im, ol,
+    set(i, x, y, z, sx, sy, sz, rx, ry, rz) { DUM.position.set(x, y, z); DUM.rotation.set(rx || 0, ry || 0, rz || 0); DUM.scale.set(sx, sy, sz); DUM.updateMatrix(); im.setMatrixAt(i, DUM.matrix); },
+    count(n2) { im.count = n2; if (ol) ol.count = n2; im.instanceMatrix.needsUpdate = true; } };
+}
+function bowlGeo() {
+  const p = [[.001, 0], [.26, 0], [.34, .05], [.5, .26], [.58, .38], [.53, .385], [.44, .29], [.26, .11], [.001, .1]].map(a => new THREE.Vector2(a[0], a[1]));
+  const g = new THREE.LatheGeometry(p, 28); return g;
+}
+function buildBowl(withCrumbs) {
+  const g = new THREE.Group();
+  g.add(mesh(bowlGeo(), toon(BOWLC, { side: THREE.DoubleSide }), { inkW: .018, inkColor: INKC }));
+  if (withCrumbs) { const r = rng(11); for (let i = 0; i < 8; i++) { const a = r() * TAU, d = r() * .26; g.add(sph(.09, i % 3 ? GRAINC : GRAINH, [Math.cos(a) * d, .13 + r() * .03, Math.sin(a) * d], [1.2, .7, .8], { inkW: .012, rot: [r() * 3, r() * 3, r() * 3] })); } }
+  return g;
+}
+// uniform cardinal spline in time through [t, [x,y,z], stop?]
+function crSample(keys, t) {
+  const n = keys.length; if (t <= keys[0][0]) return keys[0][1].slice(); if (t >= keys[n - 1][0]) return keys[n - 1][1].slice();
+  let i = 0; while (i < n - 2 && t > keys[i + 1][0]) i++;
+  const k0 = keys[Math.max(i - 1, 0)], k1 = keys[i], k2 = keys[i + 1], k3 = keys[Math.min(i + 2, n - 1)], dt = k2[0] - k1[0], u = (t - k1[0]) / dt, u2 = u * u, u3 = u2 * u;
+  const h00 = 2 * u3 - 3 * u2 + 1, h10 = u3 - 2 * u2 + u, h01 = -2 * u3 + 3 * u2, h11 = u3 - u2, out = [];
+  for (let c = 0; c < 3; c++) {
+    const m1 = k1[2] ? 0 : (k2[1][c] - k0[1][c]) / Math.max(k2[0] - k0[0], 1e-4), m2 = k2[2] ? 0 : (k3[1][c] - k1[1][c]) / Math.max(k3[0] - k1[0], 1e-4);
+    out.push(h00 * k1[1][c] + h10 * dt * m1 + h01 * k2[1][c] + h11 * dt * m2); }
+  return out;
+}
+
+// ---------------- the bird ----------------
+function buildBird(bs) {
+  const g = new THREE.Group(), inner = new THREE.Group(); inner.scale.setScalar(bs); g.add(inner); g.rotation.order = 'YZX';
+  const DK = 0x34407f, ORG = 0xf0a43a;
+  inner.add(sph(1, BIRDC, [0, 0, 0], [.75, .48, .46], { inkW: .018 }));
+  inner.add(sph(1, CREAMC, [.07, -.14, 0], [.62, .36, .5], { ink: false }));
+  inner.add(sph(.3, BIRDC, [.72, .2, 0], undefined, { inkW: .02 }));
+  inner.add(mk(new THREE.ConeGeometry(.09, .34, 10), ORG, { pos: [1.04, .17, 0], rot: [0, 0, -PI / 2], inkW: .014 }));
+  inner.add(sph(.045, 0x2a2a3a, [.83, .29, .16], undefined, { ink: false })); inner.add(sph(.045, 0x2a2a3a, [.83, .29, -.16], undefined, { ink: false }));
+  inner.add(bxm(.55, .05, .34, DK, [-.82, .08, 0], { rot: [0, 0, .12], inkW: .012 }));
+  for (const sgn of [-1, 1]) { inner.add(cyl(.035, .035, .42, ORG, [0, -.62, sgn * .12], { inkW: .01 })); inner.add(bxm(.2, .03, .09, ORG, [.06, -.83, sgn * .12], { inkW: .008 })); }
+  const tip = new THREE.Object3D(); tip.position.set(1.22, .15, 0); inner.add(tip);
+  const wings = [1, -1].map(sg => { const w = new THREE.Group(); w.position.set(0, .14, sg * .26); w.add(sph(1, 0x5a6ab8, [0, 0, sg * .85], [.5, .045, .95], { inkW: .02 })); w.add(sph(1, DK, [-.12, 0, sg * 1.55], [.28, .048, .4], { inkW: .014 })); inner.add(w); return w; });
+  const grain = sph(.4, GRAINH, [0, 0, 0], [1.4, .8, .8], { inkW: .05 }); grain.visible = false;
+  
+  const shadow = null;
+  g.userData = { tip, wings, grain, inner };
+  return g;
+}
+// landing point on the (scaled) mountain slope
+const SLOPE = (() => { const a = Math.hypot(-.26, .966); return [-.26 / a, .966 / a]; })();
+const lpOf = k => k < 0.02 ? [MT[0], .4, MT[2]] : [MT[0] + SLOPE[0] * 11.8 * k, 10.5 * k + .45, MT[2] + SLOPE[1] * 11.8 * k];
+// bird state for a list of visits [{t0, ta, th, td}] ; lpFn(t) gives the beak target
+function birdState(t, visits, lpFn, BS) {
+  for (const v of visits) {
+    const e = v.t0 + v.ta + v.th + v.td; if (t < v.t0 || t > e) continue;
+    const LP = lpFn(v.t0 + v.ta), hold = [-3.2 * BS / 2.7, (1.0 + (v.hover || 0)) * BS / 2.7, .4], tl = v.t0 + v.ta, tp = tl + v.th * .55, te = tl + v.th;
+    const rel = (d, st) => [LP[0] + d[0], LP[1] + d[1], LP[2] + d[2]];
+    const keys = [[v.t0, rel([-78, 30, 26])], [v.t0 + v.ta * .5, rel([-32, 13, 13])], [v.t0 + v.ta * .82, rel([-10, 5.2, 3.2])], [tl, rel(hold), true], [te, rel(hold), true],
+      [te + v.td * .3, rel([2.5, 7, 1.5])], [te + v.td * .65, rel([34, 19, -8])], [e, rel([92, 33, -22])]];
+    const p = crSample(keys, t), p2 = crSample(keys, t + .03), vel = [(p2[0] - p[0]) / .03, (p2[1] - p[1]) / .03, (p2[2] - p[2]) / .03], sp = Math.hypot(vel[0], vel[2]);
+    const w = clamp(sp / 8, 0, 1), yaw = w * Math.atan2(-vel[2], vel[0]), pick = Math.sin(PI * prog(t, tl + v.th * .25, te)) * (t < te ? 1 : 0);
+    const pitch = (1 - pick) * clamp(Math.atan2(vel[1], Math.max(sp, 1)) * .6, -.5, .5) - (v.hover ? .32 : .16) * pick;
+    const fold = .42 * sm(t, tl - .18, tl + .05) * (1 - sm(t, te - .05, te + .22));
+    const freq = v.fast ? 5.2 : 3.4, flap = (.55 * Math.sin(TAU * freq * t) + .85);
+    return { p, yaw, pitch, fold, flap, tp, tl, te, LP, vis: true, hasGrain: t > tp - .08 };
+  }
+  return null;
+}
+
+// ---------------- beam / dome shaders ----------------
+function beamMat(amp, pw, rim, uni) {
+  return new THREE.ShaderMaterial({ transparent: true, depthWrite: false, fog: false, side: THREE.DoubleSide, uniforms: uni.concat ? {} : Object.assign({ uA: { value: amp }, uPw: { value: pw }, uRim: { value: new THREE.Color(rim) } }, uni),
+    vertexShader: 'varying vec3 vN; varying vec3 vW; void main(){ vec4 w = modelMatrix*vec4(position,1.0); vW = w.xyz; vN = normalize(mat3(modelMatrix)*normal); gl_Position = projectionMatrix*viewMatrix*w; }',
+    fragmentShader: 'uniform float uT; uniform float uCam; uniform float uA; uniform float uPw; uniform vec3 uRim; varying vec3 vN; varying vec3 vW;\n' +
+      'void main(){ vec3 V = normalize(cameraPosition - vW); float d = abs(dot(normalize(vN), V)); float edge = pow(d, uPw);\n' +
+      ' float h = max(vW.y - uCam, 0.0); float fall = 1.0/(1.0 + h/320.0);\n' +
+      ' float band = 0.5 + 0.5*sin(vW.y*0.07 - uT*3.0); float band2 = 0.5 + 0.5*sin(vW.y*0.023 - uT*1.3 + 1.7);\n' +
+      ' float sh = 0.78 + 0.22*band*band2 + 0.1*band;\n' +
+      ' vec3 core = vec3(1.0,0.985,0.9); vec3 col = mix(uRim, core, edge*(0.55+0.45*band));\n' +
+      ' gl_FragColor = vec4(col, clamp(edge*fall*sh*uA,0.0,1.0)); }' });
+}
+function domeMat() {
+  return new THREE.ShaderMaterial({ transparent: true, depthWrite: false, fog: false, side: THREE.DoubleSide, uniforms: { uA: { value: 1 }, uCol: { value: new THREE.Color(DOMEC) } },
+    vertexShader: 'varying vec3 vN; varying vec3 vW; void main(){ vec4 w = modelMatrix*vec4(position,1.0); vW = w.xyz; vN = normalize(mat3(modelMatrix)*normal); gl_Position = projectionMatrix*viewMatrix*w; }',
+    fragmentShader: 'uniform float uA; uniform vec3 uCol; varying vec3 vN; varying vec3 vW; void main(){ vec3 V = normalize(cameraPosition - vW); float f = 1.0 - abs(dot(normalize(vN), V)); float a = (0.07 + 0.78*pow(f,3.0))*uA; gl_FragColor = vec4(mix(uCol, vec3(0.55,0.85,0.85), pow(f,2.0)), a); }' });
+}
+
+// ---------------- the scene (one builder, per-shot feature flags) ----------------
+const GRAINS_N = 3400;
+function makeScene(Wd, F) {
+  const S = Wd.scene, r = rng(31), CAM_UP = new V3(), tmp = new V3();
+  const sky = Wd.sky.material.uniforms, WARM = { top: RAWC(0xf6c9a8), bot: RAWC(0xfff3df) }, DUSK = { top: RAWC(0xb587a0), bot: RAWC(0xf7b08c) };
+  // --- ground
+  const gTex = canvasTex(512, 512, (g, w, h) => { g.fillStyle = '#ffffff'; g.fillRect(0, 0, w, h); const rr = rng(5); for (let i = 0; i < 900; i++) { g.fillStyle = i % 2 ? 'rgba(217,185,138,.16)' : 'rgba(255,243,223,.2)'; g.beginPath(); g.ellipse(rr() * w, rr() * h, 3 + rr() * 14, 2 + rr() * 6, rr() * 3, 0, 7); g.fill(); } }, [260, 260]);
+  const gnd = new THREE.Mesh(new THREE.PlaneGeometry(5000, 5000), toon(SAND, { map: gTex, emissive: SAND, emissiveIntensity: .18 })); gnd.rotation.x = -PI / 2; gnd.receiveShadow = true; S.add(gnd);
+  // --- dunes: far arc + corridor
+  const dG = new THREE.SphereGeometry(1, 24, 12), dMat = [0xd9b98a, 0xdcbf93, 0xd2b07f].map(c => toon(c, { emissive: c, emissiveIntensity: .28 }));
+  const dune = (x, z, rx, h, rz, k) => { const m = new THREE.Mesh(dG, dMat[k % 3]); m.position.set(x, 0, z); m.scale.set(rx, h, rz); m.castShadow = false; m.receiveShadow = false; S.add(m); };
+  for (let i = 0; i < 30; i++) { const a = -PI + .1 + (i / 29) * (PI - .2) + (r() - .5) * .08, rad = 420 + r() * 330; dune(Math.cos(a) * rad, Math.sin(a) * rad, 90 + r() * 120, 14 + r() * 24, 60 + r() * 60, i); }
+  for (let i = 0; i < 22; i++) { const x = (r() - .5) * 360, z = -150 - r() * 260; dune(x, z, 40 + r() * 50, 4 + r() * 6, 30 + r() * 30, i); }
+  if (F.road) for (let d = 14; d < 330; d += 11) for (const sg of [-1, 1]) { const q = roadPt(d), lat = (10 + r() * 24) * sg, nx = -RD[1], nz = RD[0]; dune(q[0] + nx * lat, q[1] + nz * lat, 6 + r() * 9, 1 + r() * 1.5, 7 + r() * 8, d + sg); }
+  // --- stones (instanced)
+  { const NST = 340, sg = new THREE.IcosahedronGeometry(1, 1), st = mkInst(S, sg, NST, i => [0xc8643c, 0xbd5a34, 0xd2704a][i % 3], { inkW: .05 });
+    let n = 0; const place = (x, z, rr) => { if (n >= NST) return; st.set(n++, x, rr * .45, z, rr, rr * .72, rr * .9, r() * 3, r() * 3, 0); };
+    [[-2.9, -5.3, .3], [1.7, -4.6, .24], [-.1, -8.6, .4], [-4.6, -2.2, .2], [3.2, -2.4, .22]].forEach(a => place(a[0], a[1], a[2]));
+    if (F.mtn || F.footBowl) for (let i = 0; i < 12; i++) { const a = r() * TAU, d = MR * (.9 + r() * .5); place(MT[0] + Math.cos(a) * d, MT[2] + Math.abs(Math.sin(a)) * d * .8 + 4, .5 + r() * .5); }
+    let guard = 0; while (n < NST && guard++ < 4000) { const x = (r() - .5) * 260, z = 30 - r() * 380; if (Math.hypot(x - MT[0], z - MT[2]) < MR * 1.15) continue;
+      const q = roadPt(0), rel = [x - q[0], z - q[1]], lat = Math.abs(rel[0] * -RD[1] + rel[1] * RD[0]), along = rel[0] * RD[0] + rel[1] * RD[1]; if (F.road && along > -5 && lat < 3) continue;
+      if (Math.hypot(x - DIAL[0], z - DIAL[2]) < 7) continue; place(x, z, .22 + r() * r() * 1.1); }
+    st.count(n); }
+  // --- bowl (+ crumbs) and its long thin shadow
+  const bowl = buildBowl(true); bowl.position.set(...BOWL); S.add(bowl);
+  const glint = glow(1, 0, 0xffffff); glint.position.set(BOWL[0] + .08, .3, BOWL[2] + .05); S.add(glint);
+  const lsG = new THREE.BufferGeometry(); lsG.setAttribute('position', new THREE.BufferAttribute(new Float32Array(9), 3)); lsG.setIndex([0, 1, 2]);
+  const lsM = new THREE.Mesh(lsG, new THREE.MeshBasicMaterial({ color: 0x3a2616, transparent: true, opacity: .5, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 })); lsM.frustumCulled = false; lsM.visible = false; S.add(lsM);
+  // --- tower of identical bowls
+  let tw = null; const NT = 511, SPC = .7, TSC = 3.0, tAppear = i => { const g = Math.floor(Math.log2(i + 1)), gs = [1.0, 1.5, 2.0, 2.5, 3.1, 5.0, 6.2, 7.4, 8.6][g], gc = Math.pow(2, g), j = i + 1 - gc; return gs + .45 * (j / gc); };
+  if (F.tower) tw = mkInst(S, bowlGeo(), NT, i => [BOWLC, 0xc2704a, 0xad5a38][i % 3], { inkW: .014, mat: { side: THREE.DoubleSide } });
+  // --- light beam (never shows its top)
+  const BEAMH = 20000, bUni = { uT: { value: 0 }, uCam: { value: 0 } };
+  const bCore = new THREE.Mesh(new THREE.CylinderGeometry(4.2, 4.2, BEAMH, 40, 1, true), beamMat(.95, 1.5, 0xffd877, { uT: bUni.uT, uCam: bUni.uCam }));
+  const bHalo = new THREE.Mesh(new THREE.CylinderGeometry(13, 13, BEAMH, 40, 1, true), beamMat(.5, 2.4, 0xffc45e, { uT: bUni.uT, uCam: bUni.uCam }));
+  [bCore, bHalo].forEach((m, i) => { m.position.set(BEAM[0], BEAMH / 2, BEAM[2]); m.frustumCulled = false; m.renderOrder = 6 + i; S.add(m); });
+  const bGlow = glow(60, .55, 0xffe3a0); bGlow.position.set(BEAM[0], 4, BEAM[2]); S.add(bGlow);
+  // --- light road (s02)
+  let road = null, roadG = null;
+  if (F.road) {
+    const rt = canvasTex(64, 64, (g, w, h) => { const gr = g.createLinearGradient(0, 0, 0, h); gr.addColorStop(0, 'rgba(255,255,255,.55)'); gr.addColorStop(.5, 'rgba(255,255,255,1)'); gr.addColorStop(1, 'rgba(255,255,255,.55)'); g.fillStyle = gr; g.fillRect(0, 0, w, h); }, [1, 1]);
+    const geo = new THREE.PlaneGeometry(1, 1); geo.rotateX(-PI / 2); geo.translate(.5, 0, 0);
+    const mat = new THREE.MeshBasicMaterial({ color: BEAMC, map: rt, transparent: true, opacity: .95, depthWrite: false, fog: true, polygonOffset: true, polygonOffsetFactor: -5, polygonOffsetUnits: -5 });
+    road = new THREE.Mesh(geo, mat); road.frustumCulled = false; road.renderOrder = 3; road.position.set(R0[0], .06, R0[2]); road.rotation.y = Math.atan2(-RD[1], RD[0]); S.add(road);
+    const mat2 = new THREE.MeshBasicMaterial({ color: 0xffe9a8, transparent: true, opacity: .22, depthWrite: false, blending: THREE.AdditiveBlending, polygonOffset: true, polygonOffsetFactor: -4, polygonOffsetUnits: -4 });
+    roadG = new THREE.Mesh(geo, mat2); roadG.frustumCulled = false; roadG.renderOrder = 2; roadG.position.set(R0[0], .05, R0[2]); roadG.rotation.y = road.rotation.y; S.add(roadG);
+    // moving light dashes on the road (they make the dolly readable)
+    road.userData.dash = mkInst(S, new THREE.BoxGeometry(1, .04, 1), 160, () => 0xffffff, { ink: false, cast: false, receive: false, mat: { emissive: 0xfff6d8, emissiveIntensity: 1 } });
+  }
+  // --- mountain
+  let cone = null, gr = null, stream = null, puffs = null;
+  const GP = [];
+  if (F.mtn) {
+    const pts = []; for (let i = 0; i <= 28; i++) { const s = i / 28; pts.push(new THREE.Vector2(Math.pow(1 - s, 1.25) + (i === 0 ? .03 : 0), s * MHR)); }
+    cone = mesh(new THREE.LatheGeometry(pts, 64), toon(GRAINC, { emissive: GRAINC, emissiveIntensity: .12 }), { inkW: .0035, inkColor: INKC }); cone.visible = false; S.add(cone);
+    for (let i = 0; i < GRAINS_N; i++) { const s = 1 - Math.sqrt(r()), th = r() * TAU; GP.push({ s: Math.min(s, .985), th, rx: r() * 3, ry: r() * 3, rz: r() * 3, sc: .55 + r() * .3 }); }
+    gr = mkInst(S, new THREE.SphereGeometry(.5, 8, 6), GRAINS_N, i => (i % 10 < 3 ? GRAINH : GRAINC), { ink: false, cast: false, mat: { emissive: GRAINC, emissiveIntensity: .1 } });
+    if (F.stream) stream = mkInst(S, new THREE.SphereGeometry(.5, 6, 5), 900, i => (i % 4 === 0 ? GRAINH : GRAINC), { ink: false, cast: false, mat: { emissive: GRAINC, emissiveIntensity: .35 } });
+    puffs = []; for (let i = 0; i < 48; i++) { const s = glow(1, 0, 0xe8cfa0, false); s.renderOrder = 8; s.visible = false; S.add(s); puffs.push(s); }
+  }
+  // --- foot-of-mountain bowl (scale reference)
+  let footBowl = null; if (F.footBowl) { footBowl = buildBowl(true); footBowl.position.set(MT[0] + 8.5, 0, MT[2] + 31); footBowl.rotation.y = .6; S.add(footBowl); }
+  // --- single grain on bare sand + dashed footprint ring
+  let one = null, oneG = null, pulse = null, dash = null;
+  if (F.mtn) {
+    one = sph(.5, GRAINH, [MT[0], .3, MT[2]], [1.4, .8, .8], { inkW: .05, rot: [0, .5, 0] }); one.visible = false; S.add(one);
+    oneG = glow(7, .0, 0xfff0b0); oneG.position.set(MT[0], .8, MT[2]); oneG.visible = false; S.add(oneG);
+    pulse = new THREE.Mesh(new THREE.RingGeometry(.88, 1, 48), new THREE.MeshBasicMaterial({ color: 0xfff0b0, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6 })); pulse.rotation.x = -PI / 2; pulse.position.set(MT[0], .12, MT[2]); pulse.visible = false; S.add(pulse);
+  }
+  if (F.dashes) { dash = mkInst(S, new THREE.BoxGeometry(1, .08, 1), 56, () => RINGC, { ink: false, cast: false, receive: false });
+    for (let i = 0; i < 56; i++) { const a = i / 56 * TAU; dash.set(i, MT[0] + Math.cos(a) * MR * 1.04, .09, MT[2] + Math.sin(a) * MR * 1.04, 2.2, 1, .22, 0, -a + PI / 2, 0); }
+    dash.count(56); dash.im.visible = false; }
+  // --- the thousand-year dial
+  let dial = null;
+  if (F.dial) {
+    dial = new THREE.Group(); dial.position.set(...DIAL); S.add(dial);
+    const tor = mk(new THREE.TorusGeometry(4.2, .75, 12, 48), RINGC, { rot: [PI / 2, 0, 0], scale: [1, 1, .55], inkW: .03 }); tor.position.y = .2; dial.add(tor);
+    const inner = mk(new THREE.CylinderGeometry(3.6, 3.6, .12, 40), 0xdcc08a, { inkW: .02 }); inner.position.y = .06; dial.add(inner);
+    dial.userData.sun = sph(.75, SUNC, [0, 1.0, 0], undefined, { inkW: .04, mat: { emissive: SUNC, emissiveIntensity: .7 } }); dial.userData.sun.add(glow(5, .55, SUNC));
+    dial.userData.moon = sph(.7, MOONC, [0, 1.0, 0], undefined, { inkW: .04, mat: { emissive: MOONC, emissiveIntensity: .4 } });
+    dial.add(dial.userData.sun); dial.add(dial.userData.moon);
+    for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; dial.add(bxm(.35, .3, .35, 0x9c7048, [Math.cos(a) * 4.2, .55, Math.sin(a) * 4.2], { inkW: .01, rot: [0, -a, 0] })); }
+  }
+  // --- bird
+  let bird = null; if (F.visits) { bird = buildBird(F.bs); bird.visible = false; S.add(bird); S.add(bird.userData.grain); }
+  // --- dome + measuring ribbon
+  let dome = null, rim = null, ribbon = null, cap = null, mark = null, hit = null;
+  if (F.dome) {
+    dome = new THREE.Mesh(new THREE.SphereGeometry(DR, 64, 24, 0, TAU, 0, PI / 2), domeMat()); dome.position.set(DC[0], 0, DC[2]); dome.frustumCulled = false; dome.renderOrder = 7; dome.visible = false; S.add(dome);
+    rim = new THREE.Mesh(new THREE.TorusGeometry(DR, 4, 8, 96), new THREE.MeshBasicMaterial({ color: 0xc7ecec, transparent: true, opacity: .7, depthWrite: false })); rim.rotation.x = PI / 2; rim.position.set(DC[0], 1.2, DC[2]); rim.visible = false; S.add(rim);
+  }
+  const RZ = DC[2] + 35, RX0 = DC[0] - 92, WALLX = DC[0] + Math.sqrt(DR * DR - 35 * 35) - 3.5;
+  if (F.ribbon) {
+    const g = new THREE.BoxGeometry(1, 2.4, 16); g.translate(.5, 0, 0);
+    ribbon = mk(g, TEALC, { inkW: .004, box: false, ink: false }); ribbon.position.set(RX0, .7, RZ); ribbon.scale.set(.001, 1, 1); ribbon.visible = false; S.add(ribbon);
+    const gi = new THREE.BoxGeometry(1, 2.4, 16); gi.translate(.5, 0, 0); const edge = new THREE.Mesh(gi, new THREE.MeshBasicMaterial({ color: 0x2f7f7a, side: THREE.BackSide })); edge.scale.set(1.0, 1.2, 1.12); ribbon.add(edge);
+    mark = sph(8, TEALC, [RX0, 5, RZ], undefined, { inkW: .2 }); mark.visible = false; S.add(mark);
+    cap = bxm(5, 36, 44, CAPC, [WALLX + 1.5, 18, RZ], { inkW: .3 }); cap.visible = false; S.add(cap);
+    hit = glow(80, 0, 0xfff0b0); hit.position.set(WALLX - 2, 22, RZ); hit.visible = false; S.add(hit);
+  }
+
+  // ---------------- per-frame ----------------
+  const P = new V3();
+  Wd.on((t, cam) => {
+    // beam uniforms
+    bUni.uT.value = t; bUni.uCam.value = cam.position.y;
+    const boost = F.beamBoost ? F.beamBoost(t) : 0; bHalo.material.uniforms.uA.value = .5 + .5 * boost; bCore.material.uniforms.uA.value = .95; bGlow.material.opacity = .55 + .35 * boost; bGlow.scale.setScalar(60 + 80 * boost);
+    // tint (dusk) + fog
+    const u = F.tint ? F.tint(t) : 0, wu = F.warmGlow ? F.warmGlow(t) : 0;
+    const top = sky.top.value.copy(WARM.top).lerp(DUSK.top, u), bot = sky.bot.value.copy(WARM.bot).lerp(DUSK.bot, u);
+    if (wu) top.lerp(RAWC(0xffe1b8), wu * .8);
+    S.fog.color.setRGB(bot.r, bot.g, bot.b, THREE.SRGBColorSpace); gnd.material.color.setScalar(1 - .22 * u); gnd.material.emissiveIntensity = .18 - .06 * u;
+    Wd.sun.color.setHex(0xffe2b8).lerp(new THREE.Color(0xffa860), u);
+    const fg = F.fog(t, cam); S.fog.near = fg[0]; S.fog.far = fg[1];
+    // sun / shadow focus
+    const fp = F.focus(t), sc = Wd.sun.shadow.camera, ext = F.ext;
+    Wd.sun.position.set(fp[0] + 84, fp[1] + 66, fp[2] - 33); Wd.sun.target.position.set(fp[0], fp[1], fp[2]); Wd.sun.target.updateMatrixWorld();
+    if (sc.right !== ext) { sc.left = sc.bottom = -ext; sc.right = sc.top = ext; sc.far = 320; sc.updateProjectionMatrix(); }
+
+    // glint
+    const gl = F.glint ? Math.sin(PI * prog(t, 5.7, 6.5)) : 0; glint.material.opacity = .95 * gl; glint.scale.setScalar(.4 + 3 * gl); glint.visible = gl > .01;
+    bowl.scale.setScalar(1 + (F.swallow ? .1 * Math.sin(PI * prog(t, 10.6, 11.2)) : 0));
+    // long thin shadow
+    if (F.longShadow) { const Ls = ease.out(prog(t, 11.4, 13.2)) * 15; lsM.visible = Ls > .05; if (lsM.visible) { const a = lsG.attributes.position, d = SHADOW_DIR, pp = [-d[1], d[0]], w0 = .5, b = [BOWL[0], .04, BOWL[2]];
+      a.setXYZ(0, b[0] + pp[0] * w0, b[1], b[2] + pp[1] * w0); a.setXYZ(1, b[0] - pp[0] * w0, b[1], b[2] - pp[1] * w0); a.setXYZ(2, b[0] + d[0] * Ls, b[1], b[2] + d[1] * Ls); a.needsUpdate = true; lsG.computeBoundingSphere(); } }
+    // tower
+    if (tw) {
+      const coll = F.collapse ? F.collapse(t) : [0, 0], c1 = coll[0], c2 = coll[1]; let n = 0, top2 = 0;
+      for (let i = 0; i < NT; i++) { const ta = tAppear(i), a = clamp((t - ta) / .22, 0, 1); if (a <= 0) continue; const pop = a < 1 ? (1 + .35 * Math.sin(PI * a)) * ease.out(a) : 1;
+        let y = i * SPC * (1 - c1), x = TOWER[0], z = TOWER[2], s = TSC * pop * (1 - ease.sm(c2));
+        x = lerp(x, BOWL[0], ease.in(c2)); z = lerp(z, BOWL[2], ease.in(c2)); y = lerp(y, .25, ease.in(c2));
+        tw.set(n++, x, y, z, s, s, s, 0, i * .7, 0); if (a >= 1) top2 = Math.max(top2, i); }
+      tw.count(n); F._towerTop = top2 * SPC;
+    }
+    // road
+    if (road) { const L = 1600 * ease.out(prog(t, .25, 2.4)); road.scale.set(Math.max(L, .01), 1, .8); roadG.scale.set(Math.max(L, .01), 1, 2.6); road.visible = roadG.visible = L > .1;
+      const dm = road.userData.dash; let n = 0; const spd = 9, per = 6, camD = (cam.position.x - R0[0]) * RD[0] + (cam.position.z - R0[2]) * RD[1];
+      for (let k = 0; k < 160; k++) { const d = Math.floor(camD / per) * per - 20 + k * per; if (d < 0 || d > L) continue; const q = roadPt(d), f = 1 - clamp(Math.abs(d - camD) / 500, 0, 1); dm.set(n++, q[0], .09, q[1], 2.6, 1, .5 * (1 + .002 * Math.abs(d - camD)), 0, Math.atan2(-RD[1], RD[0]), 0); }
+      dm.count(n); }
+    // mountain
+    if (cone) {
+      const k = F.mtn(t), vis = k > .004; cone.visible = vis;
+      const sq = F.squash ? F.squash(t) : 0, sx = MR * k, sy = MR * k * (1 - .06 * sq);
+      cone.position.set(MT[0], 0, MT[2]); cone.scale.set(sx, sy, sx);
+      const n = vis ? Math.min(GRAINS_N, Math.max(1, Math.floor(GRAINS_N * Math.min(1, k * k * 1.12)))) : 0;
+      for (let i = 0; i < n; i++) { const q = GP[i], rr = Math.pow(1 - q.s, 1.25), hx = sx * rr, y = sy * MHR * q.s, ca = Math.cos(q.th), sa = Math.sin(q.th);
+        const nx = MHR * ca, ny = 1, nz = MHR * sa, nl = Math.hypot(nx, ny, nz), off = .1 + .12 * q.sc; // normal of the cone
+        gr.set(i, MT[0] + hx * ca + nx / nl * off, y + ny / nl * off, MT[2] + hx * sa + nz / nl * off, .7 * q.sc, .7 * q.sc * .62, .7 * q.sc * .62, q.rx, q.ry, q.rz); }
+      gr.count(n);
+      // pouring stream
+      if (stream) {
+        const T0 = 5.0, T1 = 9.4, top = 95, sp = 54, NN = 900; let m = 0; const apex = sy * MHR + .5;
+        if (t > T0 && t < T1 + 1.2) { const span = Math.max(top - apex, 5);
+          for (let i = 0; i < NN; i++) { const ph = (i * 0.61803) % 1, d = frac(ph + (t - T0) * sp / span) * span; if (d > sp * (t - T0)) continue; if (d < sp * (t - T1)) continue; const lat = 1.6 + 2.2 * ph, a = i * 2.399;
+            stream.set(m++, MT[0] + Math.cos(a) * lat * (.4 + .6 * ((i * 7) % 5) / 4), top - d, MT[2] + Math.sin(a) * lat * (.4 + .6 * ((i * 3) % 5) / 4), 1.5, 1.5, 1.5, a, a * 2, 0); } }
+        stream.count(m); }
+      // dust puffs on every shrink step
+      if (puffs) { let pi = 0; const st = F.steps || []; for (let s = 0; s < st.length; s++) { const ts = st[s].t, kk = st[s].kPrev; for (let j = 0; j < 12; j++) { const pp = puffs[pi++], uu = prog(t, ts, ts + 1.1); pp.visible = uu > 0 && uu < 1; if (!pp.visible) continue;
+          const a = j / 12 * TAU + s, rad = MR * kk * (.85 + .35 * ((j * 5) % 4) / 3) * (1 + .25 * uu); pp.position.set(MT[0] + Math.cos(a) * rad, 1 + 4 * uu * kk + 1, MT[2] + Math.sin(a) * rad * .9 + 1); pp.scale.setScalar((3 + 9 * kk) * (.5 + uu)); pp.material.opacity = .5 * (1 - uu) * Math.min(1, uu * 6 + .2); } } for (; pi < puffs.length; pi++) puffs[pi].visible = false; }
+    }
+    // single grain
+    if (one) { const o = F.oneGrain ? F.oneGrain(t) : [0, 0]; one.visible = o[0] > .001 && o[1] < 1; if (one.visible) { const s = ease.out(o[0]) * (1 + .25 * Math.sin(PI * clamp(o[0] * 1.5, 0, 1))); one.scale.set(1.4 * s, .8 * s, .8 * s); one.scale.multiplyScalar(1); one.position.y = .3 * s + .05; }
+      oneG.visible = one.visible; oneG.material.opacity = .55 * o[0] * (.8 + .2 * Math.sin(t * 5)); const pu = F.oneGrain ? prog(t, 11.4, 12.2) : 1; pulse.visible = pu > 0 && pu < 1 && one.visible; if (pulse.visible) { pulse.scale.setScalar(.8 + 9 * ease.out(pu)); pulse.material.opacity = .85 * (1 - pu); } }
+    if (dash) { const da = F.dashes(t); dash.im.visible = da > .01; dash.im.material.transparent = true; dash.im.material.opacity = da; }
+    // dial
+    if (dial) { const d = F.dial(t); dial.visible = d.s > .01; if (dial.visible) { dial.scale.setScalar(d.s * (1 + .08 * Math.sin(PI * prog(t, 10.4, 10.9)) * (F.dialPop ? 1 : 0))); const a = d.angle, R = 4.2; dial.userData.sun.position.set(Math.cos(a) * R, 1.1, Math.sin(a) * R); dial.userData.moon.position.set(Math.cos(a + PI) * R, 1.1, Math.sin(a + PI) * R); } }
+    // bird
+    if (bird) {
+      const st = birdState(t, F.visits, F.lp, F.bs), gm = bird.userData.grain; bird.visible = !!st;
+      if (st) { bird.position.set(st.p[0], st.p[1], st.p[2]); bird.rotation.set(0, st.yaw, st.pitch);
+        const ang = st.flap; bird.userData.wings[0].rotation.x = -ang; bird.userData.wings[1].rotation.x = ang;
+        bird.userData.wings.forEach(w => w.scale.z = 1);
+        bird.updateMatrixWorld(true); bird.userData.tip.getWorldPosition(P);
+        gm.visible = st.hasGrain; if (gm.visible) { const lift = ease.out(prog(t, st.tp - .08, st.tp + .32)); gm.position.set(lerp(st.LP[0], P.x, lift), lerp(st.LP[1], P.y, lift) + .2, lerp(st.LP[2], P.z, lift)); gm.scale.setScalar((.5 + .5 * lift) * F.bs / 2.4); gm.rotation.y = 0; } }
+      else gm.visible = false;
+    }
+    // dome / ribbon
+    if (dome) { const ua = F.domeA(t); dome.visible = rim.visible = ua > .005; dome.material.uniforms.uA.value = ua; rim.material.opacity = .7 * ua; }
+    if (ribbon) { const Lr = F.ribL(t); ribbon.visible = mark.visible = Lr > .05; ribbon.scale.x = Math.max(Lr, .001); cap.visible = true; const h = F.capHit(t); cap.scale.set(1 - .25 * h, 1 + .08 * h, 1); cap.position.x = WALLX + 1.5 + .8 * h;
+      hit.visible = h > .01; hit.material.opacity = .9 * h; hit.scale.setScalar(70 + 120 * h); }
+  });
+  return {};
+}
+
+const WORLD = { skyTop: 0xf6c9a8, skyBottom: 0xfff3df, fogColor: 0xfff3df, fogNear: 90, fogFar: 700, sunColor: 0xffe2b8, sun: 1.2, sunPos: [84, 66, -33], hemiSky: 0xfff3df, hemiGround: 0xe8cfa0, hemi: 1.15, shadowExt: 30, skyR: 1300 };
+
+function heroCluster(Wd, fn) {
+  const g = new THREE.Group(), m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()); m.visible = false; g.add(m); Wd.add(g);
+  Wd.on(t => { const bs = fn(t).filter(Boolean); if (!bs.length) return; const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (const b of bs) for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], b[k] - b[k + 3]); hi[k] = Math.max(hi[k], b[k] + b[k + 3]); }
+    g.position.set((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2); g.scale.set(Math.max(hi[0] - lo[0], .01), Math.max(hi[1] - lo[1], .01), Math.max(hi[2] - lo[2], .01)); });
+  Wd.hero = g; return g;
+}
+const lookAhead = (p, yawDeg, pitchDeg, dist) => { const y = yawDeg * PI / 180, pt = pitchDeg * PI / 180; return [p[0] + Math.sin(y) * Math.cos(pt) * dist, p[1] + Math.sin(pt) * dist, p[2] - Math.cos(y) * Math.cos(pt) * dist]; };
+
+// mountain size over time
+const STEPS3 = [{ t: 5.5, k: .62 }, { t: 7.0, k: .38 }, { t: 8.5, k: .19 }, { t: 9.8, k: .06 }];
+function kSteps(t) { let k = 1, kp = 1; for (const s of STEPS3) { k = lerp(kp, s.k, ease.sm(prog(t, s.t, s.t + .6))); if (t < s.t + .6) { return k; } kp = s.k; } return kp * (1 - ease.in(prog(t, 10.7, 11.1))); }
+const STEPS3P = (() => { let kp = 1; return STEPS3.map(s => { const o = { t: s.t, kPrev: kp }; kp = s.k; return o; }); })();
+const sqz3 = t => { let b = 0; for (const s of STEPS3) b = Math.max(b, Math.sin(PI * prog(t, s.t + .3, s.t + 1.0))); return b; };
+// visits in s03
+const V3S = [.2, 1.6, 3.0, 4.4, 5.9, 7.4, 8.9].map(t0 => ({ t0, ta: .62, th: .26, td: .62, fast: true }));
+V3S.push({ t0: 10.85, ta: 1.25, th: .55, td: 1.45, hover: 1.7 });
+const dialN3 = t => { let n = 0; for (const v of V3S) n += clamp((t - v.t0) / (v.ta + v.th + v.td), 0, 1); return n; };
+
+film({
+  W: 1080, H: 1920, xf: .4, vault: 'captions_vault.json',
+  shots: [
+    // ===== s01 (14.5): bowl of crumbs -> tower of bowls doubles, crane up, beam goes on; tower collapses into the bowl; long shadow =====
+    { id: 's01', dur: 14.5, wide: true, caps: ['CAP_A_01', 'CAP_A_02', 'CAP_A_03'], capAt: [0.0, 4.9, 9.7, 99], build() {
+      const Wd = world(WORLD);
+      const F = { tower: true, glint: true, longShadow: true, swallow: true, ext: 40, focus: t => [0, 0, -18],
+        fog: () => [90, 700], collapse: t => [ease.in(prog(t, 9.7, 10.5)), ease.io(prog(t, 10.2, 11.0))] };
+      makeScene(Wd, F);
+      heroCluster(Wd, t => [[BOWL[0], .3, BOWL[2], .7, .35, .7], [TOWER[0], Math.max((F._towerTop || 0) / 2, 1) * (1 - ease.in(prog(t, 9.7, 10.5))) + .5, TOWER[2], 2, Math.max((F._towerTop || 0) / 2, 1) * (1 - ease.in(prog(t, 9.7, 10.5))) + .5, 2]]);
+      return Object.assign(Wd, { cam: t => { const push = ease.io(prog(t, 0, 4.9)), w = ease.io(prog(t, 4.9, 9.5)) * (1 - ease.io(prog(t, 9.5, 12.4))), drift = prog(t, 12.4, 14.5);
+        const camY = lerp(.95, 130, w), pos = [-.3 + 1.5 * w - .25 * drift, camY + .25 * push, lerp(5.0, 4.1, push) + 14 * w + .12 * drift];
+        const low = [pos[0] + 2.1, lerp(pos[1] - 3.6, pos[1] + 2.4, ease.io(prog(t, 1.5, 4.9)) * (1 - ease.io(prog(t, 9.5, 12.4)))), pos[2] - 30], hi = [pos[0] + 3, camY + 14, pos[2] - 30];
+        return { pos, look: L3(low, hi, w), fov: 66 }; } });
+    } },
+    // ===== s02 (15.9): light road to the horizon, grains pour into a huge mountain, the bird takes ONE grain, the dial turns =====
+    { id: 's02', dur: 15.9, wide: true, caps: ['CAP_A_04', 'CAP_A_05', 'CAP_A_06'], capAt: [0.0, 4.8, 10.4, 99], build() {
+      const Wd = world(WORLD);
+      const kF = t => t < 5.8 ? 0 : .02 + .98 * ease.sm(prog(t, 5.8, 9.9));
+      const F = { road: true, mtn: kF, stream: true, dial: t => ({ s: ease.out(prog(t, 10.4, 10.9)), angle: -PI / 2 + TAU * ease.io(prog(t, 13.8, 15.7)) }), dialPop: true, footBowl: true, ext: 60,
+        focus: t => (t < 4.8 ? [roadPt(34)[0], 0, roadPt(34)[1]] : [MT[0], 0, MT[2] + 10]), fog: () => [90, 700],
+        visits: [{ t0: 10.8, ta: 1.2, th: .5, td: 1.3 }], lp: () => lpOf(1), bs: 3.0 };
+      makeScene(Wd, F);
+      const C1 = (() => { const q = roadPt(34); return [q[0], 1.15, q[1]]; })(), C0 = (() => { const q = roadPt(-5); return [q[0], 1.1, q[1]]; })(), C2 = [4, 6.2, 30];
+      const road = lookAhead([0, 0, 0], Math.atan2(RD[0], -RD[1]) * 180 / PI, -1.5, 200);
+      heroCluster(Wd, t => (t < 4.8 ? [[BOWL[0], .3, BOWL[2], .7, .35, .7], (() => { const q = roadPt(20 + 7 * t); return [q[0], .1, q[1], 10, .3, 20]; })()] : t < 10.4 ? [[MT[0], 10, MT[2], MR, 11, MR]] : [[MT[0], 10, MT[2], MR * .9, 11, MR * .9], [DIAL[0], .6, DIAL[2], 4.8, .8, 4.8]]));
+      return Object.assign(Wd, { cam: t => { const dv = 34 * ease.io(prog(t, .0, 4.8)) - 5, q = roadPt(dv), pb = ease.io(prog(t, 4.8, 10.4)), pd = prog(t, 10.4, 15.9);
+        const pos = t < 4.8 ? [q[0], 1.1 + .05 * dv / 30, q[1]] : [lerp(C1[0], C2[0], pb) - .6 * pd, lerp(C1[1], C2[1], pb), lerp(C1[2], C2[2], pb) - 8 * pd];
+        const lr = t < 4.8 ? [pos[0] + RD[0] * 120, 1.1 - 2.2, pos[2] + RD[1] * 120] : null, lm = [MT[0] + 1, 3.4 + 4 * (1 - pb), MT[2] + 4], yaw = ease.io(prog(t, 4.2, 7.4));
+        const look = t < 4.2 ? lr : L3([pos[0] + RD[0] * 120, pos[1] - 2.2, pos[2] + RD[1] * 120], lm, yaw);
+        return { pos, look, fov: 66 }; } });
+    } },
+    // ===== s03 (15.6): time-lapse of visits, the mountain shrinks in steps, one grain on bare sand, the bird takes it =====
+    { id: 's03', dur: 15.6, wide: true, caps: ['CAP_A_07', 'CAP_A_08', 'CAP_A_09'], capAt: [0.0, 4.8, 11.0, 99], build() {
+      const Wd = world(WORLD);
+      const F = { mtn: kSteps, steps: STEPS3P, squash: sqz3, dial: t => ({ s: 1, angle: -PI / 2 + TAU * dialN3(t) }), footBowl: true, ext: 60,
+        tint: t => (t > 4.8 ? 0 : .85 * (.5 - .5 * Math.cos(TAU * t / 2.4)) * (1 - sm(t, 4.4, 4.8))), focus: t => [MT[0], 0, MT[2] + 10], fog: () => [90, 700],
+        bs: 2.4, visits: V3S, lp: tt => (tt > 11 ? lpOf(0) : lpOf(kSteps(tt))), oneGrain: t => [sm(t, 11.4, 11.8), 1 - sm(t, 12.55, 12.62)] };
+      makeScene(Wd, F);
+      heroCluster(Wd, t => [[MT[0], 10, MT[2], MR * .9, 11, MR * .9], t < 10 ? [DIAL[0], .6, DIAL[2], 4.8, .8, 4.8] : [MT[0], 3, MT[2], 12, 4, 12]]);
+      return Object.assign(Wd, { cam: t => { const s = ease.io(prog(t, 4.0, 11.4)), pos = [lerp(3.2, -1, s) + .8 * prog(t, 11.4, 15.6), lerp(5.6, 2.4, s), lerp(22, -60, s) - 1.5 * prog(t, 11.4, 15.6)],
+        a = [MT[0] + 1, 3.4, MT[2] + 4], b = lookAhead(pos, 7, -1.5, 60), look = L3(a, b, sm(t, 6.5, 11.4)); return { pos, look, fov: lerp(66, 76, s) }; } });
+    } },
+    // ===== s04 (11.6): crane up along the beam (top never seen), swing out: glass dome, the ribbon stops hard against an END =====
+    { id: 's04', dur: 11.6, wide: true, caps: ['CAP_A_10', 'CAP_A_11'], capAt: [0.0, 6.6, 99], build() {
+      const Wd = world(WORLD);
+      const camY = t => 2 + 328 * ease.io(prog(t, 0, 6.6)), F = { dome: true, ribbon: true, dashes: t => .8, mtn: () => 0, ext: 60, focus: () => [DC[0], 0, DC[2]],
+        fog: (t, cam) => [150 + .6 * cam.position.y, 900 + 4 * cam.position.y],
+        domeA: t => sm(t, 4.6, 6.4), ribL: t => (t < 7.2 ? 0 : t < 8.2 ? 40 * ease.out(prog(t, 7.2, 7.8)) : t < 9.2 ? lerp(40, 100, ease.out(prog(t, 8.2, 8.8))) : lerp(100, 220, ease.in(prog(t, 9.2, 9.9)))),
+        capHit: t => Math.sin(PI * prog(t, 9.9, 10.6)) * (t > 9.9 ? 1 : 0), beamBoost: t => .2 * sm(t, 6, 11) };
+      F.mtn = null; makeScene(Wd, F);
+      heroCluster(Wd, t => (t < 6.6 ? [[BEAM[0], camY(t) - 4, BEAM[2], 4, 38, 4]] : [[DC[0], 55, DC[2], DR, 60, DR]]));
+      return Object.assign(Wd, { cam: t => { const y = camY(t), pitch = lerp(-2, -24, ease.io(prog(t, 0, 6.6))), base = [BEAM[0] - 45, y, BEAM[2] + 90], dirv = Math.atan2(45, 90) * 180 / PI - 9;
+        const A = { pos: base, look: lookAhead(base, dirv, pitch, 120) }, Fp = [DC[0] - 55, 230, DC[2] + 400], Fl = [DC[0] + 2, 20, DC[2] + 10], s = ease.io(prog(t, 6.6, 11.6));
+        return { pos: L3(A.pos, Fp, s), look: L3(A.look, Fl, Math.min(1, s * 1.15)), fov: 64 }; } });
+    } },
+    // ===== s05 (9.14): rise out of the dome, follow the beam up, then descend to the bowl at the foot of the endless beam =====
+    { id: 's05', dur: 9.14, wide: true, caps: ['CAP_A_12', 'CAP_A_13'], capAt: [0.0, 4.4, 99], build() {
+      const Wd = world(WORLD);
+      const F = { dome: true, dashes: t => .8, mtn: () => 0, ext: 40, focus: () => [0, 0, -18], fog: (t, cam) => [lerp(150, 90, sm(t, 5.2, 8.0)) + .6 * cam.position.y * (1 - sm(t, 5.2, 8.0)), lerp(900, 700, sm(t, 5.2, 8.0)) + 4 * cam.position.y * (1 - sm(t, 5.2, 8.0))],
+        domeA: t => 1 - sm(t, 2.6, 4.4), beamBoost: t => sm(t, 0, 4.4) * (1 - .5 * sm(t, 6, 8)), warmGlow: t => sm(t, 0, 4.6) * (1 - sm(t, 5.5, 8.5)) };
+      F.mtn = null; makeScene(Wd, F);
+      heroCluster(Wd, t => (t < 6.0 ? [[BEAM[0], 300, BEAM[2], 4, 300, 4]] : [[BOWL[0], .3, BOWL[2], .8, .35, .8], [BEAM[0], 30, BEAM[2], 8, 38, 8]]));
+      return Object.assign(Wd, { cam: t => { const u = ease.io(prog(t, 0, 4.4)), d = ease.out(prog(t, 4.4, 7.0)), drift = prog(t, 7.6, 9.14);
+        const P0 = [DC[0] - 55, 230, DC[2] + 400], P1 = [BEAM[0] - 30, 620, BEAM[2] + 63], Pe = [-.3 - .25 * drift, .95, 4.4 - .25 * drift];
+        const pos = t < 4.4 ? L3(P0, P1, u) : L3(P1, Pe, d); const l0 = [DC[0] + 2, 20, DC[2] + 10], l1 = [BEAM[0] - 8, 600, BEAM[2]], le = lookAhead(Pe, 4, -6, 30);
+        const look = t < 4.4 ? L3(l0, l1, u) : L3([BEAM[0] - 8, lerp(600, 40, ease.out(prog(t, 4.4, 6.4))), BEAM[2]], le, sm(t, 5.0, 6.6)); return { pos, look, fov: 66 }; } });
+    } },
+  ],
+});
+</script>
+</html>
