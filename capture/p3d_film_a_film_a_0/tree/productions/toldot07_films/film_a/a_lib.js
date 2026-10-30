@@ -58,6 +58,8 @@ export function makeCompass(R) {
     const geo = new THREE.ExtrudeGeometry(sh, { depth: 4, bevelEnabled: false }); geo.rotateX(-Math.PI / 2);
     const mat = i === 3 ? M('#ffe27a', '#e8c050', 0) : (i % 2 ? dark : M('#b5653d', '#a05030', 0));
     const m = part(g, geo, mat, 1.4, [0, 6, 0], [0, a, 0]); pts.push(m); });
+  [Math.PI / 4, 3 * Math.PI / 4, 5 * Math.PI / 4, 7 * Math.PI / 4].forEach(an => { const sh = new THREE.Shape(), L2 = R * 0.52; sh.moveTo(0, R * 0.09); sh.lineTo(L2, 0); sh.lineTo(0, -R * 0.09); sh.lineTo(-R * 0.08, 0); sh.lineTo(0, R * 0.09);
+    const geo = new THREE.ExtrudeGeometry(sh, { depth: 3, bevelEnabled: false }); geo.rotateX(-Math.PI / 2); part(g, geo, M('#d8a860', '#c09050', 0), 1.2, [0, 6, 0], [0, an, 0]); });
   g.userData.W = pts[3]; g.userData.pts = pts;
   // glow ring under the west point
   const glow = new THREE.Mesh(new THREE.CircleGeometry(R * 0.35, 24).rotateX(-Math.PI / 2), new THREE.MeshBasicMaterial({ color: '#fff0a0', transparent: true, opacity: 0, depthWrite: false }));
@@ -111,7 +113,7 @@ export function makeMishkan() {
   const boards = [];
   for (let i = 0; i < N; i++) { const x = -total / 2 + (i + 0.5) * (W + gap); const b = box(g, W, H, 8, gold, [x, 6 + H / 2, 0], 2.2, null, 2); boards.push(b);
     for (const s of [-1, 1]) part(g, new THREE.TorusGeometry(6, 1.8, 6, 14), ring, 0, [x, 6 + H * 0.5, s * 5]); }
-  const bar = part(g, tube(4.2, 4.2, total + 70, 14).rotateZ(Math.PI / 2).translate(-(total + 70) / 2, 0, 0), M('#d98a2a', '#b8782a'), 1.6, [0, 6 + H * 0.5, 8]);
+  const bar = part(g, tube(4.2, 4.2, total + 6, 14).rotateZ(Math.PI / 2).translate(-(total + 6) / 2, 0, 0), M('#d98a2a', '#b8782a'), 1.6, [0, 6 + H * 0.5, 8]);
   g.userData.bar = bar; g.userData.total = total;
   g.userData.slide = u => { const T = total + 70; bar.position.x = -T + T * sm(u); };
   return g;
@@ -192,8 +194,8 @@ export function makeRoom() {
     let z = -95; while (z < 90) { const w = 6 + rr() * 8, h = 40 + rr() * 22; box(sh, 24, h, w, M(cols[Math.floor(rr() * cols.length)], '#b09a90', 0), [4, 34 + rI * 70 + h / 2, z + w / 2], 0.8, null, 1); z += w + 1.5; } }
   // rug, hanging lamp, picture frames (no figures)
   box(g, 360, 3, 260, M('#8a2e2e', '#b07a7a', 0), [0, 2, 40], 0, null, 1); box(g, 330, 3.5, 230, M('#e8d6ab', '#cbb792', 0), [0, 2.5, 40], 0, null, 1); box(g, 280, 4, 180, M('#2a4a7a', '#7a8ab0', 0), [0, 3, 40], 0, null, 1);
-  const lamp = G(g, [0, 410, 0]); part(lamp, tube(1.6, 1.6, 90, 6), M('#261c19', '#261c19', 0), 0); part(lamp, lathe([[0.01, 0], [34, 0], [30, 24], [10, 40], [0.01, 44]], 20), M('#e8c46a', '#c9a060'), 2.4, [0, -150, 0]);
-  part(g, ell(14, 14, 14, 12, 8), M('#fff6c8', '#e0d0a0', 0), 0, [0, 262, 0]);
+  const lamp = G(g, [330, 410, 140]); part(lamp, tube(1.6, 1.6, 90, 6), M('#261c19', '#261c19', 0), 0); part(lamp, lathe([[0.01, 0], [34, 0], [30, 24], [10, 40], [0.01, 44]], 20), M('#e8c46a', '#c9a060'), 2.4, [0, -150, 0]);
+  part(g, ell(14, 14, 14, 12, 8), M('#fff6c8', '#e0d0a0', 0), 0, [330, 262, 140]);
   for (const [x, y] of [[-300, 300], [300, 320]]) { box(g, 80, 56, 6, M('#7e4f2a', '#a08070'), [x, y, wz + 14], 1.4, null, 1.5); box(g, 66, 42, 4, M('#8fb8d8', '#a0c0d8', 0), [x, y, wz + 17], 0, null, 1); }
   // curtains
   for (const s of [-1, 1]) box(g, 40, 220, 14, M('#9a3a3a', '#c09090'), [s * 292, 220, wz + 16], 1.6, null, 3);
