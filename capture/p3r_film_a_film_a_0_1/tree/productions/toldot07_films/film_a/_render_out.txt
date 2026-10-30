@@ -1,0 +1,11 @@
+12:58:27 render_all: production=film_a films=film_a part=50s hq=True dry_run=False
+12:58:33 budget WARN: ahead of pace - continue sparingly: spent $293 of $2600 (cap $2340), allowed by now $264 (111% of pace) [render]
+12:58:33 !! verify gate SKIPPED by --skip-verify (supervisor override) - would have failed: film_a: no VERIFY_REPORT for this film
+12:58:33 film_a: length 264.0s, rendering (part 50 s, 18 includes)
+12:59:20 film_a part 1/6 t0=0.0 d=44.0 -> rc=1
+13:08:40 film_a part 5/6 t0=176.0 d=44.0 -> rc=1
+13:32:33 film_a part 3/6 t0=88.0 d=44.0 -> rc=0
+13:35:21 film_a part 2/6 t0=44.0 d=44.0 -> rc=0
+13:36:30 film_a part 4/6 t0=132.0 d=44.0 -> rc=0
+14:41:38 film_a part 6/6 t0=220.0 d=44.0 -> rc=1
+14:41:38 film_a: failed parts [0, 4, 5], retry round 1
