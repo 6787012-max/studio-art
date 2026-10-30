@@ -13,3 +13,6 @@
 15:07:52 film_a retry part 0 sub 2/2 t0=22.0 d=22.0 -> rc=0
 15:30:25 film_a retry part 4 sub 2/2 t0=198.0 d=22.0 -> rc=0
 15:30:28 film_a retry part 4 sub 1/2 t0=176.0 d=22.0 -> rc=0
+15:35:14 film_a retry part 5 sub 2/2 t0=242.0 d=22.0 -> rc=1
+15:35:27 film_a retry part 5 sub 1/2 t0=220.0 d=22.0 -> rc=1
+15:35:27 film_a: failed parts [5], retry round 2
