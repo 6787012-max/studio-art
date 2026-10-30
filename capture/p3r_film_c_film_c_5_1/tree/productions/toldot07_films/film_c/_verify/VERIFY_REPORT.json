@@ -1,0 +1,70 @@
+{
+ "film": "film_c.html",
+ "status": "FAIL",
+ "time": "2026-10-30T13:31:08",
+ "samples": 28,
+ "findings": [
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 4.5,
+   "shot": "c1_where_from",
+   "detail": "caption dir=None",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 37.2,
+   "shot": "c2_from_the_nile",
+   "detail": "caption dir=None",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 85.3,
+   "shot": "c3_zigzag_and_dune",
+   "detail": "caption dir=None",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 141.8,
+   "shot": "c4_kurkar",
+   "detail": "caption dir=None",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 188.5,
+   "shot": "c4b_kurkar_cliff",
+   "detail": "caption dir=None",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P2",
+   "code": "NOT_EXPOSED",
+   "t": null,
+   "shot": null,
+   "detail": "window.__heroBox is not exposed by the page; the hero gate is skipped or degraded",
+   "fix": "rebuild the page against the upgraded lib/stage3d.js (contract in productions/_upgrade/CONTRACT.md)"
+  },
+  {
+   "sev": "P2",
+   "code": "NOT_EXPOSED",
+   "t": null,
+   "shot": null,
+   "detail": "window.__sceneHash is not exposed by the page; the exact-hash determinism gate is skipped or degraded",
+   "fix": "rebuild the page against the upgraded lib/stage3d.js (contract in productions/_upgrade/CONTRACT.md)"
+  }
+ ],
+ "sheets": null,
+ "timing": {
+  "ready_s": 22.5,
+  "gates_s": 77.7,
+  "total_s": 100.8
+ }
+}
