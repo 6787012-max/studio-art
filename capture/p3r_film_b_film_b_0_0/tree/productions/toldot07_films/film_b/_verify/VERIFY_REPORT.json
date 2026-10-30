@@ -1,0 +1,70 @@
+{
+ "film": "film_b.html",
+ "status": "FAIL",
+ "time": "2026-10-30T12:57:47",
+ "samples": 28,
+ "findings": [
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 4.5,
+   "shot": "b1_who_moves_the_sea",
+   "detail": "caption dir=None",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 47.1,
+   "shot": "b2_wind_lifts_waves",
+   "detail": "caption dir=None",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 78.1,
+   "shot": "b3_bottle",
+   "detail": "caption dir=None",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 119.2,
+   "shot": "b4_sand_is_the_border",
+   "detail": "caption dir=None",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 177.2,
+   "shot": "b4b_summer_winter",
+   "detail": "caption dir=None",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P2",
+   "code": "NOT_EXPOSED",
+   "t": null,
+   "shot": null,
+   "detail": "window.__heroBox is not exposed by the page; the hero gate is skipped or degraded",
+   "fix": "rebuild the page against the upgraded lib/stage3d.js (contract in productions/_upgrade/CONTRACT.md)"
+  },
+  {
+   "sev": "P2",
+   "code": "NOT_EXPOSED",
+   "t": null,
+   "shot": null,
+   "detail": "window.__sceneHash is not exposed by the page; the exact-hash determinism gate is skipped or degraded",
+   "fix": "rebuild the page against the upgraded lib/stage3d.js (contract in productions/_upgrade/CONTRACT.md)"
+  }
+ ],
+ "sheets": null,
+ "timing": {
+  "ready_s": 51.8,
+  "gates_s": 75.2,
+  "total_s": 127.6
+ }
+}
