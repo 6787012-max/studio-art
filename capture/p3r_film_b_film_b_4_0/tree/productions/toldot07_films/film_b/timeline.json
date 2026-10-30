@@ -1,0 +1,200 @@
+{
+ "film": "film_b",
+ "width": 1920,
+ "height": 1080,
+ "fps": 30,
+ "dur": 244.0,
+ "title_card": [
+  0.3,
+  4.2
+ ],
+ "shots": [
+  {
+   "id": "b1_who_moves_the_sea",
+   "t0": 0.0,
+   "dur": 46.7,
+   "captions": [
+    {
+     "id": "b1_who_moves_the_sea_c1",
+     "start": 4.5,
+     "end": 13.65
+    },
+    {
+     "id": "b1_who_moves_the_sea_c2",
+     "start": 13.65,
+     "end": 23.58
+    },
+    {
+     "id": "b1_who_moves_the_sea_c3",
+     "start": 23.58,
+     "end": 31.15
+    },
+    {
+     "id": "b1_who_moves_the_sea_c4",
+     "start": 31.15,
+     "end": 39.51
+    },
+    {
+     "id": "b1_who_moves_the_sea_c5",
+     "start": 39.51,
+     "end": 46.3
+    }
+   ],
+   "recap_lines": null
+  },
+  {
+   "id": "b2_wind_lifts_waves",
+   "t0": 46.7,
+   "dur": 30.9,
+   "captions": [
+    {
+     "id": "b2_wind_lifts_waves_c1",
+     "start": 0.4,
+     "end": 5.35
+    },
+    {
+     "id": "b2_wind_lifts_waves_c2",
+     "start": 5.35,
+     "end": 10.72
+    },
+    {
+     "id": "b2_wind_lifts_waves_c3",
+     "start": 10.72,
+     "end": 15.66
+    },
+    {
+     "id": "b2_wind_lifts_waves_c4",
+     "start": 15.66,
+     "end": 21.03
+    },
+    {
+     "id": "b2_wind_lifts_waves_c5",
+     "start": 21.03,
+     "end": 26.83
+    },
+    {
+     "id": "b2_wind_lifts_waves_c6",
+     "start": 26.83,
+     "end": 30.5
+    }
+   ],
+   "recap_lines": null
+  },
+  {
+   "id": "b3_bottle",
+   "t0": 77.6,
+   "dur": 41.1,
+   "captions": [
+    {
+     "id": "b3_bottle_c1",
+     "start": 0.4,
+     "end": 9.74
+    },
+    {
+     "id": "b3_bottle_c2",
+     "start": 9.74,
+     "end": 15.88
+    },
+    {
+     "id": "b3_bottle_c3",
+     "start": 15.88,
+     "end": 24.42
+    },
+    {
+     "id": "b3_bottle_c4",
+     "start": 24.42,
+     "end": 32.16
+    },
+    {
+     "id": "b3_bottle_c5",
+     "start": 32.16,
+     "end": 40.7
+    }
+   ],
+   "recap_lines": null
+  },
+  {
+   "id": "b4_sand_is_the_border",
+   "t0": 118.7,
+   "dur": 58.0,
+   "captions": [
+    {
+     "id": "b4_sand_is_the_border_c1",
+     "start": 0.4,
+     "end": 8.78
+    },
+    {
+     "id": "b4_sand_is_the_border_c2",
+     "start": 8.78,
+     "end": 18.89
+    },
+    {
+     "id": "b4_sand_is_the_border_c3",
+     "start": 18.89,
+     "end": 29.0
+    },
+    {
+     "id": "b4_sand_is_the_border_c4",
+     "start": 29.0,
+     "end": 37.38
+    },
+    {
+     "id": "b4_sand_is_the_border_c5",
+     "start": 37.38,
+     "end": 48.36
+    },
+    {
+     "id": "b4_sand_is_the_border_c6",
+     "start": 48.36,
+     "end": 57.6
+    }
+   ],
+   "recap_lines": null
+  },
+  {
+   "id": "b4b_summer_winter",
+   "t0": 176.7,
+   "dur": 48.2,
+   "captions": [
+    {
+     "id": "b4b_summer_winter_c1",
+     "start": 0.4,
+     "end": 6.45
+    },
+    {
+     "id": "b4b_summer_winter_c2",
+     "start": 6.45,
+     "end": 13.3
+    },
+    {
+     "id": "b4b_summer_winter_c3",
+     "start": 13.3,
+     "end": 22.52
+    },
+    {
+     "id": "b4b_summer_winter_c4",
+     "start": 22.52,
+     "end": 30.94
+    },
+    {
+     "id": "b4b_summer_winter_c5",
+     "start": 30.94,
+     "end": 40.16
+    },
+    {
+     "id": "b4b_summer_winter_c6",
+     "start": 40.16,
+     "end": 47.8
+    }
+   ],
+   "recap_lines": null
+  },
+  {
+   "id": "b5_recap",
+   "t0": 224.9,
+   "dur": 19.1,
+   "captions": [],
+   "recap_lines": 3
+  }
+ ]
+}
