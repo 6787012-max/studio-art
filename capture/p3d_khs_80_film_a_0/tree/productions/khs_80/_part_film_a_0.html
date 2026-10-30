@@ -1,0 +1,322 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>khs 80 film a</title>
+<style>html,body{margin:0;background:#000}canvas{display:block;width:100vw;height:auto}</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script src="../../lib/people_pro.js"></script>
+<script src="../../lib/geo_eretz.js"></script>
+<script>window.__T0=0.0000; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+// khs_80 / film_a - portrait 1080x1920, objects only (no people): a paper boat with a golden orb on a winding teal river,
+// seen from low (s01) to a high aerial (s04). One continuous world driven by a global time G; each shot adds a camera.
+// shot durations + caption times from khs_80/timeline.json (35.12 s). Captions are vault IDs only (zero Hebrew in code).
+import { film, world, path, THREE, prog, ease, clamp, lerp, rng, mesh, toon, canvasTex } from '../../lib/stage3d.js';
+
+const TAU = Math.PI * 2, PI = Math.PI, UPV = new THREE.Vector3(0, 1, 0), V3 = THREE.Vector3;
+const INKC = 0x3b4a5a, CORAL = 0xff8a6b, TEAL = 0x4fb0aa, CREAM = 0xfaf3e3, GOLD = 0xffc94a, CLAWC = 0x6f7f99;
+const G0 = [0, 9.55, 19.2, 25.8];
+const sm = (t, a, b) => ease.sm(prog(t, a, b));
+const eob = x => { const c1 = 1.70158, c3 = c1 + 1, y = x - 1; return 1 + c3 * y * y * y + c1 * y * y; };
+
+// ---------------- small helpers ----------------
+let GT = null, DT = null;
+const glowTex = () => GT || (GT = canvasTex(128, 128, (g, w, h) => { const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.35, 'rgba(255,255,255,.5)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }));
+const discTex = () => DT || (DT = canvasTex(256, 256, (g, w, h) => { const r = g.createRadialGradient(128, 128, 0, 128, 128, 128); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.58, 'rgba(255,255,255,.95)'); r.addColorStop(.8, 'rgba(255,255,255,.3)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }));
+const glow = (size, op, tint, tex) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex || glowTex(), color: tint === undefined ? GOLD : tint, depthWrite: false, transparent: true, fog: false, opacity: op === undefined ? .6 : op, blending: THREE.AdditiveBlending })); s.scale.set(size, size, 1); s.renderOrder = 10; return s; };
+const mk = (geo, color, o) => { o = o || {}; return mesh(geo, toon(color, o.mat), Object.assign({ inkW: .016, inkColor: INKC }, o)); };
+const bx = (w, h, d, color, pos, o) => mk(new THREE.BoxGeometry(w, h, d), color, Object.assign({ pos, box: true }, o));
+const cy = (r1, r2, h, color, pos, o) => mk(new THREE.CylinderGeometry(r1, r2, h, 18), color, Object.assign({ pos }, o));
+const sp = (r, color, pos, o) => mk(new THREE.SphereGeometry(r, 18, 12), color, Object.assign({ pos }, o));
+function seg(m, A, B) { const d = new V3(B[0] - A[0], B[1] - A[1], B[2] - A[2]), L = Math.max(d.length(), 1e-4); d.multiplyScalar(1 / L); m.position.set((A[0] + B[0]) / 2, (A[1] + B[1]) / 2, (A[2] + B[2]) / 2); m.quaternion.setFromUnitVectors(UPV, d); m.scale.set(1, L, 1); }
+const tube = (r, color, o) => mk(new THREE.CylinderGeometry(r, r, 1, 12), color, Object.assign({ inkW: .012 }, o));
+const addA = (a, b, k) => [a[0] + b[0] * (k === undefined ? 1 : k), a[1] + b[1] * (k === undefined ? 1 : k), a[2] + b[2] * (k === undefined ? 1 : k)];
+const lerp3 = (a, b, u) => [lerp(a[0], b[0], u), lerp(a[1], b[1], u), lerp(a[2], b[2], u)];
+
+// ---------------- river network (built once, shared by all shots) ----------------
+function makeCurve(knots, step) {
+  const c = new THREE.CatmullRomCurve3(knots.map(k => new V3(k[0], 0, k[1])), false, 'centripetal'); c.arcLengthDivisions = 1500;
+  const L = c.getLength(), n = Math.max(8, Math.ceil(L / (step || .4))), pts = c.getSpacedPoints(n), cum = [0];
+  for (let i = 1; i < pts.length; i++) cum.push(cum[i - 1] + pts[i].distanceTo(pts[i - 1]));
+  const total = cum[cum.length - 1];
+  const idxOf = s => { let lo = 0, hi = cum.length - 1; while (hi - lo > 1) { const m = (lo + hi) >> 1; if (cum[m] <= s) lo = m; else hi = m; } return lo; };
+  return { pts, cum, total,
+    at(s) { s = clamp(s, 0, total); const i = idxOf(s), j = Math.min(i + 1, pts.length - 1), f = j === i ? 0 : (s - cum[i]) / Math.max(cum[j] - cum[i], 1e-6);
+      const p = pts[i].clone().lerp(pts[j], f), a = pts[Math.max(i - 2, 0)], b = pts[Math.min(i + 3, pts.length - 1)], tg = new V3(b.x - a.x, 0, b.z - a.z); if (tg.lengthSq() < 1e-8) tg.set(0, 0, -1); tg.normalize(); return { p, t: tg }; },
+    nearest(x, z) { let bi = 0, bd = 1e9; for (let i = 0; i < pts.length; i++) { const d = (pts[i].x - x) ** 2 + (pts[i].z - z) ** 2; if (d < bd) { bd = d; bi = i; } } return bi; } };
+}
+const MAIN_K = [[-.6, 14], [-.3, 8], [0, 2], [.7, -1], [2, -4.5], [2.1, -8], [.8, -11.5], [-.7, -14.5], [-.9, -18], [.2, -21.2], [1, -24.5], [3.8, -27.8], [7.8, -30.6], [11.8, -33], [15, -37], [16.5, -42], [15.5, -47], [12.5, -52], [10.5, -58], [11.5, -65], [14.5, -71], [15.5, -78], [14, -86], [12, -95]];
+const MAIN = makeCurve(MAIN_K);
+const FORK = [1, -24.5], iF = MAIN.nearest(FORK[0], FORK[1]), sF = MAIN.cum[iF];
+const iS0 = MAIN.nearest(0, 2), s0 = MAIN.cum[iS0];
+const MID = makeCurve([FORK, [1, -29], [.7, -34], [-.4, -40], [-.8, -47], [.8, -54], [2.2, -61], [1.5, -69], [0, -77], [.5, -86], [1, -96]]);
+const LEFT = makeCurve([FORK, [-1.9, -27.8], [-5.8, -30.4], [-9.8, -32.8], [-13.6, -37], [-15, -43], [-14, -49], [-11, -55], [-9.5, -62], [-10.5, -70], [-9, -78], [-6, -87], [-5, -96]]);
+const sub = (par, x, z, more) => { const i = par.nearest(x, z), p = par.pts[i]; return makeCurve([[p.x, p.z]].concat(more), .35); };
+const SA = sub(MAIN, .8, -11.5, [[4.6, -12.6], [8.2, -12.2], [11.8, -14], [13.8, -18.5]]);
+const SB = sub(MAIN, -.9, -18, [[-4.8, -19.4], [-8.5, -19], [-12.4, -21.5], [-15.2, -26]]);
+const SG = sub(MAIN, 7.8, -30.6, [[7.4, -35], [6.2, -40.5], [4.6, -46]]);
+const SC = sub(MAIN, 15.5, -47, [[19.5, -49], [23, -54], [26, -60]]);
+const SI = sub(MAIN, 14.5, -71, [[18, -73], [21, -78]]);
+const SD = sub(MID, -.8, -47, [[-4.2, -50.5], [-6.5, -57], [-6.8, -63]]);
+const SE = sub(LEFT, -14, -49, [[-18, -51], [-22, -56], [-24, -63]]);
+const FORKS = [[MAIN.pts[MAIN.nearest(.8, -11.5)]], [MAIN.pts[MAIN.nearest(-.9, -18)]], [MAIN.pts[iF]], [MAIN.pts[MAIN.nearest(7.8, -30.6)]]].map(a => [a[0].x, .12, a[0].z]);
+const WMAIN = s => (s < sF ? 3.2 : lerp(3.2, 2.5, prog(s, sF, sF + 5))) * (s < 2 ? 1 : 1);
+const taper = (s, tot, w) => w * Math.min(1, Math.sqrt(clamp((tot - s) / 3.5, 0, 1)) + .0);
+const RIV = [
+  { c: MAIN, w: WMAIN, grp: 'main' }, { c: SA, w: s => 1.3 * taper(s, SA.total, 1), grp: 'main' }, { c: SB, w: s => 1.3 * taper(s, SB.total, 1), grp: 'main' },
+  { c: SG, w: s => 1.4 * taper(s, SG.total, 1), grp: 'main' }, { c: SC, w: s => 1.3 * taper(s, SC.total, 1), grp: 'main' }, { c: SI, w: s => 1.3 * taper(s, SI.total, 1), grp: 'main' },
+  { c: MID, w: s => 2.5, grp: 'mid' }, { c: SD, w: s => 1.3 * taper(s, SD.total, 1), grp: 'mid' }, { c: LEFT, w: s => 2.5, grp: 'left' }, { c: SE, w: s => 1.3 * taper(s, SE.total, 1), grp: 'left' },
+];
+function ribbonGeo(c, wfn, y, tile, s1, s2, lat) {
+  const a = s1 === undefined ? 0 : s1, b = s2 === undefined ? c.total : s2, n = Math.max(2, Math.ceil((b - a) / .35)), pos = [], uv = [], idx = [];
+  for (let i = 0; i <= n; i++) { const s = lerp(a, b, i / n), q = c.at(s), w = wfn(s) / 2, nx = -q.t.z, nz = q.t.x, l = lat ? lat(s) : 0, cx = q.p.x + nx * l, cz = q.p.z + nz * l;
+    pos.push(cx + nx * w, y, cz + nz * w, cx - nx * w, y, cz - nz * w); uv.push(s / tile, 0, s / tile, 1); }
+  for (let i = 0; i < n; i++) { const k = i * 2; idx.push(k, k + 1, k + 2, k + 1, k + 3, k + 2); }
+  const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2)); g.setIndex(idx); g.userData.n = n; return g;
+}
+
+// ---------------- boat motion: pure function of global time ----------------
+const vB = G => (2.3 * sm(G, 7.2, 8.8) + 1.0 * sm(G, 10.7, 12.6)) * (1 - sm(G, 19.0, 21.0));
+const HT = 1 / 60, ITAB = [0]; for (let i = 1; i <= 36 * 60; i++) ITAB.push(ITAB[i - 1] + .5 * (vB((i - 1) * HT) + vB(i * HT)) * HT);
+const integ = G => { const f = clamp(G, 0, 36) / HT, i = Math.min(Math.floor(f), ITAB.length - 2); return lerp(ITAB[i], ITAB[i + 1], f - i); };
+const KB = (sF - s0) / integ(16.45), sStop = s0 + KB * integ(30), LAT = .85;
+const latOf = s => LAT * sm(s, sStop - 7, sStop - .4);
+function boatP(G) {
+  const s = s0 + KB * integ(G), q = MAIN.at(s), l = latOf(s), nx = -q.t.z, nz = q.t.x;
+  return { s, x: q.p.x + nx * l, z: q.p.z + nz * l, tx: q.t.x, tz: q.t.z, yaw: Math.atan2(-q.t.z, q.t.x) };
+}
+const KS = G => 1 + .35 * sm(G, 12, 16) + 1.25 * sm(G, 24.5, 27.5);
+const PED = [2.9, 0, 1.4], ORB0 = [2.9, 1.55, 1.4];
+const SUNP = [12, 47, -216];
+const HOUSE_P = (() => { const b = boatP(30), nrx = -b.tz, nrz = b.tx; return [b.x + nrx * 2.9 - b.tx * 4.6, 0, b.z + nrz * 2.9 - b.tz * 4.6]; })();
+const WY = .07;
+
+// ---------------- prop builders ----------------
+function buildBoat() {
+  const g = new THREE.Group(), sh = new THREE.Shape();
+  sh.moveTo(-1.0, .5); sh.lineTo(-.52, 0); sh.lineTo(.52, 0); sh.lineTo(1.0, .5); sh.lineTo(.56, .36); sh.lineTo(-.56, .36); sh.closePath();
+  const hg = new THREE.ExtrudeGeometry(sh, { depth: .62, bevelEnabled: false }); hg.translate(0, 0, -.31);
+  g.add(mk(hg, CREAM, { inkW: .03, box: true }));
+  g.add(bx(1.12, .035, .5, 0xe9dcc0, [0, .365, 0], { inkW: .008 })); g.add(bx(1.0, .03, .035, 0xe0d1b0, [0, .39, 0], { ink: false }));
+  g.add(bx(.05, .3, .22, 0xe6d8bb, [-1.04, .23, 0], { inkW: .01 })); // rudder (never moves)
+  g.add(cy(.028, .028, 1.0, 0xb08a5a, [.05, .85, 0], { inkW: .008 }));
+  // sail: animated grid
+  const N = 8, pos = new Float32Array((N + 1) * (N + 1) * 3), idx = []; for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) { const a = i * (N + 1) + j, b = a + 1, c = a + N + 1, d = c + 1; idx.push(a, c, b, b, c, d); }
+  const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(pos, 3)); sg.setIndex(idx);
+  const sail = new THREE.Mesh(sg, toon(CREAM, { side: THREE.DoubleSide })); sail.castShadow = true; sail.frustumCulled = false;
+  const outl = new THREE.Mesh(sg, new THREE.MeshBasicMaterial({ color: INKC, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: 3, polygonOffsetUnits: 3 })); outl.frustumCulled = false;
+  const sailG = new THREE.Group(); sailG.position.set(.07, .4, 0); sailG.add(sail); sailG.add(outl); g.add(sailG);
+  g.userData.setSail = (f, G) => {
+    const W = lerp(.5, .82, f), H = lerp(.7, 1.02, f);
+    for (let i = 0; i <= N; i++) for (let j = 0; j <= N; j++) { const u = i / N, v = j / N, k = (i * (N + 1) + j) * 3;
+      const x = u * W, y = v * (1 - u) * H - (1 - f) * .1 * u, slack = (1 - f) * (.075 * Math.sin(3.2 * u + G * 2.3 + v * 2) + .04 * Math.sin(5 * v - G * 1.7)) * (.3 + u + v), fill = f * .27 * Math.sin(PI * Math.min(1, u * 1.08)) * (.4 + .6 * Math.sin(PI * Math.min(1, v * .9 + .1)));
+      pos[k] = x; pos[k + 1] = y; pos[k + 2] = slack + fill; }
+    sg.attributes.position.needsUpdate = true; sg.computeVertexNormals(); sg.computeBoundingSphere();
+    const s = 1.09, cx = W / 3, cyy = H / 3.2; outl.scale.set(s, s, 1.0); outl.position.set(cx * (1 - s), cyy * (1 - s), 0);
+  };
+  g.userData.setSail(0, 0); return g;
+}
+function houseGeo() {
+  const g = new THREE.Group();
+  g.add(bx(1.1, .85, 1.0, 0xf2e6cf, [0, .425, 0], { inkW: .022 }));
+  const roof = mk(new THREE.ConeGeometry(.95, .62, 4), 0xc8643c, { inkW: .022, pos: [0, 1.16, 0], rot: [0, PI / 4, 0] }); roof.scale.set(1.0, 1, .9); g.add(roof);
+  g.add(bx(.26, .46, .06, 0x8a4a30, [.2, .23, .51], { inkW: .008 })); g.add(bx(.22, .22, .06, 0xbfe3e0, [-.27, .5, .51], { inkW: .008 }));
+  g.add(bx(.18, .4, .18, 0xd9c9aa, [-.3, 1.2, -.15], { inkW: .01 }));
+  return g;
+}
+function treeGeo(sc, c) {
+  const g = new THREE.Group(); g.add(cy(.1, .14, .55, 0x9a7a55, [0, .27, 0], { inkW: .012 }));
+  const cn = sp(.78, c, [0, 1.15, 0], { inkW: .02 }); cn.scale.set(1, 1.12, 1); g.add(cn); g.scale.setScalar(sc); return g;
+}
+function pedestal() {
+  const g = new THREE.Group(); g.add(cy(.62, .7, .22, 0xd9cfb4, [0, .11, 0], { inkW: .02 })); g.add(cy(.38, .46, .55, 0xe9e0c8, [0, .5, 0], { inkW: .02 })); g.add(cy(.52, .48, .12, 0xf3ecd8, [0, .83, 0], { inkW: .018 })); return g;
+}
+function pieceGeo(kind) {
+  const sh = new THREE.Shape(), S = .7;
+  if (kind === 0) { sh.moveTo(0, 0); sh.lineTo(S, 0); sh.lineTo(S, .2706); sh.absarc(.79, .35, .12, -2.419, 2.419, false); sh.lineTo(S, S); sh.lineTo(0, S); sh.closePath(); }
+  else { sh.moveTo(0, 0); sh.lineTo(S, 0); sh.lineTo(S, S); sh.lineTo(0, S); sh.lineTo(0, .4294); sh.absarc(.09, .35, .12, 2.419, -2.419, true); sh.closePath(); }
+  const g = new THREE.ExtrudeGeometry(sh, { depth: .16, bevelEnabled: false }); g.translate(kind === 0 ? -.4 : -.3, -.35, -.08); return g;
+}
+
+// ---------------- the scene (shared by every shot; each shot supplies a camera and a hero) ----------------
+function makeScene(Wd, off, focusFn, extFn) {
+  const S = Wd.scene, r = rng(7);
+  // ground
+  const gTex = canvasTex(512, 512, (g, w, h) => { g.fillStyle = '#a9c49a'; g.fillRect(0, 0, w, h); const rr = rng(5); for (let i = 0; i < 40; i++) { g.fillStyle = i % 2 ? 'rgba(143,176,126,.5)' : 'rgba(190,214,170,.5)'; g.beginPath(); g.ellipse(rr() * w, rr() * h, 30 + rr() * 70, 20 + rr() * 50, rr() * 3, 0, 7); g.fill(); } }, [14, 14]);
+  const gnd = new THREE.Mesh(new THREE.PlaneGeometry(700, 700), toon(0xffffff, { map: gTex, emissive: 0xa9c49a, emissiveIntensity: .25 })); gnd.rotation.x = -PI / 2; gnd.receiveShadow = true; S.add(gnd);
+  // water
+  const wTex = canvasTex(256, 256, (g, w, h) => { g.fillStyle = '#2f8f8f'; g.fillRect(0, 0, w, h); const rr = rng(21); g.strokeStyle = '#4fb0aa'; g.lineCap = 'round';
+    for (let i = 0; i < 22; i++) { const y = rr() * h, x = rr() * w, L = 30 + rr() * 60; g.lineWidth = 3 + rr() * 4; g.globalAlpha = .55 + rr() * .4; g.beginPath(); g.moveTo(x, y); g.quadraticCurveTo(x + L / 2, y + (rr() - .5) * 14, x + L, y); g.stroke(); if (x + L > w) { g.beginPath(); g.moveTo(x - w, y); g.quadraticCurveTo(x - w + L / 2, y, x - w + L, y); g.stroke(); } } g.globalAlpha = 1; }, [1, 1]);
+  const wMat = { main: new THREE.MeshBasicMaterial({ map: wTex, polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2, side: THREE.DoubleSide }) };
+  wMat.mid = wMat.main.clone(); wMat.left = wMat.main.clone();
+  const rimMat = new THREE.MeshBasicMaterial({ color: 0xe0e6b8, side: THREE.DoubleSide, polygonOffset: true, polygonOffsetFactor: -1, polygonOffsetUnits: -1 });
+  const riverPts = [];
+  RIV.forEach((rv, i) => { const gR = ribbonGeo(rv.c, s => rv.w(s) + .5, .035, 5), gW = ribbonGeo(rv.c, rv.w, WY + i * .004, 5);
+    const rim = new THREE.Mesh(gR, rimMat); rim.frustumCulled = false; S.add(rim); const wm = new THREE.Mesh(gW, wMat[rv.grp]); wm.frustumCulled = false; wm.renderOrder = 1; S.add(wm);
+    for (let k = 0; k < rv.c.pts.length; k += 2) { const q = rv.c.pts[k]; riverPts.push([q.x, q.z, rv.w(rv.c.cum[k]) / 2]); } });
+  { const pool = new THREE.Mesh(new THREE.CircleGeometry(2.3, 28), wMat.main); pool.rotation.x = -PI / 2; pool.position.set(FORK[0] + .5, WY + .06, FORK[1] - 1.2); S.add(pool);
+    const pr = new THREE.Mesh(new THREE.CircleGeometry(2.7, 28), rimMat); pr.rotation.x = -PI / 2; pr.position.set(FORK[0] + .5, .04, FORK[1] - 1.2); S.add(pr); }
+  const nearRiver = (x, z, m) => { for (const q of riverPts) if ((q[0] - x) ** 2 + (q[1] - z) ** 2 < (q[2] + m) ** 2) return true; return false; };
+  // far hills
+  [[-60, -125, 34, 16, 0xb4cda5], [-18, -150, 40, 20, 0xaec9a0], [38, -135, 36, 17, 0xb8d0a8], [78, -118, 30, 14, 0xb4cda5], [-100, -100, 32, 14, 0xb8d0a8], [20, -175, 50, 22, 0xb2cba3], [-45, -180, 46, 20, 0xb6ceA7], [110, -150, 44, 18, 0xb8d0a8]].forEach(([x, z, rr, h, c]) => { const m = mk(new THREE.SphereGeometry(1, 18, 10), c, { pos: [x, 0, z], scale: [rr, h, rr * .8], ink: false }); m.castShadow = false; S.add(m); });
+  // near rolling banks
+  [[-9, -3, 4.5, 1.1], [9, 4, 5, 1.2], [10, -18, 4.5, 1.0], [-9, -28, 5, 1.3], [24, -20, 6, 1.6], [-26, -12, 6, 1.5], [28, -44, 6, 1.7], [-24, -50, 6, 1.6], [4, -66, 6, 1.6], [-8, 8, 5, 1.2], [18, -6, 5, 1.2]].forEach(([x, z, rr, h]) => { const m = mk(new THREE.SphereGeometry(1, 18, 10), 0xa3be94, { pos: [x, 0, z], scale: [rr, h, rr * .9], inkW: .01 }); S.add(m); });
+  // trees (explicit foreground + rejection-sampled)
+  const TC = [0x7fa571, 0x8fb67c, 0x6f9a65, 0x86ad74];
+  const trees = [[-4.6, 5.2, 1.5], [-6.2, -.5, 1.3], [5.8, 2.2, 1.35], [5.2, -5.2, 1.1], [-5.0, -9, 1.2], [6.5, -16, 1.2], [-6.5, -15, 1.1], [4.8, -24, 1.2], [-3.4, 11, 1.4]];
+  for (let n = 0; n < 110; n++) { const x = -38 + r() * 76, z = 16 - r() * 112; if (nearRiver(x, z, 2.4)) continue; trees.push([x, z, .8 + r() * .6]); }
+  trees.forEach(([x, z, sc], i) => { if (nearRiver(x, z, 1.6)) return; const t = treeGeo(sc * (z < -20 ? 1.35 : 1), TC[i % 4]); t.position.set(x, 0, z); S.add(t); });
+  for (let n = 0; n < 90; n++) { const x = -34 + r() * 68, z = 14 - r() * 100; if (nearRiver(x, z, 1.5)) continue; const m = sp(.34 + r() * .25, 0x7f9c6e, [x, .06, z], { scale: [1, .45, 1], inkW: .008 }); S.add(m); }
+  // static village houses
+  [[-4.2, -6, .3], [-5.5, -24, -.4], [5.5, -20, .8], [6.2, -44, -.5], [-5, -58, .6], [21.5, -40, -.3], [-19, -38, .5]].forEach(([x, z, ry]) => { if (nearRiver(x, z, 1.2)) return; const h = houseGeo(); h.position.set(x, 0, z); h.rotation.y = ry; h.scale.setScalar(1.45); S.add(h); });
+  // start pedestal
+  const ped = pedestal(); ped.position.set(PED[0], 0, PED[2]); S.add(ped);
+  // ---- hero house (rises out of the bank)
+  const house = houseGeo(); house.position.set(HOUSE_P[0], -1.2, HOUSE_P[2]); house.rotation.y = Math.atan2(boatP(30).tz, -boatP(30).tx); S.add(house);
+  // ---- boat
+  const boat = buildBoat(); S.add(boat); boat.rotation.order = 'YXZ';
+  const bsh = new THREE.Mesh(new THREE.CircleGeometry(1, 24), new THREE.MeshBasicMaterial({ color: 0x1b5c5c, transparent: true, opacity: .3, depthWrite: false })); bsh.rotation.x = -PI / 2; bsh.scale.set(1.2, .7, 1); bsh.renderOrder = 2; S.add(bsh);
+  // ---- orb
+  const orb = new THREE.Group(); S.add(orb);
+  const orbM = new THREE.Mesh(new THREE.SphereGeometry(.22, 22, 14), new THREE.MeshBasicMaterial({ color: GOLD })); orb.add(orbM);
+  { const o2 = new THREE.Mesh(orbM.geometry, new THREE.MeshBasicMaterial({ color: 0xb8832a, side: THREE.BackSide })); o2.scale.setScalar(1.09); orb.add(o2); }
+  const orbG = glow(1.7, .7, GOLD), orbC = glow(.6, .9, 0xfff2b8); orb.add(orbG); orb.add(orbC);
+  // ---- claw
+  const claw = new THREE.Group(); S.add(claw); claw.visible = false;
+  const hub = sp(.16, CLAWC, [0, 0, 0], { inkW: .012 }); claw.add(hub);
+  const boom = tube(.09, CLAWC), boomJ = sp(.13, 0x8d9db7, [0, 0, 0], { inkW: .01 }); claw.add(boom); claw.add(boomJ);
+  const prongs = [0, 1, 2].map(i => { const u = tube(.055, CLAWC, { inkW: .01 }), l = tube(.045, 0x8d9db7, { inkW: .01 }), j = sp(.075, 0x8d9db7, [0, 0, 0], { inkW: .008 }); claw.add(u); claw.add(l); claw.add(j); return { u, l, j, ph: i * TAU / 3 + .5 }; });
+  // ---- arrow ring
+  const ring = new THREE.Group(); S.add(ring); ring.visible = false; const ringIn = new THREE.Group(); ring.add(ringIn);
+  for (let i = 0; i < 6; i++) { const a = new THREE.Group(); a.rotation.z = i * TAU / 6; const arc = .78;
+    a.add(mk(new THREE.TorusGeometry(.85, .05, 8, 16, arc), CORAL, { inkW: .01 })); const hd = mk(new THREE.ConeGeometry(.13, .3, 10), CORAL, { inkW: .012 }); hd.position.set(.85 * Math.cos(arc), .85 * Math.sin(arc), 0); hd.rotation.z = arc - .0; a.add(hd); ringIn.add(a); }
+  // ---- beam + chevrons + path glow + sun + threads + rings + puzzle
+  const beamG = new THREE.CylinderGeometry(.3, 1.7, 1, 24, 1, true), cols = []; { const p = beamG.attributes.position; for (let i = 0; i < p.count; i++) { const k = p.getY(i) > 0 ? .06 : .6; cols.push(k * 1.0, k * .9, k * .55); } beamG.setAttribute('color', new THREE.Float32BufferAttribute(cols, 3)); }
+  const beamM = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false }), beam = new THREE.Mesh(beamG, beamM); beam.frustumCulled = false; S.add(beam);
+  const beamGl = glow(5, 0, 0xffe0a0); S.add(beamGl);
+  const chevM = new THREE.MeshBasicMaterial({ polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6, color: 0xffeaa5, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false }), chev = [];
+  for (let k = 0; k < 10; k++) { const c = new THREE.Group(); for (const sg of [-1, 1]) { const b = new THREE.Mesh(new THREE.BoxGeometry(.95, .02, .13), chevM); b.position.set(-.22, 0, sg * .3); b.rotation.y = sg * .62; c.add(b); } c.renderOrder = 3; c.visible = false; S.add(c); chev.push(c); }
+  const pgL = ribbonGeo(MAIN, s => .5, .11, 5, s0, sStop, latOf), pgL2 = ribbonGeo(MAIN, s => 1.3, .1, 5, s0, sStop, latOf);
+  const pgM = new THREE.MeshBasicMaterial({ polygonOffset: true, polygonOffsetFactor: -8, polygonOffsetUnits: -8, side: THREE.DoubleSide, color: 0xffd466, transparent: true, opacity: .95, blending: THREE.AdditiveBlending, depthWrite: false }), pgM2 = new THREE.MeshBasicMaterial({ polygonOffset: true, polygonOffsetFactor: -6, polygonOffsetUnits: -6, side: THREE.DoubleSide, color: 0xffc040, transparent: true, opacity: .3, blending: THREE.AdditiveBlending, depthWrite: false });
+  const pg = new THREE.Mesh(pgL, pgM), pg2 = new THREE.Mesh(pgL2, pgM2); pg.frustumCulled = pg2.frustumCulled = false; pg.visible = pg2.visible = false; pg.renderOrder = pg2.renderOrder = 4; S.add(pg); S.add(pg2);
+  const sunD = glow(34, 0, 0xffd36e, discTex()), sunH = glow(95, 0, 0xffe0a0), sunC = glow(18, 0, 0xfff5d0, discTex()); [sunD, sunH, sunC].forEach(o => o.position.set(...SUNP)); S.add(sunD); S.add(sunH); S.add(sunC); sunH.renderOrder = 9; sunD.renderOrder = 10; sunC.renderOrder = 11;
+  const thrM = new THREE.MeshBasicMaterial({ color: 0xffd978, transparent: true, opacity: .8, blending: THREE.AdditiveBlending, depthWrite: false });
+  const thrG = new THREE.CylinderGeometry(.12, .34, 1, 6), threads = [];
+  for (let i = 0; i < 5; i++) { const m = new THREE.Mesh(thrG, thrM); m.frustumCulled = false; m.visible = false; m.renderOrder = 6; S.add(m); threads.push(m); }
+  const pulses = FORKS.map(() => { const m = new THREE.Mesh(new THREE.RingGeometry(.84, 1, 40), new THREE.MeshBasicMaterial({ polygonOffset: true, polygonOffsetFactor: -8, polygonOffsetUnits: -8, color: 0xffffff, transparent: true, opacity: 0, depthWrite: false, side: THREE.DoubleSide })); m.rotation.x = -PI / 2; m.visible = false; m.renderOrder = 5; S.add(m); return m; });
+  const pcs = [0, 1].map(k => { const m = mk(pieceGeo(k), k ? TEAL : CORAL, { inkW: .02, box: true }); m.visible = false; S.add(m); return m; });
+  const click = glow(2, 0, 0xfff0b0); S.add(click);
+  const SD0 = new V3(), tq = new V3(), side = new V3(), zax = new V3(), mat4 = new THREE.Matrix4(), uq = new THREE.Quaternion();
+
+  Wd.on((t, cam) => {
+    const G = t + off, bp = boatP(G), ks = KS(G), ph = G * 2.1, by = WY + .02 + .035 * ks * Math.sin(ph);
+    // dimming of the two other branches
+    const dim = 1 - .2 * sm(G, 17.35, 18.4); wMat.mid.color.setScalar(dim); wMat.left.color.setScalar(dim);
+    wMat.main.map.offset.x = -G * .3; // shared texture: ripple lines scroll downstream
+    // focus + shadow
+    const fp = focusFn(G, bp); Wd.sun.position.set(fp[0] - 9, 16, fp[2] + 8); Wd.sun.target.position.set(fp[0], 0, fp[2]); Wd.sun.target.updateMatrixWorld(); const ext = extFn(G), sc = Wd.sun.shadow.camera; if (sc.right !== ext) { sc.left = sc.bottom = -ext; sc.right = sc.top = ext; sc.far = 120; sc.updateProjectionMatrix(); }
+    // boat
+    boat.position.set(bp.x, by, bp.z); boat.rotation.set(.02 * Math.sin(G * 1.7), bp.yaw, .04 * Math.sin(G * 1.3)); boat.scale.setScalar(ks);
+    boat.userData.setSail(sm(G, 7.2, 7.75), G);
+    bsh.position.set(bp.x, WY + .015, bp.z); bsh.rotation.z = bp.yaw; bsh.scale.set(1.25 * ks, .72 * ks, 1);
+    // orb
+    const slotY = by + .5 * ks; let op;
+    const bob = .06 * Math.sin(G * 2.4), kick = sm(G, 1.3, 1.55) * (1 - sm(G, 1.95, 2.7));
+    const base = [ORB0[0] + (-.62) * kick, ORB0[1] + bob + .22 * kick, ORB0[2] + .45 * kick];
+    if (G < 5.6) op = base; else if (G < 7.2) { const u = ease.io(prog(G, 5.6, 7.2)); op = lerp3(base, [bp.x, slotY, bp.z], u); op[1] += .6 * Math.sin(PI * u); }
+    else op = [bp.x, slotY + .025 * Math.sin(G * 2.6), bp.z];
+    orb.position.set(op[0], op[1], op[2]); const osc = G < 7.2 ? 1 : lerp(1, ks, 1) * (1 + .12 * Math.exp(-(G - 7.2) * 5) * Math.sin((G - 7.2) * 18)); orb.scale.setScalar(osc);
+    const boost = sm(G, 31.8, 32.8); orbG.material.opacity = .7 + .3 * boost; orbG.scale.setScalar(1.7 + 2.0 * boost); orbC.scale.setScalar(.6 + .5 * boost);
+    // claw
+    const cv = G > .85 && G < 2.45; claw.visible = cv;
+    if (cv) { const O = ORB0, SP = [O[0] + 4.8, O[1] + 5.4, O[2] - .6], TP = [O[0], O[1] + .62, O[2]], u1 = ease.io(prog(G, .9, 1.5)), u2 = ease.io(prog(G, 1.58, 2.4));
+      let h = G < 1.55 ? lerp3(SP, TP, u1) : lerp3(TP, SP, u2); if (G < 1.55) h[1] += .5 * Math.sin(PI * u1); claw.position.set(0, 0, 0);
+      const open = 1 - sm(G, 1.22, 1.55), AN = [O[0] + 7.5, O[1] + 16, O[2] - 3];
+      hub.position.set(h[0], h[1], h[2]); seg(boom, [h[0], h[1] + .1, h[2]], AN); boomJ.position.set(h[0], h[1] + .1, h[2]);
+      for (const p of prongs) { const E = [h[0] + Math.cos(p.ph) * .44, h[1] - .34, h[2] + Math.sin(p.ph) * .44], rt = lerp(.05, .62, open), T = [h[0] + Math.cos(p.ph) * rt, h[1] - .98, h[2] + Math.sin(p.ph) * rt];
+        seg(p.u, [h[0], h[1] - .05, h[2]], E); seg(p.l, E, T); p.j.position.set(E[0], E[1], E[2]); } }
+    // arrow ring
+    const ru = sm(G, 2.4, 2.9) * (1 - sm(G, 4.35, 4.9)); ring.visible = ru > .01; if (ring.visible) { ring.position.set(op[0], op[1], op[2]); ring.rotation.set(.45, -.25, 0); ring.scale.setScalar(.55 + .45 * ru); ringIn.rotation.z = (G - 2.4) * 2.6 + 0; }
+    // beam + current chevrons
+    const bK = sm(G, 10.15, 11.0) * (1 - sm(G, 21.5, 23.5)), chK = sm(G, 10.7, 11.7) * (1 - sm(G, 20.6, 21.6));
+    beam.visible = bK > .005; beamGl.visible = beam.visible; if (beam.visible) { beamM.opacity = .22 * bK; const bs = MAIN.at(bp.s - 3.2), bot = [bs.p.x, WY + .1, bs.p.z], top = [bot[0] - bs.t.x * 5 + 2.5, 17, bot[2] - bs.t.z * 5 - 2]; seg(beam, bot, top); beamGl.position.set(bot[0], bot[1] + .3, bot[2]); beamGl.material.opacity = .25 * bK; beamGl.scale.setScalar(5.5); }
+    chev.forEach((c, k) => { c.visible = chK > .01; if (!c.visible) return; const win = 8.6, pos = ((k * .86 + G * 2.1) % win) / win, s = bp.s - 7.9 + pos * win, q = MAIN.at(s), l = latOf(s), nx = -q.t.z, nz = q.t.x;
+      c.position.set(q.p.x + nx * l, WY + .06, q.p.z + nz * l); c.rotation.y = Math.atan2(-q.t.z, q.t.x); c.scale.setScalar(.15 + .85 * Math.sin(PI * pos)); });
+    chevM.opacity = .8 * chK;
+    // path glow
+    const pf = ease.io(prog(G, 27.5, 29.0)); pg.visible = pg2.visible = pf > .001; if (pg.visible) { const cnt = Math.max(0, Math.floor(pf * pgL.userData.n)) * 6; pgL.setDrawRange(0, cnt); pgL2.setDrawRange(0, cnt); pgM.opacity = .95; }
+    // sun, threads, pulses
+    const sk = .3 + .7 * sm(G, 30.6, 31.8); sunD.material.opacity = .85 * sk; sunH.material.opacity = .5 * sk; sunC.material.opacity = sk; sunD.scale.setScalar(34 * (.9 + .1 * sk)); sunH.scale.setScalar(95 * (.8 + .2 * sk));
+    const tgt = [FORKS[0], FORKS[1], FORKS[2], FORKS[3], [op[0], op[1], op[2]]];
+    threads.forEach((m, i) => { const t0 = i < 4 ? 30.6 + i * .3 : 31.9, p = ease.out(prog(G, t0, t0 + (i < 4 ? .9 : 1.0))); m.visible = p > .001; if (!m.visible) return; const T = tgt[i]; seg(m, SUNP, [SUNP[0] + (T[0] - SUNP[0]) * p, SUNP[1] + (T[1] - SUNP[1]) * p, SUNP[2] + (T[2] - SUNP[2]) * p]); });
+    pulses.forEach((m, i) => { const u = prog(G, 29.0 + i * .22, 30.4 + i * .22), on = u > 0 && u < 1; m.visible = on; if (!on) return; const q = FORKS[i]; m.position.set(q[0], .13, q[2]); m.scale.setScalar(.6 + 4.2 * ease.out(u)); m.material.opacity = .95 * (1 - u); });
+    // house
+    const hu = prog(G, 20.5, 21.4), hh = .24 * Math.sin(PI * prog(G, 22.6, 23.1)), hs = 1 + .5 * sm(G, 24.5, 27.5), sq = 1 - .09 * Math.sin(PI * prog(G, 22.6, 23.1)) + .06 * Math.sin(PI * prog(G, 20.9, 21.4));
+    house.visible = G > 20.45; house.position.set(HOUSE_P[0], -1.25 * (1 - eob(hu)) + hh, HOUSE_P[2]); house.scale.set(hs * (2 - sq), hs * sq, hs * (2 - sq));
+    // puzzle pieces
+    cam.getWorldDirection(SD0); side.crossVectors(SD0, UPV); side.y = 0; if (side.lengthSq() < 1e-6) side.set(1, 0, 0); side.normalize(); zax.crossVectors(side, UPV).normalize(); mat4.makeBasis(side, UPV, zax); uq.setFromRotationMatrix(mat4);
+    const pu = ease.io(prog(G, 24.0, 24.6)), pon = G > 23.95 && G < 25.75;
+    pcs.forEach((m, k) => { m.visible = pon; if (!pon) return; const sg = k ? 1 : -1, C = [bp.x, by + 1.75 * ks, bp.z], hop = 1 + .1 * Math.sin(PI * prog(G, 24.6, 25.0)), PS = 1.6, d = sg * (lerp(3.4, 0, pu) + .3 * PS * hop); m.position.set(C[0] + side.x * d, C[1] + (1 - pu) * .5 + .04 * Math.sin(G * 3 + k) * (1 - pu), C[2] + side.z * d); m.quaternion.copy(uq); m.rotateZ(sg * (1 - pu) * .5); m.scale.setScalar(hop * PS); });
+    const cu = prog(G, 24.6, 25.4); click.visible = cu > 0 && cu < 1; if (click.visible) { click.position.set(bp.x, by + 1.75 * ks, bp.z); click.material.opacity = .95 * (1 - cu); click.scale.setScalar(1.2 + 3.2 * ease.out(cu)); }
+  });
+  Wd.on(() => { chevM.opacity = chevM.opacity; });
+  return { boat, orb, house };
+}
+
+const WORLD = { skyTop: 0xfbf3d9, skyBottom: 0xfff8ee, fogColor: 0xfff8ee, fogNear: 45, fogFar: 190, sunColor: 0xffe8bd, sun: 1.15, sunPos: [-9, 16, 8], hemiSky: 0xfff7e6, hemiGround: 0xcfe0b5, hemi: 1.3, shadowExt: 14 };
+
+function heroCluster(Wd, fn) {
+  const g = new THREE.Group(), m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()); m.visible = false; g.add(m); Wd.add(g);
+  Wd.on(t => { const bs = fn(t).filter(Boolean); if (!bs.length) return; const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (const b of bs) for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], b[k] - b[k + 3]); hi[k] = Math.max(hi[k], b[k] + b[k + 3]); }
+    g.position.set((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2); g.scale.set(Math.max(hi[0] - lo[0], .01), Math.max(hi[1] - lo[1], .01), Math.max(hi[2] - lo[2], .01)); });
+  Wd.hero = g; return g;
+}
+const boatBox = G => { const b = boatP(G), k = KS(G); return [b.x, WY + .4 * k, b.z, 1.15 * k, .75 * k, 1.15 * k]; };
+const lowerLook = (p, l, f) => { const d = Math.hypot(p[0] - l[0], p[1] - l[1], p[2] - l[2]), o = .30 * Math.tan(f * PI / 360) * d; return [l[0], l[1] - o, l[2]]; };
+// boat-relative camera: path() gives offsets, the boat position is added
+function relCam(g0, keys) {
+  const P = path(keys);
+  return t => { const c = P(t), b = boatP(g0 + t), B = [b.x, WY, b.z], f = c.fov || 64, pos = addA(B, c.pos), look = addA(B, c.look); return { pos, look: lowerLook(pos, look, f), fov: f }; };
+}
+
+film({
+  W: 1080, H: 1920, xf: .4, vault: 'captions_vault.json',
+  shots: [
+    // ===== s01 (9.55): orb above a pedestal, claw closes on air, arrow loop, orb drops into the boat, sail fills, boat glides =====
+    { id: 's01', dur: 9.55, wide: true, caps: ['CAP_A_01', 'CAP_A_02'], capAt: [0.0, 4.35, 99], build() {
+      const Wd = world(WORLD);
+      makeScene(Wd, G0[0], (G, bp) => [bp.x, 0, bp.z], () => 14);
+      heroCluster(Wd, t => [boatBox(t), t < 5.6 ? [ORB0[0], ORB0[1], ORB0[2], .5, .5, .5] : null]);
+      const st = path([[0, [-.3, 2.0, 8.6], [1.6, 1.25, 1.6], 64], [4.3, [.5, 1.9, 7.2], [1.7, 1.25, 1.7], 64], [9.55, [.9, 2.2, 7.4], [1.7, 1.2, 1.7], 64]]);
+      const fol = relCam(0, [[0, [-2.6, 4.2, 6.8], [.2, .5, -1.5], 66], [9.55, [-3.2, 5.0, 7.2], [.2, .5, -2.0], 66]]);
+      return Object.assign(Wd, { cam: t => { const w = sm(t, 5.2, 9.2), a = st(t), f = fol(t), fa = a.fov, pos = lerp3(a.pos, f.pos, w); const lookA = lowerLook(a.pos, a.look, fa); return { pos, look: lerp3(lookA, f.look, w), fov: lerp(fa, f.fov, w) }; } });
+    } },
+    // ===== s02 (9.65): beam + current push the boat, camera rises to a high 3/4 view, boat turns right at the three-way fork =====
+    { id: 's02', dur: 9.65, wide: true, caps: ['CAP_A_03', 'CAP_A_04'], capAt: [0.0, 4.9, 99], build() {
+      const Wd = world(WORLD);
+      makeScene(Wd, G0[1], (G, bp) => [bp.x, 0, bp.z], () => 16);
+      heroCluster(Wd, t => [boatBox(G0[1] + t)]);
+      return Object.assign(Wd, { cam: relCam(G0[1], [[0, [-3.4, 3.6, 5.6], [.4, .4, -2.2], 64], [3.2, [-4.8, 4.8, 3.0], [.2, .3, -3], 66], [5.2, [-4.5, 11, 8], [1.5, 0, -6], 68], [7.4, [-4, 20, 13], [3, 0, -6], 68], [9.65, [-2, 24, 15], [5, 0, -4], 68]]) });
+    } },
+    // ===== s03 (6.6): boat reaches the bank, house rises and bounces twice, two puzzle pieces click together =====
+    { id: 's03', dur: 6.6, wide: true, caps: ['CAP_A_05'], capAt: [0.0, 99], build() {
+      const Wd = world(WORLD);
+      makeScene(Wd, G0[2], (G, bp) => [bp.x, 0, bp.z], () => 14);
+      heroCluster(Wd, t => [boatBox(G0[2] + t), [HOUSE_P[0], .8, HOUSE_P[2], .8, .8, .8]]);
+      return Object.assign(Wd, { cam: t => { const G = G0[2] + t, b = boatP(G), th = lerp(-.12, .12, ease.io(prog(t, 0, 6.6))), R = 13, nl = [b.tz, -b.tx], dr = [b.tx, b.tz], c = Math.cos(th), s = Math.sin(th);
+        const pos = [b.x + (c * nl[0] + s * dr[0]) * R, 3.4 + lerp(0, .5, prog(t, 0, 6.6)), b.z + (c * nl[1] + s * dr[1]) * R], look = [b.x - nl[0] * .9, 1.2, b.z - nl[1] * .9]; return { pos, look: lowerLook(pos, look, 68), fov: 68 }; } });
+    } },
+    // ===== s04 (9.32): high far aerial: golden path, pulses at forks, one big light with golden threads =====
+    { id: 's04', dur: 9.32, wide: true, caps: ['CAP_A_06', 'CAP_A_07'], capAt: [0.0, 4.65, 99], build() {
+      const Wd = world(Object.assign({}, WORLD, { shadowExt: 40 }));
+      makeScene(Wd, G0[3], () => [6, 0, -18], () => 44);
+      heroCluster(Wd, t => [boatBox(G0[3] + t), [PED[0], .5, PED[2], 1, .5, 1], [FORK[0], .3, FORK[1], 1, .3, 1]]);
+      const P = path([[0, [8, 15, 12], [7, 0, -16], 64], [4.65, [6.5, 28, 31], [6, 0, -20], 66], [9.32, [5.5, 31, 36], [6, 0, -22], 66]]);
+      return Object.assign(Wd, { cam: t => { const c = P(t), pr = lerp(.42, .46, prog(t, 0, 9.32)), raw = [6, c.pos[1] - 100 * Math.tan(pr), c.pos[2] - 100], low = lowerLook(c.pos, c.look, c.fov), w = sm(t, 0, 4.2); return { pos: c.pos, look: lerp3(low, raw, w), fov: c.fov }; } });
+    } },
+  ],
+});
+</script>
+</html>
