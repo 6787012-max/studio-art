@@ -1,23 +1,12 @@
-16:32:35 render_all: production=film_b films=film_b part=50s hq=True dry_run=False
-16:32:38 budget WARN: ahead of pace - continue sparingly: spent $354 of $2600 (cap $2340), allowed by now $314 (113% of pace) [render]
-16:32:38 !! verify gate SKIPPED by --skip-verify (supervisor override) - would have failed: film_b: no VERIFY_REPORT for this film
-16:32:38 film_b: length 244.0s, rendering (part 50 s, 18 includes)
-16:49:49 film_b part 3/5 t0=97.6 d=48.8 -> rc=1
-16:51:14 film_b part 5/5 t0=195.2 d=48.8 -> rc=1
-16:52:39 film_b part 2/5 t0=48.8 d=48.8 -> rc=1
-16:57:55 film_b part 1/5 t0=0.0 d=48.8 -> rc=1
-16:58:43 film_b part 4/5 t0=146.4 d=48.8 -> rc=0
-16:58:43 film_b: failed parts [0, 1, 2, 4], retry round 1
-17:15:50 film_b retry part 0 sub 2/2 t0=24.4 d=24.4 -> rc=0
-17:17:53 film_b retry part 0 sub 1/2 t0=0.0 d=24.4 -> rc=1
-17:33:37 film_b retry part 1 sub 2/2 t0=73.2 d=24.4 -> rc=1
-17:34:16 film_b retry part 1 sub 1/2 t0=48.8 d=24.4 -> rc=1
-17:48:56 film_b retry part 2 sub 2/2 t0=122.0 d=24.4 -> rc=1
-17:49:24 film_b retry part 2 sub 1/2 t0=97.6 d=24.4 -> rc=1
-0
-16:56:44 film_b retry part 3 sub 1/2 t0=146.4 d=24.4 -> rc=1
-17:07:16 film_b retry part 3 sub 2/2 t0=170.8 d=24.4 -> rc=1
-17:21:51 film_b retry part 4 sub 2/2 t0=219.6 d=24.4 -> rc=1
-17:22:38 film_b retry part 4 sub 1/2 t0=195.2 d=24.4 -> rc=1
-17:22:38 film_b: failed parts [0, 1, 2, 3, 4], retry round 2
-17:42:11 film_b retry part 0 sub 2/2 t0=24.4 d=24.4 -> rc=1
+17:57:41 render_all: production=film_b films=film_b part=50s hq=True dry_run=False
+17:58:27 budget WARN: ahead of pace - continue sparingly: spent $366 of $2600 (cap $2340), allowed by now $334 (110% of pace) [render]
+17:58:27 !! verify gate SKIPPED by --skip-verify (supervisor override) - would have failed: film_b: no VERIFY_REPORT for this film
+17:58:27 film_b: length 244.0s, rendering (part 50 s, 18 includes)
+18:14:09 film_b part 1/5 t0=0.0 d=48.8 -> rc=1
+18:23:15 film_b part 3/5 t0=97.6 d=48.8 -> rc=0
+18:23:33 film_b part 5/5 t0=195.2 d=48.8 -> rc=1
+18:26:06 film_b part 4/5 t0=146.4 d=48.8 -> rc=0
+18:33:06 film_b part 2/5 t0=48.8 d=48.8 -> rc=0
+18:33:06 film_b: failed parts [0, 4], retry round 1
+18:49:07 film_b retry part 0 sub 1/2 t0=0.0 d=24.4 -> rc=1
+18:55:14 film_b retry part 0 sub 2/2 t0=24.4 d=24.4 -> rc=0
