@@ -1,0 +1,15 @@
+import sys;sys.path.insert(0,'_dev')
+from rp import P
+a=P('a_lib.js')
+a.rep("const lamp = G(g, [0, 410, 0]);","const lamp = G(g, [330, 410, 140]);")
+a.rep("M('#fff6c8', '#e0d0a0', 0), 0, [0, 262, 0]);","M('#fff6c8', '#e0d0a0', 0), 0, [330, 262, 140]);")
+a.rep("tube(4.2, 4.2, total + 70, 14).rotateZ(Math.PI / 2).translate(-(total + 70) / 2, 0, 0)","tube(4.2, 4.2, total + 6, 14).rotateZ(Math.PI / 2).translate(-(total + 6) / 2, 0, 0)")
+a.rep("g.userData.slide = u => { const T = total + 70; bar.position.x = -T + T * sm(u); };","g.userData.slide = u => { const T = total + 70; bar.position.x = -T + T * sm(u); };")
+a.save()
+_p=P('film_a.js');rep=_p.rep
+rep("bB.x = -175; bB.z = 40; bB.yaw = -Math.PI / 2 + 0.7;","bB.x = -150; bB.z = 40; bB.yaw = -Math.PI / 2 + 0.7;")
+rep("bR.x = -60; bR.z = -80; bR.yaw = Math.PI; const hd","bR.x = -70; bR.z = -80; bR.yaw = 3.6; const hd")
+rep("bB.x = 110; bB.z = 40; bB.yaw = 2.6; B.face.expr = 'smile'; B.face.look = [-0.3, 0.1]; bB.headYaw = -0.2;","bB.x = 80; bB.z = -10; bB.yaw = 3.7; B.face.expr = 'smile'; B.face.look = [-0.3, 0.1]; bB.headYaw = -0.1;")
+rep("bR.x = lerp(-60, 30, mv);","bR.x = lerp(-70, 30, mv);")
+rep("bB.x = -90; bB.z = 30; bB.yaw = -Math.PI / 2 + 0.55; B.face.expr = 'thinking';","bB.x = -90; bB.z = 30; bB.yaw = (t >= 133.5 && t < 136) ? Math.PI / 2 + 0.12 : -Math.PI / 2 + 0.55; B.face.expr = 'thinking';")
+_p.save()

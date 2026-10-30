@@ -1,7 +1,7 @@
 {
  "film": "film_a.html",
  "status": "FAIL",
- "time": "2026-10-30T11:22:14",
+ "time": "2026-10-30T12:41:58",
  "samples": 33,
  "findings": [
   {
@@ -71,8 +71,8 @@
  ],
  "sheets": null,
  "timing": {
-  "ready_s": 17.0,
-  "gates_s": 66.7,
-  "total_s": 84.0
+  "ready_s": 19.6,
+  "gates_s": 97.6,
+  "total_s": 119.4
  }
 }
