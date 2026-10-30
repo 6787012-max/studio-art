@@ -129,10 +129,12 @@ export function makePerson(D, kind) {
   for (const s of [-1, 1]) part(c.head, ell(3.6, 7.5, 3, 16, 12), mSkin, 2.0, [-4, 28, s * 24.5], [0, 0, 0.1]);
   // hair at the back under the hat: one cap + many small curls
   if (!D.crop) part(c.head, ell(18, 24, 22.5, 32, 24), mHair, 2.4, [-13, 35, 0]);
+  if (!D.crop) part(c.head, ell(20, 30, 25.5, 32, 24), mHair, 2.2, [-14, 31, 0]);   // solid back/nape hair shell (no skin visible from behind)
   if (!D.crop) for (const [x, y, z, r] of bumpsList()) part(c.head, ell(r, r, r, 12, 8), mHair, 1.6, [x, y, z]);
   if (D.hatK === 'kippa') {   // short hair over the whole top + a velvet kippa clearly on top of it
     part(c.head, ell(25.2, 15, 25.6, 32, 20), mHair, 1.4, [-4, 49, 0]);   // short crop: thin cap, ends above the ears and at the nape
     part(c.head, ell(14, 13, 21.5, 24, 14), mHair, 1.2, [-17.5, 36, 0]);   // nape
+    part(c.head, ell(20, 30, 25.5, 32, 24), mHair, 1.4, [-14, 31, 0]);   // solid back/side/nape shell (no bare skin from behind)
     c.hat = new THREE.Group(); c.hat.position.set(-6, 59.5, 0); c.hat.rotation.z = 0.3; c.head.add(c.hat);
     part(c.hat, ell(20, 6.5, 20, 32, 16), mHat, 2.2);
     part(c.hat, new THREE.TorusGeometry(19.2, 1.0, 8, 48).rotateX(Math.PI / 2).translate(0, -0.6, 0), toon('#6a7cc4', { tint: '#8a90b8', hi: 0 }), 0);
@@ -162,9 +164,9 @@ export function makePerson(D, kind) {
   part(c.head, ell(5.6, 5.8, 6.4, 20, 14), mSkin, 1.7, [23.5, beard === 'none' ? 17 : 14, 0]);
   // pe'ot: corkscrews in front of the ears
   for (const s of [-1, 1]) {
-    const pts = []; for (let i = 0; i <= 40; i++) { const t = i / 40, a = t * Math.PI * 2 * 4.2; pts.push(D.crop ? V(1.5 + Math.cos(a) * 1.7 + t * 1.5, 33 - t * 28, s * (25.5 + Math.sin(a) * 1.7 + t * 1.5))
+    const pts = []; for (let i = 0; i <= 40; i++) { const t = i / 40, a = t * Math.PI * 2 * 4.2; pts.push(D.crop ? V(-6 + Math.cos(a) * 1.2 + t * 1.0, 31 - t * 22, s * (25.4 + Math.sin(a) * 1.2 + t * 1.0))
       : V(-8 + Math.cos(a) * 2.6 * (D.peyR || 1) + t * 2, 33 - t * 33 * (D.pey || 1), s * (24 + Math.sin(a) * 2.6 * (D.peyR || 1) + t * 1.5))); }
-    part(c.head, tubeAlong(pts, t => D.crop ? 1.5 - 0.4 * t : (2.7 - 0.9 * t) * (D.peyR || 1), { segs: 120, radial: 8 }), mHair, 1.4);
+    part(c.head, tubeAlong(pts, t => D.crop ? 1.0 - 0.25 * t : (2.7 - 0.9 * t) * (D.peyR || 1), { segs: 120, radial: 8 }), mHair, 1.4);
   }
   // hat: brim (thin lathe with a rolled edge), crown with the centre dent, band
   if (D.hatK !== 'kippa') {

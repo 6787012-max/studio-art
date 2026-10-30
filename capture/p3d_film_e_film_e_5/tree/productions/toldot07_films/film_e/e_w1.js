@@ -101,14 +101,14 @@ export function buildSection(name, o) {
   { const wg = new THREE.BufferGeometry(); wg.setAttribute('position', new THREE.Float32BufferAttribute(vx, 3)); wg.setAttribute('color', new THREE.Float32BufferAttribute(vc, 3)); wg.setIndex(idx); const wm = new THREE.Mesh(wg, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide })); wm.frustumCulled = false; root.add(wm); }
   // surface (waves seen from the side)
   const sea = KT.makeSea({ A: o.A || 4, L: 260, palette: 'summer', size: 4000, seg: 160, k: 1.5, F: 1e6 }); root.add(sea.mesh);
-  sea.mesh.geometry = new THREE.PlaneGeometry(xe - x0 + 100, Z, 240, 24).rotateX(-PI / 2).translate((x0 + xe) / 2, 0, 0);
+  sea.mesh.geometry = new THREE.PlaneGeometry(xe - x0 + 100, Z, Math.round((xe - x0) / 28), 24).rotateX(-PI / 2).translate((x0 + xe) / 2, 0, 0);
   // ink: seabed profile on the front cut + waterline
   part(root, tubeAlong(samp.filter((p, i) => i % 2 === 0 || i === samp.length - 1).map(p => V(p.x, p.y, Z / 2 + 1)), 4.5, { segs: 160, radial: 6 }), ink(), 0);
   part(root, tubeAlong([V(x0, 0, Z / 2 + 1), V(x0, bottom, Z / 2 + 1)], 3.4, { segs: 4, radial: 6 }), ink(), 0);
   // light rays on the wall (top part)
   const rays = []; const rayMat = BMt('#ffffff', { transparent: true, opacity: 0.1, depthWrite: false });
-  for (let i = 0; i < 9; i++) { const sh = new THREE.Shape(), w = 50 + (i % 3) * 36, h = o.rayH || 900; sh.moveTo(0, 0); sh.lineTo(w, 0); sh.lineTo(w - 130 + w * 0.7, -h); sh.lineTo(-130, -h); sh.lineTo(0, 0);
-    const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), rayMat); m.position.set(lerp(x0 + 400, xe - 300, i / 8), 0, -Z / 2 + 3); m.renderOrder = 1; root.add(m); rays.push(m); }
+  const NR = Math.max(9, Math.round((xe - x0) / 800)); for (let i = 0; i < NR; i++) { const sh = new THREE.Shape(), w = 50 + (i % 3) * 36, h = o.rayH || 900; sh.moveTo(0, 0); sh.lineTo(w, 0); sh.lineTo(w - 130 + w * 0.7, -h); sh.lineTo(-130, -h); sh.lineTo(0, 0);
+    const m = new THREE.Mesh(new THREE.ShapeGeometry(sh), rayMat); m.position.set(lerp(x0 + 400, xe - 300, i / (NR - 1)), 0, -Z / 2 + 3); m.renderOrder = 1; root.add(m); rays.push(m); }
   // seabed life: weeds, stones, shells on the part with depth < o.lifeDepth
   const weeds = [], stones = [];
   for (let i = 0; i < (o.nWeeds || 20); i++) { const x = (o.lifeX0 || 100) + r() * ((o.lifeX1 || 1400) - (o.lifeX0 || 100)), y = yAt(x); if (y < (o.lifeMinY || -300)) continue;
@@ -122,7 +122,7 @@ export function buildSection(name, o) {
   const api = { root, sea, yAt, Z, x0, x1, xe, samp, weeds, curve };
   api.update = (t, p) => { sea.update(t, o.A || 4); weeds.forEach(w => { w.rotation.z = 0.16 * Math.sin(t * 1.3 + w.userData.ph); });
     bub.forEach(b => { const u = frac(b.ph + t * b.sp), by = yAt(b.x); b.m.position.set(b.x + 14 * Math.sin(u * 14 + b.ph * 9), by + 20 + u * Math.max(0, -by - 40), b.z); b.m.scale.setScalar(0.6 + 0.8 * u); b.m.visible = by < -120; });
-    rays.forEach((m, i) => { m.position.x = lerp(x0 + 400, xe - 300, i / 8) + 60 * Math.sin(t * 0.25 + i * 1.7); rayMat.opacity = 0.09 + 0.02 * Math.sin(t * 0.6); }); };
+    rays.forEach((m, i) => { m.position.x = lerp(x0 + 400, xe - 300, i / (NR - 1)) + 60 * Math.sin(t * 0.25 + i * 1.7); rayMat.opacity = 0.09 + 0.02 * Math.sin(t * 0.6); }); };
   return api;
 }
 
@@ -134,8 +134,8 @@ const dc = (m) => { // water colour by depth in metres
   let i = 1; while (i < st.length - 1 && m > st[i][0]) i++; const a = st[i - 1], b = st[i], u = cl((m - a[0]) / (b[0] - a[0]), 0, 1); return new THREE.Color(a[1]).lerp(new THREE.Color(b[1]), u); };
 export function buildMainSection() {
   const g = G();
-  const SEC = buildSection('sec', { Z: 1100, x0: -5400, x1: 2000, bottom: -3300, coastX: 1500, Y: YM, A: 3.5, rayH: 900,
-    prof: [[-5400, 1713], [-3400, 1708], [-2600, 1700], [-2300, 1685], [-2050, 1500], [-1750, 1250], [-1400, 880], [-1050, 460], [-760, 210], [-560, 108], [-470, 100], [-160, 80], [250, 50], [700, 26], [1100, 10], [1450, 0], [1530, -12], [1640, -70], [1760, -130], [2000, -190]],
+  const SEC = buildSection('sec', { Z: 1100, x0: -9400, x1: 2000, bottom: -3300, coastX: 1500, Y: YM, A: 3.5, rayH: 900,
+    prof: [[-9400, 1713], [-5400, 1713], [-3400, 1708], [-2600, 1700], [-2300, 1685], [-2050, 1500], [-1750, 1250], [-1400, 880], [-1050, 460], [-760, 210], [-560, 108], [-470, 100], [-160, 80], [250, 50], [700, 26], [1100, 10], [1450, 0], [1530, -12], [1640, -70], [1760, -130], [2000, -190]],
     bands: [{ below: -350, c: '#c4a876', w: 6 }, { below: -900, c: '#9a8468', w: 6 }, { below: -1700, c: '#76665a', w: 6 }, { below: -2600, c: '#5a4c46', w: 6 }],
     wallRows: [0, -30, -90, -180, -260, -350, -480, -700, -1000, -1400, -1900, -2400, -2900, -3300], colAt: y => dc(MY(y)),
     nWeeds: 22, lifeX0: 0, lifeX1: 1450, lifeMinY: -230, nStones: 12, stoneK: 1.1, weedH: 100 });
@@ -153,8 +153,9 @@ export function buildMainSection() {
   const jel = [[-3700, -2390, 200], [-2450, -1790, 20], [-3050, -2540, -120]].map(([x, y, z], i) => { const a = P.makeJelly(i + 3); a.position.set(x, y, z); a.scale.setScalar(1.9); g.add(a); return a; });
   const school = makeSchool(16, [['#f49a3c', '#ff6a3c'], ['#ffd45a', '#f0b030'], ['#9ad0ff', '#6aa8f0']], 8); g.add(school);
   const school2 = makeSchool(10, [['#7ad0a0', '#4aa070'], ['#e8f0ff', '#a0c0f0']], 9); g.add(school2);
-  const w = addWorld('sec', g, 'day', { SEC, boat, ang, jel, school, school2, meron, splash });
-  w.upd = (t, lt, p) => { p = p || {}; SEC.update(t);
+  const birds = KT.makeBirds({ n: 3, r: 700, y: 560, seed: 9 }); birds.position.set(-800, 0, -500); g.add(birds);
+  const w = addWorld('sec', g, 'day', { SEC, boat, ang, jel, school, school2, meron, splash, birds });
+  w.upd = (t, lt, p) => { p = p || {}; SEC.update(t); birds.visible = !!p.birds; if (p.birds) birds.userData.update(t);
     const b = p.boat; boat.visible = !!b; if (b) { boat.position.set(b[0], b[1], b[2]); boat.rotation.set(0, b[3], b[4] || 0); }
     school.userData.update(t, 650, -130, 60, 330, 1.2, 0.32); school2.userData.update(t, 1000, -50, -80, 200, 1.0, 0.4);
     school.visible = school2.visible = !p.noSchool; meron.visible = p.meronY != null; if (p.meronY != null) meron.position.y = p.meronY; splash.visible = p.splashU != null && p.splashU > 0 && p.splashU < 1; if (splash.visible) splash.userData.update(p.splashU);
@@ -171,8 +172,8 @@ const dcT = (m) => { const st = [[0, '#74d8f2'], [60, '#4fb8e6'], [200, '#2a74b8
   let i = 1; while (i < st.length - 1 && m > st[i][0]) i++; const a = st[i - 1], b = st[i], u = cl((m - a[0]) / (b[0] - a[0]), 0, 1); return new THREE.Color(a[1]).lerp(new THREE.Color(b[1]), u); };
 export function buildTrench() {
   const g = G();
-  const SEC = buildSection('trench', { Z: 1000, x0: -2400, x1: 2400, bottom: -3000, coastX: 2400, Y: YT, A: 3, seed: 8, rayH: 700, ns: 300,
-    prof: [[-2400, 3200], [-1700, 3300], [-1200, 3600], [-900, 4300], [-600, 5000], [-300, 5105], [0, 5109], [300, 5090], [600, 4800], [900, 4000], [1200, 3000], [1500, 2100], [1800, 1500], [2100, 1300], [2400, 1200]],
+  const SEC = buildSection('trench', { Z: 1000, x0: -9600, x1: 9600, bottom: -3000, coastX: 9600, Y: YT, A: 3, seed: 8, rayH: 700, ns: 300,
+    prof: [[-9600, 3200], [-2400, 3200], [-1700, 3300], [-1200, 3600], [-900, 4300], [-600, 5000], [-300, 5105], [0, 5109], [300, 5090], [600, 4800], [900, 4000], [1200, 3000], [1500, 2100], [1800, 1500], [2100, 1300], [2400, 1200], [9600, 1200]],
     bands: [{ below: -900, c: '#b49a70', w: 6 }, { below: -1700, c: '#8f7a66', w: 6 }, { below: -2300, c: '#6f6058', w: 6 }, { below: -2600, c: '#4a3f3c', w: 6 }],
     wallRows: [0, -30, -90, -200, -400, -700, -1100, -1600, -2100, -2700, -3000], colAt: y => dcT(MT(y)), nWeeds: 0, nStones: 8, stoneK: 1.8, sand: '#d2b98a' });
   g.add(SEC.root);

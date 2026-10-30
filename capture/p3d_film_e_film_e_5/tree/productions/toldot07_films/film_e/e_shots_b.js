@@ -32,15 +32,15 @@ SH.e2b = {
     { a: 13.2, b: 15.57, w: 'map', cam: mv([520, 1500, 1350], [420, 0, 110], [450, 520, 780], [408, 0, 95], 32, 30) },
     { a: 15.57, b: 21.2, w: 'trench', cam: u => { const T = TS(15.57 + u * 5.63); return { p: [T.x + 520, T.y + 30, 1250], l: [T.x - 20, T.y - 70, 60], fov: 30 }; } },
     { a: 21.2, b: 23.53, w: 'trench', cam: mv([0, -1280, 4700], [0, -1280, 0], [0, -1400, 4300], [0, -1400, 0], 32, 32) },
-    { a: 23.53, b: 27.7, w: 'trench', cam: mv([0, -1300, 4700], [0, -1300, 0], [-150, -1150, 3900], [-100, -1150, 0], 32, 32) },
-    { a: 27.7, b: 31.49, w: 'trench', cam: mv([-150, -1150, 3900], [-100, -1150, 0], [-250, -650, 3000], [-100, -700, 0], 32, 32) },
+    { a: 23.53, b: 27.5, w: 'trench', cam: mv([-100, -1750, 4300], [-100, -1750, 0], [-100, -1550, 4700], [-100, -1500, 0], 32, 32) },
+    { a: 27.5, b: 31.49, w: 'trench', cam: mv([-100, -1500, 4700], [-100, -1450, 0], [-100, -1320, 5200], [-100, -1300, 0], 32, 32) },
     { a: 31.49, b: 35.3, w: 'trench', cam: mv([-330, -360, 1250], [-110, -110, 0], [-260, -300, 1100], [-110, -90, 0], 38, 36) },
-    { a: 35.3, b: 38.7, w: 'trench', cam: mv([40, 150, 560], [-30, 135, 0], [10, 148, 500], [-30, 137, 0], 28, 27) },
+    { a: 35.3, b: 38.7, w: 'trench', cam: mv([-90, 120, 1020], [-100, 235, 0], [-110, 125, 960], [-100, 235, 0], 32, 31) },
   ],
   acts(lt, S, u) {
     const t = ST.t;
     if (lt < 15.57) { env({ sI: lt < 9.85 ? ease(lt, 0.5, 1.5) : 0, sG: lt >= 9.85 ? ease(lt, 9.85, 10.8) : 0 }); return; }
-    const SEC = WORLD.trench.SEC, d = [ease(lt, 24.0, 25.8), ease(lt, 26.0, 27.8), ease(lt, 28.0, 29.8), ease(lt, 30.0, 31.5)];
+    const SEC = WORLD.trench.SEC, d = [ease(lt, 23.6, 24.7), ease(lt, 24.8, 25.9), ease(lt, 26.0, 27.1), ease(lt, 27.2, 28.3)];
     const bt = boatAt(t, -100, 0, 0, 0.7), boatOn = lt > 30.5;
     env({ drop: lt < 23.53 ? [0, 0, 0, 0] : d, boat: boatOn ? bt : false });
     if (lt < 23.53) {
@@ -53,7 +53,7 @@ SH.e2b = {
     // c5: Tipa on the top mountain waves to the surface; the boy (in the boat above) is amazed
     const tp = BOTT + 2400 + 4;
     put('tipa', { x: -100, y: tp, z: 20, yaw: -PI / 2 + 0.3, feet: true, shadow: false, scale: 0.42, arms: 'wave', float: 0.1 }, face('cheering', t, 0.3, { look: lk(0, 0.8), talk: tt(lt, 32.5, 34.5) }));
-    const bp = onBoat(bt, 85, 45), rp = onBoat(bt, -80, -10);
+    const bp = onBoat(bt, 150, 40), rp = onBoat(bt, -135, -10);
     put('boy', { x: bp[0], z: bp[2], y: bp[1], yaw: -PI / 2 + 0.2, lean: 18 + 6 * ease(lt, 35.3, 36), headTilt: 3, arms: { l: { sz: 0.4, el: 0.5 }, r: { sz: 0.4 + 0.5 * ease(lt, 35.8, 36.5), sx: 0.3, el: 0.7 } } }, face('surprised', t, 0.6, { look: lk(0.1, -0.7) }));
     put('rabbi', { x: rp[0], z: rp[2], y: rp[1], yaw: -PI / 2 + 0.5, arms: { l: { sz: 0.12 }, r: { sz: 0.12 } } }, face('smile', t, 0.2, { look: lk(0.2, -0.4) }));
   },
@@ -73,7 +73,7 @@ SH.e2b = {
 
 /* ======================================================================== e3 : full of life (57.6 s) */
 const JW = [33.78, 37.38], JP = 3.6;   // jump starts (shot time)
-const jump = (lt, t0, x0, dir) => { const s = lt - t0; if (s < 0 || s > 1.9) return null; const k = s / 1.6, u = cl(k, 0, 1), X = x0 + dir * 560 * u, Y = -95 + 430 * Math.sin(PI * u), dy = 430 * PI * Math.cos(PI * u), pitch = Math.atan2(dy, 560); return { x: X, y: Y, pitch: dir > 0 ? pitch : -pitch, u: k, puff: ease(k, 0.12, 0.34) * (1 - ease(k, 0.34, 0.6)) }; };
+const jump = (lt, t0, x0, dir) => { const s = lt - t0; if (s < 0 || s > 1.9) return null; const k = s / 1.6, u = cl(k, 0, 1), X = x0 + dir * 560 * u, Y = -95 + 300 * Math.sin(PI * u), dy = 300 * PI * Math.cos(PI * u), pitch = Math.atan2(dy, 560); return { x: X, y: Y, pitch: dir > 0 ? pitch : -pitch, u: k, puff: ease(k, 0.08, 0.22) * (1 - ease(k, 0.66, 0.8)) }; };
 const PX = (x, z) => gy(x, z) - 17;
 const crawlX = u => PIT[0] + 40 * Math.sin(u * 3.2) - 20 * u;
 const BAB = i => 53.1 + 0.14 * i;
@@ -83,18 +83,18 @@ SH.e3 = {
     { a: 4.2, b: 8.41, w: 'reef', cam: mv([-120, 240, 460], [-480, 250, -400], [-200, 230, 420], [-500, 250, -400], 33, 31), fg: 'reef' },
     { a: 8.41, b: 11.9, w: 'cabin', cam: mv([440, 190, 270], [335, 150, -118], [395, 188, 236], [335, 151, -118], 26, 23) },
     { a: 11.9, b: 17.92, w: 'reef', cam: mv([-900, 300, 560], [-400, 290, -650], [300, 300, 560], [350, 290, -650], 33, 32), fg: 'weed' },
-    { a: 17.92, b: 21.5, w: 'reef', cam: mv([330, 275, 250], [0, 262, -300], [270, 270, 210], [-10, 262, -300], 30, 26) },
-    { a: 21.5, b: 25.17, w: 'reef', cam: mv([100, 300, 430], [150, 250, -300], [60, 290, 380], [140, 250, -300], 34, 33) },
+    { a: 17.92, b: 21.5, w: 'reef', cam: mv([330, 370, 640], [20, 352, -300], [270, 360, 600], [10, 350, -300], 32, 30) },
+    { a: 21.5, b: 25.17, w: 'reef', cam: mv([130, 340, 640], [140, 335, -300], [80, 330, 600], [130, 335, -300], 36, 35) },
     { a: 25.17, b: 28.8, w: 'reef', cam: mv([100, 300, 640], [-100, 280, -500], [-60, 300, 560], [-120, 280, -500], 36, 34), fg: 'weed' },
     { a: 28.8, b: 33.18, w: 'reef', cam: mv([220, 300, 330], [-80, 285, -450], [160, 305, 300], [-120, 285, -450], 32, 28) },
-    { a: 33.18, b: 36.8, w: 'surf', cam: mv([620, 90, 330], [-40, 150, -520], [560, 100, 300], [-60, 160, -520], 34, 34) },
-    { a: 36.8, b: 40.43, w: 'surf', cam: mv([-420, 110, 140], [110, 150, -520], [-380, 130, 120], [90, 170, -520], 34, 33) },
+    { a: 33.18, b: 36.8, w: 'surf', cam: mv([-540, 120, 440], [150, 205, -430], [-500, 125, 410], [130, 205, -430], 36, 35) },
+    { a: 36.8, b: 40.43, w: 'surf', cam: mv([-430, 95, 340], [150, 215, -450], [-380, 100, 310], [130, 215, -450], 37, 36) },
     { a: 40.43, b: 44.6, w: 'night', cam: mv([-250, 95, 700], [-150, 135, -300], [-200, 85, 640], [-150, 125, -300], 34, 34), fg: 'grass' },
     { a: 44.6, b: 47.0, w: 'night', cam: mv([420, 80, 360], [-110, 50, 440], [370, 76, 380], [-110, 50, 440], 30, 28) },
     { a: 47.0, b: 49.19, w: 'night', cam: mv([140, 72, 300], [-120, 36, 392], [110, 66, 330], [-120, 34, 392], 27, 24) },
     { a: 49.19, b: 52.6, w: 'night', cam: mv([320, 70, 560], [-120, 60, 380], [280, 66, 530], [-120, 60, 380], 33, 32) },
     { a: 52.6, b: 54.9, w: 'night', cam: mv([130, 40, 500], [-120, 40, 385], [100, 52, 470], [-120, 52, 385], 28, 26) },
-    { a: 54.9, b: 57.6, w: 'night', cam: mv([-170, 62, 140], [10, 112, 480], [-130, 60, 160], [10, 112, 480], 36, 35) },
+    { a: 54.9, b: 57.6, w: 'night', cam: mv([-120, 125, -330], [-120, 175, 420], [-110, 128, -290], [-120, 175, 420], 34, 33) },
   ],
   acts(lt, S, u) {
     const t = ST.t;
@@ -121,7 +121,7 @@ SH.e3 = {
       }
       if (lt < 25.17) {      // gills close-up
         const open = 0.5 + 0.5 * Math.sin(lt * 3.2); gillOpen(open);
-        const fp = { x: 0, y: 262, z: -300, yaw: -0.5 };
+        const fp = { x: 0, y: 262, z: -300, yaw: 0.2 };
         put('f0', Object.assign({ swim: 0.2, scale: 2.2 }, fp), face('happy', t, 0.1));
         const c = Math.cos(fp.yaw), s = Math.sin(fp.yaw), lx = 20 * 2.2, lz = 55 * 2.2;
         env({ gb: lt > 18.6 ? [fp.x + lx * c + lz * s, fp.y + 20, fp.z - lx * s + lz * c] : null });
@@ -146,18 +146,18 @@ SH.e3 = {
     // ---------------- c5 dolphin jumps (surface world)
     if (lt < 40.43) {
       const j1 = jump(lt, JW[0], -280, 1), j2 = jump(lt, JW[1], 260, -1);
-      env({ A: 7, boat: boatAt(t, -760, -420, 0.3, 0.4) });
+      env({ A: 7, boat: boatAt(t, 370, -310, 0.0, 0.4) });
       const j = j1 || j2; const s0 = lt < 36 ? JW[0] : JW[1];
       if (j) { put('dolphin', { x: j.x, y: j.y, z: -520, yaw: j === j1 ? 0 : PI, pitch: j.pitch, swim: 0.6, scale: 0.9, puff: j.puff, blink: false }, {}); }
       const sp = lt >= 35.1 && lt < 36.2 ? [-280 + 560 * 0.95, -520, (lt - 35.1) / 1.1] : (lt >= 38.7 && lt < 39.8 ? [260 - 560 * 0.95, -520, (lt - 38.7) / 1.1] : null);
       if (sp) env({ splash: sp });
-      const bt = boatAt(t, -760, -420, 0.3, 0.4), rp = onBoat(bt, -70, -4), bp = onBoat(bt, 88, 40);
-      put('rabbi', { x: rp[0], z: rp[2], y: rp[1], yaw: -PI / 2 + 0.7, arms: { l: { sz: 0.12 }, r: { sz: 0.2 + 0.6 * ease(lt, 34, 34.6) } } }, face('smile', t, 0.2, { look: lk(0.5, 0.3) }));
-      put('boy', { x: bp[0], z: bp[2], y: bp[1], yaw: -PI / 2 + 0.6, arms: { l: { sz: 0.3, el: 0.5 }, r: { sz: 0.9 * (j ? 1 : 0.3), sx: 0.3, el: 0.5 } } }, face(j ? 'surprised' : 'smile', t, 0.6, { look: lk(0.4, 0.3) }));
+      const bt = boatAt(t, 370, -310, 0.0, 0.4), rp = onBoat(bt, -135, 0), bp = onBoat(bt, 135, 30);
+      put('rabbi', { x: rp[0], z: rp[2], y: rp[1], yaw: PI - 0.2, arms: { l: { sz: 0.12 }, r: { sz: 0.2 + 0.6 * ease(lt, 34, 34.6) } } }, face('smile', t, 0.2, { look: lk(-0.5, 0.3) }));
+      put('boy', { x: bp[0], z: bp[2], y: bp[1], yaw: PI + 0.2, arms: { l: { sz: 0.3, el: 0.5 }, r: { sz: 0.9 * (j ? 1 : 0.3), sx: 0.3, el: 0.5 } } }, face(j ? 'surprised' : 'smile', t, 0.6, { look: lk(-0.5, 0.3) }));
       return;
     }
     // ---------------- c6 / c7 night beach and dawn
-    const day = lt > 51.2;
+    const day = false;
     const gp = WORLD.night.pitY;
     if (lt < 49.19) {
       let q = null;
@@ -168,18 +168,19 @@ SH.e3 = {
       return;
     }
     // c7
-    env({ day, mound: ease(lt, 49.19, 49.6), eggs: lt < 52.9 ? 16 : 0, hole: 0, track: 1, burst: lt > 52.9 ? ease(lt, 52.9, 53.9) * (1 - ease(lt, 54.0, 54.8)) : 0 });
+    env({ day, moonBack: lt >= 54.9, mound: ease(lt, 49.19, 49.6), eggs: lt < 52.9 ? 16 : 0, hole: 0, track: 1, burst: lt > 52.9 ? ease(lt, 52.9, 53.9) * (1 - ease(lt, 54.0, 54.8)) : 0 });
     if (lt >= 52.6) {
       for (let i = 0; i < 8; i++) { const ti = BAB(i); if (lt < ti) continue; const d = Math.max(0, (lt - ti - 0.5) * 120), z = Math.max(60, PIT[1] - 10 - d), x = PIT[0] + (i - 3.5) * 40 * Math.min(1, 0.4 + d / 300) + 30 * Math.sin(d * 0.01 + i);
-        put('baby' + i, { x, y: PX(x, z) + 0, z, yaw: -PI / 2 + 0.1 * Math.sin(d * 0.05 + i) - (z <= 61 ? 0 : 0), ph: d / 22, move: lt - ti > 0.5 && z > 60 ? 1 : 0, sink: (lt - ti < 0.5 ? 10 * (1 - (lt - ti) / 0.5) : 0), scale: 1.0 }, {}); } }
+        put('baby' + i, { x, y: PX(x, z) + 0, z, yaw: PI / 2 + 0.1 * Math.sin(d * 0.05 + i), ph: d / 22, move: lt - ti > 0.5 && z > 60 ? 1 : 0, sink: (lt - ti < 0.5 ? 10 * (1 - (lt - ti) / 0.5) : 0), scale: 1.0 }, {}); } }
     if (lt >= 54.9) {
-      put('boy', { x: -30, z: 440, y: gy(-30, 440), yaw: PI / 2 - 0.25, arms: { l: { sz: 2.6 + 0.2 * Math.sin(lt * 7), sx: 0.4, el: 0.3 }, r: { sz: 2.6 + 0.2 * Math.sin(lt * 7 + 1), sx: 0.4, el: 0.3 } } }, face('laugh', t, 0.6, { look: lk(0, 0.3) }));
-      put('rabbi', { x: 120, z: 480, y: gy(120, 480), yaw: PI / 2 + 0.3, arms: { l: { sz: 0.12 }, r: { sz: 0.12 } } }, face('smile', t, 0.2, { look: lk(-0.2, 0) }));
+      const pump = 0.12 * Math.sin(lt * 6);
+      put('boy', { x: -330, z: 520, y: gy(-330, 520), yaw: PI / 2 - 0.5, arms: { l: { sz: 0.1 }, r: { sz: 3.05 + 0.45 * pump, sx: -0.5, el: 0.12 + 0.2 * Math.max(0, pump * 4), curl: 1.4 } } }, face('smile', t, 0.6, { look: lk(0.35, 0.1), talk: (frac(lt * 1.7) < 0.6) ? 'A' : 'E' }));
+      put('rabbi', { x: 30, z: 560, y: gy(30, 560), yaw: PI / 2 + 0.55, headYaw: 0.15 * Math.sin(lt * 1.1), arms: { l: { sz: 0.12 }, r: { sz: 0.12 + 0.12 * Math.sin(lt * 2.1) } } }, face('smile', t, 0.2, { look: lk(-0.3, 0.05) }));
     }
   },
   hud(lt, S, u, wn) {
     if (wn === 'night') {
-      const day = lt > 51.2, a = lt < 49.19 ? 0.55 : (lt < 51.2 ? 0.55 - 0.3 * ease(lt, 50.2, 51.2) : 0.18 - 0.1 * ease(lt, 51.2, 53));
+      const day = false, a = lt < 49.19 ? 0.55 : 0.46;
       if (!day) { const qx = lt < 44.6 ? crawlX(ease(lt, 40.5, 44.4)) : crawlX(1), qz = lt < 44.6 ? lerp(55, PIT[1] + 120, ease(lt, 40.5, 44.4)) : PIT[1] + 120; const sp = scr([qx, 60, qz]); tint('#06143a', a, [sp[0], sp[1], px(520), 0.7]); }
       else tint('#ff9a60', Math.max(0.02, a * 0.9));
       if (lt >= 49.19 && lt < 52.6) {   // calendar flips: 1 -> 2
@@ -201,9 +202,9 @@ const CHX = [-290, 0, 290], CHZ = 250;
 const chestPose = (i, lt) => { const p = ease(lt, 0.9 + 1.2 * i, 4.2 + 0.4 * i), x = CHX[i] + (i - 1) * 10, z = lerp(-240, CHZ, p), g0 = gy(x, z); const y = lerp(-110, Math.max(g0, 2), Math.min(1, p * 2.4)) + (p > 0.5 && p < 0.98 ? 16 * Math.abs(Math.sin(p * 20)) : 0); return { x, y, z, p }; };
 SH.e4 = {
   setups: [
-    { a: 0, b: 4.4, w: 'beach', cam: mv([980, 250, 1000], [60, 110, 40], [930, 245, 960], [40, 110, 20], 34, 33) },
+    { a: 0, b: 4.4, w: 'beach', cam: mv([-330, 170, -130], [215, 125, 380], [-300, 168, -100], [215, 125, 380], 34, 33) },
     { a: 4.4, b: 8.19, w: 'beach', cam: mv([-60, 205, -540], [0, 165, 300], [40, 195, -490], [0, 160, 300], 36, 34) },
-    { a: 8.19, b: 11.8, w: 'coast', cam: mv([-900, 230, 720], [-250, 40, 60], [-780, 215, 640], [-260, 50, 60], 32, 30) },
+    { a: 8.19, b: 11.8, w: 'coast', cam: mv([-900, 270, 720], [-300, 105, 90], [-800, 255, 650], [-300, 105, 90], 37, 35) },
     { a: 11.8, b: 14.8, w: 'coast', cam: mv([720, 260, 880], [720, 190, -60], [740, 250, 830], [760, 190, -60], 34, 32) },
     { a: 14.8, b: 17.59, w: 'coast', cam: mv([1310, 150, 500], [1500, 105, 80], [1360, 150, 440], [1500, 110, 80], 28, 26) },
     { a: 17.59, b: 21.5, w: 'coast', cam: mv([1750, 420, 940], [2050, 60, 0], [3000, 340, 820], [3250, 60, 200], 32, 32) },
@@ -211,13 +212,13 @@ SH.e4 = {
     { a: 24.5, b: 28.6, w: 'coast', cam: mv([3490, 150, 700], [3190, 125, 370], [3440, 145, 640], [3190, 128, 370], 30, 28) },
     { a: 28.6, b: 31.8, w: 'pools', cam: mv([1300, 300, 430], [100, 40, -420], [1180, 290, 380], [40, 40, -420], 34, 33) },
     { a: 31.8, b: 35.0, w: 'pools', cam: mv([460, 210, 90], [180, 10, -330], [380, 230, 70], [150, 10, -330], 32, 30) },
-    { a: 35.0, b: 38.0, w: 'pools', cam: mv([-1250, 210, 330], [-1800, 110, -400], [-1350, 200, 300], [-1800, 115, -400], 34, 32) },
+    { a: 35.0, b: 38.0, w: 'pools', cam: mv([-1050, 190, 330], [-1790, 55, -300], [-1130, 180, 300], [-1790, 60, -300], 34, 32) },
     { a: 38.0, b: 41.5, w: 'gas', cam: mv([1100, 300, 1400], [720, -20, 0], [800, -200, 1300], [720, -300, 0], 34, 34) },
     { a: 41.5, b: 45.79, w: 'gas', cam: mv([860, -330, 760], [722, -430, 300], [800, -380, 690], [722, -430, 300], 28, 26) },
     { a: 45.79, b: 49.0, w: 'town', cam: mv([-2500, 170, 780], [-1500, 60, 340], [-700, 190, 640], [-300, 120, 60], 34, 34) },
     { a: 49.0, b: 51.8, w: 'stove', cam: mv([60, 610, 470], [-160, 490, 40], [20, 570, 390], [-160, 490, 40], 28, 24) },
     { a: 51.8, b: 54.2, w: 'town', cam: mv([700, 260, 900], [-180, 220, -100], [200, 250, 830], [-120, 230, -100], 36, 34) },
-    { a: 54.2, b: 56.4, w: 'town', cam: mv([300, 200, 1250], [1000, 170, 0], [420, 195, 1200], [1000, 175, 0], 38, 36) },
+    { a: 54.2, b: 56.4, w: 'town', cam: mv([470, 150, 1250], [1150, 215, -120], [495, 152, 1215], [1150, 215, -120], 36, 35) },
   ],
   acts(lt, S, u) {
     const t = ST.t;
@@ -226,9 +227,9 @@ SH.e4 = {
       env({ A: 4 });
       chests.forEach((c, i) => { const p = chestPose(i, lt); c.visible = true; c.position.set(p.x, p.y, p.z); const op = ease(lt, 5.0 + 0.3 * i, 5.9 + 0.3 * i); c.userData.lid.rotation.x = -1.75 * op; const ic = c.userData.ic; ic.visible = op > 0.05; ic.position.y = 130 + 70 * op + 8 * Math.sin(t * 2 + i); ic.scale.setScalar(Math.max(0.01, op)); ic.rotation.y = t * 1.6 + i; c.userData.gl.userData.update(t, op); });
       const wonder = ease(lt, 4.8, 5.4);
-      put('rabbi', { x: lt < 4.4 ? 330 : 190, z: lt < 4.4 ? 430 : 580, y: gy(lt < 4.4 ? 330 : 190, lt < 4.4 ? 430 : 580), yaw: lt < 4.4 ? 2.13 : PI / 2 - 0.15, headYaw: 0.1, arms: { l: { sz: 0.12 }, r: { sz: 0.1 + 0.95 * ease(lt, 1.2, 1.8) * (1 - wonder) + 1.0 * wonder, sx: 0.3 + 0.4 * wonder, el: 0.4, point: wonder < 0.5 && lt > 1.2 } } },
-        face(wonder > 0.4 ? 'laugh' : 'explaining', t, 0.2, { look: lk(-0.4, 0.2), talk: talk(lt, 0.8, 4.2) }));
-      put('boy', { x: lt < 4.4 ? 240 : -170, z: lt < 4.4 ? 470 : 590, y: gy(lt < 4.4 ? 240 : -170, lt < 4.4 ? 470 : 590), yaw: lt < 4.4 ? 2.1 : PI / 2 + 0.15, arms: { l: { sz: 0.08 + 1.8 * wonder, sx: 0.3 }, r: { sz: 0.08 + 1.8 * wonder, sx: 0.3 } } }, face(lt > 3 ? 'surprised' : 'smile', t, 0.6, { look: lk(-0.4, 0.2) }));
+      put('rabbi', { x: lt < 4.4 ? 520 : 190, z: lt < 4.4 ? 390 : 580, y: gy(lt < 4.4 ? 520 : 190, lt < 4.4 ? 390 : 580), yaw: lt < 4.4 ? 1.85 : PI / 2 - 0.15, headYaw: 0.1, arms: { l: { sz: 0.12 }, r: { sz: 0.1 + 0.95 * ease(lt, 1.2, 1.8) * (1 - wonder) + 1.0 * wonder, sx: 0.3 + 0.4 * wonder, el: 0.4, point: wonder < 0.5 && lt > 1.2 } } },
+        face(wonder > 0.4 ? 'laugh' : 'explaining', t, 0.2, { look: lk(-0.4, 0.1), talk: talk(lt, 0.8, 4.2) }));
+      put('boy', { x: lt < 4.4 ? 160 : -170, z: lt < 4.4 ? 480 : 590, y: gy(lt < 4.4 ? 160 : -170, lt < 4.4 ? 480 : 590), yaw: lt < 4.4 ? 1.95 : PI / 2 + 0.15, arms: { l: { sz: 0.08 + 1.8 * wonder, sx: 0.3 }, r: { sz: 0.08 + 1.8 * wonder, sx: 0.3 } } }, face(lt > 3 ? 'surprised' : 'smile', t, 0.6, { look: lk(-0.4, 0.2) }));
       return;
     }
     chests.forEach(c => { c.visible = false; });
@@ -239,8 +240,8 @@ SH.e4 = {
         const uu = ease(lt, 8.6, 11.6) * 0.82; const q = CO.intake.getPointAt(uu);
         env({ salt: ease(lt, 8.4, 9.2), flow: false });
         put('tipaB', { x: q.x, y: q.y + 30, z: q.z + 10, yaw: 0.2, tilt: -10, float: 0.7, arms: 'up', feet: false, shadow: false, scale: 0.42 }, face('worried', t, 0.2, { look: lk(0.4, 0.1) }));
-        put('rabbi', { x: -150, y: 0, z: 300, yaw: -PI / 2 + 0.9, arms: { l: { sz: 0.12 }, r: { sz: 0.1 + 0.9 * ease(lt, 8.6, 9.3), sx: 0.3, el: 0.4, point: true } } }, face('explaining', t, 0.1, { look: lk(-0.4, 0), talk: talk(lt, 8.6, 11.2) }));
-        put('boy', { x: -30, y: 0, z: 330, yaw: -PI / 2 + 0.6, arms: { l: { sz: 0.08 }, r: { sz: 0.08 } } }, face('thinking', t, 0.6, { look: lk(-0.4, 0) }));
+        put('rabbi', { x: -234, y: 0, z: 212, yaw: -2.9, arms: { l: { sz: 0.12 }, r: { sz: 0.1 + 0.9 * ease(lt, 8.6, 9.3), sx: 0.3, el: 0.4, point: true } } }, face('explaining', t, 0.1, { look: lk(-0.4, 0), talk: talk(lt, 8.6, 11.2) }));
+        put('boy', { x: -91, y: 0, z: 308, yaw: -2.75, arms: { l: { sz: 0.08 }, r: { sz: 0.08 } } }, face('thinking', t, 0.6, { look: lk(-0.4, 0) }));
         return; }
       if (lt < 14.8) {
         const uu = ease(lt, 11.8, 12.4), inV = lt > 12.4;
@@ -290,12 +291,12 @@ SH.e4 = {
     }
     // ---- c6 power
     const on = [0, 1, 2, 3, 4, 5].map(i => ease(lt, 51.9 + 0.4 * i, 52.7 + 0.4 * i));
-    env({ gas: lt < 54.2, on: lt < 51.8 ? null : on, smoke: lt > 50.5 ? 1 : 0.4, on_: 0, on1: 0 });
+    env({ gas: lt < 54.2, on: lt < 51.8 ? null : on, smoke: lt > 50.5 ? 1 : 0.4, on_: 0, on1: 0, noBulb: lt >= 54.2 });
     if (lt < 49.0) { const q = WORLD.town.gp.getPointAt(ease(lt, 46.0, 48.6) * 0.8); put('tipa', { x: q.x, y: q.y + 70, z: q.z + 20, yaw: yawTo(q.x, q.z, q.x + 100, q.z - 40), tilt: -8, float: 0.8, arms: 'up', feet: false, shadow: false, scale: 0.5 }, face('cheering', t, 0.3, { look: lk(0.5, 0) })); return; }
     if (lt < 51.8) { env({ on: 1, steam: true, all: lt > 50 }); return; }
     if (lt >= 54.2) {
-      put('boy', { x: 640, y: 0, z: 760, yaw: -PI / 2 + 0.6, arms: { l: { sz: 0.08 }, r: { sz: 0.08 } } }, face('laugh', t, 0.6, { look: lk(0.6, 0.4) }));
-      put('rabbi', { x: 780, y: 0, z: 790, yaw: -PI / 2 + 0.9, arms: { l: { sz: 0.12 }, r: { sz: 0.9, sx: 0.3, el: 0.5 } } }, face('proud', t, 0.2, { look: lk(0.6, 0.3), talk: talk(lt, 54.3, 56) }));
+      put('boy', { x: 776, y: 0, z: 597, yaw: -1.3, arms: { l: { sz: 0.08 }, r: { sz: 0.08 } } }, face('smile', t, 0.6, { look: lk(0.6, 0.2) }));
+      put('rabbi', { x: 583, y: 0, z: 442, yaw: -1.15, headYaw: 0.1 * Math.sin(lt * 1.3), arms: { l: { sz: 0.12 }, r: { sz: 0.9, sx: 0.3, el: 0.5 } } }, face('proud', t, 0.2, { look: lk(0.6, 0.2), talk: talk(lt, 54.3, 56) }));
     }
   },
   hud(lt, S, u, wn) {
@@ -306,23 +307,30 @@ SH.e4 = {
 };
 
 /* ======================================================================== e5 : recap (20 s) */
+/* two calm set-ups: A boat in the upper-left, B boat in the upper-right; the water surface sits at ~58% of the frame height,
+   so the burned-in lines (centre band) fall on plain water; every creature lives in the lower third. */
+const RC = lt => lt < 10 ? { xb: -1353, xc: -650, ph: 0.5 } : { xb: -97, xc: -800, ph: 1.1 };
 SH.e5 = {
   setups: [
-    { a: 0, b: 10, w: 'sec', cam: mv([330, 60, 1500], [250, 40, 0], [250, 70, 1360], [220, 40, 0], 30, 29) },
-    { a: 10, b: 20, w: 'sec', cam: mv([-80, 70, 1400], [180, 40, 0], [60, 50, 1450], [200, 40, 0], 31, 31) },
+    { a: 0, b: 10, w: 'sec', cam: mv([-650, 172, 2060], [-650, 172, 0], [-670, 176, 1930], [-670, 174, 0], 30, 30) },
+    { a: 10, b: 20, w: 'sec', cam: mv([-800, 172, 1930], [-800, 172, 0], [-770, 170, 2050], [-770, 172, 0], 30, 30) },
   ],
   acts(lt, S, u) {
-    const t = ST.t, sec = WORLD.sec.SEC, bt = boatAt(t, 230, 0, 0.0, 0.5);
-    env({ boat: bt, deep: false, noSchool: false });
-    const rp = onBoat(bt, -70, -6), bp = onBoat(bt, 70, 20);
-    put('rabbi', { x: rp[0], z: rp[2], y: rp[1], yaw: -PI / 2 + 0.55, headYaw: 0.05 * Math.sin(lt * 0.6), arms: { l: { sz: 0.12 }, r: { sz: 0.12 + 0.1 * Math.sin(lt * 0.5) } } }, face('smile', t, 0.2, { look: lk(0.2, 0) }));
-    put('boy', { x: bp[0], z: bp[2], y: bp[1], yaw: -PI / 2 + 0.3, arms: { l: { sz: 0.08 }, r: { sz: 0.08 } } }, face('smile', t, 0.6, { look: lk(0.1, 0) }));
-    const tx_ = 120 + 200 * Math.sin(lt * 0.35), ty = sec.yAt(tx_) + 84;
-    put('tipa', { x: tx_, y: ty, z: 150, yaw: Math.cos(lt * 0.35) > 0 ? -PI / 2 + 0.2 : PI + 0.2, tilt: -4, float: 0.8, arms: 'wave', feet: false, shadow: false, scale: 0.45 }, face('happy', t, 0.3, { look: lk(0.3, 0) }));
-    put('f0', { x: 380 + 60 * Math.sin(lt * 0.5), y: sec.yAt(380) + 120 + 14 * Math.sin(lt * 1.3), z: -40, yaw: 0.2, swim: 0.5, scale: 0.55 }, face('happy', t, 0.5));
+    const t = ST.t, sec = WORLD.sec.SEC, R = RC(lt), A = lt < 10, bt = boatAt(t, R.xb, 0, 0.0, R.ph);
+    env({ boat: bt, deep: false, noSchool: false, birds: true });
+    const rp = onBoat(bt, A ? -130 : 150, -6), bp = onBoat(bt, A ? 160 : -130, 24), g1 = frac(lt * 0.33), g2 = frac(lt * 0.27 + 0.4);
+    put('rabbi', { x: rp[0], z: rp[2], y: rp[1], yaw: A ? -PI / 2 + 0.6 : -PI / 2 - 0.6, headYaw: 0.28 * Math.sin(lt * 0.9), arms: { l: { sz: 0.12 }, r: { sz: 0.15 + 0.7 * Math.pow(Math.max(0, Math.sin(lt * 0.65)), 3) , sx: 0.3, el: 0.5 } } }, face('smile', t, 0.2, { look: lk(0.3 * Math.sin(lt * 0.5), -0.1) }));
+    put('boy', { x: bp[0], z: bp[2], y: bp[1], yaw: A ? -PI / 2 + 0.3 : -PI / 2 - 0.3, headYaw: 0.25 * Math.sin(lt * 0.8 + 1), headTilt: 3 * Math.sin(lt * 0.7), arms: { l: { sz: 0.08 }, r: { sz: 0.1 + 0.5 * Math.pow(Math.max(0, Math.sin(lt * 0.8 + 2)), 4), sx: 0.25, el: 0.5 } } }, face(g1 > 0.5 ? 'smile' : 'surprised', t, 0.6, { look: lk(0.4 * Math.sin(lt * 0.6), -0.5) }));
+    const tx_ = (A ? -330 : -1300) + 170 * Math.sin(lt * 0.33), ty = -140 + 10 * Math.sin(lt * 0.9);
+    put('tipa', { x: tx_, y: ty, z: 150, yaw: Math.cos(lt * 0.33) > 0 ? -PI / 2 + 0.2 : PI + 0.2, tilt: -4, float: 0.8, arms: 'wave', feet: false, shadow: false, scale: 0.4 }, face('happy', t, 0.3, { look: lk(0.3, 0) }));
+    const fx0 = (A ? -560 : -1000) + 150 * Math.sin(lt * 0.4), fx2 = (A ? -90 : -600) + 110 * Math.sin(lt * 0.3 + 2);
+    put('f0', { x: fx0, y: -95 + 14 * Math.sin(lt * 1.2), z: -40, yaw: Math.cos(lt * 0.4) > 0 ? 0.2 : PI + 0.2, swim: 0.5, scale: 0.5 }, face('happy', t, 0.5));
+    put('f2', { x: fx2, y: -65 + 12 * Math.sin(lt * 1.5), z: -200, yaw: Math.cos(lt * 0.3 + 2) > 0 ? 0.2 : PI + 0.2, swim: 0.5, scale: 0.4 }, face('happy', t, 0.8));
   },
   hud(lt, S, u) {
-    // centre calm and a little darker for the three burned-in lines
-    HUD.on = true; hx.save(); const g = hx.createRadialGradient(W / 2, H / 2, px(120), W / 2, H / 2, px(760)); g.addColorStop(0, 'rgba(10,36,70,0.56)'); g.addColorStop(1, 'rgba(10,36,70,0)'); hx.fillStyle = g; hx.fillRect(0, 0, W, H); hx.restore();
+    // light vignette + a gentle darker band in the centre for the three burned-in lines
+    HUD.on = true; hx.save();
+    const g = hx.createRadialGradient(W / 2, H / 2, px(420), W / 2, H / 2, px(1150)); g.addColorStop(0, 'rgba(10,36,70,0)'); g.addColorStop(1, 'rgba(10,36,70,0.30)'); hx.fillStyle = g; hx.fillRect(0, 0, W, H);
+    const b = hx.createLinearGradient(0, H * 0.3, 0, H * 0.7); b.addColorStop(0, 'rgba(10,36,70,0)'); b.addColorStop(0.5, 'rgba(10,36,70,0.16)'); b.addColorStop(1, 'rgba(10,36,70,0)'); hx.fillStyle = b; hx.fillRect(0, H * 0.3, W, H * 0.4); hx.restore();
   },
 };

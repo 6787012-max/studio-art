@@ -30,7 +30,7 @@ export function buildNight() {
   const tracks = []; for (let i = 0; i < 26; i++) { const u = i / 25, z = lerp(60, PIT[1] + 110, u), x = PIT[0] + 40 * Math.sin(u * 3.2) - 20 * u; for (const s of [-1, 1]) { const m = new THREE.Mesh(new THREE.CircleGeometry(15, 10).rotateX(-PI / 2), BMt('#b79a64')); m.scale.set(1.5, 1, 0.55); m.position.set(x + s * 62, gy(x, z) + 0.8, z + (i % 2 ? 5 : -5) * s); m.rotation.y = 0.3 * s; g.add(m); tracks.push({ m, u }); } }
   const w = addWorld('night', g, p0 => (p0 && p0.day) ? 'dawn' : 'night', { B, sea: B.sea, moon, glit, hole, eggs, mound, puffs, tracks, pit });
   w.pitY = gp;
-  w.upd = (t, lt, p) => { p = p || {}; B.update(t); B.sea.update(t, 4); B.foam.update(t, 0.5); glit.userData.update(t, p.day ? 0 : 1, B.sea); moon.visible = !p.day; w.g.userData.day = !!p.day;
+  w.upd = (t, lt, p) => { p = p || {}; B.update(t); B.sea.update(t, 4); B.foam.update(t, 0.5); glit.userData.update(t, p.day ? 0 : 1, B.sea); moon.visible = !p.day; moon.position.z = p.moonBack ? 9000 : -9000; w.g.userData.day = !!p.day;
     hole.visible = (p.hole == null ? 0 : p.hole) > 0.02; hole.scale.set(Math.max(0.01, p.hole || 0), 1, Math.max(0.01, 0.7 * (p.hole || 0))); rim.visible = hole.visible; rim.scale.set(Math.max(0.01, p.hole || 0), 1, Math.max(0.01, 0.7 * (p.hole || 0)));
     eggs.forEach((e, i) => { e.visible = (p.eggs || 0) > i; }); mound.visible = (p.mound || 0) > 0.02; mound.scale.set(Math.max(0.01, p.mound || 0), Math.max(0.01, p.mound || 0), Math.max(0.01, p.mound || 0));
     const bu = p.burst || 0; puffs.forEach((m, i) => { const u = cl(bu * 1.4 - (i % 5) * 0.08, 0, 1); m.visible = u > 0.01 && u < 0.99; const a = i * 0.9; m.position.set(PIT[0] + Math.cos(a) * (20 + 80 * u), gp + 14 + 100 * Math.sin(Math.PI * u) * (0.6 + (i % 3) * 0.25), PIT[1] + Math.sin(a) * (14 + 60 * u)); m.scale.setScalar(0.5 + 0.8 * (1 - u)); });
@@ -162,10 +162,27 @@ export function buildPools() {
   for (let a = 0; a < nx; a++) for (let b = 0; b < nz; b++) { const x = (a - 1) * (PW + 90), z = -b * (PD + 80) - 150, pg = G(g, [x, 0, z]);
     bx(pg, PW + 100, 22, 36, dykeM, [0, 11, PD / 2 + 18], 1.6, null, 4); bx(pg, PW + 100, 22, 36, dykeM, [0, 11, -PD / 2 - 18], 1.6, null, 4); bx(pg, 36, 22, PD + 72, dykeM, [PW / 2 + 18, 11, 0], 1.6, null, 4); bx(pg, 36, 22, PD + 72, dykeM, [-PW / 2 - 18, 11, 0], 1.6, null, 4);
     const bed = new THREE.Mesh(new THREE.PlaneGeometry(PW, PD).rotateX(-PI / 2), BMt('#d99a8a')); bed.position.y = 2; pg.add(bed);
+    const shal = new THREE.Mesh(new THREE.PlaneGeometry(PW - 24, PD - 24).rotateX(-PI / 2), BMt('#f2aebb')); shal.position.y = 5; pg.add(shal);
+    for (const sz of [-1, 1]) { const rm = new THREE.Mesh(new THREE.PlaneGeometry(PW, 26).rotateX(-PI / 2), BMt('#fbf0f0')); rm.position.set(0, 6, sz * (PD / 2 - 13)); pg.add(rm); }
+    for (const sx of [-1, 1]) { const rm = new THREE.Mesh(new THREE.PlaneGeometry(26, PD).rotateX(-PI / 2), BMt('#fbf0f0')); rm.position.set(sx * (PW / 2 - 13), 6, 0); pg.add(rm); }
     const crust = new THREE.Mesh(new THREE.PlaneGeometry(PW, PD).rotateX(-PI / 2), BMt('#ffffff', { transparent: true, opacity: 0 })); crust.position.y = 4; pg.add(crust);
     const water = new THREE.Mesh(new THREE.PlaneGeometry(PW, PD).rotateX(-PI / 2), BMt('#f08aa8', { transparent: true, opacity: 0.85, depthWrite: false })); water.position.y = 10; water.renderOrder = 2; pg.add(water);
     pools.push({ bed, crust, water, x, z, ph: r() }); }
-  const piles = [[-1790, -250, 1], [-2000, -430, 0.85], [-1620, -470, 0.9]].map(([x, z, s]) => { const m = part(g, cone(180 * s, 230 * s, 1, 18), M('#ffffff', '#c8d0e4'), 3, [x, 0, z]); m.userData.s = s; return m; });
+  const saltM = M('#f6f9fc', '#a8b8dc'), saltD = M('#e8eef8', '#9aaed4');
+  const mkHeap = (x, z, s, seed) => { const h = G(g, [x, 0, z]), rr = rng(seed);
+    [[0, 0, 0, 175, 86, 128], [-95, 0, 38, 104, 58, 82], [86, 0, -34, 112, 64, 86], [22, 0, 70, 84, 44, 64], [-34, 0, -64, 88, 48, 62]].forEach(([dx, dy, dz, rx, ry, rz], i) => part(h, ell(rx * s, ry * s, rz * s, 30, 14), i % 2 ? saltD : saltM, 2.6, [dx * s, 0, dz * s]));
+    for (let i = 0; i < 9; i++) { const a = rr() * 6.28, d = rr() * 110 * s; bx(h, 13, 11, 13, saltM, [Math.cos(a) * d, 70 * s * (1 - d / (150 * s)) + 2, Math.sin(a) * d * 0.7], 1, [rr(), rr() * 3, rr()], 2); }
+    return h; };
+  const piles = [[-1790, -250, 1, 3], [-2020, -430, 0.8, 4], [-1640, -480, 0.9, 5]].map(([x, z, s, sd]) => { const m = mkHeap(x, z, s, sd); m.userData.s = s; return m; });
+  // small conveyor: from the pool bank up to the first heap
+  const cv = G(g, [-1648, 62, -168]); { const S = V(-1520, 22, -90), E = V(-1770, 112, -238), dx = E.x - S.x, dz = E.z - S.z, L = Math.hypot(dx, dz, E.y - S.y); cv.position.set((S.x + E.x) / 2, (S.y + E.y) / 2, (S.z + E.z) / 2); cv.rotation.y = Math.atan2(-dz, dx);
+    const inn = G(cv); inn.rotation.z = Math.atan2(E.y - S.y, Math.hypot(dx, dz)); cv.userData.inn = inn; cv.userData.L = L;
+    bx(inn, L, 10, 44, M('#3d4350', '#8a93a0', 0), [0, 0, 0], 2, null, 2);
+    for (const sz of [-1, 1]) bx(inn, L, 16, 7, M('#e6b030', '#e0c070'), [0, 8, sz * 24], 1.6, null, 2);
+    for (const sx of [-1, 1]) part(inn, new THREE.CylinderGeometry(12, 12, 54, 14).rotateX(PI / 2), M('#6a7280', '#a0a8b8'), 1.6, [sx * L / 2, 0, 0]);
+    for (const [fx, hh] of [[-0.32, 70], [0.3, 96]]) for (const sz of [-1, 1]) bx(cv, 8, hh + 20, 8, M('#8a93a0', '#b0b8c8'), [fx * L * 0.96 * 0.9, -(hh + 20) / 2 + (fx < 0 ? -6 : 6) - 6, sz * 22], 1.4, null, 2);
+    const lumps = []; for (let i = 0; i < 7; i++) lumps.push(bx(inn, 22, 16, 22, saltM, [0, 14, 0], 1.2, [0.1 * i, i, 0.2], 2)); cv.userData.lumps = lumps; }
+  const bankM = BMt('#f4b6c2', { transparent: true, opacity: 0.9, depthWrite: false });
   const hut = KP.makeStoneHouse ? KP.makeStoneHouse() : null; if (hut) { const hr = hut.root || hut; hr.position.set(-2100, 0, -700); hr.scale.setScalar(1.2); g.add(hr); }
   const sun = G(g, [1500, 900, -3000]); part(sun, new THREE.CircleGeometry(190, 36), BMt('#ffd447'), 0); sun.add(L.makeGlow('#fff0a0', 900, { alpha: 0.7 }));
   const rays = []; for (let i = 0; i < 12; i++) { const m = new THREE.Mesh(new THREE.ShapeGeometry((() => { const s = new THREE.Shape(); s.moveTo(-24, 210); s.lineTo(24, 210); s.lineTo(0, 330); s.lineTo(-24, 210); return s; })()), BMt('#ffcf3a')); m.rotation.z = i / 12 * 6.283; sun.add(m); rays.push(m); }
@@ -179,7 +196,8 @@ export function buildPools() {
     pools.forEach((o, i) => { const l = cl(lv * (1 + 0.05 * Math.sin(i)), 0.03, 1); o.water.scale.set(Math.max(0.02, 0.3 + 0.7 * l), 1, Math.max(0.02, 0.3 + 0.7 * l)); o.water.material.opacity = 0.2 + 0.7 * l; o.water.material.color.set(l > 0.6 ? '#f08aa8' : '#e8607c'); o.water.visible = l > 0.05;
       o.crust.material.opacity = cl(cr, 0, 1); o.bed.material.color.set(cr > 0.5 ? '#ece4dc' : '#d99a8a'); });
     steam.forEach(s => { const o = pools[s.pi], u = frac(s.ph + t * 0.18), on = (p.steam == null ? 1 : p.steam) * lv > 0.05 && (s.ph * 7 % 1) < Math.min(1, lv * 1.2 + 0.1); s.m.visible = on; if (on) { s.m.position.set(o.x + s.sx * 300, 30 + u * 380, o.z + s.sz * 200); s.m.scale.setScalar(14 + 40 * u); } });
-    piles.forEach((m, i) => { const k = Math.max(0.02, p.pile == null ? 1 : p.pile); m.scale.setScalar(k); }); };
+    piles.forEach((m, i) => { const k = Math.max(0.02, p.pile == null ? 1 : p.pile); m.scale.setScalar(k); });
+    const L = cv.userData.L, pk = p.pile == null ? 1 : p.pile; cv.userData.lumps.forEach((m, i) => { const u = frac(t * 0.22 + i / 7); m.visible = pk > 0.25; m.position.set(-L / 2 + 30 + u * (L - 60), 16, 0); }); };
   return w;
 }
 
@@ -224,18 +242,18 @@ export function buildTown() {
   const hc = ['#f2d9a0', '#f0c8a0', '#e8e0c0', '#f4e0b8', '#e6cfa0', '#f0d0b0'], rc = ['#c4623a', '#b8503a', '#d9774a'];
   const houses = []; for (let i = 0; i < 6; i++) { const x = 900 + i * 300, z = -200 + (i % 2) * 180 + (i === 2 ? -80 : 0), hg = G(g, [x, 0, z]);
     bx(hg, 210, 150, 180, M(hc[i], '#d8c4b0'), [0, 75, 0], 2.4, null, 4); part(hg, cone(160, 100, 1, 4), M(rc[i % 3], '#c4a0a0'), 2.6, [0, 150, 0], [0, PI / 4, 0]);
-    const wm = []; for (const wx of [-50, 50]) { const m = new THREE.Mesh(new THREE.PlaneGeometry(44, 52), BMt('#44506e')); m.position.set(wx, 90, 91); hg.add(m); wm.push(m); } bx(hg, 40, 80, 4, M('#7a4a2a', '#b08a7a'), [0, 40, 91], 1.4, null, 1);
+    const wm = [], wg = []; for (const wx of [-50, 50]) { const m = new THREE.Mesh(new THREE.PlaneGeometry(44, 52), BMt('#44506e')); m.position.set(wx, 90, 91); hg.add(m); wm.push(m); const wgl = L.makeGlow('#ffe27a', 130, { alpha: 0.8 }); wgl.position.set(wx, 90, 98); hg.add(wgl); wg.push(wgl); } bx(hg, 40, 80, 4, M('#7a4a2a', '#b08a7a'), [0, 40, 91], 1.4, null, 1);
     const bulb = G(g, [x, 360, z + 60]); part(bulb, lathe([[0.01, -26], [10, -22], [10, -14], [24, 6], [26, 22], [18, 40], [0.01, 46]], 16), M('#fff6c8', '#e8d890', 0), 2); part(bulb, tube(9, 9, 18, 10).translate(0, -22, 0), M('#8a93a0', '#a0a8b8'), 1.6);
     const glow = L.makeGlow('#ffe27a', 150, { alpha: 0.8 }); glow.position.set(0, 14, 0); bulb.add(glow); bulb.scale.setScalar(1.5);
-    houses.push({ hg, wm, bulb, glow, x, z }); }
+    houses.push({ hg, wm, wg, bulb, glow, x, z }); }
   const poles = []; for (let i = 0; i < 9; i++) { const x = -60 + i * 190, z = 190 - (i % 2) * 8; poles.push([x, z]); const pg = G(g, [x, 0, z]); part(pg, tube(7, 8, 260, 8).translate(0, 260, 0), M('#7e4f2a', '#b08a7a'), 1.6); bx(pg, 8, 8, 90, M('#7e4f2a', '#b08a7a'), [0, 250, 0], 1.2, null, 2); }
   for (const dz of [-40, 40]) part(g, tubeAlong(poles.map(([x, z], i) => V(x, 252 - (i % 2) * 2, z + dz)).flatMap((v, i, a) => i < a.length - 1 ? [v, V((v.x + a[i + 1].x) / 2, 240, (v.z + a[i + 1].z) / 2)] : [v]), 1.8, { segs: 120, radial: 4, round: false }), ink(), 0);
   for (let i = 0; i < 10; i++) { const x = -1800 + r() * 5400, z = 500 + r() * 800; const t = KT.makeTree(i % 2 ? 'pine' : 'tamarisk', 40 + i, 0.8 + r() * 0.4); t.position.set(x, 0, z); g.add(t); }
-  for (let i = 0; i < 14; i++) { const b = KT.makeBush(i + 9, { s: 0.7 + r() * 0.5 }); b.position.set(-1500 + r() * 5200, 0, 380 + r() * 900); g.add(b); }
+  for (let i = 0; i < 14; i++) { const b = KT.makeBush(i + 9, { s: 0.7 + r() * 0.5 }); b.position.set(-1500 + r() * 5200, 0, 380 + r() * 900); if (b.position.x > 100 && b.position.x < 1250 && b.position.z < 1250) b.position.x += 1500; g.add(b); }
   const w = addWorld('town', g, 'dusk', { gp, houses, ps });
   w.upd = (t, lt, p) => { p = p || {}; smoke.forEach((s, i) => { const u = frac(s.ph + t * 0.15); s.m.position.set(s.x + 30 * u, 640 + u * 280, -60); s.m.scale.setScalar(0.6 + 1.2 * u); s.m.visible = (p.smoke == null ? 1 : p.smoke) > 0.1; });
     gbub.forEach((m, i) => { const u = frac(t * 0.06 + i / 14); m.visible = !!p.gas; if (p.gas) { const q = gp.getPointAt(u * 0.95); m.position.set(q.x, q.y + 20, q.z); } });
-    houses.forEach((h, i) => { const k = cl(p.on ? p.on[i] : 0, 0, 1); h.wm.forEach(m => m.material.color.set(k > 0.5 ? '#ffe27a' : '#44506e')); h.bulb.visible = k > 0.02; h.bulb.scale.setScalar(Math.max(0.01, 1.5 * (k + 0.2 * Math.sin(Math.PI * k) * (1 - k)))); h.glow.userData.update(t, k); h.bulb.position.y = 340 + 14 * Math.sin(t * 2 + i); }); };
+    houses.forEach((h, i) => { const k = cl(p.on ? p.on[i] : 0, 0, 1); h.wm.forEach(m => m.material.color.set(k > 0.5 ? '#ffe27a' : '#44506e')); h.bulb.visible = k > 0.02 && !p.noBulb; h.bulb.scale.setScalar(Math.max(0.01, 1.5 * (k + 0.2 * Math.sin(Math.PI * k) * (1 - k)))); h.glow.userData.update(t, k); h.wg.forEach(s => { s.visible = k > 0.05; s.userData.update(t, k); }); h.bulb.position.y = 340 + 14 * Math.sin(t * 2 + i); }); };
   return w;
 }
 

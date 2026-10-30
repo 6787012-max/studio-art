@@ -1,0 +1,30 @@
+heavy_lock: 2 heavy jobs already running, waiting for a slot
+heavy_lock: got slot 1 after 816s
+ready in 13.4s warm=230
+shot 1.0
+shot 15.57
+shot 31.13
+shot 45.7
+shot 47.7
+shot 57.0
+shot 67.3
+shot 76.6
+shot 78.6
+shot 91.3
+shot 105.0
+shot 117.7
+shot 119.7
+shot 138.03
+shot 157.37
+shot 175.7
+shot 177.7
+shot 192.77
+shot 208.83
+shot 223.9
+shot 225.9
+shot 231.27
+shot 237.63
+shot 243.0
+errors: ['Failed to load resource: the server responded with a status of 404 (File not found)']
+window errors: []
+saved C:/projects/_studio-animatzia/productions/toldot07_films/film_b/_w/r1\s.jpg

@@ -69,10 +69,10 @@ SH.e1 = {
   setups: [
     { a: 0, b: 4.5, w: 'surf', cam: mv([-420, 230, 640], [380, 470, -1500], [-140, 140, 360], [420, 330, -1500], 34, 34) },
     { a: 4.5, b: 8.0, w: 'beach', cam: mv([880, 195, 262], [20, 172, 250], [800, 192, 250], [30, 172, 250], 29, 28) },
-    { a: 8.0, b: 10.4, w: 'beach', cam: mv([260, 240, 560], [-40, 130, -700], [330, 232, 520], [-20, 130, -700], 33, 32), fg: 'grass' },
-    { a: 10.4, b: 12.15, w: 'beach', cam: mv([-250, 200, 110], [28, 186, 330], [-215, 200, 130], [28, 186, 330], 27, 26) },
+    { a: 8.0, b: 10.4, w: 'beach', cam: mv([-40, 300, 1000], [0, 140, -300], [-60, 270, 940], [0, 140, -300], 30, 30) },
+    { a: 10.4, b: 12.15, w: 'beach', cam: mv([700, 175, -420], [-30, 210, 270], [660, 175, -380], [-30, 210, 270], 31, 30) },
     { a: 12.15, b: 15.0, w: 'surf', cam: mv([620, 290, 330], [10, 205, -515], [560, 280, 270], [10, 205, -515], 31, 30) },
-    { a: 15.0, b: 17.2, w: 'surf', cam: mv([190, 235, -215], [95, 155, -494], [160, 220, -235], [95, 150, -494], 35, 34) },
+    { a: 15.0, b: 17.2, w: 'surf', cam: mv([250, 250, 50], [95, 228, -494], [215, 242, 20], [95, 224, -494], 36, 34) },
     { a: 17.2, b: 18.5, w: 'surf', cam: mv([160, 220, -235], [95, 150, -494], [330, 16, -200], [350, -30, -620], 34, 40) },
     { a: 18.5, b: 19.01, w: 'sec', cam: mv([1100, -30, 900], [900, -160, 0], [1050, -60, 860], [850, -170, 0], 40, 38) },
     { a: 19.01, b: 22.6, w: 'sec', cam: u => { const T = tipaE1(19.01 + u * 3.59); return { p: [T.x + 260, T.y + 25, 720], l: [T.x - 50, T.y - 10, 60], fov: 28 }; } },
@@ -86,7 +86,8 @@ SH.e1 = {
     if (lt < 4.5) { env({ boat: boatAt(t, 360, -1000, 0.5, 0.2), glint: 1.2 }); return; }
     if (lt < 12.15) {
       env({ A: 3, foam: 0.35 });
-      const RB = [40, 170], BO = [30, 330], ry = PI / 2 - 0.5, by = PI / 2 - 0.35;
+      const near = lt >= 10.4;
+      const RB = near ? [90, 255] : [40, 170], BO = near ? [-150, 135] : [-120, 300], ry = near ? PI / 2 - 0.45 : PI / 2 - 0.5, by = near ? PI / 2 - 0.25 : PI / 2 - 0.35;
       const sw = ease(lt, 5.4, 6.1), swp = lt > 6.1 ? 0.3 * Math.sin((lt - 6.1) * 1.4) : 0;
       put('rabbi', { x: RB[0], z: RB[1], y: gy(...RB), yaw: ry, headYaw: 0.18 + 0.05 * Math.sin(lt * 0.8), arms: { l: { sz: 0.55, sx: 0.1, el: 1.15, curl: 0.5 }, r: { sz: lerp(0.08, 0.95, sw), sx: 0.25 + swp, el: lerp(0.3, 0.5, sw), curl: 0.3 } } },
         face('explaining', t, 0.1, { look: lk(0.4, 0), talk: talk(lt, 5.0, 11.4) }));
@@ -133,7 +134,7 @@ SH.e1 = {
     if (lt >= 26.66) {
       const sec = WORLD.sec.SEC, y100 = YM(100);
       const k = ease(lt, 27.0, 27.8);
-      dashLine(y100, 1380, -520, 330, '100 m', '#ffd447', k);
+      dashLine(y100, 1380, -520, 330, null, '#ffd447', k);
       dblArrow([1390, 0, 330], [1390, y100, 330], '#ffd447', k);
       // many km: a long ruler along the surface
       if (k > 0.01) { const a = scr([1380, 70, 330]), b = scr([-520, 70, 330]); HUD.on = true; hx.save(); hx.globalAlpha = k; hx.lineCap = 'round'; for (const [c, w] of [['#261c19', 13], ['#ffffff', 7]]) { hx.strokeStyle = c; hx.lineWidth = px(w); hx.beginPath(); hx.moveTo(a[0], a[1]); hx.lineTo(b[0], b[1]); hx.stroke(); } for (let i = 0; i <= 8; i++) { const q = i / 8, x = lerp(a[0], b[0], q), y = lerp(a[1], b[1], q); hx.strokeStyle = '#261c19'; hx.lineWidth = px(8); hx.beginPath(); hx.moveTo(x, y - px(18)); hx.lineTo(x, y + px(18)); hx.stroke(); hx.strokeStyle = '#fff'; hx.lineWidth = px(4); hx.stroke(); } hx.restore(); }
@@ -145,7 +146,7 @@ SH.e1 = {
 /* ======================================================================== e2 : deep, dark, cold (49.5 s) */
 const SLOPE = lt => { const u = ease(lt, 8.2, 13.6), x = lerp(-470, -2300, Math.pow(u, 0.92)), SEC = WORLD.sec.SEC; return { x, y: SEC.yAt(x) + 120 + 30 * Math.sin(lt * 2.2) * (1 - u * 0.5), u }; };
 const MERON_X = -3700;
-const meronY = lt => lerp(420, -2754, ease(lt, 17.2, 23.8));
+const meronY = lt => lerp(-330, -2754, ease(lt, 17.2, 23.8));
 const T4 = lt => { const u = ease(lt, 26.3, 36.2), x = lerp(-1380, -1500, u), y = lerp(-90, -900, u) ; return { x, y, u }; };
 SH.e2 = {
   setups: [
@@ -182,12 +183,12 @@ SH.e2 = {
       put('tipa', { x: -2650, y: sec.yAt(-2650) + 2, z: 300, yaw: -0.1, scale: 0.75, feet: true, shadow: false, arms: lt > 23.6 ? 'wave' : 'point', float: 0 }, face(lt > 23.6 ? 'surprised' : 'curious', t, 0.3, { look: lk(-0.4, 0.5) })); return; }
     // ---- c4 light and dark
     if (lt < 34.93) { const T = T4(lt); env({ noSchool: false });
-      put('tipa', { x: T.x, y: T.y, z: 150, yaw: PI + 0.4, tilt: -10, float: 0.8, arms: lt < 29 ? 'up' : 'down', feet: false, shadow: false, scale: 0.7 }, face(lt < 30 ? 'happy' : lt < 32 ? 'curious' : 'worried', t, 0.3, { look: lk(-0.4, -0.2), talk: tt(lt, 26.5, 29) })); return; }
+      put('tipa', { x: T.x, y: T.y, z: 150, yaw: PI + 0.4, tilt: -10, float: 0.8, arms: lt < 29 ? 'up' : 'down', feet: false, shadow: false, scale: 0.7 }, face(lt < 30 ? 'happy' : lt < 32 ? 'curious' : 'worried', t, 0.3, { look: lk(-0.4, -0.2), talk: tt(lt, 26.5, 29) })); AC.tipa.o.scarf.visible = lt > 31.2; return; }
     // ---- c5 black depth, cold
     if (lt < 43.18) { env({ deep: true });
       const x = -2830, y = sec.yAt(x) + 2, sh = 0.04 * Math.sin(lt * 34) * (lt > 36 ? 1 : 0.3);
       put('tipa', { x: x + 14 * Math.sin(lt * 31) * 0.3, y, z: 100, yaw: PI + 0.5 - 0.0 + 0.04 * Math.sin(lt * 33), tilt: 3 * Math.sin(lt * 29), squash: 0.03 + sh, feet: true, shadow: false, scale: 0.8, arms: lt > 38 ? 'hips' : 'down' }, face('worried', t, 0.3, { look: lk(-0.3, 0.1), talk: tt(lt, 41.8, 42.4) }));
-      return; }
+      AC.tipa.o.scarf.visible = true; return; }
     if (lt < 46.5) { // cabin insert: the closed glowing sefer
       env({ glow: 1.5 });
       put('rabbi', { x: 120, z: -70, y: 0, yaw: -0.55, headYaw: 0.08, arms: { l: { sz: 0.12 }, r: { sz: 0.9 * ease(lt, 43.4, 44.0), sx: 0.3, el: 0.6, curl: 0.3 } } }, face('proud', t, 0.2, { look: lk(0.4, -0.2) }));
@@ -195,6 +196,7 @@ SH.e2 = {
       return; }
     env({ deep: true });
     put('tipa', { x: -2830, y: sec.yAt(-2830) + 2, z: 100, yaw: PI + 0.4, tilt: -6, squash: 0.02, feet: true, shadow: false, scale: 0.8, arms: 'up' }, face(lt > 47.4 ? 'happy' : 'curious', t, 0.3, { look: lk(-0.1, -0.8) }));
+    AC.tipa.o.scarf.visible = true;
   },
   hud(lt, S, u, wn) {
     const sec = WORLD.sec.SEC; const meterOf = y => MY(y);
@@ -230,12 +232,13 @@ SH.e2 = {
     if (lt >= 34.93 && wn === 'sec') {
       // total darkness with soft pools of light around Tipa and the glowing creatures
       const tp = scr([-2830, WORLD.sec.SEC.yAt(-2830) + 90, 100]);
-      const dark = ease(lt, 34.93, 36.0) * 0.62;
-      tint('#030a1e', dark, [tp[0], tp[1], px(460), 0.55 + 0.25 * ease(lt, 36, 37)]);
-      WORLD.sec.ang.forEach((a, i) => { const q = new THREE.Vector3(); a.userData.lure.getWorldPosition(q); const s = scr(q); if (s[2] < 1) glowAt(s[0], s[1], px(190), 'rgba(255,240,150,0.95)', 0.85 * dark / 0.62); });
-      WORLD.sec.jel.forEach((a, i) => { const q = new THREE.Vector3(); a.getWorldPosition(q); const s = scr(q); if (s[2] < 1) glowAt(s[0], s[1], px(230), 'rgba(190,150,255,0.8)', 0.55 * dark / 0.62); });
-      if (lt > 39.0) { // frost breath
-        const q = frac((lt - 39) * 0.6); const s = scr([-2830 + 80, WORLD.sec.SEC.yAt(-2830) + 100, 100]); HUD.on = true; hx.save(); for (let i = 0; i < 4; i++) { const qq = frac(q + i / 4); hx.globalAlpha = 0.8 * (1 - qq); hx.fillStyle = '#e8f6ff'; hx.strokeStyle = '#8fb8d8'; hx.lineWidth = px(4); hx.beginPath(); hx.arc(s[0] + px(40 + 150 * qq), s[1] - px(20 + 70 * qq) - px(10 * i), px(14 + 30 * qq), 0, 7); hx.fill(); hx.stroke(); } hx.restore(); }
+      const dark = ease(lt, 34.93, 36.0) * 0.46;
+      tint('#0a2650', dark, [tp[0], tp[1], px(560), 0.6 + 0.25 * ease(lt, 36, 37)]);
+      for (let i = 0; i < 34; i++) { const h1 = Math.abs(Math.sin(i * 12.9898) * 43758.5453) % 1, h2 = Math.abs(Math.sin(i * 78.233 + 1.7) * 12345.678) % 1, tw = Math.max(0, Math.sin(ST.t * (0.8 + h1) + i * 2.3)); const s = scr([-3700 + h1 * 1900, -2750 + h2 * 900, 100 + 80 * h1]); if (s[2] < 1 && tw > 0.05) glowAt(s[0], s[1], px(16 + 14 * h2), 'rgba(150,235,255,0.9)', 0.75 * tw * dark / 0.46); }
+      WORLD.sec.ang.forEach((a, i) => { const q = new THREE.Vector3(); a.userData.lure.getWorldPosition(q); const s = scr(q); if (s[2] < 1) glowAt(s[0], s[1], px(190), 'rgba(255,240,150,0.95)', 0.95 * dark / 0.46); });
+      WORLD.sec.jel.forEach((a, i) => { const q = new THREE.Vector3(); a.getWorldPosition(q); const s = scr(q); if (s[2] < 1) glowAt(s[0], s[1], px(230), 'rgba(190,150,255,0.8)', 0.6 * dark / 0.46); });
+      if (lt > 36.5) { // frost breath
+        const q = frac((lt - 36.5) * 0.6); const s = scr([-2830 - 70, WORLD.sec.SEC.yAt(-2830) + 104, 150]); HUD.on = true; hx.save(); for (let i = 0; i < 4; i++) { const qq = frac(q + i / 4); hx.globalAlpha = 0.85 * (1 - qq); hx.fillStyle = '#e8f6ff'; hx.strokeStyle = '#8fb8d8'; hx.lineWidth = px(4); hx.beginPath(); hx.arc(s[0] - px(30 + 140 * qq), s[1] - px(10 + 60 * qq) - px(8 * i), px(14 + 30 * qq), 0, 7); hx.fill(); hx.stroke(); } hx.restore(); }
       if (lt > 45.5) { // a warm glimmer comes down from above (the verse reaches the depths)
         const s = scr([-2830, WORLD.sec.SEC.yAt(-2830) + 330 - 0, 100]); for (let i = 0; i < 7; i++) { const q = frac((lt - 45.5) * 0.4 + i / 7); glowAt(s[0] + px(80 * Math.sin(i * 2.1)), s[1] - px(560) * (1 - q) * 0.8 + px(40), px(40 + 40 * Math.sin(Math.PI * q)), 'rgba(255,225,130,0.95)', 0.9 * Math.sin(Math.PI * q)); } }
     }
