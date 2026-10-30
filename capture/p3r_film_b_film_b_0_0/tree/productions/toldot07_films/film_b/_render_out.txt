@@ -8,3 +8,8 @@
 18:26:06 film_b part 4/5 t0=146.4 d=48.8 -> rc=0
 18:33:06 film_b part 2/5 t0=48.8 d=48.8 -> rc=0
 18:33:06 film_b: failed parts [0, 4], retry round 1
+18:49:07 film_b retry part 0 sub 1/2 t0=0.0 d=24.4 -> rc=1
+18:55:14 film_b retry part 0 sub 2/2 t0=24.4 d=24.4 -> rc=0
+19:18:02 film_b retry part 4 sub 2/2 t0=219.6 d=24.4 -> rc=0
+19:26:45 film_b retry part 4 sub 1/2 t0=195.2 d=24.4 -> rc=0
+19:26:45 film_b: failed parts [0], retry round 2
