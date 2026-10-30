@@ -1,0 +1,4 @@
+08:57:46 render_all: production=katzar_k04_3d films=film_a part=50s hq=True dry_run=False
+08:57:49 budget OK: OVERRIDE present; spent $131 of $2600 (cap $2340), allowed by now $208 (63% of pace) [render]
+08:57:49 verify gate: PASS for film_a
+08:57:49 film_a: length 211.4s, rendering (part 50 s, 17 includes)
