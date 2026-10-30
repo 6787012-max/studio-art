@@ -59,6 +59,7 @@ const bubble = (() => {
     const o = new THREE.Mesh(new THREE.RingGeometry(r, r + 2.2, 20), new THREE.MeshBasicMaterial({ color: W.col('#261c19') })); o.position.set(x, y, 0.1); g.add(o); });
   g.visible = false; GB.add(g); return g;
 })();
+export const bubbleOff = () => { bubble.visible = false; };
 
 /* ---------------------------------------------------------------- shot 2 */
 const bFace = (T, st, off) => Object.assign({ expr: 'smile', blink: blinkAt(T, off || 0.6), look: [0, 0] }, st);
@@ -127,15 +128,15 @@ export function shot2(lt, T) {
     mound.visible = false;
     pose(B, { t: T, x: bx, z: bz, yaw: yawB, walk: 0, lean: 4, headTilt: 10, arms: { r: { sz: 0.5, sx: 0.12, el: 0.85, curl: 0.2 } } }, TERR(bx, bz));
     fs(B, bFace(T, { expr: lt > 41.5 ? 'surprised' : 'thinking', look: [0.1, -0.5] }, 0.6));
-    pose(R, { t: T, x: bx - 300, z: bz + 120, yaw: -PI / 2 + 0.45, walk: 0, headYaw: 0.1, headTilt: 3 * Math.sin(T * 1.4), arms: { r: { sz: 0.9 * ease(lt, 40.5, 41.2), sx: 0.2, el: 0.5, point: true } } }, TERR(bx - 300, bz + 120));
+    pose(R, { t: T, x: bx - 250, z: bz + 90, yaw: -PI / 2 + 0.55, walk: 0, headYaw: 0.1, headTilt: 3 * Math.sin(T * 1.4), arms: { r: { sz: 0.9 * ease(lt, 40.5, 41.2), sx: 0.2, el: 0.5, point: true } } }, TERR(bx - 250, bz + 90));
     fs(R, { expr: lt < 40 ? 'explaining' : 'smile', talk: talkL(lt, 39, 43), blink: blinkAt(T, 0.1), look: [0.3, 0] });
     B.root.updateMatrixWorld(true); const h = handPos(B, 1);
     pose(GH, { t: T, x: h[0] + 4, y: h[1] + 8, z: h[2], yaw: yawB, walk: 0, shadow: false, squash: 0.03 * Math.sin(T * 3) }); GH.root.scale.setScalar(0.3);
     fs(GH, { expr: lt > 41 ? 'cheering' : 'happy', blink: blinkAt(T, 0.3), look: [0.1, 0.4] });
     for (let i = 0; i < sandStream.n; i++) sandStream.hide(i); sandStream.commit();
-    const be = ease(lt, 41.2, 42.2); bubble.visible = lt > 41.2; bubble.scale.setScalar(Math.max(0.01, be));
-    cam2 = CAMS(lt, [{ t0: 38.72, t1: 47.6, p: [h[0] + 260, h[1] + 20, h[2] + 800], p1: [h[0] + 200, h[1] + 30, h[2] + 700], l: [h[0] + 10, h[1] + 70, h[2]], l1: [h[0] + 10, h[1] + 85, h[2]], f: 32 }]);
-    if (!flags.collect) { bubble.position.set(h[0] + 30, h[1] + 175, h[2] + 20); POST.push(() => bubble.quaternion.copy(cam.quaternion)); }
+    const be = ease(lt, 41.2, 42.2); bubble.visible = lt > 41.2; bubble.scale.setScalar(Math.max(0.01, 0.62 * be));
+    cam2 = CAMS(lt, [{ t0: 38.72, t1: 47.6, p: [-20, 178, 1280], p1: [-50, 174, 1190], l: [-70, 128, 500], l1: [-70, 130, 500], f: 33 }]);
+    if (!flags.collect) { bubble.position.set(h[0] + 40, h[1] + 150, h[2] + 20); POST.push(() => bubble.quaternion.copy(cam.quaternion)); }
   }
   if (lt < 38.72) { bubble.visible = false; }
   return cam2;
