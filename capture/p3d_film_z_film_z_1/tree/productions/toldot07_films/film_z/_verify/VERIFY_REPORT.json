@@ -1,0 +1,46 @@
+{
+ "film": "film_z.html",
+ "status": "FAIL",
+ "time": "2026-10-30T13:17:53",
+ "samples": 8,
+ "findings": [
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 4.5,
+   "shot": "z1_what_we_found",
+   "detail": "caption dir=None",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 53.2,
+   "shot": "z2_checklist",
+   "detail": "caption dir=None",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P2",
+   "code": "NOT_EXPOSED",
+   "t": null,
+   "shot": null,
+   "detail": "window.__heroBox is not exposed by the page; the hero gate is skipped or degraded",
+   "fix": "rebuild the page against the upgraded lib/stage3d.js (contract in productions/_upgrade/CONTRACT.md)"
+  },
+  {
+   "sev": "P2",
+   "code": "NOT_EXPOSED",
+   "t": null,
+   "shot": null,
+   "detail": "window.__sceneHash is not exposed by the page; the exact-hash determinism gate is skipped or degraded",
+   "fix": "rebuild the page against the upgraded lib/stage3d.js (contract in productions/_upgrade/CONTRACT.md)"
+  }
+ ],
+ "sheets": null,
+ "timing": {
+  "ready_s": 24.0,
+  "gates_s": 98.2,
+  "total_s": 123.3
+ }
+}
