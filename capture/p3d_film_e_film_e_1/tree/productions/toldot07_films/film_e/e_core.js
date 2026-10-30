@@ -50,6 +50,14 @@ export const reg = (id, o, people) => { AC[id] = { id, o, people: !!people }; sc
 reg('rabbi', makeRabbiA(), true); reg('boy', makeBoy(), true);
 reg('tipa', KT.makeTipa()); reg('tipaB', KT.makeTipa({ kind: 'sea' })); reg('tipaS', KT.makeTipa({ kind: 'small' })); reg('tipaC', KT.makeTipa());
 reg('crab', KT.makeCrab());
+{ // woolly scarf for Tipa (cold deep water); toggled per frame via AC.tipa.o.scarf.visible
+  const sc = new THREE.Group(), r0 = KT.dropRadius(104) + 8, red = M('#d9534f', '#e8b0a8'), cream = M('#f4e6c8', '#d8c8b0');
+  part(sc, new THREE.TorusGeometry(r0, 15, 10, 36).rotateX(Math.PI / 2), red, 2.4, [0, 104, 0]);
+  part(sc, new THREE.TorusGeometry(r0 + 1, 5, 6, 36).rotateX(Math.PI / 2), cream, 0, [0, 112, 0]);
+  const q = r0 * 0.72; part(sc, tubeAlong([V(q, 100, q * 0.7), V(q + 12, 62, q * 0.8), V(q + 18, 24, q * 0.82)], 13, { segs: 12, radial: 8 }), red, 2.2);
+  part(sc, tubeAlong([V(q + 17, 30, q * 0.82), V(q + 19, 20, q * 0.83)], 14, { segs: 4, radial: 8 }), cream, 1.4);
+  sc.visible = false; AC.tipa.o.inner.add(sc); AC.tipa.o.scarf = sc;
+}
 const FC = { f0: { body: '#4f9fe0', belly: '#ffd45a', fin: '#f08a3c' }, f1: { body: '#f08a3c', belly: '#ffe6a0', fin: '#e0513c' }, f2: { body: '#55b87a', belly: '#e8f4b0', fin: '#2f8a6a' },
   f3: { body: '#8a6ad8', belly: '#f4e0ff', fin: '#d95fa0' }, f4: { body: '#ffd45a', belly: '#fff6c8', fin: '#f08a3c' }, f5: { body: '#e86a8a', belly: '#ffd8e0', fin: '#a84a9a' }, f6: { body: '#3f6ad8', belly: '#bfe0ff', fin: '#ffd45a' } };
 for (const k in FC) reg(k, KT.makeFish(FC[k]));
@@ -76,7 +84,7 @@ export function put(id, po, face) {
   a.o.root.visible = true; if (!a.o.noFace) a.o.root.scale.setScalar(po.scale || 1); a.o.face.set(face);
 }
 export const talk = (t, a, b, rate) => (t > a && t < b && frac(t * 0.9) < 0.74) ? 'AEOXUM'[Math.floor(t * (rate || 9)) % 6] : null;
-export const hideAll = () => { Object.values(AC).forEach(a => { a.o.root.visible = false; }); AUTOHIDE.forEach(o => { o.visible = false; }); [fgGrass, fgRock, fgLeaves, fgWeed, fgReef, fgDark].forEach(o => o.visible = false); };
+export const hideAll = () => { Object.values(AC).forEach(a => { a.o.root.visible = false; }); if (AC.tipa.o.scarf) AC.tipa.o.scarf.visible = false; AUTOHIDE.forEach(o => { o.visible = false; }); [fgGrass, fgRock, fgLeaves, fgWeed, fgReef, fgDark].forEach(o => o.visible = false); };
 
 /* ---------------------------------------------------------------- HUD (2D overlay drawn per frame) */
 export const hudCv = document.createElement('canvas'); hudCv.width = W; hudCv.height = H;

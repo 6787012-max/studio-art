@@ -142,13 +142,16 @@ export function makeScarf() {
   const tl = leafGeo(70, 20, 0.3); tl.rotateZ(Math.PI); part(g, tl, M('#f4e6c8', '#d8c8b0'), 2, [30, -2, 64]); return g;
 }
 export function makeAngler(seed) {
-  const g = G(), r = rng(seed || 1), body = M('#3a3358', '#6a6490'), lure = M('#fff4a0', '#fff4a0', 0);
-  part(g, ell(52, 40, 36, 20, 14), body, 2.4); part(g, leafGeo(40, 18, 0.3).rotateZ(Math.PI / 2), body, 2, [-58, 0, 0]);
-  part(g, ell(11, 11, 6, 10, 8), M('#ffffff', '#fff', 0), 1.2, [34, 10, 30]); part(g, ell(5, 6, 3, 8, 6), M('#101010', '#101010', 0), 0, [37, 9, 35]);
-  part(g, ell(11, 11, 6, 10, 8), M('#ffffff', '#fff', 0), 1.2, [34, 10, -30]); part(g, ell(5, 6, 3, 8, 6), M('#101010', '#101010', 0), 0, [37, 9, -35]);
-  part(g, tubeAlong([V(40, 8, 0), V(64, 56, 0), V(92, 62, 0)], 2.4, { segs: 10, radial: 6 }), ink(), 0);
-  const bulb = part(g, ell(9, 9, 9, 10, 8), lure, 0, [94, 62, 0]); g.userData.lure = bulb;
-  for (let i = 0; i < 5; i++) part(g, cone(3.4, 14, 1, 5), M('#ffffff', '#fff', 0), 0, [44 + i * 2, -8, (i - 2) * 11], [0, 0, Math.PI]);
+  // friendly glowing deep-sea fish: round teal body, big happy eyes, smile, glowing lantern on a curved stalk (no teeth)
+  const g = G(), body = M('#4a6fb8', '#9ab4e8'), belly = M('#8ad0e8', '#c0e8f4', 0), lure = M('#fff4a0', '#fff4a0', 0);
+  part(g, ell(54, 44, 40, 24, 16), body, 2.4); part(g, ell(42, 22, 34, 20, 10), belly, 0, [8, -16, 0]);
+  part(g, leafGeo(44, 22, 0.3).rotateZ(Math.PI / 2), M('#6a8ad0', '#a8bce8'), 2, [-60, 0, 0]);
+  for (const s of [1, -1]) { part(g, ell(14, 14, 8, 12, 10), M('#ffffff', '#fff', 0), 1.2, [32, 12, s * 30]); part(g, ell(7, 8, 4, 8, 6), M('#101010', '#101010', 0), 0, [36, 11, s * 36]); part(g, ell(2.4, 2.4, 1.6, 6, 4), M('#ffffff', '#fff', 0), 0, [38, 15, s * 38]);
+    part(g, ell(14, 10, 6, 10, 6), M('#f6a0b0', '#f6a0b0', 0), 0, [18, -6, s * 40]);
+    part(g, leafGeo(30, 14, 0.3).rotateZ(Math.PI * 0.8), M('#6a8ad0', '#a8bce8'), 1.6, [4, -10, s * 42]); }
+  part(g, tubeAlong([V(50, -8, -16), V(56, -14, 0), V(50, -8, 16)], 2.4, { segs: 10, radial: 6 }), ink(), 0);
+  part(g, tubeAlong([V(40, 20, 0), V(60, 64, 0), V(92, 70, 0)], 2.4, { segs: 10, radial: 6 }), ink(), 0);
+  const bulb = part(g, ell(10, 10, 10, 10, 8), lure, 0, [94, 70, 0]); g.userData.lure = bulb;
   return g;
 }
 export function makeJelly(seed) {
