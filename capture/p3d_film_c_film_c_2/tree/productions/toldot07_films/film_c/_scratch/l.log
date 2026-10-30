@@ -1,0 +1,9 @@
+heavy_lock: 2 heavy jobs already running, waiting for a slot
+heavy_lock: got slot 1 after 22s
+saved _scratch/L_012.40.jpg
+saved _scratch/L_024.50.jpg
+saved _scratch/L_142.30.jpg
+saved _scratch/L_172.40.jpg
+saved _scratch/L_216.60.jpg
+saved _scratch/L_243.00.jpg
+errors: ['Failed to load resource: the server responded with a status of 404 (File not found)'] []

@@ -1,0 +1,200 @@
+{
+ "film": "film_c",
+ "width": 1920,
+ "height": 1080,
+ "fps": 30,
+ "dur": 250.2,
+ "title_card": [
+  0.3,
+  4.2
+ ],
+ "shots": [
+  {
+   "id": "c1_where_from",
+   "t0": 0.0,
+   "dur": 36.8,
+   "captions": [
+    {
+     "id": "c1_where_from_c1",
+     "start": 4.5,
+     "end": 12.27
+    },
+    {
+     "id": "c1_where_from_c2",
+     "start": 12.27,
+     "end": 18.44
+    },
+    {
+     "id": "c1_where_from_c3",
+     "start": 18.44,
+     "end": 29.43
+    },
+    {
+     "id": "c1_where_from_c4",
+     "start": 29.43,
+     "end": 36.4
+    }
+   ],
+   "recap_lines": null
+  },
+  {
+   "id": "c2_from_the_nile",
+   "t0": 36.8,
+   "dur": 48.0,
+   "captions": [
+    {
+     "id": "c2_from_the_nile_c1",
+     "start": 0.4,
+     "end": 7.76
+    },
+    {
+     "id": "c2_from_the_nile_c2",
+     "start": 7.76,
+     "end": 16.64
+    },
+    {
+     "id": "c2_from_the_nile_c3",
+     "start": 16.64,
+     "end": 24.0
+    },
+    {
+     "id": "c2_from_the_nile_c4",
+     "start": 24.0,
+     "end": 32.12
+    },
+    {
+     "id": "c2_from_the_nile_c5",
+     "start": 32.12,
+     "end": 38.72
+    },
+    {
+     "id": "c2_from_the_nile_c6",
+     "start": 38.72,
+     "end": 47.6
+    }
+   ],
+   "recap_lines": null
+  },
+  {
+   "id": "c3_zigzag_and_dune",
+   "t0": 84.8,
+   "dur": 56.5,
+   "captions": [
+    {
+     "id": "c3_zigzag_and_dune_c1",
+     "start": 0.4,
+     "end": 9.22
+    },
+    {
+     "id": "c3_zigzag_and_dune_c2",
+     "start": 9.22,
+     "end": 17.29
+    },
+    {
+     "id": "c3_zigzag_and_dune_c3",
+     "start": 17.29,
+     "end": 23.84
+    },
+    {
+     "id": "c3_zigzag_and_dune_c4",
+     "start": 23.84,
+     "end": 32.66
+    },
+    {
+     "id": "c3_zigzag_and_dune_c5",
+     "start": 32.66,
+     "end": 39.97
+    },
+    {
+     "id": "c3_zigzag_and_dune_c6",
+     "start": 39.97,
+     "end": 48.79
+    },
+    {
+     "id": "c3_zigzag_and_dune_c7",
+     "start": 48.79,
+     "end": 56.1
+    }
+   ],
+   "recap_lines": null
+  },
+  {
+   "id": "c4_kurkar",
+   "t0": 141.3,
+   "dur": 46.7,
+   "captions": [
+    {
+     "id": "c4_kurkar_c1",
+     "start": 0.4,
+     "end": 8.56
+    },
+    {
+     "id": "c4_kurkar_c2",
+     "start": 8.56,
+     "end": 16.72
+    },
+    {
+     "id": "c4_kurkar_c3",
+     "start": 16.72,
+     "end": 24.88
+    },
+    {
+     "id": "c4_kurkar_c4",
+     "start": 24.88,
+     "end": 31.51
+    },
+    {
+     "id": "c4_kurkar_c5",
+     "start": 31.51,
+     "end": 38.14
+    },
+    {
+     "id": "c4_kurkar_c6",
+     "start": 38.14,
+     "end": 46.3
+    }
+   ],
+   "recap_lines": null
+  },
+  {
+   "id": "c4b_kurkar_cliff",
+   "t0": 188.0,
+   "dur": 42.9,
+   "captions": [
+    {
+     "id": "c4b_kurkar_cliff_c1",
+     "start": 0.4,
+     "end": 9.28
+    },
+    {
+     "id": "c4b_kurkar_cliff_c2",
+     "start": 9.28,
+     "end": 18.92
+    },
+    {
+     "id": "c4b_kurkar_cliff_c3",
+     "start": 18.92,
+     "end": 26.27
+    },
+    {
+     "id": "c4b_kurkar_cliff_c4",
+     "start": 26.27,
+     "end": 33.62
+    },
+    {
+     "id": "c4b_kurkar_cliff_c5",
+     "start": 33.62,
+     "end": 42.5
+    }
+   ],
+   "recap_lines": null
+  },
+  {
+   "id": "c5_recap",
+   "t0": 230.9,
+   "dur": 19.3,
+   "captions": [],
+   "recap_lines": 3
+  }
+ ]
+}

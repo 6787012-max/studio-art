@@ -1,0 +1,20 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>film_c sand</title>
+<style>
+  html,body{margin:0;background:#000;overflow:hidden}
+  #wrap{position:fixed;left:0;top:0;width:100vw;height:100vh;display:flex;align-items:center;justify-content:center}
+  #wrap canvas{display:block;width:100vw;height:auto;max-height:100vh;object-fit:contain}
+  body.cap #wrap{display:block}
+  body.cap #wrap canvas{width:100vw;height:100vh}
+</style>
+<script src="../../elements2d/core.js"></script><script src="../../elements2d/animals.js"></script><script src="../../elements2d/animals2.js"></script>
+<script src="../../elements2d/animals3.js"></script><script src="../../elements2d/objects.js"></script><script src="../../elements2d/bodies.js"></script>
+<script src="../../haredi_man/man2d.js"></script><script src="../../haredi_cast/people2d.js"></script><script src="../../toldot07_kit/sea2d.js"></script>
+<script>window.__T0=83.4000; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../../node_modules/three/build/three.module.js" } }</script>
+</head><body>
+<div id="wrap"></div>
+<script>if (new URLSearchParams(location.search).has('capture')) document.body.classList.add('cap');</script>
+<script type="module" src="film_c.js"></script>
+<!-- contract: window.__ready, window.__seek(t) (adds window.__T0), window.__dur, window.__shots, window.__caption(t) -->
+</body></html>
