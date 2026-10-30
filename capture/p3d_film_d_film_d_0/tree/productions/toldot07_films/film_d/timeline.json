@@ -1,0 +1,213 @@
+{
+ "film": "film_d",
+ "width": 1920,
+ "height": 1080,
+ "fps": 30,
+ "dur": 275.9,
+ "title_card": [
+  0.3,
+  4.2
+ ],
+ "shots": [
+  {
+   "id": "d1_where_can_a_ship_stop",
+   "t0": 0.0,
+   "dur": 39.5,
+   "captions": [
+    {
+     "id": "d1_where_can_a_ship_stop_c1",
+     "start": 4.5,
+     "end": 13.54
+    },
+    {
+     "id": "d1_where_can_a_ship_stop_c2",
+     "start": 13.54,
+     "end": 22.58
+    },
+    {
+     "id": "d1_where_can_a_ship_stop_c3",
+     "start": 22.58,
+     "end": 30.06
+    },
+    {
+     "id": "d1_where_can_a_ship_stop_c4",
+     "start": 30.06,
+     "end": 39.1
+    }
+   ],
+   "recap_lines": null
+  },
+  {
+   "id": "d2_breakwater",
+   "t0": 39.5,
+   "dur": 41.9,
+   "captions": [
+    {
+     "id": "d2_breakwater_c1",
+     "start": 0.4,
+     "end": 9.39
+    },
+    {
+     "id": "d2_breakwater_c2",
+     "start": 9.39,
+     "end": 17.61
+    },
+    {
+     "id": "d2_breakwater_c3",
+     "start": 17.61,
+     "end": 23.52
+    },
+    {
+     "id": "d2_breakwater_c4",
+     "start": 23.52,
+     "end": 32.51
+    },
+    {
+     "id": "d2_breakwater_c5",
+     "start": 32.51,
+     "end": 41.5
+    }
+   ],
+   "recap_lines": null
+  },
+  {
+   "id": "d3_yafo_and_the_cedars",
+   "t0": 81.4,
+   "dur": 54.9,
+   "captions": [
+    {
+     "id": "d3_yafo_and_the_cedars_c1",
+     "start": 0.4,
+     "end": 7.84
+    },
+    {
+     "id": "d3_yafo_and_the_cedars_c2",
+     "start": 7.84,
+     "end": 18.72
+    },
+    {
+     "id": "d3_yafo_and_the_cedars_c3",
+     "start": 18.72,
+     "end": 27.88
+    },
+    {
+     "id": "d3_yafo_and_the_cedars_c4",
+     "start": 27.88,
+     "end": 37.04
+    },
+    {
+     "id": "d3_yafo_and_the_cedars_c5",
+     "start": 37.04,
+     "end": 47.06
+    },
+    {
+     "id": "d3_yafo_and_the_cedars_c6",
+     "start": 47.06,
+     "end": 54.5
+    }
+   ],
+   "recap_lines": null
+  },
+  {
+   "id": "d4_caesarea",
+   "t0": 136.3,
+   "dur": 28.4,
+   "captions": [
+    {
+     "id": "d4_caesarea_c1",
+     "start": 0.4,
+     "end": 10.11
+    },
+    {
+     "id": "d4_caesarea_c2",
+     "start": 10.11,
+     "end": 19.82
+    },
+    {
+     "id": "d4_caesarea_c3",
+     "start": 19.82,
+     "end": 28.0
+    }
+   ],
+   "recap_lines": null
+  },
+  {
+   "id": "d5_haifa_and_ashdod",
+   "t0": 164.7,
+   "dur": 51.0,
+   "captions": [
+    {
+     "id": "d5_haifa_and_ashdod_c1",
+     "start": 0.4,
+     "end": 8.64
+    },
+    {
+     "id": "d5_haifa_and_ashdod_c2",
+     "start": 8.64,
+     "end": 18.42
+    },
+    {
+     "id": "d5_haifa_and_ashdod_c3",
+     "start": 18.42,
+     "end": 27.43
+    },
+    {
+     "id": "d5_haifa_and_ashdod_c4",
+     "start": 27.43,
+     "end": 36.45
+    },
+    {
+     "id": "d5_haifa_and_ashdod_c5",
+     "start": 36.45,
+     "end": 44.68
+    },
+    {
+     "id": "d5_haifa_and_ashdod_c6",
+     "start": 44.68,
+     "end": 50.6
+    }
+   ],
+   "recap_lines": null
+  },
+  {
+   "id": "d5b_giant_ship",
+   "t0": 215.7,
+   "dur": 41.4,
+   "captions": [
+    {
+     "id": "d5b_giant_ship_c1",
+     "start": 0.4,
+     "end": 6.34
+    },
+    {
+     "id": "d5b_giant_ship_c2",
+     "start": 6.34,
+     "end": 13.84
+    },
+    {
+     "id": "d5b_giant_ship_c3",
+     "start": 13.84,
+     "end": 23.67
+    },
+    {
+     "id": "d5b_giant_ship_c4",
+     "start": 23.67,
+     "end": 31.95
+    },
+    {
+     "id": "d5b_giant_ship_c5",
+     "start": 31.95,
+     "end": 41.0
+    }
+   ],
+   "recap_lines": null
+  },
+  {
+   "id": "d6_recap",
+   "t0": 257.1,
+   "dur": 18.8,
+   "captions": [],
+   "recap_lines": 3
+  }
+ ]
+}

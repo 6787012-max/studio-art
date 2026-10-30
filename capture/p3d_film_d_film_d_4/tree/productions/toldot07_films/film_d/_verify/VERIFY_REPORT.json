@@ -1,0 +1,78 @@
+{
+ "film": "film_d.html",
+ "status": "FAIL",
+ "time": "2026-10-30T12:46:10",
+ "samples": 33,
+ "findings": [
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 4.5,
+   "shot": "d1_where_can_a_ship_stop",
+   "detail": "caption dir=None",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 39.9,
+   "shot": "d2_breakwater",
+   "detail": "caption dir=None",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 81.9,
+   "shot": "d3_yafo_and_the_cedars",
+   "detail": "caption dir=None",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 136.8,
+   "shot": "d4_caesarea",
+   "detail": "caption dir=None",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 165.2,
+   "shot": "d5_haifa_and_ashdod",
+   "detail": "caption dir=None",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 216.2,
+   "shot": "d5b_giant_ship",
+   "detail": "caption dir=None",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P2",
+   "code": "NOT_EXPOSED",
+   "t": null,
+   "shot": null,
+   "detail": "window.__heroBox is not exposed by the page; the hero gate is skipped or degraded",
+   "fix": "rebuild the page against the upgraded lib/stage3d.js (contract in productions/_upgrade/CONTRACT.md)"
+  },
+  {
+   "sev": "P2",
+   "code": "NOT_EXPOSED",
+   "t": null,
+   "shot": null,
+   "detail": "window.__sceneHash is not exposed by the page; the exact-hash determinism gate is skipped or degraded",
+   "fix": "rebuild the page against the upgraded lib/stage3d.js (contract in productions/_upgrade/CONTRACT.md)"
+  }
+ ],
+ "sheets": null,
+ "timing": {
+  "ready_s": 28.9,
+  "gates_s": 85.5,
+  "total_s": 124.8
+ }
+}
