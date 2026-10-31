@@ -14,9 +14,19 @@ window.STORY = function (K) {
 
   // ---------------------------------------------------------------- people (navy velvet kippot, NO scaling of the kippa mesh)
   const boyK = (Wd, i, fn) => { const Pp = boyP(Wd, i, fn); Wd.on(() => { if (!Pp.kippa && Pp.figure) Pp.figure.group.traverse(m => { if (!Pp.kippa && m.isMesh && m.geometry && m.geometry.type === 'SphereGeometry' && Math.abs(m.geometry.parameters.thetaLength - .86) < .02) Pp.kippa = m; }); const k = Pp.kippa; if (k && !k._rc) { k._rc = 1; k.material = k.material.clone(); k.material.color.set(0x1f2f70); } }); return Pp; };
-  const SZ = -3.3, XS = -7.4, XA = -5.5, XN = -3.2, ZN = -3.95, MID = (XS + XA) / 2;
-  const shuki = (Wd, fn) => boyK(Wd, 3, t => Object.assign({ pos: [XS, 0, SZ], facing: .5 }, SIT, { perform: 0 }, fn(t)));
-  const avi = (Wd, fn) => boyK(Wd, 5, t => Object.assign({ pos: [XA, 0, SZ], facing: -.3 }, SIT, { perform: 0 }, fn(t)));
+  const SB = -3.45, SZ = -3.3, XS = -7.4, XA = -5.5, XN = -3.7, ZN = -3.2, MID = (XS + XA) / 2;
+  // seated arm poses: the stock 'rest' arms hang INTO the bench board, so seated boys get their own pose (hands on the knees / in front), applied after the engine's own pose
+  const SP = {
+    knees: { armA: [-.7,0,.15], foreA: [-.9,0,.2], armB: [-.7,0,-.15], foreB: [-.9,0,-.2] },
+    offer: { armA: [-.55, 0, .02], foreA: [-.85, -.9, 0], armB: [-.55, 0, -.02], foreB: [-.85, .9, 0] },
+    lean: { armA: [-.3, 0, .22], foreA: [-.85, 0, .35], armB: [-.3, 0, -.22], foreB: [-.85, 0, -.35], chest: [.3, 0, 0], hips: [.06, 0, 0], head: [-.14, 0, 0] } };
+  const SITB = { thighA: [-1.5, 0, 0], thighB: [-1.5, 0, 0], shinA: [1.5, 0, 0], shinB: [1.5, 0, 0], y: -.36 }, SKEYS = ['armA', 'foreA', 'armB', 'foreB', 'chest', 'hips', 'head'];
+  const seatPose = (Wd, per, fn) => Wd.on(t => { if (!per.figure) return; const acc = {};
+    for (let k = 0; k < 4; k++) { const p = SP[fn(t - k * .1).gesture || 'knees'] || SP.knees; SKEYS.forEach(key => { const v = p[key] || [0, 0, 0], a = acc[key] || (acc[key] = [0, 0, 0]); for (let i = 0; i < 3; i++) a[i] += v[i] / 4; }); }
+    acc.chest[0] += .018 * Math.sin(t * 1.7); acc.head[1] += (fn(t).look || 0) * .25 + .06 * Math.sin(t * .6);
+    per.figure.pose(Object.assign({}, SITB, acc)); });
+  const shuki = (Wd, fn) => { const q = boyK(Wd, 3, t => Object.assign({ pos: [XS, 0, SB], facing: .5 }, SIT, { perform: 0 }, fn(t))); seatPose(Wd, q, fn); return q; };
+  const avi = (Wd, fn) => { const q = boyK(Wd, 5, t => Object.assign({ pos: [XA, 0, SB], facing: -.3 }, SIT, { perform: 0 }, fn(t))); seatPose(Wd, q, fn); return q; };
   const nachum = Wd => boyK(Wd, 6, t => ({ pos: [XN, 0, ZN], facing: 1.2 + .06 * Math.sin(t * .45), gesture: null, perform: 0, talk: 0, smile: .3, brow: 0, look: .2, seed: .6 }));
   const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _k = new THREE.Vector3();
   const handMid = (per, fb) => { const B = per.figure && per.figure.bones; if (!B) return fb; B.handA.getWorldPosition(_a); B.handB.getWorldPosition(_b); return [(_a.x + _b.x) / 2, (_a.y + _b.y) / 2, (_a.z + _b.z) / 2]; };
@@ -156,7 +166,7 @@ window.STORY = function (K) {
   // ---------------------------------------------------------------- 2. 14-30: DIBUR - Shuki leans and whispers; a grey cloud (mouth) rises from him; red cross slams
   function s2(dur) {
     const Wd = world7(); dim(Wd, t => sm(P(2, 6, t)));
-    const sh = shuki(Wd, t => ({ pos: [lerp(XS, XA - .95, sm(P(1.2, 3, t))), 0, SZ], gesture: t > 1.8 ? 'lean' : null, facing: lerp(.5, .85, sm(P(1.5, 3, t))), smile: .15, brow: 0, talk: t > 2.4 && t < 11 ? .35 * talkAmt(t, 3) : (t >= 11 ? .25 * talkAmt(t, 3) : 0) }));
+    const sh = shuki(Wd, t => ({ pos: [lerp(XS, XA - .95, sm(P(1.2, 3, t))), 0, SB], gesture: t > 1.8 ? 'lean' : null, facing: lerp(.5, .85, sm(P(1.5, 3, t))), smile: .15, brow: 0, talk: t > 2.4 && t < 11 ? .35 * talkAmt(t, 3) : (t >= 11 ? .25 * talkAmt(t, 3) : 0) }));
     avi(Wd, t => ({ gesture: null, facing: lerp(-.3, -.5, sm(P(1.5, 3, t))), smile: 0, brow: .3, look: .3, talk: 0 }));
     const pf = [], N = 4; for (let i = 0; i < N; i++) { const p = cloud(Wd, 'blank', 1.0, .72); pf.push(p); occ(Wd, p.g); }
     const cl = cloud(Wd, 'mouth'), x = mark3d(Wd, 'cross', 1.0), sk = shock(Wd, 0xff8a8a); occ(Wd, cl.g); occ(Wd, x.g);
@@ -210,7 +220,7 @@ window.STORY = function (K) {
     const sh = shuki(Wd, t => ({ gesture: t > .8 ? 'offer' : null, facing: .55, smile: .3, brow: 0, look: 0, talk: 0 }));
     avi(Wd, t => ({ gesture: null, facing: -.3, smile: 0, brow: .35, look: .3, talk: 0 }));
     nachum(Wd);
-    const ev = envelope(Wd), rg = cloud(Wd, 'ring', 1.2, 1.15), x = mark3d(Wd, 'cross', 1.0), sk = shock(Wd, 0xff8a8a); occ(Wd, ev.g); occ(Wd, rg.g); occ(Wd, x.g);
+    const ev = envelope(Wd), rg = cloud(Wd, 'ring', 1.1, 1.05), x = mark3d(Wd, 'cross', 1.0), sk = shock(Wd, 0xff8a8a); occ(Wd, ev.g); occ(Wd, rg.g); occ(Wd, x.g);
     const EP = [MID, 1.12, SZ + .05];
     Wd.on(t => {
       const hs = holdS(sh, -.1), u = sm(P(1.4, 3.6, t)), pop = popE(P(1.0, 1.9, t));
