@@ -1,0 +1,265 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>khs 83 film a</title>
+<style>html,body{margin:0;background:#000}canvas{display:block;width:100vw;height:auto}</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+// khs_83 / film_a - portrait 1080x1920, objects only (no people, no figures): a sculptor's BLOCK with a hidden light inside.
+// Positive definition = plates stuck ON (wall grows, light dims); an endless measuring tape that cannot close around a light;
+// negation = a chisel knocking chunks OFF ("not this" x several) so the hidden light shines and the camera comes closer;
+// "nothing besides Him" = the rest of the block dissolves, one light remains; "the more you define, the farther" = plates pile up again.
+// Every state is a pure function of the GLOBAL time g (= shot offset + local t). No Math.random / Date / rAF.
+import { film, world, THREE, prog, ease, clamp, lerp, rng, mesh, toon, canvasTex } from '../../lib/stage3d.js';
+
+const TAU = Math.PI * 2, PI = Math.PI, V3 = THREE.Vector3;
+const INKC = 0x4a2f27;
+const PEACH = 0xf6d9c6, CREAM = 0xfdf3e6, TERRA = 0xc8643c, TERRA2 = 0xe39a74, CHAR = 0x3a3330, GOLD = 0xf2c562, LIGHT = 0xfff3d0;
+const sm = (t, a, b) => ease.sm(prog(t, a, b));
+const L3 = (a, b, u) => [lerp(a[0], b[0], u), lerp(a[1], b[1], u), lerp(a[2], b[2], u)];
+const bez = (a, c, b, e) => { const q = 1 - e; return [q * q * a[0] + 2 * q * e * c[0] + e * e * b[0], q * q * a[1] + 2 * q * e * c[1] + e * e * b[1], q * q * a[2] + 2 * q * e * c[2] + e * e * b[2]]; };
+
+// ---------------- helpers ----------------
+let GT = null, RT = null;
+const glowTex = () => GT || (GT = canvasTex(128, 128, (g, w, h) => { const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.35, 'rgba(255,255,255,.5)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }));
+const ringTex = () => RT || (RT = canvasTex(128, 128, (g) => { g.strokeStyle = 'rgba(255,255,255,1)'; g.lineWidth = 7; g.shadowColor = 'rgba(255,255,255,.9)'; g.shadowBlur = 8; g.beginPath(); g.arc(64, 64, 52, 0, TAU); g.stroke(); }));
+const spr = (tex, size, op, tint) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color: tint === undefined ? LIGHT : tint, depthWrite: false, transparent: true, fog: false, opacity: op === undefined ? .6 : op, blending: THREE.AdditiveBlending })); s.scale.set(size, size, 1); s.renderOrder = 10; return s; };
+const glow = (size, op, tint) => spr(glowTex(), size, op, tint);
+const mk = (geo, color, o) => { o = o || {}; return mesh(geo, toon(color, o.mat), Object.assign({ inkW: .012, inkColor: INKC }, o)); };
+const boxm = (w, h, d, color, pos, o) => mk(new THREE.BoxGeometry(w, h, d), color, Object.assign({ pos, box: true }, o));
+const cylm = (r1, r2, h, color, pos, o) => mk(new THREE.CylinderGeometry(r1, r2, h, 36), color, Object.assign({ pos }, o));
+const aimUp = (pos, tgt, fov, up) => { const d = Math.hypot(pos[0] - tgt[0], pos[1] - tgt[1], pos[2] - tgt[2]); return [tgt[0], tgt[1] - up * 2 * Math.tan(fov * PI / 360) * d, tgt[2]]; };
+function heroCluster(Wd, fn) {
+  const g = new THREE.Group(), m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()); m.visible = false; g.add(m); Wd.add(g);
+  Wd.on(t => { const bs = fn(t).filter(Boolean); if (!bs.length) return; const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (const b of bs) for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], b[k] - b[k + 3]); hi[k] = Math.max(hi[k], b[k] + b[k + 3]); }
+    g.position.set((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2); g.scale.set(Math.max(hi[0] - lo[0], .01), Math.max(hi[1] - lo[1], .01), Math.max(hi[2] - lo[2], .01)); });
+  Wd.hero = g; return g;
+}
+
+// ---------------- the block (chunk grid 4 x 5 x 3, a hollow for the light in the middle layer) ----------------
+const SZ = .4, ORB = [0, 1.2, 0];
+const CH = [];
+for (let ix = 0; ix < 4; ix++) for (let iy = 0; iy < 5; iy++) for (let iz = 0; iz < 3; iz++) {
+  if (iz === 1 && ix >= 1 && ix <= 2 && iy >= 1 && iy <= 3) continue;
+  CH.push({ ix, iy, iz, p: [(ix - 1.5) * SZ, .4 + iy * SZ, (iz - 1) * SZ], cav: (ix >= 1 && ix <= 2 && iy >= 1 && iy <= 3) });
+}
+const R5 = rng(5);
+CH.forEach(c => { c.k = R5(); c.v = [(R5() - .5) * 1.3, 1.0 + R5() * .8, .4 + R5() * .6]; c.w = [(R5() - .5) * 9, (R5() - .5) * 7, (R5() - .5) * 9]; c.rt = 1e9; c.mode = 'fall'; });
+const byK = (a, b) => a.k - b.k;
+const frontOuter = CH.filter(c => c.iz === 2 && !c.cav).sort(byK);
+const midRing = CH.filter(c => c.iz === 1).sort(byK);
+const frontCav = CH.filter(c => c.iz === 2 && c.cav).sort(byK);
+const backL = CH.filter(c => c.iz === 0).sort(byK);
+const EV = [];   // chisel events {t, p}
+function assign(list, sched, mode) { let i = 0; for (const [t, n] of sched) { const first = list[i]; for (let q = 0; q < n; q++) { list[i].rt = t; list[i].mode = mode; i++; } if (mode === 'fall') EV.push({ t, p: first.p }); } }
+assign(frontOuter, [[17.4, 2], [19.3, 2], [21.2, 2], [22.7, 2], [24.4, 2], [26.3, 2], [29.0, 2]], 'fall');
+assign(midRing, [[30.8, 3], [32.5, 3], [34.2, 4], [35.2, 4]], 'fall');
+assign(frontCav, [[36.2, 2], [36.8, 1], [37.3, 1], [37.8, 1], [38.3, 1]], 'fall');
+assign(backL, [[41.6, 2], [42.2, 2], [42.8, 2], [43.4, 2], [44.0, 2], [44.6, 2], [45.2, 2], [45.8, 2], [46.4, 2], [47.0, 2]], 'dis');
+EV.sort((a, b) => a.t - b.t);
+const NREM = frontOuter.length + midRing.length + frontCav.length;   // 34
+const CCOL = [TERRA, TERRA2, CHAR, 0xd98260, TERRA, 0xf0b898];
+CH.forEach((c, i) => { c.col = CCOL[(c.ix * 2 + c.iy * 3 + c.iz) % CCOL.length]; });
+const FY = .2 + SZ * .5 * .96;   // resting y of a fallen chunk
+
+function chunkState(c, g) {
+  if (g < c.rt) return { p: c.p, rot: [0, 0, 0], s: 1 };
+  const dt = g - c.rt;
+  if (c.mode === 'dis') { const u = sm(g, c.rt, c.rt + .8); return { p: [c.p[0], c.p[1] + .35 * u, c.p[2]], rot: [0, u * 1.2, 0], s: 1 - u }; }
+  const y0 = c.p[1], vy = c.v[1], tl = (vy + Math.sqrt(vy * vy + 9 * (y0 - FY))) / 4.5 / 2 * 1.0;   // time to land (0.5*9*t^2 form)
+  const tland = (vy + Math.sqrt(vy * vy + 2 * 9 * (y0 - FY))) / 9;
+  const tt = Math.min(dt, tland), post = Math.min(Math.max(dt - tland, 0), .2);
+  const y = dt < tland ? y0 + vy * dt - 4.5 * dt * dt : FY;
+  const x = c.p[0] + c.v[0] * (tt + post * .5), z = c.p[2] + c.v[2] * (tt + post * .5);
+  const sc = 1 - sm(g, c.rt + tland + .8, c.rt + tland + 1.4);
+  const rot = [c.w[0] * tt * .6, c.w[1] * tt * .6, c.w[2] * tt * .6];
+  return { p: [x, y + (1 - sc) * .1, z], rot, s: sc };
+}
+
+// ---------------- plates ("positive definitions") ----------------
+const PCOL = [TERRA, CHAR, GOLD, CREAM, TERRA2, CHAR, TERRA, GOLD];
+const PA = [  // schedule A: stick on the block {t0, t1, from, final}
+  { t0: 1.1, t1: 2.1, from: [-5.5, 3.2, 2.0], fin: [-.42, 1.75, .66] },
+  { t0: 2.3, t1: 3.3, from: [5.5, 1.0, 2.2], fin: [.42, 1.2, .78] },
+  { t0: 3.5, t1: 4.5, from: [-5.5, .8, 2.4], fin: [-.4, .7, .9] },
+  { t0: 5.4, t1: 6.4, from: [5.5, 3.4, 2.0], fin: [.45, 1.85, 1.02] },
+  { t0: 7.4, t1: 8.4, from: [-5.5, 2.4, 2.2], fin: [-.35, 1.25, 1.14] },
+  { t0: 8.8, t1: 9.8, from: [5.5, .6, 2.4], fin: [.3, .72, 1.26] }];
+const PB = [  // schedule B: rebound off the light {tc, dir}
+  { tc: 52.9, dir: [-1, .25, .5] }, { tc: 53.4, dir: [1, .35, .5] }, { tc: 53.8, dir: [-.8, -.1, .7] }, { tc: 54.3, dir: [.9, .3, .6] }];
+const PC = [  // schedule C: pile up in front of the light {t0, t1, from, final}
+  { t0: 60.4, t1: 61.1, from: [-4.5, 2.6, 1.5], fin: [-.42, 1.62, .95] },
+  { t0: 60.9, t1: 61.6, from: [4.5, .4, 1.5], fin: [.42, .86, 1.08] },
+  { t0: 61.3, t1: 62.0, from: [-4.5, .5, 1.5], fin: [-.42, .86, 1.21] },
+  { t0: 61.7, t1: 62.4, from: [4.5, 2.8, 1.5], fin: [.42, 1.62, 1.34] },
+  { t0: 62.1, t1: 62.8, from: [0, 4.2, 1.5], fin: [0, 1.25, 1.47] },
+  { t0: 62.5, t1: 63.2, from: [-4.5, 1.2, 1.5], fin: [-.2, 1.9, 1.6] },
+  { t0: 62.9, t1: 63.6, from: [4.5, 1.9, 1.5], fin: [.2, .6, 1.73] },
+  { t0: 63.2, t1: 63.9, from: [0, .2, 4.0], fin: [0, 1.25, 1.86] }];
+function plateState(i, g) {
+  if (g < 16.5) {   // A
+    const a = PA[i]; if (!a || g < a.t0) return null;
+    const popT = 15.4 + i * .1, s = 1 - sm(g, popT, popT + .45);
+    if (s < .01) return null;
+    const u = prog(g, a.t0, a.t1), e = ease.io(u);
+    const p = u < 1 ? bez(a.from, [a.fin[0] * .3 + a.from[0] * .3, Math.max(a.from[1], a.fin[1]) + 1.2, a.fin[2] + 2.0], a.fin, e) : a.fin;
+    return { p, rot: [0, (1 - e) * 3.0, (1 - e) * .8], s, ring: g > a.t1 && g < a.t1 + .6 ? prog(g, a.t1, a.t1 + .6) : 0, rp: a.fin };
+  }
+  if (g > 52 && g < 57) {   // B
+    const b = PB[i]; if (!b) return null;
+    const d = b.dir, n = Math.hypot(d[0], d[1], d[2]), ux = d[0] / n, uy = d[1] / n, uz = d[2] / n;
+    const C = [ORB[0] + ux * 1.0, ORB[1] + uy * 1.0, ORB[2] + uz * 1.0];
+    if (g < b.tc - .8 || g > b.tc + .9) return null;
+    if (g < b.tc) { const e = ease.in(prog(g, b.tc - .8, b.tc)); return { p: L3([C[0] + ux * 3, C[1] + uy * 3 + .6, C[2] + uz * 3], C, e), rot: [0, (1 - e) * 2, 0], s: 1, ring: 0 }; }
+    const e = ease.out(prog(g, b.tc, b.tc + .9));
+    return { p: [C[0] + ux * 2.6 * e, C[1] + uy * 2.6 * e - 1.3 * e * e + .1, C[2] + uz * 2.6 * e], rot: [e * 6, e * 7, e * 4], s: 1 - sm(g, b.tc + .55, b.tc + .9), ring: prog(g, b.tc, b.tc + .5), rp: C };
+  }
+  if (g >= 60) {   // C
+    const a = PC[i]; if (!a || g < a.t0) return null;
+    const u = prog(g, a.t0, a.t1), e = ease.io(u);
+    const p = u < 1 ? bez(a.from, [a.fin[0] * .4 + a.from[0] * .3, Math.max(a.from[1], a.fin[1]) + .8, a.fin[2] + 1.2], a.fin, e) : a.fin;
+    return { p, rot: [0, (1 - e) * 2.6, (1 - e) * .6], s: 1, ring: g > a.t1 && g < a.t1 + .5 ? prog(g, a.t1, a.t1 + .5) : 0, rp: a.fin };
+  }
+  return null;
+}
+
+// ---------------- chisel ----------------
+const REST = [2.5, 2.1, 1.7], DIR = new V3(0, -.35, -.94).normalize();
+const hoverOf = a => [a[0], a[1] + .1, a[2] + .34];
+function chiselAt(g) {
+  if (g < 16.0 || g > 40.3) return null;
+  let prev = REST, tprev = 16.0;
+  for (let k = 0; k < EV.length; k++) {
+    const tk = EV[k].t, a = [EV[k].p[0], EV[k].p[1] + .05, EV[k].p[2] + .24], h = hoverOf(a);
+    if (g < tk + .3) {
+      const leg0 = Math.max(tprev, tk - 1.1), leg1 = tk - .15;
+      if (g < leg0) return prev;
+      if (g < leg1) return L3(prev, h, ease.io(prog(g, leg0, leg1)));
+      if (g < tk) return L3(h, a, ease.in(prog(g, leg1, tk)));
+      return L3(a, h, ease.out(prog(g, tk, tk + .3)));
+    }
+    prev = h; tprev = tk + .3;
+  }
+  return L3(prev, REST, ease.io(prog(g, tprev + .3, tprev + 1.4)));
+}
+
+// ---------------- tape around a second light ----------------
+const TO = [4.6, 1.2, 0], NT = 150;
+const tapeP = s => { const th = TAU * 2.3 * s, r = .85 + 2.4 * s; return [TO[0] + r * Math.cos(th), TO[1] + .32 * Math.sin(th * .9) * (.4 + s), TO[2] + r * Math.sin(th) * .85 - 9 * s * s]; };
+
+// ---------------- camera (global time) ----------------
+const KEYS = [  // g, pos, target, fov
+  [0, [-1.7, 1.9, 5.3], [0, 1.15, 0], 62], [10.4, [.8, 1.9, 4.9], [.2, 1.15, 0], 62], [11.5, [1.4, 1.8, 5.8], [2.2, 1.2, -.4], 64],
+  [13.0, [3.4, 1.7, 5.6], [4.4, 1.25, -1.4], 66], [15.0, [3.2, 1.75, 5.5], [4.2, 1.25, -2], 66], [17.0, [-.8, 1.9, 5.6], [0, 1.2, 0], 63],
+  [20.4, [-1.2, 1.8, 5.3], [0, 1.2, 0], 62], [30.4, [1.2, 1.7, 4.4], [0, 1.2, 0], 62], [40.2, [-.5, 1.5, 3.5], [0, 1.2, 0], 61],
+  [47.9, [0, 1.4, 3.0], [0, 1.2, 0], 61], [50, [.4, 1.35, 2.9], [0, 1.2, 0], 61], [55, [-.3, 1.3, 2.6], [0, 1.2, 0], 60],
+  [59.8, [0, 1.25, 2.0], [0, 1.2, 0], 60], [60.4, [0, 1.25, 2.1], [0, 1.2, 0], 60], [64.84, [.4, 1.5, 6.4], [0, 1.2, 0], 62]];
+function hermite(g, getter) {
+  let i = 0; while (i < KEYS.length - 2 && g > KEYS[i + 1][0]) i++;
+  const k0 = KEYS[Math.max(i - 1, 0)], k1 = KEYS[i], k2 = KEYS[i + 1], k3 = KEYS[Math.min(i + 2, KEYS.length - 1)];
+  const h = k2[0] - k1[0], u = clamp((g - k1[0]) / h, 0, 1), u2 = u * u, u3 = u2 * u;
+  const f = (a, b, c, d) => { const m1 = (b - a) / (k1[0] - k0[0] || 1) * .5 + (c - b) / h * .5, m2 = (c - b) / h * .5 + (d - c) / (k3[0] - k2[0] || 1) * .5;
+    return (2 * u3 - 3 * u2 + 1) * b + (u3 - 2 * u2 + u) * h * m1 + (-2 * u3 + 3 * u2) * c + (u3 - u2) * h * m2; };
+  const a = getter(k0), b = getter(k1), c = getter(k2), d = getter(k3);
+  return Array.isArray(a) ? a.map((_, q) => f(a[q], b[q], c[q], d[q])) : f(a, b, c, d);
+}
+function camAt(g) {
+  const pos = hermite(g, k => k[1]), tg = hermite(g, k => k[2]), fov = hermite(g, k => k[3]);
+  return { pos, look: aimUp(pos, tg, fov, g > 59 ? .1 : .12), fov };
+}
+
+// ---------------- the world ----------------
+function build(off, heroFn) {
+  const Wd = world({ fogColor: 0xf6d9c6, fogNear: 14, fogFar: 70, skyTop: 0xffeee0, skyBottom: 0xf6d9c6, hemiSky: 0xfff3ea, hemiGround: 0xf0cdb4, hemi: 1.2, sunColor: 0xfff2dd, sun: 1.2, sunPos: [3, 9, 7], shadowExt: 8, skyR: 600 });
+  const S = Wd.scene; const sc = Wd.sun.shadow.camera; sc.far = 40; sc.updateProjectionMatrix();
+  const floor = new THREE.Mesh(new THREE.CircleGeometry(300, 64), toon(PEACH, { emissive: PEACH, emissiveIntensity: .8 })); floor.rotation.x = -PI / 2; floor.receiveShadow = true; S.add(floor);
+  // soft flat discs in the far background (depth + parallax)
+  [[-3.2, 4.2, -14, 3.6, 0xf2b99b], [4.4, 5.6, -18, 4.6, 0xfbe3cf], [-8, 2.6, -22, 5.2, 0xf4c9ae]].forEach(([x, y, z, r, c]) => { const d = new THREE.Mesh(new THREE.CircleGeometry(r, 48), new THREE.MeshBasicMaterial({ color: c })); d.position.set(x, y, z); S.add(d); });
+  // plinth
+  S.add(boxm(2.1, .2, 1.5, CREAM, [0, .1, 0], { inkW: .014 }));
+  // chunks
+  const boxes = CH.map(c => { const m = boxm(SZ * .96, SZ * .96, SZ * .96, c.col, c.p.slice(), { inkW: .012 }); S.add(m); return m; });
+  // the hidden light
+  const orb = mk(new THREE.SphereGeometry(.3, 32, 20), 0xffe3a0, { mat: { emissive: 0xffd27a, emissiveIntensity: 1 }, pos: ORB.slice(), inkW: .018, cast: false }); const orbMat = orb.material; S.add(orb);
+  const halo = glow(3, .5, LIGHT); halo.position.set(ORB[0], ORB[1], -.36); S.add(halo);
+  const inner = glow(1.4, 0, 0xfff8e0); inner.position.set(ORB[0], ORB[1], .08); S.add(inner);
+  // plates
+  const plates = PCOL.map(c => { const m = boxm(.8, .46, .1, c, [0, -5, 0], { inkW: .012 }); m.visible = false; S.add(m); return m; });
+  // chisel
+  const chisel = new THREE.Group(); chisel.visible = false; S.add(chisel);
+  const handle = cylm(.07, .07, .42, TERRA, [0, .34, 0], { inkW: .012 }), cap = cylm(.09, .09, .06, CHAR, [0, .58, 0], { inkW: .01 });
+  const shaft = cylm(.032, .032, .44, 0xb9b4ae, [0, -.1, 0], { inkW: .008 }), tip = mk(new THREE.ConeGeometry(.05, .16, 4), 0xdad6d0, { pos: [0, -.4, 0], rot: [PI, 0, 0], inkW: .008 });
+  chisel.add(handle, cap, shaft, tip);
+  const q = new THREE.Quaternion().setFromUnitVectors(new V3(0, -1, 0), DIR);
+  // rings (pop sparkles)
+  const rings = Array.from({ length: 12 }, () => { const s = spr(ringTex(), 1, 0, 0xfff1c0); s.renderOrder = 12; s.visible = false; S.add(s); return s; });
+  // tape + second light
+  const tapeG = new THREE.Group(); S.add(tapeG);
+  tapeG.add(cylm(.2, .26, .9, CREAM, [TO[0], .45, TO[2]], { inkW: .012 }));
+  const orb2 = new THREE.Mesh(new THREE.SphereGeometry(.4, 28, 18), new THREE.MeshBasicMaterial({ color: 0xfff6dc })); orb2.position.set(...TO); tapeG.add(orb2);
+  const halo2 = glow(3.2, .75, LIGHT); halo2.position.set(TO[0], TO[1], TO[2] - .3); tapeG.add(halo2);
+  const tape = new THREE.InstancedMesh(new THREE.BoxGeometry(.03, .32, .2), new THREE.MeshBasicMaterial({ color: 0xffffff }), NT); tape.frustumCulled = false; tapeG.add(tape);
+  const TP = [], TCOL = [new THREE.Color(CREAM), new THREE.Color(TERRA)];
+  for (let i = 0; i < NT; i++) { const s0 = i / (NT - 1), a = tapeP(s0), b = tapeP(Math.min(1, s0 + .004)); const o = new THREE.Object3D(); o.position.set(...a); o.lookAt(b[0], b[1], b[2]); o.updateMatrix(); TP.push({ m: o.matrix.clone(), s: s0 });
+    tape.setColorAt(i, i % 10 === 0 ? new THREE.Color(GOLD) : TCOL[(i >> 1) & 1]); }
+  const DUM = new THREE.Object3D(), ZERO = new THREE.Matrix4().makeScale(1e-5, 1e-5, 1e-5);
+  let ri = 0;
+  const ring = (p, u, size) => { if (u <= 0 || u >= 1 || ri >= rings.length) return; const s = rings[ri++]; s.visible = true; s.position.set(p[0], p[1], p[2]); s.scale.setScalar(size * (.35 + 1.5 * ease.out(u))); s.material.opacity = .9 * (1 - u); };
+  Wd.on(t => {
+    const g = off + t; ri = 0; rings.forEach(r => { r.visible = false; });
+    // chunks
+    let removed = 0;
+    CH.forEach((c, i) => { const st = chunkState(c, g), m = boxes[i];
+      if (c.mode === 'fall' && g >= c.rt) removed++;
+      if (st.s < .02) { m.visible = false; } else { m.visible = true; m.position.set(st.p[0], st.p[1], st.p[2]); m.rotation.set(st.rot[0], st.rot[1], st.rot[2]); m.scale.setScalar(st.s); }
+      if (g >= c.rt && g < c.rt + .5 && c.mode === 'fall') ring([c.p[0], c.p[1], c.p[2] + .25], (g - c.rt) / .5, .55);
+      if (c.mode === 'dis' && g >= c.rt && g < c.rt + .6) ring(c.p, (g - c.rt) / .6, .5); });
+    // light level
+    let b = .3 + .7 * clamp(removed / NREM, 0, 1);
+    if (g < 16) b = .62 - .34 * sm(g, 1, 10);
+    if (g >= 40.5) b = 1;
+    if (g >= 60.4) b = 1 - .72 * sm(g, 60.6, 63.8);
+    if (g >= 47 && g < 60) b = 1 + .05 * Math.sin(g * 3);
+    orbMat.emissive.setRGB(lerp(.55, 1, clamp(b, 0, 1)), lerp(.42, .83, clamp(b, 0, 1)), lerp(.28, .45, clamp(b, 0, 1)));
+    const hs = 1.4 + .9 * b; halo.scale.set(hs, hs, 1); halo.material.opacity = .15 + .22 * clamp(b, 0, 1.1);
+    const gone = removed >= NREM - 6 && g > 36 ? sm(g, 37.5, 39.5) : 0; inner.scale.set(.8 * b + .3, .8 * b + .3, 1); inner.material.opacity = .22 * gone * clamp(b, 0, 1);
+    ring([ORB[0], ORB[1], ORB[2] + .3], prog(g, 47.9, 49.0), 1.1);
+    // plates
+    plates.forEach((m, i) => { const st = plateState(i, g); if (!st) { m.visible = false; return; }
+      m.visible = true; m.position.set(st.p[0], st.p[1], st.p[2]); m.rotation.set(st.rot[0], st.rot[1], st.rot[2]); m.scale.setScalar(Math.max(st.s, .001));
+      if (st.ring) ring(st.rp, st.ring, .7); });
+    // chisel
+    const ca = chiselAt(g);
+    if (!ca) chisel.visible = false; else { chisel.visible = true; const tipLocal = new V3(0, -.48, 0).applyQuaternion(q); chisel.quaternion.copy(q); chisel.position.set(ca[0] - tipLocal.x, ca[1] - tipLocal.y, ca[2] - tipLocal.z); }
+    // tape
+    tapeG.visible = g > 9.8 && g < 16.8;
+    if (tapeG.visible) { const smax = ease.io(prog(g, 10.9, 14.2)), fade = 1 - sm(g, 15.4, 16.4);
+      for (let i = 0; i < NT; i++) { const tp = TP[i]; if (tp.s <= smax && fade > .02) { DUM.matrix.copy(tp.m); DUM.matrix.decompose(DUM.position, DUM.quaternion, DUM.scale); DUM.scale.setScalar(fade); DUM.updateMatrix(); tape.setMatrixAt(i, DUM.matrix); } else tape.setMatrixAt(i, ZERO); }
+      tape.instanceMatrix.needsUpdate = true; tape.instanceColor.needsUpdate = true;
+      const lp = tapeP(Math.min(smax, 1)); ring([lp[0], lp[1], lp[2]], 0, 1); }
+  });
+  heroCluster(Wd, t => heroFn(off + t));
+  return Object.assign(Wd, { cam: t => camAt(off + t) });
+}
+const heroAt = g => {
+  if (g > 10.4 && g < 16.2) return [[TO[0], TO[1], TO[2] - 1.2, 1.6, 1.0, 2.8]];
+  if (g > 47) return [[0, 1.2, 0, 1.0, 1.0, .9]];
+  return [[0, 1.2, 0, .95, 1.05, .7]];
+};
+const SH = (id, dur, off, caps, capAt) => ({ id, dur, wide: true, caps, capAt, build() { return build(off, heroAt); } });
+
+film({
+  W: 1080, H: 1920, xf: .4, vault: 'captions_vault.json',
+  shots: [
+    SH('s01', 10.4, 0, ['CAP_A_01', 'CAP_A_02'], [0.0, 5.0]),
+    SH('s02', 10.0, 10.4, ['CAP_A_03', 'CAP_A_04'], [0.0, 4.8]),
+    SH('s03', 10.0, 20.4, ['CAP_A_05', 'CAP_A_06'], [0.0, 5.0]),
+    SH('s04', 9.8, 30.4, ['CAP_A_07', 'CAP_A_08'], [0.0, 4.9]),
+    SH('s05', 9.8, 40.2, ['CAP_A_09', 'CAP_A_10'], [0.0, 4.8]),
+    SH('s06', 10.0, 50.0, ['CAP_A_11', 'CAP_A_12'], [0.0, 5.2]),
+    SH('s07', 4.84, 60.0, ['CAP_A_13'], [0.0]),
+  ]
+});
+</script>
