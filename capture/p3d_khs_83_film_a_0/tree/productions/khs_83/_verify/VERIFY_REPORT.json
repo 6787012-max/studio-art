@@ -1,7 +1,7 @@
 {
  "film": "film_a.html",
  "status": "PASS",
- "time": "2026-10-31T11:15:21",
+ "time": "2026-10-31T11:53:58",
  "samples": 33,
  "findings": [],
  "sheets": {
@@ -11,9 +11,9 @@
   "phone_2": "C:/projects/_studio-animatzia/productions/khs_83/_verify/_view/_verify_phone_sheet_2.jpg"
  },
  "timing": {
-  "ready_s": 1.2,
-  "gates_s": 63.3,
-  "sheets_s": 29.4,
-  "total_s": 94.3
+  "ready_s": 1.1,
+  "gates_s": 63.2,
+  "sheets_s": 23.7,
+  "total_s": 88.2
  }
 }
