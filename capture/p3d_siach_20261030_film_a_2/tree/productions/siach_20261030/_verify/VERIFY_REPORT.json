@@ -1,0 +1,45 @@
+{
+ "film": "film_a.html",
+ "status": "PASS",
+ "time": "2026-10-31T10:12:31",
+ "samples": 73,
+ "findings": [
+  {
+   "sev": "P2",
+   "code": "HERO_SMALL",
+   "t": 9.0,
+   "shot": "s01",
+   "detail": "hero height 23% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  },
+  {
+   "sev": "P2",
+   "code": "HERO_SMALL",
+   "t": 140.25,
+   "shot": "s09",
+   "detail": "hero height 29% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  },
+  {
+   "sev": "P2",
+   "code": "HERO_SMALL",
+   "t": 237.45,
+   "shot": "s15",
+   "detail": "hero height 24% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  }
+ ],
+ "sheets": {
+  "beat": "C:/projects/_studio-animatzia/productions/siach_20261030/_verify/_view/_verify_beat_sheet_1.jpg",
+  "seam": "C:/projects/_studio-animatzia/productions/siach_20261030/_verify/_view/_verify_seams_1.jpg",
+  "phone": "C:/projects/_studio-animatzia/productions/siach_20261030/_verify/_view/_verify_phone_sheet_1.jpg",
+  "beat_2": "C:/projects/_studio-animatzia/productions/siach_20261030/_verify/_view/_verify_beat_sheet_2.jpg",
+  "seam_2": "C:/projects/_studio-animatzia/productions/siach_20261030/_verify/_view/_verify_seams_2.jpg"
+ },
+ "timing": {
+  "ready_s": 6.5,
+  "gates_s": 53.7,
+  "sheets_s": 39.0,
+  "total_s": 99.4
+ }
+}

@@ -1,0 +1,35 @@
+/* siach_20261029 - 3D cel-shaded film, 247.3 s, 15 shots. Deterministic: every frame is a pure function of t.
+   Worlds: TW tower+stairs, RD road+bus, HL study hall, HS rainy street, HI hill path, MS mist meadow, DS dusk desert.
+   People only through people.js. No text, letters or digits anywhere. */
+import { THREE, sm, cl, kf, D2R, part, ell, lathe, RoundedBoxGeometry } from '../../lib/toon3d/toon3d.js';
+import { mergeGeometries } from '../../node_modules/three/examples/jsm/utils/BufferGeometryUtils.js';
+import * as P from './people.js';
+import * as PR from './props.js';
+import { M, glow, box, bas } from './props.js';
+
+export const DUR = 247.3;
+const Q = new URLSearchParams(location.search);
+const HQ = !!(window.__HQ_RENDER || Q.has('hq') || Q.has('capture') || Q.get('hq') === '1');
+const W = HQ ? 1920 : 1280, H = HQ ? 1080 : 720;
+
+/* ------------------------------------------------------------------ renderer, scene, camera */
+const renderer = new THREE.WebGLRenderer({ antialias: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(1); renderer.setSize(W, H, false); renderer.outputColorSpace = THREE.LinearSRGBColorSpace;
+renderer.domElement.id = 'c'; document.getElementById('wrap').appendChild(renderer.domElement);
+const scene = new THREE.Scene();
+const cam = new THREE.PerspectiveCamera(30, 16 / 9, 5, 40000);
+const sky = PR.makeSky(); scene.add(sky);
+function mkOverlay(order) {
+  const mat = new THREE.ShaderMaterial({ transparent: true, depthTest: false, depthWrite: false, uniforms: { uC: { value: new THREE.Color('#000') }, uA: { value: 0 } },
+    vertexShader: 'void main(){ gl_Position = vec4(position.xy, 0.0, 1.0); }', fragmentShader: 'uniform vec3 uC; uniform float uA; void main(){ gl_FragColor = vec4(uC, uA); }' });
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(2, 2), mat); m.frustumCulled = false; m.renderOrder = order; scene.add(m); return mat;
+}
+const ovMat = mkOverlay(10), disMat = mkOverlay(40);
+
+//@@UTILS@@
+//@@FACE@@
+
+/* ------------------------------------------------------------------ actors (created first: the stairs depend on the bochur stride) */
+const ACT = {};
+function addPerson(id, mk) { const o = mk(); const h = new THREE.Group(); h.rotation.order = 'YZX'; h.add(o.root); scene.add(h); ACT[id] = { o, h, cycle: o.cycle, fn: () => null, person: true }; return ACT[id]; }
+function addProp(id, group) { ACT[id] = { h: group, fn: () => null, prop: true }; return ACT[id]; }

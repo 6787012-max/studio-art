@@ -1,0 +1,8 @@
+addPerson('BO', P.makeBochur); addPerson('M', P.makeMan); addPerson('RA', P.makeRabbiA); addPerson('OB', P.makeBochur);
+for (let i = 1; i <= 6; i++) addPerson('C' + i, P.makeBochur);
+// the farmer: straw-coloured hat instead of the dark city hat
+{
+  const D = window.K.MAN, tgt = [[D.hat, '#e7c65c'], [D.band, '#b4452f']];
+  ACT.M.o.root.traverse(o => { const m = o.material; if (!m || !m.uniforms || !m.uniforms.uColor) return; const c = '#' + m.uniforms.uColor.value.getHexString();
+    for (const [from, to] of tgt) if (from && c.toLowerCase() === from.toLowerCase()) { m.uniforms.uColor.value.set(to); break; } });
+}
