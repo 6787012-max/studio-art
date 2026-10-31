@@ -14,13 +14,13 @@ window.STORY = function (K) {
 
   // ---------------------------------------------------------------- people (navy velvet kippot, NO scaling of the kippa mesh)
   const boyK = (Wd, i, fn) => { const Pp = boyP(Wd, i, fn); Wd.on(() => { if (!Pp.kippa && Pp.figure) Pp.figure.group.traverse(m => { if (!Pp.kippa && m.isMesh && m.geometry && m.geometry.type === 'SphereGeometry' && Math.abs(m.geometry.parameters.thetaLength - .86) < .02) Pp.kippa = m; }); const k = Pp.kippa; if (k && !k._rc) { k._rc = 1; k.material = k.material.clone(); k.material.color.set(0x1f2f70); } }); return Pp; };
-  const SB = -3.45, SZ = -3.3, XS = -7.4, XA = -5.5, XN = -3.7, ZN = -3.2, MID = (XS + XA) / 2;
+  const SB = -3.45, SZ = -3.3, XS = -7.4, XA = -5.5, XN = -3.7, ZN = -2.8, MID = (XS + XA) / 2;
   // seated arm poses: the stock 'rest' arms hang INTO the bench board, so seated boys get their own pose (hands on the knees / in front), applied after the engine's own pose
   const SP = {
     knees: { armA: [-.7,0,.15], foreA: [-.9,0,.2], armB: [-.7,0,-.15], foreB: [-.9,0,-.2] },
     offer: { armA: [-.55, 0, .02], foreA: [-.85, -.9, 0], armB: [-.55, 0, -.02], foreB: [-.85, .9, 0] },
     lean: { armA: [-.3, 0, .22], foreA: [-.85, 0, .35], armB: [-.3, 0, -.22], foreB: [-.85, 0, -.35], chest: [.3, 0, 0], hips: [.06, 0, 0], head: [-.14, 0, 0] } };
-  const SITB = { thighA: [-1.5, 0, 0], thighB: [-1.5, 0, 0], shinA: [1.5, 0, 0], shinB: [1.5, 0, 0], y: -.36 }, SKEYS = ['armA', 'foreA', 'armB', 'foreB', 'chest', 'hips', 'head'];
+  const SITB = { thighA: [-1.5, 0, 0], thighB: [-1.5, 0, 0], shinA: [1.5, 0, 0], shinB: [1.5, 0, 0], y: -.085 }, SKEYS = ['armA', 'foreA', 'armB', 'foreB', 'chest', 'hips', 'head'];
   const seatPose = (Wd, per, fn) => Wd.on(t => { if (!per.figure) return; const acc = {};
     for (let k = 0; k < 4; k++) { const p = SP[fn(t - k * .1).gesture || 'knees'] || SP.knees; SKEYS.forEach(key => { const v = p[key] || [0, 0, 0], a = acc[key] || (acc[key] = [0, 0, 0]); for (let i = 0; i < 3; i++) a[i] += v[i] / 4; }); }
     acc.chest[0] += .018 * Math.sin(t * 1.7); acc.head[1] += (fn(t).look || 0) * .25 + .06 * Math.sin(t * .6);
@@ -219,7 +219,6 @@ window.STORY = function (K) {
     const Wd = world7(); dim(Wd, t => 1);
     const sh = shuki(Wd, t => ({ gesture: t > .8 ? 'offer' : null, facing: .55, smile: .3, brow: 0, look: 0, talk: 0 }));
     avi(Wd, t => ({ gesture: null, facing: -.3, smile: 0, brow: .35, look: .3, talk: 0 }));
-    nachum(Wd);
     const ev = envelope(Wd), rg = cloud(Wd, 'ring', 1.1, 1.05), x = mark3d(Wd, 'cross', 1.0), sk = shock(Wd, 0xff8a8a); occ(Wd, ev.g); occ(Wd, rg.g); occ(Wd, x.g);
     const EP = [MID, 1.12, SZ + .05];
     Wd.on(t => {
@@ -240,7 +239,7 @@ window.STORY = function (K) {
     const kinds = ['mouth', 'pencil', 'eye', 'env'], tl = kinds.map(k => tile(Wd, k)), xs = kinds.map(() => mark3d(Wd, 'cross', 1.0)), sks = kinds.map(() => shock(Wd, 0xff8a8a));
     const sg = board(Wd, { w: 3.5, h: .95, cw: 1024, frame: 0x6b3a1c, glow: 0xffd27a, draw: drawWord(W_ALL, '#fff3c4', '#a30f1c', '#b8870f') });
     tl.forEach(o => occ(Wd, o.g)); xs.forEach(o => occ(Wd, o.g)); occ(Wd, sg.g);
-    const X0 = kinds.map((k, i) => MID + (i - 1.5) * 1.12), Y = 1.95, TT = [1.0, 2.8, 4.6, 6.4], gg = greenGlow(Wd);
+    const X0 = kinds.map((k, i) => MID + (i - 1.5) * 1.12), Y = 2.3, TT = [1.0, 2.8, 4.6, 6.4], gg = greenGlow(Wd);
     Wd.on(t => {
       const m = sm(P(9.2, 11, t));
       kinds.forEach((k, i) => { const k0 = popE(P(TT[i], TT[i] + .8, t)), px = lerp(X0[i], MID, m), pos = [px, Y + .05 * Math.sin(t * 1.4 + i) * (1 - m), SZ - .1 - .02 * i];
@@ -248,7 +247,7 @@ window.STORY = function (K) {
         const xt = TT[i] + .9, xk = t > xt ? popE(P(xt, xt + .5, t)) : 0; xs[i].set([pos[0], pos[1], pos[2] + .3], xk * .6 * (1 - .8 * m), .06 * Math.sin(t * 3 + i));
         if (m > .6) xs[i].g.visible = false; sks[i].set([pos[0], pos[1], pos[2] + .35], P(xt, xt + .8, t) * (t > xt ? 1 : 0), .7); });
       sg.set([MID, Y, SZ - .2], popE(P(10.2, 11.3, t)) * (1 + .03 * Math.sin(t * 2.4)) * 1.0, 0); gg([MID, Y, SZ - .5], 5.0 * P(10.2, 12, t), .4 * P(10.5, 12.5, t)); });
-    Wd.cam = cine([C(0, [MID, 1.15, -3.3], 4.3, .3, -14, 44, 0), C(6, [MID, 1.15, -3.3], 4.0, .25, 3, 44, 0), C(10, [MID, 1.15, -3.3], 3.9, .35, 10, 44, 0), C(14, [MID, 1.15, -3.3], 4.2, .3, 0, 44, 0)]);
+    Wd.cam = cine([C(0, [MID, 1.3, -3.3], 4.3, .3, -14, 44, 0), C(6, [MID, 1.3, -3.3], 4.0, .25, 3, 44, 0), C(10, [MID, 1.3, -3.3], 3.9, .35, 10, 44, 0), C(14, [MID, 1.3, -3.3], 4.2, .3, 0, 44, 0)]);
     return Wd;
   }
 
@@ -264,7 +263,7 @@ window.STORY = function (K) {
       let pos = [lerp(ha[0], hs[0], back), lerp(ha[1], hs[1], back) + .12 * Math.sin(PI * back), lerp(ha[2], hs[2], back)];
       pos = [lerp(pos[0], pocket[0], pk), lerp(pos[1], pocket[1], pk) + .08 * Math.sin(PI * pk), lerp(pos[2], pocket[2], pk)];
       nt.set(pos, 1 - sm(P(5.4, 6.2, t)), .03 * Math.sin(t * 1.3) - .1 * (1 - back), 1, 2, 1 - sm(P(5.5, 6.2, t)));
-      const k = popE(P(6.2, 7.0, t)); ck.set([XA, 1.65 + .04 * Math.sin(t * 1.8), SZ + .2], k * .55, .05 * Math.sin(t * 2.6)); sk.set([XA, 1.65, SZ + .25], P(6.2, 7.0, t) * (t > 6.2 ? 1 : 0), 1.5);
+      const k = popE(P(6.2, 7.0, t)); ck.set([XA, 1.95 + .04 * Math.sin(t * 1.8), SZ + .2], k * .55, .05 * Math.sin(t * 2.6)); sk.set([XA, 1.95, SZ + .25], P(6.2, 7.0, t) * (t > 6.2 ? 1 : 0), 1.5);
       const gk = sm(P(5, 9, t)); gg([XA, 1.2, SZ - .55], 2.4 + 1.2 * gk, .45 * gk); ryz(.4 * sm(P(3, 8, t))); });
     Wd.cam = cine([C(0, [MID, .85, -3.3], 3.8, .3, -14, 44, 0), C(4, [MID, .85, -3.3], 3.5, .25, 4, 44, 0), C(7, [MID, .85, -3.3], 3.6, .35, 12, 44, 0), C(10, [MID, .85, -3.3], 3.9, .3, 4, 44, 0)]);
     return Wd;
