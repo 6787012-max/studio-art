@@ -122,15 +122,15 @@ window.STORY = function (K) {
   function balance(Wd) {
     const g = new THREE.Group(); g.visible = false; Wd.add(g);
     g.add(cyl(.025, .025, 2.4, 0x8a8f99, { pos: [0, 1.2, 0], ink: false }));
-    const beam = new THREE.Group(); g.add(beam); beam.add(box(2.4, .08, .08, 0xd8dde6)); beam.add(ball(.11, 0xe3b25a, { ink: false }));
-    const mkPan = () => { const p = new THREE.Group(); g.add(p); p.add(cyl(.5, .2, .07, 0xd8dde6, { pos: [0, -.62, 0] })); for (const s of [-1, 1]) p.add(box(.018, .62, .018, 0xb8bec8, { pos: [s * .27, -.31, 0], rot: [0, 0, -s * .46], ink: false })); return p; };
+    const beam = new THREE.Group(); g.add(beam); beam.add(box(1.8, .08, .08, 0xd8dde6)); beam.add(ball(.11, 0xe3b25a, { ink: false }));
+    const mkPan = () => { const p = new THREE.Group(); g.add(p); p.add(cyl(.42, .17, .07, 0xd8dde6, { pos: [0, -.62, 0] })); for (const s of [-1, 1]) p.add(box(.018, .62, .018, 0xb8bec8, { pos: [s * .23, -.31, 0], rot: [0, 0, -s * .4], ink: false })); return p; };
     const pans = [mkPan(), mkPan()];
     const cA = mkPlaque(Wd, 'בורא פרי הגפן', 1.25, .5, '#ecdcff', '#3a1058', '#7a2a9a'), cB = mkPlaque(Wd, 'שהכל', 1.25, .5, '#d6ecff', '#103a58', '#2a6a9a');
-    return { g, cards: [cA, cB], set(pos, s, t) {
+    return { g, beam, pans, cards: [cA, cB], set(pos, s, t) {
       g.visible = s > .01; cA.g.visible = cB.g.visible = g.visible; if (!g.visible) return; g.position.set(pos[0], pos[1], pos[2]); g.scale.setScalar(s);
-      const a = (.2 * Math.sin(t * 1.25) + .09 * Math.sin(t * 2.7 + 1) + .05 * Math.sin(t * .5)) * s; beam.rotation.z = a;
-      [-1, 1].forEach((sd, i) => { const ex = sd * 1.2 * Math.cos(a) * s, ey = sd * 1.2 * Math.sin(a) * s; pans[i].position.set(ex, ey, 0); pans[i].scale.setScalar(s);
-        const card = i ? cB : cA; card.set([pos[0] + ex, pos[1] + ey - .62 * s + .36 * s, pos[2] + .04], .8 * s * popE(1), 0); }); } };
+      const a = .8 * (.2 * Math.sin(t * 1.25) + .09 * Math.sin(t * 2.7 + 1) + .05 * Math.sin(t * .5)) * s; beam.rotation.z = a;
+      [-1, 1].forEach((sd, i) => { const ex = sd * .9 * Math.cos(a) * s, ey = sd * .9 * Math.sin(a) * s; pans[i].position.set(ex, ey, 0); pans[i].scale.setScalar(s);
+        const card = i ? cB : cA; card.set([pos[0] + ex, pos[1] + ey - .62 * s + .36 * s, pos[2] + .04], .7 * s * popE(1), 0); }); } };
   }
 
   // people helpers
@@ -194,10 +194,10 @@ window.STORY = function (K) {
     const Wd = skyW(); room(Wd); table(Wd, 0); warm(Wd);
     const B = cup(Wd, 1.8), bl = balance(Wd), q = qmark(Wd, '#9aa0aa'), sp = sparks(Wd, 12, [0, 2.4, -.5], 2.4, 0xffe9a8, .12);
     B.set([0, TT, -.3]); B.setLiq(.85, 1);
-    Wd.on(t => { sp(t); bl.set([0, 2.52, -.35], popE(P(.4, 1.6, t)), t); q.set([0, 3.3 + .05 * Math.sin(t * 2), -.5], .55 * popE(P(5, 6, t)), .12 * Math.sin(t * 2.6)); });
-    mois(Wd, t => ({ pos: [-2.35, 0, -.95], facing: face(.7, 1), gesture: t > 4 ? 'think' : null, perform: t > 4 ? 0 : .4, smile: .1, brow: .5, look: .3 }));
-    ari(Wd, t => ({ pos: [2.35, 0, -.95], facing: face(-.7, 1), gesture: t > 7 ? 'shrug' : null, perform: t > 7 ? 0 : .4, smile: .1, brow: .5, look: -.3 }));
-    Wd.occ = [B.g].concat(bl.cards.map(c => c.g)); Wd.center = [0, 0];
+    Wd.on(t => { sp(t); bl.set([0, 2.6, -.35], popE(P(.4, 1.6, t)), t); q.set([0, 3.3 + .05 * Math.sin(t * 2), -.5], .55 * popE(P(5, 6, t)), .12 * Math.sin(t * 2.6)); });
+    mois(Wd, t => ({ pos: [-2.6, 0, -.95], facing: face(.7, 1), gesture: t > 4 ? 'think' : null, perform: t > 4 ? 0 : .4, smile: .1, brow: .5, look: .3 }));
+    ari(Wd, t => ({ pos: [2.6, 0, -.95], facing: face(-.7, 1), gesture: t > 7 ? 'shrug' : null, perform: t > 7 ? 0 : .4, smile: .1, brow: .5, look: -.3 }));
+    Wd.occ = [B.g, bl.beam].concat(bl.pans, bl.cards.map(c => c.g)); Wd.center = [0, 0];
     Wd.cam = cine([C0(0, [0, 1.5, -.4], 4.3, .5, -10), C0(5, [0, 1.5, -.4], 3.9, .4, 8), C0(10, [0, 1.55, -.4], 3.8, .4, -8), C0(dur, [0, 1.55, -.4], 4.0, .5, 8)]);
     return Wd;
   }
