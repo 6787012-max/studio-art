@@ -1,0 +1,62 @@
+{
+ "film": "film_c.html",
+ "status": "FAIL",
+ "time": "2026-11-01T18:09:50",
+ "samples": 33,
+ "findings": [
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 5.5,
+   "shot": "c1_water_is_low",
+   "detail": "caption dir=None (+3 more samples)",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 39.1,
+   "shot": "c2_two_pumps",
+   "detail": "caption dir=None (+3 more samples)",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 75.1,
+   "shot": "c2b_like_the_road",
+   "detail": "caption dir=None (+3 more samples)",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 112.4,
+   "shot": "c3_canal_and_pools",
+   "detail": "caption dir=None (+5 more samples)",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 160.4,
+   "shot": "c4_giant_pipe",
+   "detail": "caption dir=None (+3 more samples)",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 198.1,
+   "shot": "c4b_to_our_tap",
+   "detail": "caption dir=None (+4 more samples)",
+   "fix": "caption must be dir=rtl, lang=he"
+  }
+ ],
+ "sheets": null,
+ "timing": {
+  "ready_s": 8.6,
+  "gates_s": 68.7,
+  "total_s": 79.1
+ }
+}
