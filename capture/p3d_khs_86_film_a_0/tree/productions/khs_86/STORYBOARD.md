@@ -1,0 +1,22 @@
+# STORYBOARD - khs_86 "the fully decayed dust that has hope" (vertical 1080x1920, ~68.8 s of voice, objects only, no people)
+
+Central metaphor: a heap of fine GOLDEN DUST on a white marble floor. It is "pure" only when it is complete and unmixed - and that pure dust rises again.
+Palette: cool dawn - slate blue ground and sky, white marble objects, warm golden dust, small touches of deep teal. Flat toon, clean, bright.
+Camera: starts high looking down on the pillars (pitch ~56 deg), slowly tilts up to eye level (pitch ~13 deg) and rises with the dust; no dolly-out, no crane-down, no orbit, no side-tracking.
+Times are narration seconds (idea paraphrased, no source text). Caption IDs in the last column.
+
+| time (s) | narration idea | object that acts it out | character | what the viewer learns here | captions |
+|---|---|---|---|---|---|
+| 0-6.4 | there still were "bones": the Torah scholars of Israel, the ones who hold up the body | three tall white pillars hold up a big glassy roof slab; the slab glows softly on the words about holding up | none | the pillars are what carries the whole roof | CAP_A_01 |
+| 6.4-11.4 | until even the bones decayed; nothing is left but fully decayed dust | pillars crumble one after the other from the top into golden grains that fall into a heap; the slab tilts and sinks | none | the supports turn to dust | CAP_A_02 |
+| 11.4-16.9 | it became dust, as the verse says: our soul is bowed to the dust | the slab rests on the heap, then dissolves into stray grains scattered around it; a small light orb descends from above into the dust and fades into it | none (the orb is only light) | the soul bows down to the dust | CAP_A_03 |
+| 16.9-22.0 | in the period of the Gra there are no more Torah scholars, all has ended | the three empty bases ring once each in teal where the pillars stood; the sky dims | none | nothing is left standing | CAP_A_04 |
+| 22.0-26.6 | we are left as fully decayed dust; meanwhile we wait; "shake yourself from the dust, arise" | the heap alone; dawn slowly lightens the sky; on "shake yourself" the heap hops once, a ring pulses and a first faint glow appears | none | the dust is waiting to rise | CAP_A_05 |
+| 26.6-31.7 | this dust has a very interesting property: it is the lowest degree of tumah | four marble steps rise behind the heap, the heap sits on the floor in front of the lowest one; a teal ring pulses around it | none | the lowest rung | CAP_A_06 |
+| 31.7-36.6 | the most minimal vitality is left; there are two conditions in the Mishna | the heap shows one tiny pulse of light; two marble pedestals with gold orbs rise left and right | none | the dust is barely alive; two conditions | CAP_A_07 |
+| 36.6-43.2 | condition one: the whole body completely crumbled, not even one crumb missing | the stray grains fly in and complete the heap (glow grows); then one bright grain floats out and the glow stops, it returns and the glow is back; the first orb lights up | none | the heap must be whole | CAP_A_08 |
+| 43.2-48.4 | condition two: nothing may be mixed in; it is written: in a marble box | a blue striped cloth falls on the heap, becomes blue specks that dim it, then the specks are lifted out; a white marble box assembles around the clean glowing heap | none | any addition spoils it; the marble box keeps it clean | CAP_A_09 |
+| 48.4-54.3 | in a wooden box the dust of the wood mixes into the dust | a wooden box slides in beside the marble one; brown wood chips fall from its walls into its dust, which greys out and loses its glow; the marble one stays gold | none | wood mixes in, marble does not | CAP_A_10 |
+| 54.3-59.8 | already not that kind of tumah; if something is missing or mixed in... | the wooden dust stays grey, one golden grain floats out of it; the marble heap keeps glowing | none | impure or incomplete dust loses it | CAP_A_11 |
+| 59.8-64.6 | ...it is no longer that dust, the one that has hope to live | the wooden box slides away, the marble box returns to the centre; on "hope to live" the golden dust lifts from the box in a spiral | none | only the pure dust rises | CAP_A_12 |
+| 64.6-69.6 | we need to feel like this fully decayed dust | a column of golden light rises from the heap into a dawn sky with a small teal sprout at its head; the grains settle back, the camera returns to the humble glowing heap with a tiny sprout | none | we are that dust, and it can rise | CAP_A_13 |

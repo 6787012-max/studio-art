@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>khs 86 film a</title>
+<style>html,body{margin:0;background:#000}canvas{display:block;width:100vw;height:auto}</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>window.__T0=0.0000; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+// khs_86 / film_a - portrait 1080x1920, objects only (no people): a heap of fine GOLDEN DUST on white marble.
+// (a) three white pillars hold up a glassy roof slab; they crumble, the slab lowers onto the dust and dissolves. (b) the heap glows very faintly;
+// stray grains fly in to complete it, one missing grain stops the glow; a blue cloth turns into specks that dim it; a marble box keeps it clean,
+// a wooden box sheds chips and greys the dust out. (c) the pure dust in the marble box spirals up into a column of light and a sprout.
+// Every state is a pure function of the GLOBAL time g (= shot offset + local t). No Math.random / Date / rAF.
+import { film, world, THREE, prog, ease, clamp, lerp, rng, mesh, toon, canvasTex } from '../../lib/stage3d.js';
+
+const TAU = Math.PI * 2, PI = Math.PI;
+const INKC = 0x4a5a74;
+const MARBLE = 0xf6f8fb, MARBLE_D = 0xdde4ee, SLATE = 0x6f8bb0, SLATE_D = 0x465f86, SLATE_L = 0xb4c6dd;
+const GOLD = 0xf2bf3f, GOLD_L = 0xffdf86, GOLD_D = 0xd9962a, TEAL = 0x1e7f88, TEAL_L = 0x66c6bf, CLOTH = 0x3b78d6, WOOD = 0x9a6a3a, WOOD_D = 0x73491f;
+const sm = (t, a, b) => ease.sm(prog(t, a, b));
+const L3 = (a, b, u) => [lerp(a[0], b[0], u), lerp(a[1], b[1], u), lerp(a[2], b[2], u)];
+
+// ---------------- helpers ----------------
+let GT = null, RT = null;
+const glowTex = () => GT || (GT = canvasTex(128, 128, (g, w, h) => { const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.35, 'rgba(255,255,255,.5)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }));
+const ringTex = () => RT || (RT = canvasTex(128, 128, (g) => { g.strokeStyle = 'rgba(255,255,255,1)'; g.lineWidth = 7; g.shadowColor = 'rgba(255,255,255,.9)'; g.shadowBlur = 8; g.beginPath(); g.arc(64, 64, 52, 0, TAU); g.stroke(); }));
+const spr = (tex, size, op, tint, add) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color: tint === undefined ? 0xfff3d0 : tint, depthWrite: false, transparent: true, fog: false, opacity: op === undefined ? .6 : op, blending: add === false ? THREE.NormalBlending : THREE.AdditiveBlending })); s.scale.set(size, size, 1); s.renderOrder = 10; return s; };
+const glow = (size, op, tint) => spr(glowTex(), size, op, tint);
+const mk = (geo, color, o) => { o = o || {}; return mesh(geo, toon(color, o.mat), Object.assign({ inkW: .008, inkColor: INKC }, o)); };
+const boxm = (w, h, d, color, pos, o) => mk(new THREE.BoxGeometry(w, h, d), color, Object.assign({ pos, box: true }, o));
+const cylm = (r1, r2, h, color, pos, o) => mk(new THREE.CylinderGeometry(r1, r2, h, 32), color, Object.assign({ pos }, o));
+const ballm = (r, color, pos, o) => mk(new THREE.SphereGeometry(r, 28, 18), color, Object.assign({ pos }, o));
+const aimUp = (pos, tgt, fov, up) => { const d = Math.hypot(pos[0] - tgt[0], pos[1] - tgt[1], pos[2] - tgt[2]); return [tgt[0], tgt[1] - up * 2 * Math.tan(fov * PI / 360) * d, tgt[2]]; };
+function heroCluster(Wd, fn) {
+  const g = new THREE.Group(), m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()); m.visible = false; g.add(m); Wd.add(g);
+  Wd.on(t => { const bs = fn(t).filter(Boolean); if (!bs.length) return; const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (const b of bs) for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], b[k] - b[k + 3]); hi[k] = Math.max(hi[k], b[k] + b[k + 3]); }
+    g.position.set((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2); g.scale.set(Math.max(hi[0] - lo[0], .01), Math.max(hi[1] - lo[1], .01), Math.max(hi[2] - lo[2], .01)); });
+  Wd.hero = g; return g;
+}
+// piecewise smooth table: [[t, v], ...]
+function keyed(tab, g) {
+  if (g <= tab[0][0]) return tab[0][1];
+  for (let i = 0; i < tab.length - 1; i++) if (g <= tab[i + 1][0]) return lerp(tab[i][1], tab[i + 1][1], ease.sm(prog(g, tab[i][0], tab[i + 1][0])));
+  return tab[tab.length - 1][1];
+}
+const bump = (g, a, b, c) => g < a || g > c ? 0 : (g < b ? ease.sm(prog(g, a, b)) : 1 - ease.sm(prog(g, b, c)));
+const angDiff = (a, b) => { let d = (a - b) % TAU; if (d > PI) d -= TAU; if (d < -PI) d += TAU; return d; };
+
+// ---------------- cue times (global narration seconds) ----------------
+const CU = {
+  crumb: [7.2, 7.9, 8.6], slabDis: [11.6, 12.6], orb: [14.9, 16.6], bases: [19.7, 20.05, 20.4], dim: [21.2, 24.0],
+  shake: [25.3, 26.6], stairs: [26.6, 27.8], stairsOut: [33.0, 34.0], ped: [33.9, 34.5], cond1: 36.8, cond2: 43.4,
+  gather: [37.3, 39.9], miss: [40.9, 41.45], back: [42.4, 43.1],
+  cloth: [43.45, 44.45], clothDis: [44.45, 45.0], clothOut: [45.3, 46.3],
+  box: [46.35, 47.5], slide: [47.8, 49.0], chips: [50.8, 53.3], woodDim: [51.0, 54.3], wmiss: [56.4, 57.2],
+  wout: [61.8, 63.0], center: [62.4, 63.6], lift: [63.15, 64.35], endSprout: [66.8, 68.4]
+};
+const LM = [[0, 0], [23.8, 0], [26.0, .12], [26.8, .18], [31.5, .2], [37.2, .2], [40.2, .78], [40.9, .78], [41.4, .04], [42.4, .04], [43.1, .78], [44.4, .78], [45.0, .2], [45.4, .2], [46.3, .78], [63.0, .8], [64.5, 1.0], [67.6, 1.0], [69.8, .9]];
+
+// ---------------- layout ----------------
+const PX = [-1.0, 0, 1.0], H0 = 2.4, PR = .33, SLAB_REST = .78, SLAB_W = 3.0, SLAB_D = 1.5;
+const HR = .9, HH = .55;                         // dust heap radius / height
+const BOXC = 1.1;                               // box centres (x = +-BOXC)
+
+// ---------------- camera (global time): pitch, distance, target, fov, up-shift ----------------
+const CK = [  // g, pitchDeg, dist, tx, ty, tz, fov, up
+  [0, 56, 8.6, 0, 1.15, 0, 56, .12], [6.5, 50, 8.5, 0, 1.1, 0, 56, .12], [9, 46, 8.0, 0, .9, 0, 56, .12], [12, 42, 7.0, 0, .55, 0, 56, .18],
+  [17, 38, 6.5, 0, .45, 0, 56, .18], [22, 34, 6.6, 0, .45, 0, 56, .18], [26, 31, 6.4, 0, .55, -.4, 56, .18], [31, 28, 6.0, 0, .65, -.7, 56, .18],
+  [34, 28, 6.9, 0, .7, 0, 58, .18], [37, 30, 6.6, 0, .5, 0, 56, .18], [43, 30, 6.6, 0, .5, 0, 56, .18], [46, 28, 6.7, 0, .55, 0, 56, .18],
+  [48.5, 26, 8.7, 0, .55, 0, 56, .16], [56, 24, 8.5, 0, .5, 0, 56, .16], [62, 22, 7.6, 0, .5, 0, 56, .16], [64, 20, 6.6, 0, .8, 0, 58, .15],
+  [66, 15, 7.2, 0, 1.3, 0, 62, .15], [67.4, 13, 7.6, 0, 1.6, 0, 62, .15], [69, 18, 6.0, 0, .75, 0, 56, .14], [72, 18, 6.0, 0, .75, 0, 56, .14]];
+function hermite(g, getter) {
+  let i = 0; while (i < CK.length - 2 && g > CK[i + 1][0]) i++;
+  const k0 = CK[Math.max(i - 1, 0)], k1 = CK[i], k2 = CK[i + 1], k3 = CK[Math.min(i + 2, CK.length - 1)];
+  const h = k2[0] - k1[0], u = clamp((g - k1[0]) / h, 0, 1), u2 = u * u, u3 = u2 * u;
+  const f = (a, b, c, d) => { const m1 = (b - a) / (k1[0] - k0[0] || 1) * .5 + (c - b) / h * .5, m2 = (c - b) / h * .5 + (d - c) / (k3[0] - k2[0] || 1) * .5;
+    return (2 * u3 - 3 * u2 + 1) * b + (u3 - 2 * u2 + u) * h * m1 + (-2 * u3 + 3 * u2) * c + (u3 - u2) * h * m2; };
+  const a = getter(k0), b = getter(k1), c = getter(k2), d = getter(k3);
+  return a.map((_, q) => f(a[q], b[q], c[q], d[q]));
+}
+function camAt(g) {
+  const v = hermite(g, k => k.slice(1)); const p = v[0] * PI / 180, d = v[1], tg = [v[2], v[3], v[4]], fov = v[5];
+  const pos = [tg[0], tg[1] + d * Math.sin(p), tg[2] + d * Math.cos(p)];
+  return { pos, look: aimUp(pos, tg, fov, v[6]), fov };
+}
+const heroAt = g => {
+  if (g < 9.6) return [[0, 1.3, 0, 1.6, 1.3, .9]];
+  if (g < 26.6) return [[0, .35, 0, 1.0, .4, 1.0]];
+  if (g < 33.8) return [[0, .4, -.3, 1.3, .6, 1.3]];
+  if (g < 46.3) return [[0, .4, 0, 1.8, .6, 1.5]];
+  if (g < 62.2) return [[-BOXC, .4, 0, 1.0, .5, 1.0], [BOXC, .4, 0, 1.0, .5, 1.0]];
+  if (g < 65.4) return [[0, .6, 0, 1.0, .7, 1.0]];
+  if (g < 68.4) return [[0, 2.2, 0, 1.0, 2.4, 1.0]];
+  return [[0, .45, 0, 1.0, .5, 1.0]];
+};
+
+// ---------------- dust heap helpers ----------------
+const GCOL = [GOLD, GOLD_L, GOLD_D, 0xf7d36a, 0xeab13a];
+const IG = new THREE.IcosahedronGeometry(1, 0);
+function grainMesh(N) {
+  const m = new THREE.InstancedMesh(IG, new THREE.MeshToonMaterial({ color: 0xffffff, gradientMap: toon(0).gradientMap, emissive: 0x6a4300 }), N);
+  m.frustumCulled = false; m.castShadow = true; m.receiveShadow = true;
+  const c = new THREE.Color(1, 1, 1); for (let i = 0; i < N; i++) m.setColorAt(i, c);
+  return m;
+}
+function moundSample(rr, R, Hh, mode) {
+  for (let tries = 0; tries < 200; tries++) {
+    const a = rr() * TAU, rad = R * Math.sqrt(rr());
+    const inWedge = Math.abs(angDiff(a, PI / 2)) < .78 && rad > .3, crest = rad < .34;
+    if (mode === 'base' && inWedge) continue;
+    if (mode === 'fill' && !(inWedge || crest)) continue;
+    const prof = Math.pow(Math.max(0, 1 - (rad / R) * (rad / R)), .8);
+    let y = Hh * prof * (.5 + .5 * rr()) + .05;
+    if (mode === 'base' && crest) y *= .5;
+    return [Math.cos(a) * rad, y, Math.sin(a) * rad];
+  }
+  return [0, .1, 0];
+}
+const _C = new THREE.Color(), _O = new THREE.Object3D();
+const hex3 = h => [((h >> 16) & 255) / 255, ((h >> 8) & 255) / 255, (h & 255) / 255];
+
+// ---------------- the world ----------------
+function build(off, heroFn) {
+  const Wd = world({ fogColor: 0xb4c6dc, fogNear: 16, fogFar: 70, skyTop: 0x587aa6, skyBottom: 0xe9dcc8, hemiSky: 0xe3edf8, hemiGround: 0xb9c6d6, hemi: .9, sunColor: 0xfff1d8, sun: .55, sunPos: [-5, 10, 9], shadowExt: 10, skyR: 600 });
+  const S = Wd.scene; const sc = Wd.sun.shadow.camera; sc.far = 50; sc.updateProjectionMatrix(); Wd.sun.target.position.set(0, 0, 0);
+  const plain = (geo, color, pos, o) => { const m = new THREE.Mesh(geo, toon(color, o)); m.position.set(...pos); m.receiveShadow = true; S.add(m); return m; };
+  const skyU = Wd.sky.material.uniforms;
+  const cTop = new THREE.Color(), cBot = new THREE.Color();
+
+  // ---- floor: one white marble plane, slate ground far below ----
+  plain(new THREE.CylinderGeometry(420, 420, .3, 64), 0x8aa2c4, [0, -.17, 0], {});
+  const floorTex = canvasTex(512, 512, (gg, w, h) => { const r = gg.createRadialGradient(w / 2, h / 2, 0, w / 2, h / 2, w / 2); r.addColorStop(0, '#d2deee'); r.addColorStop(.35, '#aabfd9'); r.addColorStop(.7, '#93abca'); r.addColorStop(1, '#8aa2c4'); gg.fillStyle = r; gg.fillRect(0, 0, w, h); });
+  const floorM = new THREE.Mesh(new THREE.CircleGeometry(8, 64), new THREE.MeshToonMaterial({ color: 0xffffff, map: floorTex, gradientMap: toon(0).gradientMap })); floorM.rotation.x = -PI / 2; floorM.receiveShadow = true; S.add(floorM);
+  const sunGl = spr(glowTex(), 42, .0, 0xffd9a8); sunGl.position.set(6, 5, -48); S.add(sunGl);
+  // ---- the three pillars (the "bones" that hold up the body) + glassy roof slab ----
+  const pil = PX.map(x => {
+    const base = cylm(.44, .48, .14, MARBLE_D, [x, .07, 0]); S.add(base);
+    const shaft = cylm(PR, PR * 1.1, 1, MARBLE, [x, 1, 0]); S.add(shaft);
+    const capr = cylm(PR * 1.35, PR * 1.35, .12, MARBLE_D, [x, 2, 0]); S.add(capr);
+    return { base, shaft, capr, x };
+  });
+  const slab = new THREE.Group(); S.add(slab);
+  const slabBody = new THREE.Mesh(new THREE.BoxGeometry(SLAB_W, .26, SLAB_D), new THREE.MeshToonMaterial({ color: 0xcfe0f4, gradientMap: toon(0).gradientMap, transparent: true, opacity: .66, depthWrite: false })); slabBody.castShadow = true; slab.add(slabBody);
+
+
+  const slabGl = glow(3.4, 0, 0x66c6bf); S.add(slabGl);
+  // ---- the dust heap (main): pillar grains + "fill" grains that start as stray grains from the slab ----
+  const NB = 1250, NF = 750, NM = NB + NF;
+  const heapG = new THREE.Group(); S.add(heapG);
+  const HM = grainMesh(NM); heapG.add(HM);
+  const rr = rng(21);
+  const MG = [];
+  for (let i = 0; i < NM; i++) {
+    const fill = i >= NB;
+    const M = moundSample(rr, HR, HH, fill ? 'fill' : 'base');
+    const gr = { i, fill, M, s: .029 + rr() * .018, col: hex3(GCOL[Math.floor(rr() * GCOL.length)]), r1: rr() * TAU, r2: rr() * TAU, hopK: rr() };
+    if (!fill) { const k = i % 3, a = rr() * TAU, r = PR * Math.sqrt(rr()), y = .1 + rr() * (H0 - .1);
+      gr.P = [PX[k] + r * Math.cos(a), y, r * Math.sin(a)]; gr.rel = CU.crumb[k] + (1 - y / H0) * 1.05 + rr() * .1; gr.fd = .5 + rr() * .45 + y * .12; }
+    else { gr.S = [(rr() - .5) * 2.7, SLAB_REST + (rr() - .5) * .2, (rr() - .5) * 1.3]; gr.rel = CU.slabDis[0] + rr() * .9; gr.fd = .55 + rr() * .4;
+      const a = rr() * TAU, r = .95 + rr() * rr() * .45 + rr() * .08; gr.Sc = [Math.cos(a) * r, .05, Math.sin(a) * r * .85];
+      gr.ga = CU.gather[0] + rr() * (CU.gather[1] - CU.gather[0]); gr.gd = .9 + rr() * .45; gr.arc = .6 + rr() * .6; }
+    MG.push(gr);
+  }
+  // the one missing grain: the highest fill grain; the lifted set: the highest 380 of the others
+  let G = null; for (const gr of MG) if (gr.fill && (!G || gr.M[1] > G.M[1])) G = gr;
+  const order = MG.filter(g => g !== G).sort((a, b) => b.M[1] - a.M[1]).slice(0, 380);
+  for (const gr of order) { gr.lift = true; gr.lt = CU.lift[0] + rr() * (CU.lift[1] - CU.lift[0]); gr.ld = 2.3 + rr() * .5; gr.r0 = Math.hypot(gr.M[0], gr.M[2]); gr.th0 = Math.atan2(gr.M[2], gr.M[0]);
+    gr.rc = .1 + rr() * .2; gr.yt = 3.0 + rr() * 2.3; gr.back = rr() < .62; gr.bt = gr.lt + gr.ld + .1 + rr() * .3; gr.bd = .9 + rr() * .3; }
+  const FPOS = [1.05, 1.35, .9];                            // where the missing grain floats
+  function grainState(gr, g, o) {
+    const M = gr.M; let x = M[0], y = M[1], z = M[2], sc = 1;
+    if (!gr.fill) {
+      if (g < gr.rel) sc = 0;
+      else { const u = clamp((g - gr.rel) / gr.fd, 0, 1); x = gr.P[0] + (M[0] - gr.P[0]) * u; z = gr.P[2] + (M[2] - gr.P[2]) * u; y = gr.P[1] + (M[1] - gr.P[1]) * u * u; }
+    } else {
+      if (g < gr.rel) sc = 0;
+      else if (g < gr.ga) { const u = clamp((g - gr.rel) / gr.fd, 0, 1); x = gr.S[0] + (gr.Sc[0] - gr.S[0]) * u; z = gr.S[2] + (gr.Sc[2] - gr.S[2]) * u; y = gr.S[1] + (gr.Sc[1] - gr.S[1]) * u * u; }
+      else { const u = clamp((g - gr.ga) / gr.gd, 0, 1), e = ease.io(u); x = lerp(gr.Sc[0], M[0], e); z = lerp(gr.Sc[2], M[2], e); y = lerp(gr.Sc[1], M[1], e) + Math.sin(PI * u) * gr.arc; }
+    }
+    if (gr === G && g >= CU.miss[0] - .2) { const m = sm(g, CU.miss[0], CU.miss[1] + .35) * (1 - sm(g, CU.back[0], CU.back[1])); x = lerp(x, FPOS[0], m); y = lerp(y, FPOS[1] + .08 * Math.sin(g * 3), m); z = lerp(z, FPOS[2], m); sc = 1 + 2.2 * m; o.m = m; }
+    if (gr.lift && g >= gr.lt) {
+      const u = clamp((g - gr.lt) / gr.ld, 0, 1);
+      const r = gr.r0 * (1 - u) + gr.rc * u, th = gr.th0 + u * TAU * 1.6;
+      if (g < gr.bt || !gr.back) { x = r * Math.cos(th); z = r * Math.sin(th); y = M[1] + (gr.yt - M[1]) * Math.pow(u, 1.3); sc = u > .9 ? Math.max(0, 1 - (u - .9) / .1) : 1; if (g >= gr.lt + gr.ld) sc = 0; }
+      else { const v = clamp((g - gr.bt) / gr.bd, 0, 1); const tx = gr.rc * Math.cos(gr.th0 + TAU * 1.6), tz = gr.rc * Math.sin(gr.th0 + TAU * 1.6); x = lerp(tx, M[0], v); z = lerp(tz, M[2], v); y = gr.yt + (M[1] - gr.yt) * v * v; sc = Math.min(1, v * 8); }
+    }
+    // the shake: the whole heap hops once on the word "shake yourself"
+    const hop = bump(g, CU.shake[0], (CU.shake[0] + CU.shake[1]) / 2, CU.shake[1]); if (hop > 0 && sc > 0) y += hop * (.05 + .14 * gr.hopK) * Math.abs(Math.sin(g * 22 + gr.r1));
+    o.x = x; o.y = y; o.z = z; o.sc = sc; if (gr === G) { o.gx = x; o.gy = y; o.gz = z; }
+  }
+  const st = { x: 0, y: 0, z: 0, sc: 1, gx: 0, gy: 0, gz: 0 };
+  // ---- glow of the main heap ----
+  const gGl = glow(.9, 0, 0xfff0b0); heapG.add(gGl);
+  const heapGl = glow(2.4, .1, 0xffd37a); heapGl.position.set(0, .45, 0); heapG.add(heapGl);
+  const rings = Array.from({ length: 10 }, () => { const s = spr(ringTex(), 1, 0, 0xffe7a8); s.visible = false; S.add(s); return s; });
+  const soul = new THREE.Group(); S.add(soul); soul.visible = false; soul.add(ballm(.12, GOLD_L, [0, 0, 0], { ink: false, mat: { emissive: 0xffc83a, emissiveIntensity: .6 } })); const soulGl = glow(1.3, .6, 0xffe39a); soul.add(soulGl);
+
+  // ---- stairs (the lowest degree) ----
+  const stairs = [0, 1, 2, 3].map(k => { const hgt = .26 * (k + 1); const col = [MARBLE, 0xc9d6e6, 0x93abc9, 0x6d88b0][k];
+    const b = boxm(3.6 - k * .3, hgt, .85, col, [0, hgt / 2, -1.5 - .85 * k]); b.visible = false; S.add(b); return { b, hgt }; });
+  const lowRing = spr(ringTex(), 1, 0, 0x66c6bf); lowRing.visible = false; S.add(lowRing);
+  // ---- two pedestals with orbs (the two conditions) ----
+  const peds = [-1.3, 1.3].map((x, i) => { const g = new THREE.Group(); g.position.set(x, 0, .3); S.add(g); g.visible = false;
+    g.add(cylm(.22, .26, .34, MARBLE_D, [0, .17, 0])); const orb = ballm(.2, GOLD_L, [0, .78, 0], { ink: false, mat: { emissive: 0xffc83a, emissiveIntensity: .35 } }); g.add(orb); const gl = glow(1.1, .0, 0xffe39a); gl.position.set(0, .78, 0); g.add(gl); return { g, orb, gl }; });
+  // ---- cloth + specks ----
+  const clothGeo = new THREE.PlaneGeometry(1.7, .8, 28, 8); clothGeo.rotateX(-PI / 2);
+  const clothTex = canvasTex(256, 64, (gg, w, h) => { gg.fillStyle = '#3b78d6'; gg.fillRect(0, 0, w, h); gg.fillStyle = '#8fb8f2'; for (let i = 0; i < 4; i++) gg.fillRect(0, 8 + i * 16, w, 5); });
+  const cloth = new THREE.Mesh(clothGeo, new THREE.MeshToonMaterial({ color: 0xffffff, map: clothTex, gradientMap: toon(0).gradientMap, side: THREE.DoubleSide, transparent: true, opacity: 1 })); cloth.visible = false; cloth.castShadow = true; S.add(cloth);
+  const clothBase = clothGeo.attributes.position.array.slice();
+  const NS = 150; const specks = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshToonMaterial({ color: CLOTH, gradientMap: toon(0).gradientMap }), NS); specks.frustumCulled = false; heapG.add(specks);
+  const SP = []; for (let i = 0; i < NS; i++) { const m = moundSample(rr, HR + .1, HH + .08, 'full'); SP.push({ m, t: CU.clothDis[0] + rr() * .5, up: CU.clothOut[0] + rr() * .8, ud: .9 + rr() * .5, s: .035 + rr() * .03, dx: (rr() - .5) * 1.6, dz: (rr() - .5) * 1.6, r1: rr() * TAU }); }
+  // ---- boxes ----
+  function boxUnit(color, trim) {
+    const u = new THREE.Group(); u.visible = false; S.add(u);
+    const fl = boxm(1.9, .1, 1.9, color, [0, .05, 0]); u.add(fl);
+    const walls = [[0, .38, .9, 1.9, .55, .1], [0, .38, -.9, 1.9, .55, .1], [.9, .38, 0, .1, .55, 1.7], [-.9, .38, 0, .1, .55, 1.7]].map(([x, y, z, w, h, d]) => { const wl = boxm(w, h, d, color, [x, y, z]); u.add(wl); if (trim) { const tr = boxm(w + .02, .03, d + .02, trim, [x, y + .29, z], { ink: false }); u.add(tr); wl.userData.trim = tr; } return wl; });
+    return { u, fl, walls };
+  }
+  const mUnit = boxUnit(MARBLE, TEAL), wUnit = boxUnit(WOOD, null);
+  // plank lines on the wooden box
+  [[0, .2, .955, 1.9, .03, .02], [0, .4, .955, 1.9, .03, .02], [0, .2, -.955, 1.9, .03, .02], [0, .4, -.955, 1.9, .03, .02]].forEach(([x, y, z, w, h, d]) => wUnit.u.add(boxm(w, h, d, WOOD_D, [x, y, z], { ink: false })));
+  S.remove(heapG); mUnit.u.add(heapG);                 // the main heap lives in the marble unit
+  // wooden heap + chips + its own missing grain
+  const NW = 520, WM = grainMesh(NW); wUnit.u.add(WM);
+  const WG = []; { const rw = rng(33); for (let i = 0; i < NW; i++) { const M = moundSample(rw, HR, HH, 'full'); WG.push({ M, s: .054 + rw() * .03, col: hex3(GCOL[Math.floor(rw() * GCOL.length)]), r1: rw() * TAU }); } }
+  let WGtop = WG[0]; for (const w of WG) if (w.M[1] > WGtop.M[1]) WGtop = w;
+  const NC = 96; const chipsM = new THREE.InstancedMesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshToonMaterial({ color: 0xffffff, gradientMap: toon(0).gradientMap }), NC); chipsM.frustumCulled = false; wUnit.u.add(chipsM);
+  { const c = new THREE.Color(); for (let i = 0; i < NC; i++) { c.set(i % 2 ? WOOD : WOOD_D); chipsM.setColorAt(i, c); } }
+  const CH = []; { const rc2 = rng(44); for (let i = 0; i < NC; i++) { const side = Math.floor(rc2() * 4); const e = (rc2() - .5) * 1.5; const P = side === 0 ? [e, .15 + rc2() * .5, .82] : side === 1 ? [e, .15 + rc2() * .5, -.82] : side === 2 ? [.82, .15 + rc2() * .5, e] : [-.82, .15 + rc2() * .5, e];
+    CH.push({ P, M: moundSample(rc2, HR, HH, 'full'), rel: CU.chips[0] + rc2() * (CU.chips[1] - CU.chips[0] - .8), fd: .5 + rc2() * .3, sz: [.05 + rc2() * .05, .025, .035 + rc2() * .03], r1: rc2() * TAU, r2: rc2() * TAU }); } }
+  // ---- column of light + sprouts ----
+  const colMat = new THREE.MeshBasicMaterial({ color: 0xffd47a, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide, fog: false });
+  const column = new THREE.Mesh(new THREE.CylinderGeometry(.12, .26, 1, 24, 1, true), colMat); column.visible = false; S.add(column);
+  const colGl = glow(2.2, 0, 0xffe39a); S.add(colGl); const headGl = glow(1.2, 0, 0xfff3c0); S.add(headGl);
+  const leafShape = new THREE.Shape(); leafShape.moveTo(0, 0); leafShape.bezierCurveTo(.12, .08, .2, .26, 0, .46); leafShape.bezierCurveTo(-.2, .26, -.12, .08, 0, 0);
+  const leafGeo = new THREE.ShapeGeometry(leafShape, 12);
+  const mkSprout = (scale) => { const g = new THREE.Group(); g.visible = false; S.add(g); const stem = cylm(.018, .026, .34, TEAL, [0, .17, 0], { inkW: .004 }); g.add(stem);
+    [-1, 1].forEach(sd => { const lf = new THREE.Mesh(leafGeo, new THREE.MeshToonMaterial({ color: sd < 0 ? TEAL : TEAL_L, gradientMap: toon(0).gradientMap, side: THREE.DoubleSide })); lf.position.set(0, .3, 0); lf.rotation.z = sd * -1.0; lf.scale.setScalar(.8); g.add(lf); });
+    g.scale.setScalar(scale); return g; };
+  const sproutTop = mkSprout(1.6), sproutEnd = mkSprout(1.4);
+
+  Wd.on(t => {
+    const g = off + t;
+    // ---- sky / light ----
+    const dimK = sm(g, CU.dim[0], 22.6) * (1 - sm(g, 25.0, 28.5)); const dawn = sm(g, 62.5, 67.5);
+    cTop.set(0x587aa6).lerp(_C.set(0x34496d), dimK * .8).lerp(_C.set(0x7da2d2), dawn); cBot.set(0xe9dcc8).lerp(_C.set(0xa9b5c6), dimK * .8).lerp(_C.set(0xfbe6c6), dawn);
+    skyU.top.value.copy(cTop); skyU.bot.value.copy(cBot); S.fog.color.copy(cBot);
+    Wd.hemi.intensity = 1.75 * (1 - .28 * dimK) + .2 * dawn; Wd.sun.intensity = 1.0 * (1 - .4 * dimK) + .3 * dawn;
+    sunGl.material.opacity = .15 + .5 * dawn;
+    // ---- pillars + slab ----
+    const hs = CU.crumb.map(c => H0 * (1 - clamp((g - c) / 1.05, 0, 1)));
+    pil.forEach((p, k) => { p.base.visible = g < CU.box[0] + .5; const h = Math.max(hs[k], .001); p.shaft.visible = hs[k] > .02; p.shaft.scale.set(1, h, 1); p.shaft.position.y = .14 + h / 2 - .0; p.capr.visible = hs[k] > .06; p.capr.position.y = .14 + h; });
+    const topY = i => .14 + hs[i];
+    const slabY = Math.max(SLAB_REST, (topY(0) + topY(2)) / 2 + .13 + .0);
+    slab.position.set(0, slabY, 0); slab.rotation.z = clamp(Math.atan2(topY(2) - topY(0), 2.0), -.28, .28) * (slabY > SLAB_REST + .02 ? 1 : 0);
+    const slabOp = (1 - sm(g, CU.slabDis[0], CU.slabDis[1] + .5)); slab.visible = slabOp > .01; slabBody.material.opacity = .66 * slabOp; 
+    slabGl.position.set(0, slabY, 0); slabGl.material.opacity = .32 * bump(g, 4.8, 5.5, 6.6) * slabOp;
+    // ---- main heap ----
+    const Lm = keyed(LM, g);
+    const tintBlue = sm(g, CU.clothDis[0] + .1, CU.clothDis[1] + .3) * (1 - sm(g, CU.clothOut[0] + .3, CU.clothOut[1]));
+    const bright = .8 + .55 * Lm, blueC = hex3(CLOTH);
+    for (let i = 0; i < NM; i++) { const gr = MG[i]; grainState(gr, g, st);
+      _O.position.set(st.x, st.y, st.z); _O.rotation.set(gr.r1, gr.r2, 0); _O.scale.setScalar(gr.s * st.sc); _O.updateMatrix(); HM.setMatrixAt(i, _O.matrix);
+      const k = tintBlue * .55; _C.setRGB((lerp(gr.col[0], blueC[0], k)) * bright, (lerp(gr.col[1], blueC[1], k)) * bright, (lerp(gr.col[2], blueC[2], k)) * bright); HM.setColorAt(i, _C); }
+    HM.instanceMatrix.needsUpdate = true; HM.instanceColor.needsUpdate = true;
+    { const mm = sm(g, CU.miss[0], CU.miss[1] + .35) * (1 - sm(g, CU.back[0], CU.back[1])); gGl.position.set(st.gx || 0, st.gy || 0, st.gz || 0); gGl.material.opacity = .9 * mm; }
+    // glow sprite + pulses
+    const Lg = Lm * (1 - .8 * tintBlue);
+    heapGl.material.opacity = .06 + .6 * Lg + .05 * Math.sin(g * 2.1) * Lg; heapGl.scale.setScalar(1.2 + 2.0 * Lg); heapGl.position.y = .45;
+    rings.forEach(r => { r.visible = false; }); let ri = 0;
+    const ring = (p, uu, size, tint) => { if (uu <= 0 || uu >= 1 || ri >= rings.length) return; const s = rings[ri++]; s.visible = true; s.position.set(p[0], p[1], p[2]); s.scale.setScalar(size * (.3 + 1.7 * ease.out(uu))); s.material.opacity = .75 * (1 - uu); s.material.color.setHex(tint || 0xffe7a8); };
+    const hp = [0, .45 + heapG.position.y, 0]; const wx = mUnit.u.position.x; hp[0] = wx;
+    ring(hp, prog(g, CU.shake[0] + .3, CU.shake[0] + 1.3), 1.0, 0xffd36a); ring(hp, prog(g, 32.1, 33.0), .8, 0xffd36a); ring(hp, prog(g, CU.cond1, CU.cond1 + 1.0), 1.1, 0xffd36a); ring(hp, prog(g, CU.back[1] - .2, CU.back[1] + .8), 1.1, 0xffd36a);
+    ring(hp, prog(g, CU.lift[0] - .1, CU.lift[0] + .9), 1.2, 0xffd36a); ring(hp, prog(g, 30.3, 31.4), 1.3, 0x66c6bf);
+    CU.bases.forEach((c, k) => ring([PX[k], .2, 0], prog(g, c, c + 1.1), .7, 0x66c6bf));
+    // ---- the soul-orb ("our soul is bowed to the dust") ----
+    const su = prog(g, CU.orb[0], CU.orb[1]); soul.visible = su > 0 && g < CU.orb[1] + .9;
+    soul.position.set(0, lerp(4.0, .66, ease.io(su)), 0); soul.scale.setScalar(1 - .5 * sm(g, CU.orb[1] - .1, CU.orb[1] + .8)); soulGl.material.opacity = .65 * (1 - sm(g, CU.orb[1] - .1, CU.orb[1] + .8));
+    // ---- stairs ----
+    stairs.forEach((s, k) => { const u = ease.out(prog(g, CU.stairs[0] + k * .22, CU.stairs[0] + k * .22 + .7)) * (1 - ease.in(prog(g, CU.stairsOut[0] + k * .1, CU.stairsOut[1] + k * .1))); s.b.visible = u > .01; s.b.scale.set(1, Math.max(u, .001), 1); s.b.position.y = s.hgt * u / 2; });
+    // ---- pedestals / orbs ----
+    peds.forEach((p, i) => { const u = ease.out(prog(g, CU.ped[0] + i * .3, CU.ped[1] + i * .3)) * (1 - ease.in(prog(g, 46.2, 46.9))); p.g.visible = u > .01; p.g.scale.setScalar(Math.max(u, .001));
+      const lit = sm(g, i ? CU.cond2 : CU.cond1, (i ? CU.cond2 : CU.cond1) + .5); p.gl.material.opacity = .15 + .6 * lit; p.orb.position.y = .78 + .05 * Math.sin(g * 2 + i); p.gl.position.y = p.orb.position.y; p.orb.scale.setScalar(1 + .25 * lit); });
+    // ---- cloth ----
+    const cu = prog(g, CU.cloth[0], CU.cloth[1]); const clothVis = g >= CU.cloth[0] && g < CU.clothDis[1] + .1; cloth.visible = clothVis;
+    if (clothVis) { const settle = ease.out(cu), cy = lerp(3.5, .86, ease.in(cu)), cx = lerp(-.25, 0, settle); const pos = clothGeo.attributes.position; const arr = pos.array;
+      for (let i = 0; i < arr.length; i += 3) { const bx = clothBase[i], bz = clothBase[i + 2]; const sag = .3 * (bx / .85) * (bx / .85) * settle; const flap = Math.sin(bx * 4 + g * 7) * .12 * (1 - settle) + Math.sin(bz * 5 + g * 5) * .05 * (1 - settle);
+        arr[i] = bx; arr[i + 1] = -sag + flap; arr[i + 2] = bz; }
+      pos.needsUpdate = true; clothGeo.computeVertexNormals(); cloth.position.set(cx, cy, .1); cloth.scale.setScalar(1.35); cloth.rotation.set(0, .25 * (1 - settle), 0); cloth.material.opacity = 1 - sm(g, CU.clothDis[0], CU.clothDis[1]); }
+    for (let i = 0; i < NS; i++) { const s = SP[i]; const a = ease.out(prog(g, s.t, s.t + .5)); const u = prog(g, s.up, s.up + s.ud); const v = ease.in(u);
+      _O.position.set(s.m[0] + s.dx * v * .8, s.m[1] + .03 + v * 3.4, s.m[2] + s.dz * v * .8); _O.rotation.set(s.r1, s.r1 * 2, 0); _O.scale.setScalar(s.s * a * (1 - ease.in(clamp((u - .6) / .4, 0, 1)))); _O.updateMatrix(); specks.setMatrixAt(i, _O.matrix); }
+    specks.instanceMatrix.needsUpdate = true; specks.visible = g > CU.clothDis[0] && g < CU.clothOut[1] + .5;
+    // ---- box units: assemble around the heap, slide apart, wooden one slides out, marble one returns to the centre ----
+    const asm = k => ease.out(prog(g, CU.box[0] + k * .14, CU.box[0] + k * .14 + .55));
+    const mVis = g >= CU.box[0]; mUnit.u.visible = true; // the group also carries the heap (always visible)
+    mUnit.fl.visible = mVis; mUnit.fl.scale.set(Math.max(ease.out(prog(g, CU.box[0], CU.box[0] + .5)), .001), 1, Math.max(ease.out(prog(g, CU.box[0], CU.box[0] + .5)), .001));
+    mUnit.walls.forEach((w, k) => { const a = asm(k); w.visible = mVis && a > .01; w.position.y = .38 + 3.2 * (1 - a); if (w.userData.trim) { w.userData.trim.visible = w.visible; w.userData.trim.position.y = w.position.y + .29; } });
+    heapG.position.y = .1 * sm(g, CU.box[0] + .3, CU.box[0] + .9); heapG.scale.setScalar(1 - .2 * sm(g, CU.box[0] + .3, CU.box[0] + .9)); WM.scale.setScalar(.8);
+    const slide = ease.io(prog(g, CU.slide[0], CU.slide[1])), center = ease.io(prog(g, CU.center[0], CU.center[1]));
+    mUnit.u.position.x = BOXC * slide * (1 - center);
+    const wIn = ease.out(prog(g, CU.slide[0] - .3, CU.slide[1])), wOut = ease.in(prog(g, CU.wout[0], CU.wout[1]));
+    wUnit.u.visible = g >= CU.slide[0] - .4 && g < CU.wout[1] + .1; wUnit.u.position.x = lerp(-7, -BOXC, wIn) - 6 * wOut;
+    wUnit.walls.forEach(w => { w.visible = true; }); wUnit.fl.visible = true;
+    // wooden heap colours: golden -> chips -> grey-brown, dim
+    const woodK = sm(g, CU.woodDim[0], CU.woodDim[1] + 1.5), woodC = hex3(0x8c7f72), Lw = .75 * (1 - woodK) + .05;
+    const wb = .8 + .55 * Lw; WG.forEach((w, i) => { let x = w.M[0], y = w.M[1], z = w.M[2], sc = 1;
+      if (w === WGtop) { const m = sm(g, CU.wmiss[0], CU.wmiss[1] + .4); x = lerp(x, -1.5, m); y = lerp(y, 1.5 + .08 * Math.sin(g * 3), m); z = lerp(z, .9, m); }
+      _O.position.set(x, y, z); _O.rotation.set(w.r1, w.r1 * 1.7, 0); _O.scale.setScalar(w.s * sc); _O.updateMatrix(); WM.setMatrixAt(i, _O.matrix);
+      const k = woodK * .8; _C.setRGB(lerp(w.col[0], woodC[0], k) * wb, lerp(w.col[1], woodC[1], k) * wb, lerp(w.col[2], woodC[2], k) * wb); WM.setColorAt(i, _C); });
+    WM.instanceMatrix.needsUpdate = true; WM.instanceColor.needsUpdate = true;
+    CH.forEach((c, i) => { const u = clamp((g - c.rel) / c.fd, 0, 1); const sc = g >= c.rel ? 1 : 0; const x = lerp(c.P[0], c.M[0] * .8, u), z = lerp(c.P[2], c.M[2] * .8, u), y = lerp(c.P[1], c.M[1] * .8 + .04, u * u);
+      _O.position.set(x, y, z); _O.rotation.set(c.r1, c.r2, 0); _O.scale.set(c.sz[0] * sc, c.sz[1] * sc, c.sz[2] * sc); _O.updateMatrix(); chipsM.setMatrixAt(i, _O.matrix); });
+    chipsM.instanceMatrix.needsUpdate = true;
+    // ---- column of light + sprouts ----
+    const cOn = sm(g, 63.4, 65.0) * (1 - sm(g, 67.2, 68.4)); const headY = .8 + 5.0 * ease.io(prog(g, CU.lift[0], 66.6));
+    column.visible = cOn > .01; column.position.set(0, (.8 + headY) / 2, 0); column.scale.set(1, Math.max(headY - .8, .01), 1); colMat.opacity = .42 * cOn * (.85 + .15 * Math.sin(g * 9));
+    colGl.position.set(0, .8, 0); colGl.material.opacity = .55 * cOn; colGl.scale.setScalar(2.0 + .3 * Math.sin(g * 5));
+    headGl.position.set(0, headY, 0); headGl.material.opacity = .6 * cOn; headGl.scale.setScalar(1.0 + .2 * Math.sin(g * 7));
+    sproutTop.visible = cOn > .05 && g > 64.4; sproutTop.position.set(0, headY - .05, 0); sproutTop.scale.setScalar(1.6 * ease.out(prog(g, 64.4, 65.6)) * (1 - sm(g, 67.2, 68.2)) + .001);
+    const es = ease.out(prog(g, CU.endSprout[0], CU.endSprout[1])); sproutEnd.visible = es > .01; sproutEnd.position.set(0, .45, 0); sproutEnd.scale.setScalar(.95 * es + .001);
+  });
+  heroCluster(Wd, t => heroFn(off + t));
+  return Object.assign(Wd, { cam: t => camAt(off + t) });
+}
+const SH = (id, dur, off, caps, capAt) => ({ id, dur, wide: true, caps, capAt, build() { return build(off, heroAt); } });
+
+film({
+  W: 1080, H: 1920, xf: .4, vault: 'captions_vault.json',
+  shots: [
+    SH('s01', 11.35, 0, ['CAP_A_01', 'CAP_A_02'], [0.0, 6.37]),
+    SH('s02', 10.62, 11.35, ['CAP_A_03', 'CAP_A_04'], [0.0, 5.52]),
+    SH('s03', 9.69, 21.97, ['CAP_A_05', 'CAP_A_06'], [0.0, 4.59]),
+    SH('s04', 11.5, 31.66, ['CAP_A_07', 'CAP_A_08'], [0.0, 4.9]),
+    SH('s05', 11.1, 43.16, ['CAP_A_09', 'CAP_A_10'], [0.0, 5.26]),
+    SH('s06', 10.29, 54.26, ['CAP_A_11', 'CAP_A_12'], [0.0, 5.52]),
+    SH('s07', 5.07, 64.55, ['CAP_A_13'], [0.0]),
+  ]
+});
+</script>

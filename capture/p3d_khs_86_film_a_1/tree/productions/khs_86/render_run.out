@@ -1,0 +1,4 @@
+12:23:41 render_all: production=khs_86 films=film_a part=50s hq=True dry_run=False
+12:23:48 budget OK: OVERRIDE present; spent $802 of $2600 (cap $2340), allowed by now $925 (87% of pace) [render]
+12:23:48 verify gate: PASS for film_a
+12:23:48 film_a: length 69.6s, rendering (part 50 s, 4 includes)

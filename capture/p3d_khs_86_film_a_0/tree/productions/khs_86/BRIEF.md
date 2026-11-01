@@ -1,0 +1,1 @@
+# BRIEF - khs_86 (single builder). Page: film_a.html, portrait 1080x1920, 69.6 s, 7 shots, 13 captions (timeline.json locked). Cool dawn palette (slate blue, white marble, golden dust, teal accents). No people, no bones drawn. See STORYBOARD.md.
