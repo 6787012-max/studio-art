@@ -1,0 +1,4 @@
+07:42:42 render_all: production=siach_20261028 films=film_a part=50s hq=True dry_run=False
+07:42:45 budget OK: OVERRIDE present; spent $674 of $2600 (cap $2340), allowed by now $860 (78% of pace) [render]
+07:42:45 verify gate: PASS for film_a
+07:42:54 film_a: length 240.9s, rendering (part 50 s, 16 includes)
