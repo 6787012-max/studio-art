@@ -212,7 +212,7 @@ function v2Finish(W, H, now) {
   // film grain (seeded tile, offset per 24 fps frame, alpha .04)
   if (!grainPat) grainPat = g.createPattern(grainTile, 'repeat');
   const fr = Math.floor(now * 24), ox = (fr * 97) % 256, oy = (fr * 57 + 31) % 256;
-  g.save(); g.globalAlpha = .04; g.translate(-ox, -oy); g.fillStyle = grainPat; g.fillRect(ox, oy, W, H); g.restore();
+  if (false) { g.save(); g.globalAlpha = .04; g.translate(-ox, -oy); g.fillStyle = grainPat; g.fillRect(ox, oy, W, H); g.restore(); }   // grain off 01/11: per-frame noise made a 40 s part 148 MB (> GitHub 100 MB)
 }
 
 const tmpc = document.createElement('canvas'); tmpc.width = 1920; tmpc.height = 1080; const gx = tmpc.getContext('2d');
