@@ -11,19 +11,19 @@ CLIP = float(re.search(r'CLIP_DUR = ([\d.]+)', src).group(1))
 TAIL = 0.8  # extra still time after the voice; compose_short trims the render to CLIP (0.8 so the last caption window >= 4.4 after the engine's dur-0.3 cut)
 
 # caption windows [show_from, show_until) and the word-time range [w0, w1) whose words form the text
-CAPS = [  # id, window start, window end, first-word-time >=, <
-    ('CAP_A_01', 0.0, 6.0, 0.0, 6.0),
-    ('CAP_A_02', 6.0, 11.3, 6.0, 11.3),
-    ('CAP_A_03', 11.3, 16.0, 11.3, 16.0),
-    ('CAP_A_04', 16.0, 22.2, 16.0, 22.2),
-    ('CAP_A_05', 22.2, 28.4, 22.2, 28.4),
-    ('CAP_A_06', 28.4, 34.1, 28.4, 34.1),
-    ('CAP_A_07', 34.1, 38.5, 34.1, 38.5),
-    ('CAP_A_08', 38.5, 45.3, 38.5, 45.3),
-    ('CAP_A_09', 45.3, CLIP + TAIL, 45.3, 99),
+CAPS = [  # id, window start, window end, first-word-time >=, <   (windows start 0.3 s before the first word of the chunk)
+    ('CAP_A_01', 0.0, 5.1, 0.0, 5.0),
+    ('CAP_A_02', 5.1, 10.4, 5.0, 10.0),
+    ('CAP_A_03', 10.4, 15.65, 10.0, 15.5),
+    ('CAP_A_04', 15.65, 21.9, 15.5, 21.5),
+    ('CAP_A_05', 21.9, 28.0, 21.5, 28.2),
+    ('CAP_A_06', 28.0, 33.7, 28.2, 33.8),
+    ('CAP_A_07', 33.7, 38.65, 33.8, 38.7),
+    ('CAP_A_08', 38.65, 45.75, 38.7, 45.9),
+    ('CAP_A_09', 45.75, CLIP + TAIL, 45.9, 99),
 ]
-SHOTS = [('s01', 0.0, 11.3, [0, 1]), ('s02', 11.3, 22.2, [2, 3]), ('s03', 22.2, 34.1, [4, 5]), ('s04', 34.1, 45.3, [6, 7]),
-         ('s05', 45.3, CLIP + TAIL, [8])]
+SHOTS = [('s01', 0.0, 10.4, [0, 1]), ('s02', 10.4, 21.9, [2, 3]), ('s03', 21.9, 33.7, [4, 5]), ('s04', 33.7, 45.75, [6, 7]),
+         ('s05', 45.75, CLIP + TAIL, [8])]
 
 def text_of(w0, w1):
     return ' '.join(w['w'] for w in WORDS if w0 <= w['t'] < w1)

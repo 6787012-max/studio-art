@@ -4,7 +4,7 @@
 <title>khs 85 film a</title>
 <style>html,body{margin:0;background:#000}canvas{display:block;width:100vw;height:auto}</style>
 <canvas id="c" width="1080" height="1920"></canvas>
-<script>window.__T0=25.5600; window.__HQ_RENDER=true;</script>
+<script>window.__T0=25.6400; window.__HQ_RENDER=true;</script>
 <script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
 <script type="module">
 // khs_85 / film_a - portrait 1080x1920, objects only (no people, no human fetus): a striped silk COCOON.
@@ -42,6 +42,10 @@ function heroCluster(Wd, fn) {
 function stripeTex(c1, c2, n) {
   return canvasTex(256, 8, (g, w, h) => { const sw = w / n; for (let i = 0; i < n; i++) { g.fillStyle = i % 2 ? c2 : c1; g.fillRect(i * sw, 0, sw + 1, h); } });
 }
+
+// ---------------- narration time warp (new narration time -> the time base the cues below were written in) ----------------
+const WP = [[0.3, 0.3], [3.83, 3.83], [4.43, 5.13], [11.28, 11.98], [11.88, 12.26], [15.3, 15.68], [15.9, 16.24], [17.64, 17.98], [18.24, 18.48], [27.98, 28.22], [28.58, 28.82], [33.7, 33.94], [34.3, 34.54], [35.39, 35.63], [35.99, 35.88], [38.49, 38.38], [39.09, 38.83], [40.83, 40.57], [41.43, 41.27], [45.63, 45.47], [46.23, 46.07], [48.23, 48.07], [48.83, 48.67], [50.18, 50.02]];
+const W = g => { if (g <= WP[0][0]) return WP[0][1] + (g - WP[0][0]); for (let i = 0; i < WP.length - 1; i++) if (g <= WP[i + 1][0]) { const u = (g - WP[i][0]) / ((WP[i + 1][0] - WP[i][0]) || 1); return WP[i][1] + u * (WP[i + 1][1] - WP[i][1]); } const L = WP[WP.length - 1]; return L[1] + (g - L[0]); };
 
 // ---------------- layout ----------------
 const R = 3.2, CAPA = 22 * PI / 180;                   // cocoon radius, cap half-angle (the opening faces -z)
@@ -194,7 +198,7 @@ function build(off, heroFn) {
   const popRings = Array.from({ length: 5 }, () => { const s = spr(ringTex(), 1, 0, 0xfff1c0); s.visible = false; S.add(s); return s; });
 
   Wd.on(t => {
-    const g = off + t;
+    const g = W(off + t);
     // ---- the seed: alive, heartbeat on the word "birth" ----
     const beat = (t0, k) => { const u = prog(g, t0, t0 + .8); return u > 0 && u < 1 ? k * Math.sin(PI * u) : 0; };
     const hb = 1 + .035 * Math.sin(g * 3) + beat(16.1, .16) + beat(17.75, .2) + beat(9.0, .1) + beat(9.8, .12);
@@ -251,19 +255,19 @@ function build(off, heroFn) {
     bfBody.rotation.x = 1.15 + .06 * Math.sin(g * 5.7); bfBody.position.y = .04 * Math.sin(g * 5.7);
     bfGl.material.opacity = .5 * (1 - sm(g, 51, 53));
   });
-  heroCluster(Wd, t => heroFn(off + t));
-  return Object.assign(Wd, { cam: t => camAt(off + t) });
+  heroCluster(Wd, t => heroFn(W(off + t)));
+  return Object.assign(Wd, { cam: t => camAt(W(off + t)) });
 }
 const SH = (id, dur, off, caps, capAt) => ({ id, dur, wide: true, caps, capAt, build() { return build(off, heroAt); } });
 
 film({
   W: 1080, H: 1920, xf: .4, vault: 'captions_vault.json',
   shots: [
-    SH('s01', 11.3, 0, ['CAP_A_01', 'CAP_A_02'], [0.0, 6.0]),
-    SH('s02', 10.9, 11.3, ['CAP_A_03', 'CAP_A_04'], [0.0, 4.7]),
-    SH('s03', 11.9, 22.2, ['CAP_A_05', 'CAP_A_06'], [0.0, 6.2]),
-    SH('s04', 11.2, 34.1, ['CAP_A_07', 'CAP_A_08'], [0.0, 4.4]),
-    SH('s05', 5.82, 45.3, ['CAP_A_09'], [0.0]),
+    SH('s01', 10.4, 0, ['CAP_A_01', 'CAP_A_02'], [0.0, 5.1]),
+    SH('s02', 11.5, 10.4, ['CAP_A_03', 'CAP_A_04'], [0.0, 5.25]),
+    SH('s03', 11.8, 21.9, ['CAP_A_05', 'CAP_A_06'], [0.0, 6.1]),
+    SH('s04', 12.05, 33.7, ['CAP_A_07', 'CAP_A_08'], [0.0, 4.95]),
+    SH('s05', 5.53, 45.75, ['CAP_A_09'], [0.0]),
   ]
 });
 </script>
