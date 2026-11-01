@@ -1,0 +1,70 @@
+{
+ "film": "film_a.html",
+ "status": "FAIL",
+ "time": "2026-11-01T17:04:20",
+ "samples": 33,
+ "findings": [
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 5.7,
+   "shot": "a1_sweet_lake",
+   "detail": "caption dir=None (+4 more samples)",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 46.3,
+   "shot": "a1b_only_one",
+   "detail": "caption dir=None (+4 more samples)",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 88.1,
+   "shot": "a2_deep_bowl",
+   "detail": "caption dir=None (+5 more samples)",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 136.4,
+   "shot": "a2b_almost_a_km",
+   "detail": "caption dir=None (+4 more samples)",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 175.3,
+   "shot": "a3_how_long",
+   "detail": "caption dir=None (+4 more samples)",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 210.8,
+   "shot": "a4_how_deep",
+   "detail": "caption dir=None (+4 more samples)",
+   "fix": "caption must be dir=rtl, lang=he"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 252.5,
+   "shot": "a5_recap",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  }
+ ],
+ "sheets": null,
+ "timing": {
+  "ready_s": 8.3,
+  "gates_s": 42.9,
+  "total_s": 51.5
+ }
+}
