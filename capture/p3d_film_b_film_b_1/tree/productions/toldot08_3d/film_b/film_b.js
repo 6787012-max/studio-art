@@ -115,7 +115,7 @@ const BDROPS = new THREE.InstancedMesh(new THREE.SphereGeometry(16, 10, 8).scale
 
 /* relief map */
 const MAPG = new THREE.Group(); MAPG.position.set(...ST.map); scene.add(MAPG);
-const LAND_ASSETS = await K.loadLandMapAssets('../film_a/');
+const LAND_ASSETS = await K.loadLandMapAssets('./');
 const LAND = K.makeLandMapA(LAND_ASSETS); MAPG.add(LAND.root);
 const TOP = LAND.top, KCM = LAND.KC, KTZ = LAND.kinTopZ;
 const HP = LAND.P(35.8, 33.33);
