@@ -1,0 +1,1 @@
+# BRIEF - khs_85 (single builder, written after the fact for the record). Page: film_a.html, portrait 1080x1920, 51.12 s, 5 shots, 9 captions (timeline.json locked). Spring palette (leaf green, butter yellow, cream, sky blue). No people, no fetus drawn. See STORYBOARD.md.

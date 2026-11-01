@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>khs 85 film a</title>
+<style>html,body{margin:0;background:#000}canvas{display:block;width:100vw;height:auto}</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>window.__T0=25.5600; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+// khs_85 / film_a - portrait 1080x1920, objects only (no people, no human fetus): a striped silk COCOON.
+// Inside: a warm cozy chamber with a glowing seed (the one inside), a floating scroll, petals. Outside (seen only through the
+// milky cap): a vast spring meadow. The seed tries to "improve" its cocoon (brush stripes, cushions, extra layer) - still a cocoon.
+// At the end the cap opens, the seed becomes a butterfly (a completely different form of life) and rises into white-gold sky.
+// Every state is a pure function of the GLOBAL time g (= shot offset + local t). No Math.random / Date / rAF.
+import { film, world, THREE, prog, ease, clamp, lerp, rng, mesh, toon, canvasTex } from '../../lib/stage3d.js';
+
+const TAU = Math.PI * 2, PI = Math.PI;
+const INKC = 0x4a6a3a;
+const LEAF = 0x93d36b, LEAF_D = 0x62ad4e, LEAF_L = 0xc2e8a0, BUTTER = 0xffe27a, BUTTER_D = 0xf5c542, CREAM = 0xfff6e0, CREAM_D = 0xf3e2bd;
+const SKYC = 0x9fd4f2, ROSE = 0xf4a6b8, AMB = 0xf6c98a, AMB_D = 0xe9a95c, ORANGE = 0xffa94a, WOODC = 0xd9b27a;
+const sm = (t, a, b) => ease.sm(prog(t, a, b));
+const L3 = (a, b, u) => [lerp(a[0], b[0], u), lerp(a[1], b[1], u), lerp(a[2], b[2], u)];
+
+// ---------------- helpers ----------------
+let GT = null, RT = null;
+const glowTex = () => GT || (GT = canvasTex(128, 128, (g, w, h) => { const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.35, 'rgba(255,255,255,.5)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }));
+const ringTex = () => RT || (RT = canvasTex(128, 128, (g) => { g.strokeStyle = 'rgba(255,255,255,1)'; g.lineWidth = 7; g.shadowColor = 'rgba(255,255,255,.9)'; g.shadowBlur = 8; g.beginPath(); g.arc(64, 64, 52, 0, TAU); g.stroke(); }));
+const spr = (tex, size, op, tint, add) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color: tint === undefined ? 0xfff3d0 : tint, depthWrite: false, transparent: true, fog: false, opacity: op === undefined ? .6 : op, blending: add === false ? THREE.NormalBlending : THREE.AdditiveBlending })); s.scale.set(size, size, 1); s.renderOrder = 10; return s; };
+const glow = (size, op, tint) => spr(glowTex(), size, op, tint);
+const mk = (geo, color, o) => { o = o || {}; return mesh(geo, toon(color, o.mat), Object.assign({ inkW: .008, inkColor: INKC }, o)); };
+const boxm = (w, h, d, color, pos, o) => mk(new THREE.BoxGeometry(w, h, d), color, Object.assign({ pos, box: true }, o));
+const cylm = (r1, r2, h, color, pos, o) => mk(new THREE.CylinderGeometry(r1, r2, h, 32), color, Object.assign({ pos }, o));
+const ballm = (r, color, pos, o) => mk(new THREE.SphereGeometry(r, 28, 18), color, Object.assign({ pos }, o));
+const aimUp = (pos, tgt, fov, up) => { const d = Math.hypot(pos[0] - tgt[0], pos[1] - tgt[1], pos[2] - tgt[2]); return [tgt[0], tgt[1] - up * 2 * Math.tan(fov * PI / 360) * d, tgt[2]]; };
+function heroCluster(Wd, fn) {
+  const g = new THREE.Group(), m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()); m.visible = false; g.add(m); Wd.add(g);
+  Wd.on(t => { const bs = fn(t).filter(Boolean); if (!bs.length) return; const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (const b of bs) for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], b[k] - b[k + 3]); hi[k] = Math.max(hi[k], b[k] + b[k + 3]); }
+    g.position.set((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2); g.scale.set(Math.max(hi[0] - lo[0], .01), Math.max(hi[1] - lo[1], .01), Math.max(hi[2] - lo[2], .01)); });
+  Wd.hero = g; return g;
+}
+function stripeTex(c1, c2, n) {
+  return canvasTex(256, 8, (g, w, h) => { const sw = w / n; for (let i = 0; i < n; i++) { g.fillStyle = i % 2 ? c2 : c1; g.fillRect(i * sw, 0, sw + 1, h); } });
+}
+
+// ---------------- layout ----------------
+const R = 3.2, CAPA = 22 * PI / 180;                   // cocoon radius, cap half-angle (the opening faces -z)
+const RS = R * Math.sin(CAPA), RC = R * Math.cos(CAPA);
+const GY = -3.25;                                       // meadow level (the cocoon sits on it like an egg)
+const ORB = [0, -.5, -.75];                             // the one inside (a glowing seed)
+const SCR = [.5, .75, -.7];                             // floating scroll
+const BANDS = [-1.1, -.45, .2, .85, 1.5];               // painted stripe heights
+const BCOL = [SKYC, LEAF, BUTTER_D, ROSE, SKYC];
+const PILL = [[-.85, -1.1, -.2, ROSE], [.9, -1.1, -.1, SKYC], [-.6, -1.12, -1.1, BUTTER], [.65, -1.12, -1.15, LEAF_L], [0, -1.15, .5, ROSE]];
+
+// ---------------- camera (global time) ----------------
+const KEYS = [  // g, pos, target, fov
+  [0, [0, .45, 2.7], [0, -.4, -1.0], 62], [5.5, [0, .4, 2.4], [0, -.35, -1.0], 62], [11.3, [0, .35, 2.1], [0, -.35, -1.0], 60],
+  [18.1, [.15, .25, 1.8], [0, -.2, -1.0], 58], [22.2, [-.2, .35, 2.0], [.1, .1, -1.0], 58], [28.4, [.2, .4, 2.2], [0, .05, -1.2], 60],
+  [31.6, [0, .1, 1.5], [0, -.1, -3.0], 58], [35.6, [0, .35, 2.3], [0, -.1, -1.5], 62], [40, [0, .4, 2.5], [0, .0, -1.2], 64],
+  [44.4, [0, .4, 2.5], [0, .1, -1.2], 64], [45.6, [0, .35, 2.1], [0, 0, -1.6], 63], [46.5, [0, .3, .9], [0, .1, -3.0], 62],
+  [47.4, [0, .2, -.8], [0, .4, -4.5], 62], [48.2, [0, .5, -3.6], [.05, 1.3, -8], 62], [49.4, [0, 1.2, -8.2], [.1, 2.8, -13], 62],
+  [50.4, [0, 2.4, -13], [.12, 4.2, -18], 62], [51.12, [0, 3.2, -15.8], [.1, 5.0, -20], 62], [53, [0, 3.6, -17.5], [.1, 5.6, -22], 62]];
+function hermite(g, getter) {
+  let i = 0; while (i < KEYS.length - 2 && g > KEYS[i + 1][0]) i++;
+  const k0 = KEYS[Math.max(i - 1, 0)], k1 = KEYS[i], k2 = KEYS[i + 1], k3 = KEYS[Math.min(i + 2, KEYS.length - 1)];
+  const h = k2[0] - k1[0], u = clamp((g - k1[0]) / h, 0, 1), u2 = u * u, u3 = u2 * u;
+  const f = (a, b, c, d) => { const m1 = (b - a) / (k1[0] - k0[0] || 1) * .5 + (c - b) / h * .5, m2 = (c - b) / h * .5 + (d - c) / (k3[0] - k2[0] || 1) * .5;
+    return (2 * u3 - 3 * u2 + 1) * b + (u3 - 2 * u2 + u) * h * m1 + (-2 * u3 + 3 * u2) * c + (u3 - u2) * h * m2; };
+  const a = getter(k0), b = getter(k1), c = getter(k2), d = getter(k3);
+  return Array.isArray(a) ? a.map((_, q) => f(a[q], b[q], c[q], d[q])) : f(a, b, c, d);
+}
+function camAt(g) {
+  const pos = hermite(g, k => k[1]), tg = hermite(g, k => k[2]), fov = hermite(g, k => k[3]);
+  return { pos, look: aimUp(pos, tg, fov, g < 45.4 ? .1 : .05), fov };
+}
+
+// ---------------- butterfly path (global time) ----------------
+const BF = [[46.3, [0, -.5, -.8]], [47.0, [0, 0, -3.1]], [48.2, [0, 1.1, -7.4]], [49.4, [.1, 2.5, -12.2]], [50.4, [.15, 3.9, -16.8]], [51.12, [.1, 4.9, -19.6]], [53, [.1, 5.8, -21.5]]];
+function bfPos(g) {
+  if (g <= BF[0][0]) return BF[0][1];
+  for (let i = 0; i < BF.length - 1; i++) if (g <= BF[i + 1][0]) return L3(BF[i][1], BF[i + 1][1], ease.sm(prog(g, BF[i][0], BF[i + 1][0])));
+  return BF[BF.length - 1][1];
+}
+const heroAt = g => {
+  if (g < 22) return [[ORB[0], ORB[1] + .1, ORB[2], .75, .5, .6]];
+  if (g < 28.4) return [[0, .2, -.75, .75, .75, .6]];
+  if (g < 35.6) return [[ORB[0], ORB[1] + .1, ORB[2], .6, .45, .5]];
+  if (g < 44.4) return [[0, .1, -1.2, 1.2, 1.2, .9]];
+  if (g < 46.3) return [[ORB[0], ORB[1] + .1, ORB[2], .6, .5, .5]];
+  const p = bfPos(g); return [[p[0], p[1], p[2], .6, .5, .4]];
+};
+
+// ---------------- the world ----------------
+function build(off, heroFn) {
+  const Wd = world({ fogColor: 0xdff2e8, fogNear: 30, fogFar: 110, skyTop: 0x8ecbef, skyBottom: 0xf4fbe8, hemiSky: 0xffffff, hemiGround: 0xcfe8b0, hemi: .75, sunColor: 0xfff0c8, sun: .45, sunPos: [6, 14, 10], shadowExt: 12, skyR: 600 });
+  const S = Wd.scene; const sc = Wd.sun.shadow.camera; sc.far = 50; sc.updateProjectionMatrix(); Wd.sun.target.position.set(0, 0, -2);
+  const plain = (geo, color, pos, o) => { const m = new THREE.Mesh(geo, toon(color, o)); m.position.set(...pos); m.receiveShadow = true; S.add(m); return m; };
+
+  // ---- the meadow (outside) ----
+  plain(new THREE.PlaneGeometry(260, 260), LEAF, [0, GY, -40]).rotation.x = -PI / 2;
+  [[-20, -34, 9, 3.4, 0x86c864], [16, -40, 12, 4.4, 0x7bc05c], [0, -58, 20, 7, 0x9ad07a], [-38, -52, 16, 5, 0xa7d886], [34, -56, 18, 6, 0xa7d886], [-8, -26, 6, 2, 0x8fcf6a], [11, -24, 5, 1.8, 0x93d36b]].forEach(([x, z, w, h, c]) => {
+    const m = plain(new THREE.SphereGeometry(1, 32, 16), c, [x, GY, z]); m.scale.set(w, h, w * .8); });
+  // flowers (instanced heads + stems)
+  const R0 = rng(11); const fl = { y: [], w: [], r: [], b: [] };
+  for (let i = 0; i < 170; i++) { const a = R0() * TAU, d = 4.4 + R0() * 26; const x = Math.cos(a) * d * 1.1, z = -Math.abs(Math.sin(a)) * d * 1.3 - 3.2 + (R0() - .5) * 3; const k = ['y', 'w', 'r', 'b'][Math.floor(R0() * 4)]; fl[k].push([x, z, .7 + R0() * .7]); }
+  const stemGeo = new THREE.CylinderGeometry(.02, .02, 1, 5), headGeo = new THREE.SphereGeometry(.1, 10, 8);
+  const FC = { y: BUTTER_D, w: 0xffffff, r: ROSE, b: 0x8fc6ee };
+  const stems = [];
+  for (const k of ['y', 'w', 'r', 'b']) { const arr = fl[k]; if (!arr.length) continue;
+    const hm = new THREE.InstancedMesh(headGeo, toon(FC[k]), arr.length), sm2 = new THREE.InstancedMesh(stemGeo, toon(LEAF_D), arr.length); hm.frustumCulled = sm2.frustumCulled = false;
+    const o = new THREE.Object3D();
+    arr.forEach(([x, z, s], i) => { const hgt = .35 * s + .15; o.position.set(x, GY + hgt / 2, z); o.scale.set(1, hgt, 1); o.rotation.set(0, 0, 0); o.updateMatrix(); sm2.setMatrixAt(i, o.matrix);
+      o.position.set(x, GY + hgt, z); o.scale.set(s * 1.4, s * .7, s * 1.4); o.updateMatrix(); hm.setMatrixAt(i, o.matrix); });
+    S.add(hm, sm2); }
+  // clouds + sun glow
+  [[-14, 15, -50, 22, .75], [12, 20, -60, 28, .7], [-2, 11, -44, 16, .6], [26, 12, -48, 18, .6], [-30, 22, -62, 26, .6]].forEach(([x, y, z, s, o]) => { const c = spr(glowTex(), s, o, 0xffffff, false); c.position.set(x, y, z); c.scale.set(s, s * .42, 1); S.add(c); });
+  const sunGlow = spr(glowTex(), 40, .4, 0xfff1b0); sunGlow.position.set(6, 22, -52); S.add(sunGlow);
+
+  // ---- the cocoon (a striped silk egg) ----
+  const co = new THREE.Group(); S.add(co);
+  const T_IN1 = stripeTex('#f4b366', '#fde4b4', 24), T_OUT1 = stripeTex('#fff7e2', '#efe0bf', 24);
+  const shellPair = (phi0, phiLen, thS, thL, op) => {
+    const geo = new THREE.SphereGeometry(R, 56, 40, phi0, phiLen, thS, thL); geo.rotateX(-PI / 2);
+    const inn = new THREE.Mesh(geo, new THREE.MeshToonMaterial({ map: T_IN1.clone(), side: THREE.BackSide, transparent: op < 1, opacity: op, depthWrite: op >= 1, gradientMap: toon(0).gradientMap }));
+    const out = new THREE.Mesh(geo, new THREE.MeshToonMaterial({ map: T_OUT1.clone(), side: THREE.FrontSide, transparent: op < 1, opacity: op, depthWrite: op >= 1, gradientMap: toon(0).gradientMap }));
+    [inn, out].forEach(m => { m.material.map.wrapS = THREE.RepeatWrapping; m.material.map.repeat.set(phiLen / TAU, 1); m.material.map.offset.set(phi0 / TAU, 0); m.material.map.needsUpdate = true; m.receiveShadow = false; });
+    out.scale.setScalar(1.004); return [inn, out];
+  };
+  const body = shellPair(0, TAU, CAPA, PI - CAPA, 1); body.forEach(m => co.add(m));
+  const mkLeaf = (side) => { const pv = new THREE.Group(); pv.position.set(side * RS, 0, -RC);
+    const pr = shellPair(side < 0 ? -PI / 2 : PI / 2, PI, 0, CAPA, .66); pr.forEach(m => { m.position.set(-side * RS, 0, RC); pv.add(m); }); co.add(pv); return { pv, mats: pr.map(m => m.material) }; };
+  const leafL = mkLeaf(-1), leafR = mkLeaf(1);
+  // second (inner) layer - the "improved" cocoon wall
+  const T_IN2 = stripeTex('#ffe9b8', '#ffd98f', 12);
+  const inner2 = new THREE.Mesh(new THREE.SphereGeometry(R - .5, 48, 32), new THREE.MeshToonMaterial({ map: T_IN2, side: THREE.BackSide, transparent: true, opacity: 0, depthWrite: false, gradientMap: toon(0).gradientMap })); inner2.visible = false; S.add(inner2);
+  // floor disc + rim
+  const floorD = cylm(2.35, 2.35, .14, CREAM, [0, -1.72, 0], { ink: false }); S.add(floorD);
+  const floorR = mk(new THREE.TorusGeometry(2.35, .09, 10, 48), AMB_D, { pos: [0, -1.65, 0], rot: [PI / 2, 0, 0], ink: false }); S.add(floorR);
+  // warm interior light
+  const inL = new THREE.PointLight(0xffc27a, 1.6, 9, 1.6); inL.position.set(0, 1.2, 0); S.add(inL);
+  const inL2 = new THREE.PointLight(0xffe2a8, .8, 6, 2); inL2.position.set(0, -.2, 1.2); S.add(inL2);
+
+  // ---- the seed (the one inside) on a cushion ----
+  const cush = mk(new THREE.SphereGeometry(1, 28, 16), LEAF_L, { pos: [ORB[0], ORB[1] - .4, ORB[2]], scale: [.5, .15, .5] }); S.add(cush);
+  const seed = new THREE.Group(); seed.position.set(...ORB); S.add(seed);
+  const seedM = new THREE.Mesh(new THREE.SphereGeometry(.24, 32, 22), toon(BUTTER, { emissive: 0xffc83a, emissiveIntensity: .45 })); seedM.castShadow = true; seed.add(seedM);
+  const seedGl = glow(1.1, .4, 0xffd77a); seed.add(seedGl);
+  const seedRings = Array.from({ length: 4 }, () => { const s = spr(ringTex(), 1, 0, 0xfff1c0); s.visible = false; S.add(s); return s; });
+  // ---- scroll (no readable text, just soft lines) ----
+  const scr = new THREE.Group(); scr.position.set(...SCR); scr.scale.setScalar(.001); scr.visible = false; S.add(scr);
+  scr.add(boxm(.56, .02, .36, CREAM, [0, 0, 0], { inkW: .005 }));
+  [-.28, .28].forEach(x => { const c = cylm(.05, .05, .4, AMB_D, [x, 0, 0], { inkW: .005 }); c.rotation.x = PI / 2; scr.add(c); });
+  for (let i = 0; i < 4; i++) scr.add(boxm(.34 - (i % 2) * .08, .004, .014, 0xcdbb9a, [0, .012, -.11 + i * .075], { ink: false }));
+  const scrGl = glow(1.3, 0, 0xffe8a0); scrGl.position.set(...SCR); S.add(scrGl);
+  const star = glow(.55, 0, 0xfffbe0); S.add(star); const starT = Array.from({ length: 5 }, () => { const s = glow(.3, 0, 0xfff0b0); S.add(s); return s; });
+  // light rays (additive planes, off-centre)
+  const rayTex = canvasTex(64, 256, (g, w, h) => { const l = g.createLinearGradient(0, 0, 0, h); l.addColorStop(0, 'rgba(255,240,190,.9)'); l.addColorStop(1, 'rgba(255,240,190,0)'); g.fillStyle = l; g.fillRect(0, 0, w, h); });
+  const rays = [[-1.5, -1.4], [1.6, -1.8], [-.4, -2.3]].map(([x, z]) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(.9, 4.4), new THREE.MeshBasicMaterial({ map: rayTex, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending, side: THREE.DoubleSide, fog: false })); m.position.set(x, 1.0, z); m.rotation.z = x < 0 ? -.18 : .18; S.add(m); return m; });
+  // petals
+  const Rp = rng(5);
+  const petals = Array.from({ length: 16 }, (_, i) => { const m = mk(new THREE.SphereGeometry(.085, 10, 8), [ROSE, BUTTER, 0xffffff, LEAF_L][i % 4], { ink: false, scale: [1, .22, 1.5] }); m.visible = false; S.add(m); return { m, a: Rp() * TAU, r: .5 + Rp() * 1.5, h: -.6 + Rp() * 2.2, s: .5 + Rp(), z: -Rp() * 1.4 }; });
+
+  // ---- "improving" the cocoon: tools, stripes, pillows ----
+  const bandM = BANDS.map((h, i) => { const r = Math.sqrt(R * R - h * h) - .06; const t = mk(new THREE.TorusGeometry(r, .14, 10, 72), BCOL[i], { pos: [0, h, 0], rot: [PI / 2, 0, 0], ink: false }); t.visible = false; S.add(t); return t; });
+  const pillM = PILL.map(([x, y, z, c]) => { const m = mk(new THREE.SphereGeometry(.4, 20, 14), c, { pos: [x, y, z], scale: [1.15, .6, 1] }); m.visible = false; S.add(m); return m; });
+  const brush = new THREE.Group(); brush.visible = false; brush.scale.setScalar(1.5); S.add(brush);
+  { const h = cylm(.025, .03, .6, WOODC, [0, .3, 0], { inkW: .005 }); const f = cylm(.04, .04, .08, 0xcfd6dc, [0, .02, 0], { inkW: .004 }); const b = boxm(.1, .12, .035, ORANGE, [0, -.06, 0], { inkW: .004 }); brush.add(h, f, b); brush.rotation.z = .5; }
+  const trowel = new THREE.Group(); trowel.visible = false; trowel.scale.setScalar(1.6); S.add(trowel);
+  { const p = boxm(.2, .012, .14, 0xcfd6dc, [0, 0, 0], { inkW: .004 }); const hd = cylm(.02, .025, .3, WOODC, [0, .13, .0], { inkW: .004 }); hd.rotation.x = PI / 2; hd.position.set(0, .06, .2); trowel.add(p, hd); }
+  const roller = new THREE.Group(); roller.visible = false; roller.scale.setScalar(1.5); S.add(roller);
+  { const r1 = cylm(.07, .07, .26, LEAF, [0, 0, 0], { inkW: .005 }); r1.rotation.z = PI / 2; const hnd = cylm(.015, .015, .34, WOODC, [0, .17, .0], { inkW: .004 }); roller.add(r1, hnd); }
+  const sparkle = Array.from({ length: 6 }, () => { const s = spr(ringTex(), 1, 0, 0xfff1c0); s.visible = false; S.add(s); return s; });
+
+  // ---- the butterfly ----
+  const bfG = new THREE.Group(); bfG.visible = false; S.add(bfG);
+  const bfBody = new THREE.Group(); bfG.add(bfBody);
+  const wingShape = (kind) => { const s = new THREE.Shape(); if (kind === 0) { s.moveTo(0, 0); s.bezierCurveTo(.15, .5, .7, .75, 1.0, .5); s.bezierCurveTo(1.05, .25, .75, .05, 0, -.02); } else { s.moveTo(0, 0); s.bezierCurveTo(.25, -.05, .8, -.1, .85, -.45); s.bezierCurveTo(.7, -.75, .25, -.6, 0, -.1); } return new THREE.ShapeGeometry(s, 16); };
+  const wingGeos = [wingShape(0), wingShape(1)];
+  const wings = [];
+  [-1, 1].forEach(sd => { const piv = new THREE.Group(); bfBody.add(piv);
+    [0, 1].forEach(k => { const w = new THREE.Mesh(wingGeos[k], new THREE.MeshToonMaterial({ color: k ? ORANGE : 0xffd54a, side: THREE.DoubleSide, gradientMap: toon(0).gradientMap })); const edge = new THREE.Mesh(wingGeos[k], new THREE.MeshBasicMaterial({ color: 0xc86a1e, side: THREE.DoubleSide })); edge.scale.set(1.05, 1.05, 1); edge.position.set(-.01, k ? .01 : -.01, -.006);
+      const dot = new THREE.Mesh(new THREE.CircleGeometry(.09, 16), new THREE.MeshBasicMaterial({ color: k ? 0xfff6c8 : ROSE, side: THREE.DoubleSide })); dot.position.set(k ? .45 : .55, k ? -.3 : .32, .004);
+      const gp = new THREE.Group(); gp.add(edge, w, dot); gp.rotation.x = -PI / 2; if (sd < 0) gp.scale.x = -1; piv.add(gp); });
+    wings.push({ piv, sd }); });
+  { const bd = new THREE.Mesh(new THREE.SphereGeometry(.07, 14, 10), toon(0x5a3b1c)); bd.scale.set(.8, .8, 4.2); bfBody.add(bd); const hd = new THREE.Mesh(new THREE.SphereGeometry(.07, 14, 10), toon(0x5a3b1c)); hd.position.set(0, 0, -.3); bfBody.add(hd); }
+  const bfGl = glow(2.2, .6, 0xffe9a0); bfG.add(bfGl);
+  const bfSh = new THREE.Group(); bfSh.visible = false; S.add(bfSh);   // blurred silhouette seen through the milky cap (the inside never understands it)
+  { const sil = new THREE.Mesh(new THREE.ShapeGeometry((() => { const s = new THREE.Shape(); s.moveTo(0, 0); s.bezierCurveTo(.2, .6, .9, .9, 1.1, .5); s.bezierCurveTo(1.0, .1, .5, 0, 0, 0); s.moveTo(0, 0); s.bezierCurveTo(.2, -.5, .8, -.7, .8, -.4); s.bezierCurveTo(.7, -.1, .3, 0, 0, 0); return s; })(), 12), new THREE.MeshBasicMaterial({ color: 0x4a8a3a, transparent: true, opacity: .55, side: THREE.DoubleSide, depthWrite: false })); bfSh.add(sil); const sil2 = sil.clone(); sil2.scale.x = -1; bfSh.add(sil2); bfSh.scale.setScalar(.9); }
+  // soft colour blobs just beyond the cap (blurred meadow)
+  const haze = [[-1.3, -1.2, -4.6, 0xb9e592, 5], [1.4, -.6, -4.8, 0xffe58a, 4.6], [0, 1.5, -5, 0xbfe4f7, 6], [.2, -.2, -5.2, 0xffffff, 3.4]].map(([x, y, z, c, s]) => { const g = spr(glowTex(), s, .7, c, false); g.position.set(x, y, z); S.add(g); return g; });
+  const finGlow = spr(glowTex(), 60, 0, 0xfff3c0); finGlow.position.set(0, 24, -30); S.add(finGlow);
+  const flash = spr(glowTex(), 4, 0, 0xffffff); S.add(flash);
+  const popRings = Array.from({ length: 5 }, () => { const s = spr(ringTex(), 1, 0, 0xfff1c0); s.visible = false; S.add(s); return s; });
+
+  Wd.on(t => {
+    const g = off + t;
+    // ---- the seed: alive, heartbeat on the word "birth" ----
+    const beat = (t0, k) => { const u = prog(g, t0, t0 + .8); return u > 0 && u < 1 ? k * Math.sin(PI * u) : 0; };
+    const hb = 1 + .035 * Math.sin(g * 3) + beat(16.1, .16) + beat(17.75, .2) + beat(9.0, .1) + beat(9.8, .12);
+    const seedVis = g < 46.5 ? 1 : 1 - sm(g, 46.4, 46.9);
+    seed.visible = seedVis > .01; seed.scale.setScalar(hb * (g < 46 ? 1 : 1 + .8 * sm(g, 45.8, 46.4))); seed.position.y = ORB[1] + .04 * Math.sin(g * 1.7);
+    seedGl.material.opacity = .5 * seedVis * (1 + .15 * Math.sin(g * 2.3)) + .5 * sm(g, 45.8, 46.4) * (1 - sm(g, 46.4, 46.9));
+    let ri = 0; const ring = (arr, p, uu, size) => { if (uu <= 0 || uu >= 1 || ri >= arr.length) return; const s = arr[ri++]; s.visible = true; s.position.set(p[0], p[1], p[2]); s.scale.setScalar(size * (.3 + 1.7 * ease.out(uu))); s.material.opacity = .8 * (1 - uu); };
+    seedRings.forEach(r => { r.visible = false; }); ri = 0;
+    ring(seedRings, ORB, prog(g, 9.0, 10.0), 1.2); ring(seedRings, ORB, prog(g, 16.1, 17.1), 1.4); ring(seedRings, ORB, prog(g, 17.75, 18.8), 1.6);
+    // ---- warm light, rays, petals ----
+    const cozy = 1 + .35 * sm(g, 22.2, 24) - .55 * sm(g, 43.4, 44.6) * (1 - sm(g, 44.8, 45.4));
+    inL.intensity = 1.6 * cozy; inL2.intensity = .8 * cozy;
+    const rayOp = (.22 * sm(g, 22.2, 24) + .1) * (1 - sm(g, 44.2, 45)); rays.forEach((r, i) => { r.material.opacity = rayOp * (.7 + .3 * Math.sin(g * .8 + i * 2)); });
+    petals.forEach((p, i) => { const vis = g < 45.6 ? 1 : 1 - sm(g, 45.6, 46.4); p.m.visible = vis > .01 && (g > 1.5 + i * .3); const burst = prog(g, 27.7, 29.2); const a = p.a + g * .22 * p.s; const rr = p.r * (1 + .6 * ease.out(burst));
+      p.m.position.set(Math.cos(a) * rr, p.h + .15 * Math.sin(g * p.s * 1.3 + i) + 1.2 * burst * (i % 3 === 0 ? 1 : .3), p.z + Math.sin(a) * rr * .6); p.m.rotation.set(g * .6 + i, g * .4, 0); });
+    // ---- scroll + star (the angel is only a star of light) ----
+    const sc1 = ease.out(prog(g, 25.4, 26.6)); scr.visible = g > 25.3 && g < 45.2; scr.scale.setScalar(Math.max(.001, 1.6 * sc1 * (1 - sm(g, 44.2, 45.1)))); scr.position.set(SCR[0], SCR[1] + .06 * Math.sin(g * 1.9), SCR[2]); scr.rotation.y = .5 * Math.sin(g * .7);
+    const scrOn = sm(g, 25.4, 26.6) * (1 - sm(g, 44.0, 45.2)); scrGl.material.opacity = .55 * scrOn * (1 + .15 * Math.sin(g * 3)); scrGl.position.set(SCR[0], SCR[1] + .06 * Math.sin(g * 1.9), SCR[2] - .05);
+    const su = prog(g, 26.0, 27.3); const sp = L3([.2, 2.6, -.7], [.18, SCR[1] + .45, SCR[2]], ease.io(su));
+    star.position.set(...sp); star.material.opacity = (su > 0 ? .95 : 0) * (1 - sm(g, 28.3, 29.4)) * (g > 26.0 ? 1 : 0); star.scale.setScalar(.55 + .15 * Math.sin(g * 9));
+    starT.forEach((s, i) => { const uu = clamp(su - (i + 1) * .06, 0, 1); const q = L3([.2, 2.6, -.7], [.18, SCR[1] + .45, SCR[2]], ease.io(uu)); s.position.set(...q); s.material.opacity = (.5 - i * .08) * Math.sin(PI * uu) * (g < 28 ? 1 : 0); });
+    // ---- the cap and the hazy outside ----
+    const thick = sm(g, 36, 44) * (1 - sm(g, 44.4, 44.8));  // the "improved" wall gets less see-through
+    const capOp = .66 + .3 * thick;
+    [leafL, leafR].forEach(L => { L.mats.forEach(m => { m.opacity = capOp; }); });
+    const open = ease.io(prog(g, 44.9, 46.7));
+    leafL.pv.rotation.y = open * 1.75; leafR.pv.rotation.y = -open * 1.75;
+    const cracks = sm(g, 43.2, 44.6) * (1 - open); // the seam glows
+    haze.forEach((h, i) => { h.material.opacity = (.42 + .06 * Math.sin(g * .7 + i)) * (1 - .85 * thick) * (1 - open); h.visible = open < .95; });
+    const shU = prog(g, 30.7, 34.2); bfSh.visible = shU > 0 && shU < 1; bfSh.position.set(lerp(-2.4, 2.4, shU), 1.0 + .5 * Math.sin(shU * PI * 2.2), -4.3); bfSh.rotation.y = 0; bfSh.rotation.z = .25 * Math.sin(shU * PI * 5);
+    bfSh.scale.set(.9 * (1 + .25 * Math.sin(g * 14)), .9, .9);
+    // ---- E: improving the cocoon ----
+    const bandT = [36.2, 37.4, 38.6, 39.8, 41.0];
+    bandM.forEach((b, i) => { const u = ease.out(prog(g, bandT[i], bandT[i] + .5)) * (1 - sm(g, 44.8, 45.6)); b.visible = u > .01; b.scale.set(u, u, Math.max(u, .01)); b.scale.z = u; });
+    const pillT = [37.0, 38.0, 39.0, 40.2, 41.4];
+    pillM.forEach((p, i) => { const u = prog(g, pillT[i], pillT[i] + .6); p.visible = u > 0; const k = ease.out(u) * (1 + .12 * Math.sin(PI * u)); p.scale.set(1.15 * k, .6 * k, k); });
+    const i2 = sm(g, 41.8, 43.6) * (1 - sm(g, 44.7, 45.7)); inner2.visible = i2 > .01; inner2.material.opacity = .92 * i2; inner2.scale.setScalar(lerp(1.12, 1, i2));
+    // tools
+    const brT = prog(g, 35.9, 42.0), brOn = brT > 0 && brT < 1; brush.visible = brOn;
+    if (brOn) { const idx = Math.min(4, Math.floor((g - 35.9) / 1.2)); const h = BANDS[idx]; const wr = Math.sqrt(R * R - h * h) - .3; const ang = -2.2 + .22 * Math.sin(g * 1.5); brush.position.set(-.65 + .1 * Math.sin(g * 1.2), .3 + .45 * idx / 4 + .05 * Math.sin(g * 6), -.5); brush.rotation.z = .5 + .15 * Math.sin(g * 9); }
+    const trT = prog(g, 40.4, 44.2); trowel.visible = trT > 0 && trT < 1; trowel.position.set(.5, 1.25 + .08 * Math.sin(g * 5), -.7); trowel.rotation.set(0, -.4, .3 * Math.sin(g * 7));
+    const roT = prog(g, 38.0, 44.2); roller.visible = roT > 0 && roT < 1; roller.position.set(.65, .2 + .1 * Math.sin(g * 4), -.4); roller.rotation.set(0, .3, .25 * Math.sin(g * 6));
+    sparkle.forEach(s => { s.visible = false; }); ri = 0;
+    bandT.forEach((t0, i) => { ring(sparkle, [Math.sqrt(R * R - BANDS[i] ** 2) * -.5, BANDS[i], -Math.sqrt(R * R - BANDS[i] ** 2) * .8], prog(g, t0 + .3, t0 + 1.1), .6); });
+    // ---- F: the cap opens, light floods in, the seed becomes a butterfly ----
+    const flood = sm(g, 45.3, 47.2);
+    Wd.sun.intensity = .45 + .85 * flood + .4 * sm(g, 48, 51); Wd.hemi.intensity = .75 + .5 * flood + .25 * sm(g, 48, 51);
+    finGlow.material.opacity = .65 * sm(g, 47.5, 50.5); sunGlow.material.opacity = .4 + .45 * sm(g, 47.5, 50.5);
+    flash.position.set(...ORB); flash.material.opacity = .95 * Math.sin(PI * prog(g, 46.0, 46.8)); flash.scale.setScalar(2 + 4 * ease.out(prog(g, 46.0, 46.8)));
+    popRings.forEach(r => { r.visible = false; }); ri = 0; ring(popRings, ORB, prog(g, 46.0, 47.0), 2.2); ring(popRings, ORB, prog(g, 46.2, 47.2), 3.2);
+    const bp = bfPos(g); bfG.visible = g > 46.3; bfG.position.set(...bp);
+    const bs = ease.out(prog(g, 46.3, 47.0)) * (1 + .0); bfG.scale.setScalar(Math.max(.001, .6 * bs));
+    const fa = .15 + .75 * (.5 + .5 * Math.sin(g * 11.5)); wings.forEach(w => { w.piv.rotation.z = w.sd * fa; });
+    bfBody.rotation.x = 1.15 + .06 * Math.sin(g * 5.7); bfBody.position.y = .04 * Math.sin(g * 5.7);
+    bfGl.material.opacity = .5 * (1 - sm(g, 51, 53));
+  });
+  heroCluster(Wd, t => heroFn(off + t));
+  return Object.assign(Wd, { cam: t => camAt(off + t) });
+}
+const SH = (id, dur, off, caps, capAt) => ({ id, dur, wide: true, caps, capAt, build() { return build(off, heroAt); } });
+
+film({
+  W: 1080, H: 1920, xf: .4, vault: 'captions_vault.json',
+  shots: [
+    SH('s01', 11.3, 0, ['CAP_A_01', 'CAP_A_02'], [0.0, 6.0]),
+    SH('s02', 10.9, 11.3, ['CAP_A_03', 'CAP_A_04'], [0.0, 4.7]),
+    SH('s03', 11.9, 22.2, ['CAP_A_05', 'CAP_A_06'], [0.0, 6.2]),
+    SH('s04', 11.2, 34.1, ['CAP_A_07', 'CAP_A_08'], [0.0, 4.4]),
+    SH('s05', 5.82, 45.3, ['CAP_A_09'], [0.0]),
+  ]
+});
+</script>
