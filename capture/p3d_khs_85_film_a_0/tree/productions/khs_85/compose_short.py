@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Local mix for khs_84 (copied from kh_short60): remote 3D render (silent) + the real voice (never uploaded) + music + the existing end card.
+"""Local mix for khs_85 (copied from kh_short60): remote 3D render (silent) + the real voice (never uploaded) + music + the existing end card.
 Reuses the proven audio chain of the old shorts builder (anim/build.py): same cut ranges, loudnorm, music envelope.
 Usage: python compose_short.py <render_out.mp4> <final.mp4>   (runs at idle priority, no window)"""
 import sys, os, json, subprocess, io
@@ -14,9 +14,9 @@ os.chdir(SHORTS)
 import pipeline as P  # guarded dispatch (same import as anim/build.py)
 
 render, final = os.path.abspath(sys.argv[1]), os.path.abspath(sys.argv[2])
-cfg = json.load(io.open(SHORTS + '/work/short84_config.json', encoding='utf-8'))
-D = SHORTS + '/anim/short84'
-WORK = os.path.dirname(final) + '/_compose_work_short84'  # per-short: a shared dir reused short73's cached end card (27/10)
+cfg = json.load(io.open(SHORTS + '/work/short85_config.json', encoding='utf-8'))
+D = SHORTS + '/anim/short85'
+WORK = os.path.dirname(final) + '/_compose_work_short85'  # per-short: a shared dir reused short73's cached end card (27/10)
 os.makedirs(WORK, exist_ok=True)
 FPS, END_DUR = 30, 4.8
 pre = cfg.get('pre_roll', 0.15)
