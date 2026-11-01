@@ -335,5 +335,47 @@ export function buildAnswer(EP, dur, bg) {
     Wd.on(t => { m.material.opacity = ease.sm(prog(t, 12, 12.8)); }); }
   const d = Wd.ansD || (yard ? 7.2 : 5.8);   // camera height 2.4 looking at y 2.2: card spans ~16-63% of the frame height, boys' heads ~67%
   Wd.cardGroup = g; REG.answer = Wd;
-  return Object.assign(Wd, { cam: cine([[0, [c[0], 2.2, c[1]], d + .2, .2, 10, 42, 0], [dur * .5, [c[0], 2.2, c[1]], d + .1, .2, -6, 42, 0], [dur, [c[0], 2.2, c[1]], d, .2, -10, 42, 0]]) });
+  return Object.assign(Wd, { cam: Wd.camAns || cine([[0, [c[0], 2.2, c[1]], d + .2, .2, 10, 42, 0], [dur * .5, [c[0], 2.2, c[1]], d + .1, .2, -6, 42, 0], [dur, [c[0], 2.2, c[1]], d, .2, -10, 42, 0]]) });
+}
+
+
+// ---------------------------------------------------------------- v2 camera move library (added 01/11/2026; additive, pure functions of local time t)
+// A "camera function" is t -> {pos, look, fov} (same as cine()). Every shot below takes a target ([x,y,z] or a function t -> [x,y,z]) and
+// o = {dur, dist0, dist1, h0, h1, a0, a1, fov0, fov1, ly0, ly1, shift:[dx,dy,dz], ease}. Angles in degrees (0 = camera on +z looking toward -z),
+// h = camera height above the target, ly = look-at height offset. Time is clamped to [0, dur] (the shot holds its last frame).
+const _E = { io: ease.io, out: ease.out, in: ease.in, sm: ease.sm, lin: u => u };
+function _rig(target, o, dflt) {
+  o = Object.assign({}, dflt, o || {});
+  const tg = typeof target === 'function' ? target : (() => target), sh = o.shift || [0, 0, 0], ez = typeof o.ease === 'function' ? o.ease : (_E[o.ease] || ease.io);
+  return t => {
+    const u = ez(clamp(t / o.dur, 0, 1)), c = tg(t), a = lerp(o.a0, o.a1, u) * D, d = lerp(o.dist0, o.dist1, u), h = lerp(o.h0, o.h1, u), ly = lerp(o.ly0 || 0, o.ly1 === undefined ? (o.ly0 || 0) : o.ly1, u);
+    const s = u - .5, cx = c[0] + sh[0] * s, cy = c[1] + sh[1] * s, cz = c[2] + sh[2] * s;
+    return { pos: [cx + Math.sin(a) * d, cy + h, cz + Math.cos(a) * d], look: [cx, cy + ly, cz], fov: lerp(o.fov0, o.fov1, u) };
+  };
+}
+export const pushIn = (tg, o) => _rig(tg, o, { dur: 5, dist0: 4.6, dist1: 3.0, h0: .6, h1: .35, a0: -12, a1: 4, fov0: 44, fov1: 40 });
+export const pullOut = (tg, o) => _rig(tg, o, { dur: 5, dist0: 2.6, dist1: 4.6, h0: .3, h1: .7, a0: 8, a1: -8, fov0: 38, fov1: 44 });
+export const truck = (tg, o) => _rig(tg, o, { dur: 5, dist0: 3.8, dist1: 3.6, h0: .4, h1: .45, a0: -8, a1: 8, fov0: 42, fov1: 42, shift: [1.3, 0, 0] });
+export const orbitShot = (tg, o) => _rig(tg, o, { dur: 5, dist0: 3.6, dist1: 3.3, h0: .5, h1: .6, a0: -30, a1: 30, fov0: 42, fov1: 42 });
+export const crane = (tg, o) => _rig(tg, o, { dur: 5, dist0: 4.2, dist1: 3.8, h0: .1, h1: 2.0, a0: -6, a1: 6, fov0: 42, fov1: 42 });
+export const lowHero = (tg, o) => _rig(tg, o, { dur: 5, dist0: 3.2, dist1: 2.7, h0: -.75, h1: -.6, a0: -14, a1: 8, fov0: 42, fov1: 38 });
+export const insert = (tg, o) => _rig(tg, o, { dur: 4, dist0: 1.5, dist1: 1.15, h0: .25, h1: .2, a0: -10, a1: 6, fov0: 34, fov1: 31 });
+// hard cuts between setups inside one beat; each setup runs on its own local clock
+export function cuts(list) {
+  const T = []; let s = 0; list.forEach(([d, f]) => { T.push([s, f]); s += d; });
+  return t => { let i = 0; while (i < T.length - 1 && t >= T[i + 1][0]) i++; return T[i][1](Math.max(0, t - T[i][0])); };
+}
+// smooth deterministic drift (sum of sines) so the frame is never perfectly still
+export function handheld(cam, amp, seed) {
+  amp = amp === undefined ? .03 : amp; const sd = seed || 0, ph = k => 1.7 * k + 2.3 * sd + Math.sin(sd * 7.1 + k) * 1.3;
+  return t => {
+    const c = cam(t), n = k => Math.sin(t * .83 * (1 + .21 * k) + ph(k)) * .55 + Math.sin(t * 1.61 + ph(k + 7)) * .3 + Math.sin(t * 2.9 + ph(k + 13)) * .15;
+    return { pos: [c.pos[0] + amp * n(0), c.pos[1] + amp * .8 * n(1), c.pos[2] + amp * n(2)], look: [c.look[0] + amp * .7 * n(3), c.look[1] + amp * .7 * n(4), c.look[2] + amp * .7 * n(5)], fov: c.fov };
+  };
+}
+// quick fov punch-in (k = fraction, default 8%) at the given local times: 0.25 s in, 0.6 s settle
+export function punch(cam, times, k) {
+  k = k === undefined ? .08 : k; const ts = [].concat(times || []);
+  const bump = t => { let m = 0; for (const t0 of ts) { const d = t - t0; if (d < 0 || d > .85) continue; m = Math.max(m, d < .25 ? ease.out(d / .25) : 1 - ease.sm((d - .25) / .6)); } return m; };
+  return t => { const c = cam(t); return { pos: c.pos, look: c.look, fov: c.fov * (1 - k * bump(t)) }; };
 }
