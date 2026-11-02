@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>sod hazman v4 c1</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js", "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+// Chapter c1 of "the time moves, the sun does not" (v4, high-level 3D). 14 shots, durations come ONLY from timeline.json (chapter id c1).
+// Zero Hebrew here: captions are vault ids (C1_L00 ...) resolved by lib_v4/caption3d.js; the title card is vault key T_C1.
+import { film, world, THREE, ease, prog, clamp, lerp, rng, cloud, mesh, toon, box, cyl, ball } from '../../lib/stage3d.js';
+import { shake } from '../../lib/motion3d.js';
+import { caption3d, titleCard3d, wordSpans, captionInfo } from './lib_v4/caption3d.js';
+import { makeWatch, loadMouth } from './lib_v4/watch.js';
+import { useDOF } from './lib_v4/dof.js';
+import * as O from './lib_v4/objects.js';
+
+const D2R = Math.PI / 180, F = mm => 2 * Math.atan(12 / mm) / D2R, Q = new URLSearchParams(location.search);
+const loadJSON = url => new Promise((res, rej) => { const x = new XMLHttpRequest(); x.open('GET', url); x.onload = () => { try { res(JSON.parse(x.responseText)); } catch (e) { rej(e); } }; x.onerror = () => rej(new Error('xhr ' + url)); x.send(); });
+window.CAPTIONS_VAULT = Object.assign(window.CAPTIONS_VAULT || {}, await loadJSON('captions_vault.json'));
+const TL = await loadJSON('timeline.json'), CH = TL.chapters.find(c => c.id === 'c1');
+const MOUTH = await loadMouth(Q.get('mouth') || 'mouth_c1.json');   // real mouth curves next to the timeline; null -> rhythm fallback
+try { await Promise.all([document.fonts.load('700 40px Heebo'), document.fonts.load('700 40px Assistant')]); } catch (e) {}
+
+// ---------------------------------------------------------------- timeline helpers (every time below derives from these)
+const LN = id => CH.lines.find(l => l.id === id), T0 = id => LN(id).t0;
+const vtxt = k => String(window.CAPTIONS_VAULT[k] || k);
+const SP = id => { const l = LN(id); return wordSpans(l, vtxt(l.cap)); };
+const gold0 = id => { const s = SP(id).find(w => w.gold); return s ? s.t0 : LN(id).t0; };
+const ORDER = ['intro', 'L00', 'L01', 'L02', 'L03', 'L04', 'L05', 'L07', 'L08', 'L09', 'L10', 'L11', 'L12', 'L14'];
+const START = { intro: 0 }; ORDER.slice(1).forEach(k => { START[k] = T0(k); });
+const ENDOF = k => { const i = ORDER.indexOf(k); return i + 1 < ORDER.length ? START[ORDER[i + 1]] : CH.dur; };
+
+// ---------------------------------------------------------------- shared shot plumbing
+const baseCam = (Wd, near, far) => Wd.on((t, cam) => { if (cam.near !== near || cam.far !== far) { cam.near = near; cam.far = far; cam.updateProjectionMatrix(); } });
+const tintGround = (Wd, hex) => Wd.scene.traverse(o => { if (o.isMesh && o.receiveShadow && o.geometry.type === 'PlaneGeometry' && o.material.map && o.material.isMeshLambertMaterial) o.material.color.setHex(hex); });
+const finish = (Wd, cam, o) => { o = o || {}; if (o.dof) useDOF(Wd, o.dof); caption3d(Wd, null, CH); return Object.assign(Wd, { cam }); };
+const mix3 = (a, b, k) => [lerp(a[0], b[0], k), lerp(a[1], b[1], k), lerp(a[2], b[2], k)];
+const camMove = (p0, p1, l0, l1, f0, f1, t0, t1, easing) => t => { const k = (easing || ease.io)(prog(t, t0, t1)); return { pos: mix3(p0, p1, k), look: mix3(l0, l1, k), fov: lerp(f0, f1, k) }; };
+const goldRing = (Wd, col) => { const m = new THREE.Mesh(new THREE.TorusGeometry(1, .035, 8, 64), new THREE.MeshBasicMaterial({ color: col || 0xffc84a, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false })); m.visible = false; Wd.add(m); return m; };
+const ringAnim = (m, cam, t, t0, dur, r0, r1, op) => { const k = (t - t0) / dur; m.visible = k > 0 && k < 1; if (!m.visible) return; const e = ease.out(k); m.scale.setScalar(lerp(r0, r1, e)); m.material.opacity = op * (1 - k) * Math.min(1, k * 8); m.quaternion.copy(cam.quaternion); };
+
+// ================================================================ wall-clock time model (seconds since 12:00), shared by L01/L02 (global t)
+const J = gold0('L02'), SW1 = 1.35, HIT = J - 0.9;              // sweep start, sweep length, moment the clock reaches 2:00:00
+const sAtJ = 7200 + (J - HIT);
+function wallS(t) {
+  if (t < HIT) return { S: 7200 - (HIT - t), sec: null };
+  if (t < J) return { S: 7200 + (t - HIT), sec: null };
+  if (t < J + SW1) { const e = ease.io((t - J) / SW1); return { S: lerp(sAtJ, 3600 + (sAtJ - 7200), e), sec: 0 }; }
+  return { S: 3600 + (sAtJ - 7200) + (t - J - SW1), sec: null };
+}
+const tickSec = S => { const f = S - Math.floor(S); return (Math.floor(S) % 60 + ease.out(clamp(f / .22, 0, 1))) * Math.PI / 30; };
+const applyWall = (clk, t) => { const w = wallS(t); clk.setTime(w.S, w.sec === null ? tickSec(w.S) : 0); };
+
+// ================================================================ shots
+// ---- intro (title card) --------------------------------------------------------------
+function sIntro() {
+  const Wd = world({ fog: false });
+  baseCam(Wd, .1, 800); O.skyDome(Wd, { top: 0x03061a, mid: 0x0a1844, bot: 0x2a4a86 });
+  O.lighting(Wd, { key: [0xffffff, .2, [5, 8, 8]], hemi: [0x6a80c0, 0x101830, .6], noShadow: true });
+  [[-30, 8, -60, 40, 0x2a5aa8, .22], [26, -6, -80, 55, 0x4a3a9a, .18], [0, 20, -50, 34, 0x2a6a9a, .14], [-10, -14, -40, 30, 0x5a3a88, .12]].forEach(([x, y, z, s, c, o]) => { const g = O.glow(s, c, o); g.position.set(x, y, z); Wd.add(g); });
+  titleCard3d(Wd, 'T_C1', { pos: [0, 0, 0], width: 7.2, line: { t0: .6, t1: 2.5 } });
+  O.motes(Wd, { n: 36, area: [-6, 6, -3, 3, 1, 7], size: .22, color: 0xffd98a, op: .55, seed: 3 });
+  O.motes(Wd, { n: 20, area: [-8, 8, -4, 4, -6, -1], size: .3, color: 0x9ab8ff, op: .35, seed: 8 });
+  Wd.on(t => { Wd.stars && 0; });
+  return finish(Wd, camMove([0, .35, 13], [0, .1, 9.8], [0, 0, 0], [0, 0, 0], F(40), F(40), 0, 4.0, ease.sm), { dof: (t, cam) => ({ focus: Math.hypot(cam.position.x, cam.position.y, cam.position.z), ap: 7, maxR: 12, vig: .38 }) });
+}
+
+// ---- L00: Jerusalem stone skyline at night -------------------------------------------
+function sSkyline() {
+  const a = START.L00, b = ENDOF('L00'), dur = b - a;
+  const Wd = world({ ground: 'dark', groundSize: 500, groundRep: [80, 80], fogColor: 0x1b2850, fogNear: 40, fogFar: 260, shadowExt: 70 });
+  baseCam(Wd, .1, 1200); tintGround(Wd, 0x7a88b0);
+  const sky = O.skyDome(Wd, { top: 0x050a22, mid: 0x142458, bot: 0x5a4f7e });
+  O.lighting(Wd, { key: [0x9db8ff, 1.15, [-30, 45, -25]], hemi: [0x4a5c92, 0x20182a, .95], fill: [0xffb070, .22, [0, 4, 40]], rim: [0x6f8cff, .7, [25, 30, -50]], target: [0, 4, -30], shadowExt: 75, shadowMap: 2048, fog: [0x1b2850, 45, 260] });
+  const moon = new THREE.Mesh(new THREE.SphereGeometry(5, 24, 16), O.basic(0xf4f1e2)); moon.position.set(46, 40, -190); Wd.add(moon);
+  const mg = O.glow(60, 0xaec4ff, .5); mg.position.copy(moon.position); Wd.add(mg); const mg2 = O.glow(170, 0x7890e0, .22); mg2.position.copy(moon.position); Wd.add(mg2);
+  O.hills(Wd, { colors: [0x1b2c42, 0x20334a, 0x182638] });
+  const C = O.city(Wd, { seed: 11, n: 72, litFrac: .14, area: [-64, 64, -9, -66] });
+  // foreground: stone rampart we stand on (blurred)
+  const tex = O.stoneTex(5, '#cdb98f'), wall = O.texBox(90, 6, 1.6, tex, 0xb0b4c8, { pos: [0, 2.4, 11], inkW: .03 }); Wd.add(wall);
+  for (let i = -28; i <= 28; i++) Wd.add(O.texBox(1.0, .9, 1.4, tex, 0xb0b4c8, { pos: [i * 1.7, 5.85, 11], inkW: .03 }));
+  Wd.add(box(90, .08, .08, 0x8a7550, { pos: [0, 6.75, 11.6], ink: false })); for (let i = -22; i <= 22; i++) Wd.add(box(.07, .7, .07, 0x8a7550, { pos: [i * 2, 6.4, 11.6], ink: false }));
+  O.pottedPlant(Wd, -5.2, 5.4, 10.2, 1.6); O.pottedPlant(Wd, 7.5, 5.4, 10.4, 1.3); O.olive(Wd, -17, 5.4, 10.6, .9, 9);
+  O.motes(Wd, { n: 18, area: [-14, 14, 6, 11, -2, 9], size: .5, color: 0xaec4ff, op: .35, seed: 4 });
+  return finish(Wd, camMove([3.5, 10.5, 19], [3.0, 7.6, 17.5], [-2, 3.5, -30], [-2, 3.0, -30], F(28), F(28), 0, dur), { dof: () => ({ focus: 48, ap: 7, maxR: 16, vig: .36 }) });
+}
+
+// ---- L01: quiet stone street, one lit window, wall clock inside reads 01:59 ----------
+function sStreet() {
+  const a = START.L01, b = ENDOF('L01'), dur = b - a;
+  const Wd = world({ ground: 'stone', groundSize: 120, groundRep: [50, 50], fogColor: 0x1b2850, fogNear: 22, fogFar: 90, shadowExt: 18 });
+  baseCam(Wd, .1, 500); tintGround(Wd, 0x8890ad); O.skyDome(Wd, { top: 0x050a22, mid: 0x142458, bot: 0x4c4a78 });
+  O.lighting(Wd, { key: [0x93adff, .9, [-12, 22, 14]], hemi: [0x3c4c80, 0x1a1420, .8], fill: [0x6a60a0, .22, [8, 6, 14]], rim: [0x5f7cff, .45, [6, 10, -18]], target: [0, 2, 3], shadowExt: 20, fog: [0x1b2850, 22, 90],
+    points: [[0xffb868, 20, [-1.2, 3.5, 9.2], 18], [0xffc880, 11, [.4, 2.8, -1.4], 11], [0xffb060, 5, [.4, 1.7, 1.4], 8]] });
+  const T = [O.stoneTex(3, '#d9c9a4'), O.stoneTex(5, '#cdb98f'), O.stoneTex(8, '#e2d3b0')], tint = 0xbfc3d6;
+  [-1, 1].forEach((s, i) => { Wd.add(O.texBox(6, 7.5, 26, T[i], tint, { pos: [s * 5.5, 3.75, 10], inkW: .03 })); for (let k = 0; k < 4; k++) { const w = O.texBox(1.6, 1.2, .1, T[i], 0x7a7e92, { pos: [s * 2.46, 2.2 + (k % 2) * 3, 4 + k * 4.4], rot: [0, s * -Math.PI / 2, 0], ink: false }); Wd.add(w); } });
+  const fx = (w, h, x, y) => Wd.add(O.texBox(w, h, .5, T[2], tint, { pos: [x, y, -.25], inkW: .03 }));
+  fx(7.65, 8, -4.175, 4); fx(6.85, 8, 4.575, 4); fx(1.5, 1.25, .4, .625); fx(1.5, 5.45, .4, 5.275);
+  Wd.add(box(1.7, .1, .35, 0x5a3a1c, { pos: [.4, 1.28, .12], inkW: .008 }));
+  [[-.37, 1.9, .1, 1.4], [1.17, 1.9, .1, 1.4]].forEach(([x, y, w, h]) => Wd.add(box(w, h, .12, 0x5a3a1c, { pos: [x, y, 0], inkW: .006 })));
+  [[-1, -.42], [1, 1.22]].forEach(([s, x]) => { const sh = box(.78, 1.3, .05, 0x3f6a5a, { pos: [x + s * .26, 1.9, .25], rot: [0, s * 1.15, 0], inkW: .006 }); Wd.add(sh); });
+  // interior
+  const plaster = O.plasterTex('#e8d6ae'), fl = new THREE.Mesh(new THREE.PlaneGeometry(6, 4), toon(0xffffff, { map: O.woodTex(6, '#9a6a3a', 128) })); fl.rotation.x = -Math.PI / 2; fl.position.set(0, .01, -1.8); Wd.add(fl);
+  Wd.add(O.texBox(6, 3.4, .2, plaster, 0xffffff, { pos: [0, 1.7, -3.7], k: .35, inkW: .01 })); [-1, 1].forEach(s => Wd.add(O.texBox(.2, 3.4, 4, plaster, 0xffffff, { pos: [s * 2.9, 1.7, -1.8], k: .35, inkW: .01 })));
+  const ce = new THREE.Mesh(new THREE.PlaneGeometry(6, 4), toon(0xe8d6ae)); ce.rotation.x = Math.PI / 2; ce.position.set(0, 3.4, -1.8); Wd.add(ce);
+  const clk = O.wallClock(Wd, { pos: [.4, 1.95, -3.58], r: .46 });
+  const shelf = O.homeRoom ? null : null;
+  const sh = new THREE.Group(); sh.position.set(-1.7, 0, -3.4); sh.add(box(1.2, 2.2, .4, 0x7a5232, { pos: [0, 1.1, 0], inkW: .01 })); const r = rng(5);
+  for (let row = 0; row < 4; row++) { let bx = -.52; while (bx < .5) { const bw = .06 + r() * .08, bh = .28 + r() * .14; sh.add(box(bw, bh, .3, [0xdc5a4c, 0x4a93d8, 0xffc531, 0x66a64a, 0x8a5aa8, 0xe58a3c][Math.floor(r() * 6)], { pos: [bx + bw / 2, .42 + row * .5 + bh / 2, .05], inkW: .004 })); bx += bw + .005; } } Wd.add(sh);
+  Wd.add(box(1.6, .06, .9, 0x9a6a3a, { pos: [1.7, .78, -2.6], inkW: .008 })); [[1, -2.2], [2.4, -2.2], [1, -3.0], [2.4, -3.0]].forEach(([x, z]) => Wd.add(box(.06, .78, .06, 0x7a5232, { pos: [x, .39, z], inkW: .005 })));
+  const gl = O.glow(5, 0xffd08a, .35); gl.position.set(.4, 1.9, .7); Wd.add(gl);
+  // street lamp (foreground, passes the camera on the left)
+  const lamp = new THREE.Group(); lamp.position.set(-1.7, 0, 9.4); lamp.add(cyl(.06, .09, 3.4, 0x2c2a30, { pos: [0, 1.7, 0], inkW: .01 })); lamp.add(box(.4, .08, .4, 0x2c2a30, { pos: [0, 3.45, 0], inkW: .008 }));
+  const lant = new THREE.Mesh(new THREE.BoxGeometry(.3, .45, .3), O.basic(0xffd48a)); lant.position.y = 3.2; lamp.add(lant); lamp.add(box(.38, .06, .38, 0x2c2a30, { pos: [0, 3.5, 0], inkW: .006 })); const lg = O.glow(5.2, 0xffb860, .95); lg.position.y = 3.2; lamp.add(lg); Wd.add(lamp);
+  // stone arches across the street, a second lamp, light spilled on the cobbles
+  const archShape = () => { const sh = new THREE.Shape(); sh.moveTo(-3.2, 0); sh.lineTo(3.2, 0); sh.lineTo(3.2, 7.2); sh.lineTo(-3.2, 7.2); sh.lineTo(-3.2, 0); const h = new THREE.Path(); h.moveTo(-2.45, 0); h.lineTo(2.45, 0); h.lineTo(2.45, 3.4); h.absarc(0, 3.4, 2.45, 0, Math.PI, false); h.lineTo(-2.45, 0); sh.holes.push(h); return sh; };
+  const at = O.stoneTex(8, '#e2d3b0').clone(); at.needsUpdate = true; at.repeat.set(.3, .3);
+  [11.5, 7.6].forEach(z => { Wd.add(mesh(new THREE.ExtrudeGeometry(archShape(), { depth: 1.1, bevelEnabled: false, curveSegments: 20 }), toon(0xc8cbe0, { map: at }), { inkW: .03, pos: [0, 0, z] })); });
+  const patch = new THREE.Mesh(new THREE.PlaneGeometry(6, 6), new THREE.MeshBasicMaterial({ map: O.glowTexture(), color: 0xffb860, transparent: true, opacity: .55, blending: THREE.AdditiveBlending, depthWrite: false, fog: false })); patch.rotation.x = -Math.PI / 2; patch.position.set(.4, .03, 2.4); Wd.add(patch);
+  const lamp2 = lamp.clone(); lamp2.position.set(1.7, 0, 3.0); Wd.add(lamp2);
+  O.motes(Wd, { n: 16, area: [-2, 2, 1, 4, 2, 9], size: .1, color: 0xffd48a, op: .5, seed: 6, rise: .1 });
+  Wd.on(t => { applyWall(clk, t + a); });
+  const cam = t => ({ pos: [lerp(1.6, .55, ease.io(prog(t, 0, dur))), lerp(1.95, 1.9, prog(t, 0, dur)), lerp(15, 3.7, ease.io(prog(t, 0, dur)))], look: [.4, 1.92, -3.5], fov: F(40) });
+  return finish(Wd, cam, { dof: (t) => ({ focus: Math.max(1.5, lerp(15, 3.7, ease.io(prog(t, 0, dur)))), ap: 6, maxR: 12, vig: .4 }) });
+}
+
+// ---- home room helper for L02/L03/L04/L12 --------------------------------------------
+function homeLights(Wd, o) {
+  O.lighting(Wd, Object.assign({ target: [0, 1.4, -2], shadowExt: 9, fog: null }, o));
+}
+
+// ---- L02: wall clock close-up, the hands sweep back 2:00 -> 1:00 ----------------------
+function sClockCU() {
+  const a = START.L02, b = ENDOF('L02'), dur = b - a;
+  const Wd = world({ fog: false }); baseCam(Wd, .05, 200); O.skyDome(Wd, {}); const R = O.homeRoom(Wd);
+  homeLights(Wd, { key: [0xffd9a0, .9, [2, 4.5, 2]], hemi: [0xe8c898, 0x3a2a1a, .85], fill: [0x7a96d8, .35, [-6, 2, 0]], rim: [0xffe0b0, .5, [0, 3, -6]], points: [[0xffc070, 9, [1.0, 3.0, -2.2], 12]] });
+  Wd.hero = R.clock.group;
+  const shade = mesh(new THREE.ConeGeometry(.55, .4, 28, 1, true), toon(0x2f5a46, { side: THREE.DoubleSide }), { inkW: .02, pos: [1.0, 2.55, -2.1] }); Wd.add(shade);
+  const bulb = O.glow(.9, 0xffe0a0, .9); bulb.position.set(1.0, 2.5, -2.1); Wd.add(bulb);
+  O.motes(Wd, { n: 26, area: [-1.2, 1.8, 1.2, 3.2, -3.4, -1.2], size: .06, color: 0xffe3a8, op: .6, seed: 12, rise: .05 });
+  const ring = goldRing(Wd), ring2 = goldRing(Wd, 0xffe9a8); ring.position.set(.2, 2.1, -3.85); ring2.position.copy(ring.position);
+  Wd.on((t, cam) => { const g = t + a; applyWall(R.clock, g); ringAnim(ring, cam, g, J, .9, .5, 1.5, .7); ringAnim(ring2, cam, g, J + .12, 1.1, .45, 2.0, .45); });
+  const cam0 = t => { const k = ease.io(prog(t, 0, dur)), g = t + a, e = Math.exp(-Math.pow((g - J) / .22, 2)), env = e * .045;
+    return { pos: [.2 + shake(g, env, 9, 1) + lerp(-.05, .05, k), 2.02 + shake(g, env, 9, 2), lerp(-.95, -1.5, k)], look: [.2 + shake(g, env * .6, 8, 4), 2.1 + shake(g, env * .6, 8, 5), -3.9], fov: F(50) }; };
+  return finish(Wd, cam0, { dof: (t) => ({ focus: Math.abs(lerp(-.95, -1.5, ease.io(prog(t, 0, dur))) + 3.93), ap: 20, maxR: 18, vig: .4 }) });
+}
+
+// ---- L03: the phone flips by itself, oven and alarm clock keep waiting ---------------
+function sTable() {
+  const a = START.L03, b = ENDOF('L03'), dur = b - a, tF = gold0('L03');
+  const Wd = world({ fog: false }); baseCam(Wd, .05, 200); O.skyDome(Wd, {}); const R = O.homeRoom(Wd, { phoneS: 2.6 });
+  homeLights(Wd, { key: [0x93adff, .38, [-6, 6, 3]], hemi: [0x37446a, 0x15101a, .55], fill: [0x6a60a0, .2, [6, 3, 6]], rim: [0xffa860, .3, [3, 2, -6]],
+    points: [[0x9ec4ff, 2.6, [.65, 1.05, -1.0], 3.2], [0xff9a3c, 1.8, [1.3, 1.05, -3.2], 3.5], [0x7a96d8, 2.5, [-3.6, 1.8, -2.2], 6]] });
+  Wd.hero = R.phone.group;
+  const pg = R.phone.light; pg.position.set(.65, .9, -1.0); Wd.add(pg);
+  Wd.on((t, cam) => { const g = t + a, k = prog(g, tF, tF + .5); R.phone.set(k >= 1 ? '01:00' : '02:00', '02:00', k >= 1 ? 1 : k, g); R.phone.set(k >= 1 ? '01:00' : (k > 0 ? '01:00' : '02:00'), '02:00', k, g);
+    R.oven.set('02:04', '02:04', 1, g); const al = 7440 + (g - a) * 1; R.alarm.setTime(al, tickSec(al)); R.clock.setTime(3600 + (sAtJ - 7200) + (g - J - SW1), tickSec(g)); });
+  const cam = t => { const k = ease.io(prog(t, 0, dur)); return { pos: [lerp(1.2, .2, k), 1.12, -.1], look: [lerp(.8, .2, k), .8, -1.1], fov: F(40) }; };
+  return finish(Wd, cam, { dof: (t) => { const k = ease.io(prog(t, 0, dur)); return { focus: Math.hypot(lerp(1.2, .2, k) - .65, .3, .9), ap: 14, maxR: 16, vig: .45 }; } });
+}
+
+// ---- L04: every clock ticks back together, gold whoosh ---------------------------------
+function sRoomTick() {
+  const a = START.L04, b = ENDOF('L04'), dur = b - a, tT = a + 1.25;
+  const Wd = world({ fog: false }); baseCam(Wd, .05, 200); O.skyDome(Wd, {}); const R = O.homeRoom(Wd);
+  homeLights(Wd, { key: [0xffd9a0, .75, [2, 5, 4]], hemi: [0xb89a78, 0x2a2018, .8], fill: [0x7a96d8, .4, [-6, 2, 2]], rim: [0xffe0b0, .45, [0, 3, -6]], points: [[0xffc070, 8, [0, 3.0, -1.8], 12], [0x9ec4ff, 1.6, [.65, 1.05, -1.0], 3], [0xff9a3c, 1.4, [1.3, 1.05, -3.2], 3]] });
+  const spots = [[.2, 2.1, -3.85, .6], [.65, .9, -1.0, .25], [1.3, .88, -3.3, .3], [-.25, 1.0, -1.4, .2]], rings = spots.map(() => [goldRing(Wd), goldRing(Wd, 0xffe9a8)]);
+  spots.forEach((s, i) => rings[i].forEach(r => r.position.set(s[0], s[1], s[2])));
+  const sweep = O.glow(7, 0xffd070, 0); sweep.position.set(.3, 1.6, -2.3); Wd.add(sweep);
+  O.motes(Wd, { n: 30, area: [-3, 3, .5, 3, -3.5, 1], size: .08, color: 0xffe0a0, op: .5, seed: 21, rise: .06 });
+  const hold = 3600 + (sAtJ - 7200);
+  Wd.on((t, cam) => { const g = t + a, kk = ease.io(prog(g, tT, tT + 1.0));
+    R.clock.setTime(hold + (g - J - SW1), tickSec(g)); R.phone.set('01:00', '01:00', 1, g);
+    R.oven.set(g > tT + .5 ? '01:04' : '02:04', '02:04', prog(g, tT + .3, tT + .8), g);
+    const al = lerp(7440 + (g - a), 3840 + (g - a), kk); R.alarm.setTime(al, tickSec(al));
+    rings.forEach((rr, i) => { ringAnim(rr[0], cam, g, tT + i * .05, 1.1, spots[i][3] * .6, spots[i][3] * 2.6, .75); ringAnim(rr[1], cam, g, tT + .15 + i * .05, 1.2, spots[i][3] * .5, spots[i][3] * 3.2, .45); });
+    sweep.material.opacity = .55 * Math.exp(-Math.pow((g - tT - .3) / .35, 2)); });
+  const cam = t => { const k = ease.io(prog(t, 0, dur)), an = lerp(-10, 10, k) * D2R, rr = 7.4; return { pos: [Math.sin(an) * rr, 1.9, -2 + Math.cos(an) * rr], look: [0, 1.4, -2], fov: F(26) }; };
+  return finish(Wd, cam, { dof: () => ({ focus: 7.4, ap: 2.2, maxR: 8, vig: .35 }) });
+}
+
+// ---- L05 / L06: the pocket watch wakes, looks at the clock, turns to the camera, bows -----
+function sWatch(id, opts) {
+  const a = START[id], b = ENDOF(id), dur = b - a; opts = opts || {};
+  const Wd = world({ fog: false }); baseCam(Wd, .03, 120); O.skyDome(Wd, { top: 0x1c2848, mid: 0x3a3a58, bot: 0x6a5a58, stars: 0 });
+  const R = O.watchTable(Wd, { windowColor: opts.sun ? 0xfff0c8 : 0x2a3a70 });
+  O.lighting(Wd, { key: [0xffd9a0, 1.0, [1.5, 3.5, 3]], hemi: [0xd8b890, 0x3a2a1a, .75], fill: [0x7a96d8, .3, [-4, 1.5, 2]], rim: [0xffe0b0, .8, [-1.5, 2.5, -2]], target: [0, .2, 0], shadowExt: 3, fog: null,
+    points: [[0xffc070, 6, [.9, 1.6, 1.2], 7], [0xffd890, opts.sun ? 18 : 0, [2.7, 1.5, -3.2], 9]] });
+  if (opts.sun) { R.winGlow.material.opacity = .85; }
+  const S = .24, W = makeWatch(Wd, { scale: S, lines: CH.lines, mouth: MOUTH }); W.obj.position.set(0, .122, 0); W.obj.rotation.x = -.18; Wd.add(W.obj); Wd.hero = W.obj;
+  O.motes(Wd, { n: 22, area: [-.8, 1.4, .1, 1.2, -1.5, 1.0], size: .035, color: 0xffe3a8, op: .6, seed: 33, rise: .04 });
+  const t05 = T0('L05'), t06 = T0('L06'), t09 = T0('L09'), t10 = T0('L10');
+  const pw = x => clamp(x, 0, 1);
+  const upd = (t, cam) => {
+    const g = t + a, wake = ease.io(pw((g - t05) / .85)), eyes = ease.out(pw((g - t05 - .15) / .6));
+    let yaw, lookx, looky = 0, extra = {};
+    if (id === 'L05') {
+      const toClock = ease.io(pw((g - (t05 + 1.3)) / .6)), toCam = ease.io(pw((g - (t06 - .1)) / .8));
+      yaw = lerp(0, .5, toClock) * (1 - toCam); lookx = lerp(0, .95, toClock) * (1 - toCam); looky = lerp(0, .22, toClock) * (1 - toCam);
+      const bow = Math.sin(Math.PI * pw((g - (t06 + .55)) / .9)); extra.nod = bow * 1.6;
+    } else { // L09: from the clock up to the sun, brows up
+      const toSun = ease.io(pw((g - (t09 + .8)) / .55)); yaw = lerp(.45, .6, toSun); lookx = lerp(.9, .6, toSun); looky = lerp(-.1, -.85, toSun); extra.brow = 0.95 * ease.io(pw((g - (t09 + .7)) / .35)); extra.nod = 0;
+    }
+    W.obj.rotation.y = yaw;
+    const k = W.auto(g, Object.assign({ lid: wake, eyes, look: [lookx, looky] }, extra));
+    if (wake < .55) W.set({ talk: 0 });
+    W.state.talk = wake < .55 ? 0 : W.state.talk;
+  };
+  Wd.on(upd);
+  const cam = t => { const k = ease.io(prog(t, 0, dur));
+    if (id === 'L05') return { pos: [0, .42, lerp(1.5, 1.2, k)], look: [lerp(-.17, -.2, k), .3, 0], fov: F(50) };
+    const p = ease.io(prog(t, .3, dur)); return { pos: [0, .42, 1.3], look: [lerp(-.17, -.04, p), lerp(.3, .4, p), 0], fov: F(50) }; };
+  const dofFn = t => { const g = t + a;
+    if (id === 'L05') { const r = ease.io(pw((g - (t05 + .2)) / .95)); return { focus: lerp(5.1, 1.3, r), ap: 20, maxR: 18, vig: .42 }; }
+    return { focus: 1.3, ap: 20, maxR: 18, vig: .42 }; };
+  return finish(Wd, cam, { dof: dofFn });
+}
+
+// ---- L07: time-lapse, stars wheel, dawn, the sun rises at the notch -------------------
+function sDawn() {
+  const a = START.L07, b = ENDOF('L07'), dur = b - a, tS = gold0('L07') - a;
+  const Wd = world({ ground: 'dark', groundSize: 500, groundRep: [80, 80], shadowExt: 70 }); baseCam(Wd, .1, 1200);
+  const sky = O.skyDome(Wd, {}); O.lighting(Wd, { key: [0x9db8ff, 1.0, [-30, 45, -25]], hemi: [0x4a5c92, 0x20182a, .9], rim: [0x6f8cff, .6, [25, 30, -50]], target: [0, 4, -30], shadowExt: 75, shadowMap: 2048, fog: [0x1b2850, 45, 300] });
+  const hillCols = [0x24384a, 0x2c4650, 0x1f3040];
+  O.hills(Wd, { colors: hillCols, list: [[-30, -118, 30, 15, 22], [38, -118, 34, 17, 24], [-78, -112, 28, 12, 18], [90, -112, 30, 13, 20], [-10, -170, 70, 22, 30], [60, -170, 60, 20, 30]] });
+  const C = O.city(Wd, { seed: 29, n: 56, litFrac: .22, area: [-58, 58, -12, -62], slope: .05, cypress: 6 });
+  const sun = new THREE.Mesh(new THREE.SphereGeometry(6, 28, 16), O.basic(0xffe9a0)); Wd.add(sun); const sg = O.glow(90, 0xffc070, .0); Wd.add(sg); const sg2 = O.glow(240, 0xffa860, .0); Wd.add(sg2);
+  const moon = new THREE.Mesh(new THREE.SphereGeometry(5, 24, 16), O.basic(0xf4f1e2)); Wd.add(moon);
+  const mark = new THREE.Group(); mark.position.set(-6.5, 11.5, -112); mark.add(cyl(.5, .7, 5, 0xd9c9a4, { pos: [0, 2.5, 0], inkW: .08 })); const mgl = O.glow(8, 0xffd070, .8); mgl.position.y = 5.5; mark.add(mgl); Wd.add(mark);
+  // olive branch (foreground, top right)
+  const br = new THREE.Group(); br.position.set(2.8, 6.4, 0.5); const r = rng(8);
+  br.add(mesh(new THREE.CylinderGeometry(.03, .06, 3.4, 8), toon(0x3a2a1a), { ink: false, rot: [0, 0, 1.25], pos: [-.2, -.25, 0] }));
+  for (let i = 0; i < 22; i++) { const lf = mesh(new THREE.SphereGeometry(.28, 8, 6), toon(i % 3 ? 0x5f7a4a : 0x7a8c5a), { inkW: .015, scale: [1.8, .3, .6], pos: [-1.4 + i * .14 + r() * .1, -.05 + (r() - .5) * .35 - i * .05, (r() - .5) * .4], rot: [r(), r(), (r() - .5) * 1.4] }); br.add(lf); }
+  Wd.add(br);
+  const col = k => new THREE.Color(k), keys = [
+    [0, 0x050a22, 0x142458, 0x4c4a78], [.4, 0x1a2a64, 0x5a4a88, 0xe88a5a], [.65, 0x4a78c8, 0xf0a870, 0xffd08a], [1, 0x6aa4e8, 0xbcd8f0, 0xfbe6c0]];
+  const skyAt = u => { let i = 0; while (i < keys.length - 2 && u > keys[i + 1][0]) i++; const k = clamp((u - keys[i][0]) / (keys[i + 1][0] - keys[i][0]), 0, 1), e = ease.sm(k); return [1, 2, 3].map(j => col(keys[i][j]).lerp(col(keys[i + 1][j]), e)); };
+  const uOf = t => t < tS ? .62 * ease.sm(prog(t, .2, tS)) : lerp(.62, 1, ease.sm(prog(t, tS, dur - .2)));
+  const keyA = col(0x9db8ff), keyB = col(0xff9a60), keyC = col(0xfff0d8), fogA = col(0x1b2850), fogB = col(0xd9a080), fogC = col(0xc8d8e8);
+  const axis = new THREE.Vector3(.26, .93, -.26).normalize();
+  Wd.on((t, cam) => {
+    const u = uOf(t), [top, mid, bot] = skyAt(u); sky.uni.top.value.copy(top); sky.uni.mid.value.copy(mid); sky.uni.bot.value.copy(bot); sky.starU.uA.value = 1 - ease.sm(prog(u, .25, .6));
+    sky.stars.quaternion.setFromAxisAngle(axis, u * 2.6);
+    const su = prog(u, .3, .78); sun.position.set(7, lerp(-9, 24, ease.sm(su)), -150); sg.position.copy(sun.position); sg2.position.copy(sun.position);
+    sg.material.opacity = .85 * ease.sm(prog(u, .4, .8)); sg2.material.opacity = .45 * ease.sm(prog(u, .45, .9)); sun.visible = su > 0;
+    moon.position.set(lerp(-40, -150, ease.sm(prog(u, 0, .6))), lerp(60, -10, ease.sm(prog(u, 0, .65))), -160);
+    const kc = u < .65 ? keyA.clone().lerp(keyB, ease.sm(prog(u, .25, .65))) : keyB.clone().lerp(keyC, ease.sm(prog(u, .65, 1)));
+    Wd.sun.color.copy(kc); Wd.sun.intensity = lerp(1.0, 2.0, ease.sm(prog(u, .3, 1)));
+    const sd = new THREE.Vector3(lerp(-30, 40, ease.sm(prog(u, .3, .9))), lerp(45, 55, prog(u, .5, 1)), lerp(-25, -10, prog(u, .3, 1))); Wd.sun.position.copy(sd);
+    Wd.hemi.color.copy(col(0x4a5c92).lerp(col(0xbfd4f0), ease.sm(prog(u, .35, 1)))); Wd.hemi.intensity = lerp(.9, 1.15, ease.sm(prog(u, .3, 1)));
+    Wd.scene.fog.color.copy(fogA.clone().lerp(u < .65 ? fogB : fogC, ease.sm(prog(u, .3, .65))).lerp(fogC, ease.sm(prog(u, .65, 1)))); sky;
+    C.winMat.color.set(0xffd488).lerp(col(0x39404a), ease.sm(prog(u, .4, .7))); C.glows.forEach(gl => { gl.material.opacity = .55 * (1 - ease.sm(prog(u, .4, .7))); });
+    mgl.material.opacity = .8 * (1 - ease.sm(prog(u, .1, .5))); Wd.scene.traverse; });
+  const cam = t => { const k = ease.io(prog(t, dur * .55, dur - .2)); return { pos: [0, 3.2, 6], look: [0, lerp(3.5, 9.5, k), -60], fov: F(24) }; };
+  return finish(Wd, cam, { dof: () => ({ focus: 40, ap: 6, maxR: 14, vig: .32 }) });
+}
+
+// ---- L08: split stage, a jumping clock against the gliding sun ---------------------------
+function sSplit() {
+  const a = START.L08, b = ENDOF('L08'), dur = b - a, tG = gold0('L08') - a;
+  const Wd = world({ fog: false }); baseCam(Wd, .1, 300); const sk = O.skyDome(Wd, { top: 0x04061a, mid: 0x080e2a, bot: 0x101a3a, stars: .35 });
+  O.lighting(Wd, { key: [0xffffff, .5, [0, 6, 10]], hemi: [0xb0b8d8, 0x30283a, .8], noShadow: true, points: [[0x8aa8ff, 22, [-2.8, 3.2, 3.5], 14], [0xffd18a, 26, [2.8, 3.2, 3.5], 14]] });
+  const gradTex = (c0, c1) => O.glow && new THREE.CanvasTexture((() => { const c = document.createElement('canvas'); c.width = 4; c.height = 256; const g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, c0); gr.addColorStop(1, c1); g.fillStyle = gr; g.fillRect(0, 0, 4, 256); return c; })());
+  const panel = (x, c0, c1) => { const t = gradTex(c0, c1); t.colorSpace = THREE.SRGBColorSpace; const p = new THREE.Mesh(new THREE.PlaneGeometry(5.2, 5.4), new THREE.MeshBasicMaterial({ map: t, fog: false })); p.position.set(x, 3, -.6); Wd.add(p); };
+  panel(-2.8, '#0a1840', '#2a4a8a'); panel(2.8, '#5aa0e0', '#ffe9b8');
+  [-2.8, 2.8].forEach(x => { Wd.add(box(5.5, .22, .5, 0x5a3a1c, { pos: [x, .28, .1], inkW: .02 })); Wd.add(box(5.5, .22, .5, 0x5a3a1c, { pos: [x, 5.72, .1], inkW: .02 })); });
+  [-5.5, 0, 5.5].forEach(x => Wd.add(box(.24, 5.6, .5, 0x5a3a1c, { pos: [x, 3, .1], inkW: .02 })));
+  // left: the jumping clock
+  const clk = O.wallClock(Wd, { pos: [-2.8, 3.1, .35], r: 2.0 }); Wd.hero = clk.group;
+  const jump = t => { const per = .95, n = Math.floor(t / per), f = (t - n * per), snap = ease.out(clamp((f - (per - .18)) / .18, 0, 1)); const ks = [7200, 3600], v0 = ks[n % 2], v1 = ks[(n + 1) % 2]; return lerp(v0, v1, snap); };
+  // right: hills + the dashed arc + the sun
+  [[1.2, 0.2, 2.2, 1.2, .4], [4.2, .2, 2.4, 1.0, .4]].forEach(([x, y, w, h, d]) => { const m = mesh(new THREE.SphereGeometry(1, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), toon(0x4a7a52), { ink: false, scale: [w, h, d], pos: [x + .4, .4, -.2] }); Wd.add(m); });
+  const arcC = [2.8, 0.95], arcR = 2.3, dashes = [], NDASH = 24;
+  for (let i = 0; i <= NDASH; i++) { const th = Math.PI - i * Math.PI / NDASH, d = box(.16, .06, .06, 0xffc84a, { pos: [arcC[0] + Math.cos(th) * arcR, arcC[1] + Math.sin(th) * arcR, .15], rot: [0, 0, th - Math.PI / 2], inkW: .006 }); Wd.add(d); dashes.push([d, th]); }
+  const sun = new THREE.Mesh(new THREE.SphereGeometry(.42, 24, 16), O.basic(0xffd23a)); Wd.add(sun); const sgl = O.glow(3.2, 0xffc060, .7); Wd.add(sgl);
+  O.motes(Wd, { n: 26, area: [-6, 6, .5, 5.5, 1.5, 4], size: .2, color: 0xffe3a8, op: .4, seed: 17 });
+  Wd.on((t, cam) => { const g = t + a, S = jump(t); clk.setTime(S, S % 60 * 0 + tickSec(t * 1));
+    const th = Math.PI * (1 - ease.sm(prog(t, .3, dur - .3))); sun.position.set(arcC[0] + Math.cos(th) * arcR, arcC[1] + Math.sin(th) * arcR, .25); sgl.position.copy(sun.position);
+    const pulse = 1 + .35 * Math.exp(-Math.pow((t - tG) / .4, 2)); sgl.scale.setScalar(3.2 * pulse); sun.scale.setScalar(pulse);
+    dashes.forEach(([d, thd]) => { const lit = th <= thd; d.material.color.setHex(lit ? 0xffd86a : 0xb8923a); d.scale.setScalar(lit ? 1.15 : 1); }); });
+  return finish(Wd, t => ({ pos: [0, 3, 9.2], look: [0, 3, 0], fov: F(28) }), { dof: () => ({ focus: 9.2, ap: 4, maxR: 10, vig: .42 }) });
+}
+
+// ---- L10: one smooth pull-back: Jerusalem rooftops -> Eretz Yisrael relief from above -> the whole Earth, sun on the left -----
+function reliefMesh(RE) {
+  const W = 320, H = 540, nx = 110, nz = 180, geo = new THREE.PlaneGeometry(W, H, nx, nz); geo.rotateX(-Math.PI / 2);
+  const pos = geo.attributes.position, col = new Float32Array(pos.count * 4), C = hex => new THREE.Color(hex);
+  const sm = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
+  const cSea = C(0x2a6aa8), cCoast = C(0x4a90c0), cPlain = C(0x7aa04e), cHill = C(0x8a9a58), cRock = C(0xb09a68), cDry = C(0xd2b878), cGreen = C(0x5f8c44), cLake = C(0x3a78b0), cEast = C(0xc4a870);
+  for (let i = 0; i < pos.count; i++) {
+    const x = pos.getX(i), z = pos.getZ(i), north = -z, xc = -62 + north * .08, xr = 28 + north * .02, nz_ = Math.sin(x * .21) * Math.cos(z * .17) * .12 + Math.sin(x * .6 + z * .4) * .05;
+    let h, c = new THREE.Color();
+    if (x < xc) { h = -.2; c.copy(cSea).lerp(cCoast, sm(xc - 18, xc, x)); }
+    else if (x < xc + 28) { h = .15 + sm(xc, xc + 28, x) * .2; c.copy(cPlain).lerp(cHill, sm(xc + 10, xc + 28, x)); }
+    else if (x < xr - 8) { const u = (x - xc - 28) / (xr - 8 - xc - 28); h = .5 + Math.sin(u * Math.PI) * (.9 + .3 * sm(60, 220, north)); c.copy(cHill).lerp(cRock, sm(.3, .8, u)); if (north > 100) c.lerp(cGreen, .6); }
+    else if (x < xr + 10) { h = -.6; c.copy(cEast).lerp(cRock, .3); if (z > 8 && z < 72) c.copy(cLake); if (north > 118 && north < 150) c.copy(cLake); }
+    else { h = .7 + sm(xr + 10, xr + 40, x) * .5; c.copy(cEast).lerp(cDry, .4); }
+    if (z > 95) { c.lerp(cDry, sm(95, 130, z)); h = h * (1 - .6 * sm(95, 140, z)); }
+    h += nz_; const ex = Math.min(x + W / 2, W / 2 - x) / 40, ez = Math.min(z + H / 2, H / 2 - z) / 60;
+    pos.setY(i, h * 2.4 + .05 - (x * x + z * z) / (2 * RE)); col[i * 4] = c.r; col[i * 4 + 1] = c.g; col[i * 4 + 2] = c.b; col[i * 4 + 3] = sm(0, 1, Math.min(ex, ez));
+  }
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 4)); geo.computeVertexNormals();
+  const m = new THREE.Mesh(geo, toon(0xffffff, { vertexColors: true, transparent: true })); m.receiveShadow = false; return m;
+}
+function sSpace() {
+  const a = START.L10, b = ENDOF('L10'), dur = b - a, RE = 6000, EC = [0, -RE, 0];
+  const Wd = world({ shadowExt: 90 }); baseCam(Wd, .5, 90000);
+  const sky = O.skyDome(Wd, { top: 0x4a84d8, mid: 0xa8c8ec, bot: 0xf6e4c0, stars: 0 });
+  const FIN = { pos: new THREE.Vector3(0, EC[1] + 26000 * Math.cos(30 * D2R), 26000 * Math.sin(30 * D2R)), look: new THREE.Vector3(...EC) };
+  const m4 = new THREE.Matrix4().lookAt(FIN.pos, FIN.look, new THREE.Vector3(0, 1, 0)), right = new THREE.Vector3(), up = new THREE.Vector3(), fwd = new THREE.Vector3(); m4.extractBasis(right, up, fwd); fwd.negate();
+  const sunPos = FIN.pos.clone().addScaledVector(fwd, 52000).addScaledVector(right, -34000).addScaledVector(up, 4000);
+  O.lighting(Wd, { key: [0xfff0d8, 2.3, sunPos.clone().sub(new THREE.Vector3(...EC)).normalize().multiplyScalar(500).toArray()], hemi: [0x9ab8e8, 0x405070, .85], fill: [0x6a8ad0, .25, [0, 100, 300]], target: [0, 0, 0], shadowExt: 100, shadowMap: 1024, fog: null });
+  const E = O.earth(Wd, { R: RE, pos: EC }), em = E.userData.earth, q1 = new THREE.Quaternion();
+  const lon = 35.2, lat = 31.8, phi = (lon + 180) * D2R, th = (90 - lat) * D2R, d0 = new THREE.Vector3(-Math.cos(phi) * Math.sin(th), Math.cos(th), Math.sin(phi) * Math.sin(th));
+  q1.setFromUnitVectors(d0, new THREE.Vector3(0, 1, 0)); const n2 = new THREE.Vector3(0, 1, 0).applyQuaternion(q1), ang = Math.atan2(n2.x, -n2.z);
+  em.quaternion.copy(new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), ang).multiply(q1));
+  em.material.color.setHex(0xe8e0cc);
+  Wd.add(reliefMesh(RE));
+  const C = O.city(Wd, { seed: 29, n: 56, litFrac: 0, area: [-58, 58, -12, -62], slope: .04, cypress: 6 }); C.glows.forEach(g => { g.visible = false; }); C.winMat.color.setHex(0x39404a);
+  O.hills(Wd, { colors: [0x6a7a52, 0x7a8a5c], list: [[-30, -118, 30, 8, 22], [38, -118, 34, 9, 24], [-78, -112, 28, 7, 18]] });
+  const sunM = new THREE.Mesh(new THREE.SphereGeometry(1500, 24, 16), O.basic(0xfff1c0)); sunM.position.copy(sunPos); Wd.add(sunM);
+  const sg = O.glow(22000, 0xffd890, .75); sg.position.copy(sunPos); Wd.add(sg); const sg2 = O.glow(60000, 0xffb870, .3); sg2.position.copy(sunPos); Wd.add(sg2);
+  const T = t => ease.io(prog(t, 0, dur)), atm = E.children.find(c => c !== em);
+  Wd.on((t, cam) => { const s = T(t); atm.visible = Math.hypot(cam.position.x, cam.position.y - EC[1], cam.position.z) > RE * 1.07;
+    const L2 = (c0, c1, c2, e) => new THREE.Color(c0).lerp(new THREE.Color(c1), ease.sm(prog(s, .1, .5))).lerp(new THREE.Color(c2), ease.sm(prog(s, .5, e)));
+    sky.uni.top.value.copy(L2(0x4a84d8, 0x0e2a66, 0x000208, .85)); sky.uni.mid.value.copy(L2(0xa8c8ec, 0x2a5aa0, 0x02050f, .87)); sky.uni.bot.value.copy(L2(0xf6e4c0, 0x7aa8de, 0x05080e, .9));
+    sky.starU.uA.value = ease.sm(prog(s, .55, .9)); sg.material.opacity = .75 * ease.sm(prog(s, .65, .97)); sg2.material.opacity = .3 * ease.sm(prog(s, .7, 1)); sunM.visible = sg.visible = sg2.visible = s > .62; });
+  const cam = t => { const s = T(t), rad = Math.exp(lerp(Math.log(6030), Math.log(26000), Math.pow(s, 1.25))), ph = lerp(.7, 30, Math.pow(s, 2.2)) * D2R;
+    const pos = [0, EC[1] + rad * Math.cos(ph), rad * Math.sin(ph)], k = Math.pow(s, 1.3), look = [0, lerp(4, EC[1], k), lerp(-30, EC[2], k)];
+    return { pos, look, fov: lerp(F(24), F(40), s) }; };
+  return finish(Wd, cam, { dof: () => ({ focus: 100, ap: 0, vig: .3 }) });
+}
+
+// ---- L11 / L14: the open sefer on a shtender ----------------------------------------------
+function sSefer(id) {
+  const a = START[id], b = ENDOF(id), dur = b - a;
+  const Wd = world({ fog: false }); baseCam(Wd, .03, 120); O.skyDome(Wd, { top: 0x0a0806, mid: 0x14100c, bot: 0x241a12, stars: 0 });
+  O.lighting(Wd, { key: [0xffc58a, .9, [1, 4, 3]], hemi: [0x5a4030, 0x1a1008, .6], fill: [0x6a5a80, .2, [-3, 1, 3]], rim: [0xffb070, .5, [-1, 3, -3]], target: [0, 1.1, 0], shadowExt: 4, fog: null,
+    points: [[0xffc070, 7, [0, 2.3, .6], 6], [0xffd090, 3, [.7, 1.4, .9], 4]] });
+  const sh = O.shtender(Wd, {}), se = O.sefer(Wd, { pos: [0, .035, 0], bright: 1.05 }); sh.userData.slope.add(se);
+  // wall + shelves + warm bokeh lights in the dark beit midrash
+  Wd.add(box(14, 6, .3, 0x2a1c12, { pos: [0, 3, -3.6], inkW: .01 }));
+  [-2.4, 2.4, -4.6].forEach((x, i) => { const s = new THREE.Group(); s.position.set(x, 0, -3.3); s.add(box(1.8, 2.8, .5, 0x4a3018, { pos: [0, 1.4, 0], inkW: .01 })); const r = rng(60 + i); for (let row = 0; row < 5; row++) { let bx = -.8; while (bx < .78) { const bw = .08 + r() * .1, bh = .32 + r() * .16; s.add(box(bw, bh, .36, [0x6a2a24, 0x24407a, 0x2f5d3a, 0x6a4a1c, 0x5a2f6a][Math.floor(r() * 5)], { pos: [bx + bw / 2, .35 + row * .55 + bh / 2, .05], inkW: .004 })); bx += bw + .005; } } Wd.add(s); });
+  const lights = [[-1.8, 2.2, -2.8, 1.0], [1.7, 1.8, -3.0, .8], [3.2, 2.6, -3.2, 1.2], [-3.4, 1.2, -2.6, .9], [.2, 3.1, -3.0, 1.1]];
+  lights.forEach(([x, y, z, s]) => { const g = O.glow(s, 0xffc070, .9); g.position.set(x, y, z); Wd.add(g); });
+  const pg = O.glow(2.2, 0xffd890, .4); pg.position.set(0, 1.55, .35); Wd.add(pg);
+  const candle = new THREE.Group(); candle.position.set(.95, .93, -.2); candle.add(cyl(.035, .04, .26, 0xf3e6c8, { pos: [0, .13, 0], inkW: .006 })); const fl = O.glow(.38, 0xffb050, .95); fl.position.y = .32; candle.add(fl); Wd.add(candle); Wd.add(box(.8, .05, .5, 0x5a3416, { pos: [.95, .9, -.2], inkW: .005 }));
+  O.motes(Wd, { n: 34, area: [-1.8, 1.8, .6, 2.6, -2.5, 1.4], size: .07, color: 0xffd890, op: .6, seed: 45, rise: .05 });
+  // L14: next chapter title on the page header (drawn from a vault key), flickering in the light
+  let flick = null;
+  if (id === 'L14') {
+    const c = document.createElement('canvas'); c.width = 1024; c.height = 140; const g = c.getContext('2d'); g.font = '800 82px Heebo, Assistant, sans-serif'; g.direction = 'rtl'; g.textAlign = 'center'; g.textBaseline = 'middle';
+    const gr = g.createLinearGradient(0, 0, 0, 140); gr.addColorStop(0, '#7a4a0c'); gr.addColorStop(1, '#a8681a'); g.fillStyle = gr; g.fillText(window.CAPTIONS_VAULT.T_C2, 512, 72);
+    const tx = new THREE.CanvasTexture(c); tx.colorSpace = THREE.SRGBColorSpace; flick = new THREE.Mesh(new THREE.PlaneGeometry(.34, .046), new THREE.MeshBasicMaterial({ map: tx, transparent: true, depthWrite: false, fog: false })); flick.rotation.x = -Math.PI / 2; flick.position.set(.222, .0805, -.215); se.add(flick);
+    const fg = O.glow(.55, 0xffd070, 0); fg.position.set(.222, .1, -.215); se.add(fg); flick.userData.fg = fg;
+  }
+  const tG = id === 'L14' ? gold0('L14') : 0;
+  Wd.on((t, cam) => { const g = t + a; fl.scale.setScalar(.38 * (1 + .12 * Math.sin(g * 9) * Math.sin(g * 3.7))); pg.material.opacity = .4 + .06 * Math.sin(g * 5.3);
+    if (flick) { const n = .55 + .45 * Math.sin(g * 17.3) * Math.sin(g * 7.1 + 1.2) + .25 * Math.sin(g * 41), e = clamp(n, 0, 1), on = ease.sm(prog(g, a + .4, a + 1.6)), boost = ease.sm(prog(g, tG, tG + .6)); const o = clamp(on * (.45 + .55 * e) * (1 - .25 * (1 - boost)), 0, 1); flick.material.opacity = o; flick.userData.fg.material.opacity = .55 * o * (.4 + .6 * boost); } });
+  // slope-local sefer centre in world
+  const ctr = new THREE.Vector3(0, 1.145, -.04);
+  let cam;
+  if (id === 'L11') cam = t => { const k = ease.io(prog(t, 0, dur)); return { pos: [lerp(.18, 0.05, k), lerp(2.95, 2.5, k), lerp(1.15, .85, k)], look: [0, 1.15, -.05], fov: F(60) }; };
+  else cam = t => { const k = ease.in(prog(t, 0, dur)); return { pos: [lerp(.05, .22, k), lerp(2.5, 1.62, k), lerp(.85, .34, k)], look: [lerp(0, .22, k), lerp(1.15, 1.2, k), lerp(-.05, -.2, k)], fov: lerp(F(60), F(55), k) }; };
+  const dist = t => { const c = cam(t); return Math.hypot(c.pos[0] - c.look[0], c.pos[1] - c.look[1], c.pos[2] - c.look[2]); };
+  return finish(Wd, cam, { dof: (t) => ({ focus: dist(t), ap: 14, maxR: 18, vig: .5 }) });
+}
+
+// ---- L12 / L13: S card over a replay of the wall clock, answer: 2:00 -> 1:00 fast ---------------
+function sReplay() {
+  const a = START.L12, b = ENDOF('L12'), dur = b - a, t13 = T0('L13'), tHit = a + 2.2;
+  const Wd = world({ fog: false }); baseCam(Wd, .05, 200); O.skyDome(Wd, {}); const R = O.homeRoom(Wd);
+  homeLights(Wd, { key: [0xffd9a0, .9, [2, 4.5, 3]], hemi: [0xe8c898, 0x3a2a1a, .85], fill: [0x7a96d8, .35, [-6, 2, 0]], rim: [0xffe0b0, .5, [0, 3, -6]], points: [[0xffc070, 8, [1.0, 3.0, -2.2], 12]] });
+  Wd.hero = R.clock.group; Wd.add(mesh(new THREE.ConeGeometry(.55, .4, 28, 1, true), toon(0x2f5a46, { side: THREE.DoubleSide }), { inkW: .02, pos: [1.2, 2.9, -2.4] }));
+  const bulb = O.glow(.9, 0xffe0a0, .9); bulb.position.set(1.2, 2.85, -2.4); Wd.add(bulb);
+  O.motes(Wd, { n: 30, area: [-2, 2.5, .8, 3.2, -3.4, 0], size: .07, color: 0xffe3a8, op: .6, seed: 52, rise: .05 });
+  const ring = goldRing(Wd); ring.position.set(.2, 2.1, -3.85);
+  const S = g => { if (g < tHit) return { S: 7200 - (tHit - g), sec: null }; if (g < t13) return { S: 7200 + (g - tHit), sec: null }; const sw = .75, hold0 = 7200 + (t13 - tHit);
+    if (g < t13 + sw) return { S: lerp(hold0, 3600 + (hold0 - 7200), ease.io((g - t13) / sw)), sec: 0 }; return { S: 3600 + (hold0 - 7200) + (g - t13 - sw), sec: null }; };
+  Wd.on((t, cam) => { const g = t + a, w = S(g); R.clock.setTime(w.S, w.sec === null ? tickSec(w.S) : 0); ringAnim(ring, cam, g, t13, .8, .5, 1.6, .7); });
+  const cam = t => { const k = prog(t, 0, dur); return { pos: [.2 + lerp(-.04, .04, k), 1.95, lerp(-.2, -.55, k)], look: [.2, 2.0, -3.9], fov: F(36) }; };
+  return finish(Wd, cam, { dof: (t) => ({ focus: Math.abs(lerp(-.2, -.55, prog(t, 0, dur)) + 3.93), ap: 12, maxR: 14, vig: .42 }) });
+}
+
+// ================================================================ the film
+const BUILD = { intro: sIntro, L00: sSkyline, L01: sStreet, L02: sClockCU, L03: sTable, L04: sRoomTick, L05: () => sWatch('L05'), L07: sDawn, L08: sSplit, L09: () => sWatch('L09', { sun: true }), L10: sSpace, L11: () => sSefer('L11'), L12: sReplay, L14: () => sSefer('L14') };
+const WIDE = { L00: 1, L01: 1, L04: 1, L07: 1, L08: 1, L10: 1, L03: 1 };
+film({
+  W: 1920, H: 1080, fadeIn: true,
+  shots: ORDER.map(k => ({ id: k, dur: ENDOF(k) - START[k], caps: [], wide: !!WIDE[k], build: BUILD[k] }))
+});
+// window.__caption: geometry of the 3D caption layer (the engine's 2D caption path is unused: every shot has caps:[])
+const main = document.getElementById('c'), cssScale = () => { const r = main.getBoundingClientRect(); return { k: (r.width || 1920) / 1920, cw: r.width || 1920, ch: r.height || 1080 }; };
+window.__caption = t => {
+  t = Math.max(0, (+t || 0) + (window.__T0 || 0)); const c = captionInfo(t); if (!c) return null; const { k, cw, ch } = cssScale();
+  return { id: c.id, text: c.text, rect: { x: c.rect.x * k, y: c.rect.y * k, w: c.rect.w * k, h: c.rect.h * k }, canvasW: cw, canvasH: ch, dir: 'rtl', lang: 'he', alpha: c.alpha };
+};
+window.__chapter = CH;
+</script>
+</html>
