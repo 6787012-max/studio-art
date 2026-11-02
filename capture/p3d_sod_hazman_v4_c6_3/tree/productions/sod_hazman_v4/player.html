@@ -1,0 +1,47 @@
+<!doctype html>
+<html><head><meta charset="utf-8"><title>sod_hazman v4 live preview</title>
+<style>
+html,body{margin:0;background:#000;height:100%;overflow:hidden;font-family:sans-serif}
+#f{position:absolute;inset:0;width:100%;height:100%;border:0}
+#bar{position:absolute;left:0;right:0;bottom:0;padding:10px 16px;background:linear-gradient(transparent,rgba(0,0,0,.8));color:#ddd;
+     display:flex;gap:12px;align-items:center;opacity:.15;transition:opacity .3s}
+#bar:hover{opacity:1}
+button{font-size:22px;padding:6px 18px;border-radius:8px;border:0;background:#c9a24a;color:#111;cursor:pointer}
+input[type=range]{flex:1}
+#go{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.6);z-index:5}
+#go button{font-size:40px;padding:20px 50px}
+</style></head><body>
+<!-- live preview: the 3D page is driven by the audio clock (no render needed); chapter = ?c=c1 -->
+<iframe id="f"></iframe>
+<audio id="a" preload="auto"></audio>
+<div id="go"><button id="start">&#9654;</button></div>
+<div id="bar"><button id="pp">&#10074;&#10074;</button><input id="seek" type="range" min="0" max="1000" value="0"><span id="tm">0:00</span></div>
+<script>
+const c = new URLSearchParams(location.search).get('c') || 'c1';
+const f = document.getElementById('f'), a = document.getElementById('a');
+f.src = c + '.html';
+a.src = 'out/' + c + '_audio.m4a';
+let ready = false;
+function waitReady() {
+  const w = f.contentWindow;
+  if (w && w.__ready && typeof w.__seek === 'function') { ready = true; return; }
+  setTimeout(waitReady, 200);
+}
+f.onload = waitReady;
+let busy = false;
+function loop() {
+  if (ready && !busy) {
+    busy = true;
+    Promise.resolve(f.contentWindow.__seek(a.currentTime)).finally(() => { busy = false; });
+    const d = a.duration || 1;
+    document.getElementById('seek').value = Math.round(a.currentTime / d * 1000);
+    const s = Math.floor(a.currentTime);
+    document.getElementById('tm').textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+  }
+  requestAnimationFrame(loop);
+}
+document.getElementById('start').onclick = () => { document.getElementById('go').remove(); a.play(); loop(); };
+document.getElementById('pp').onclick = () => { if (a.paused) a.play(); else a.pause(); };
+document.getElementById('seek').oninput = e => { a.currentTime = e.target.value / 1000 * (a.duration || 0); };
+</script>
+</body></html>

@@ -1,0 +1,61 @@
+{
+ "film": "c2.html",
+ "status": "PASS",
+ "time": "2026-11-02T05:29:33",
+ "samples": 83,
+ "findings": [
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 0.3,
+   "shot": "intro",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 58.18,
+   "shot": "L07",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 103.51,
+   "shot": "L11",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "HERO_SMALL",
+   "t": 125.82,
+   "shot": "L13",
+   "detail": "hero height 28% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 206.9,
+   "shot": "L16",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  }
+ ],
+ "sheets": {
+  "beat": "C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c2/_view/_verify_c2_beat_sheet_1.jpg",
+  "seam": "C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c2/_view/_verify_c2_seams_1.jpg",
+  "phone": "C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c2/_view/_verify_c2_phone_sheet_1.jpg",
+  "beat_2": "C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c2/_view/_verify_c2_beat_sheet_2.jpg",
+  "seam_2": "C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c2/_view/_verify_c2_seams_2.jpg"
+ },
+ "timing": {
+  "ready_s": 7.2,
+  "gates_s": 1636.0,
+  "sheets_s": 663.7,
+  "total_s": 2337.2
+ }
+}
