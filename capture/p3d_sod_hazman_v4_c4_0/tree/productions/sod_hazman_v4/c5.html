@@ -80,8 +80,9 @@ function roofShot(key, winter) {
   const a = C.START[key], b = C.ENDOF(key), Wd = world({ fog: false }); C.baseCam(Wd, .1, 800);
   const R = K.rooftop(Wd, { winter }); Wd.hero = R.sun;
   Wd.on(t => { const g = t + a, k = ease.io(prog(g, a + .5, b - .9)); R.setSun(k); });
-  const c0 = K.roofCam(0, 1.7, 3.0, 40, 0), c1 = K.roofCam(1.5, 1.8, 2.4, 44, -6);
-  const cam = t => { const k = ease.io(prog(t, 0, b - a)); return { pos: [lerp(c0.pos[0], c1.pos[0], k), lerp(c0.pos[1], c1.pos[1], k), lerp(c0.pos[2], c1.pos[2], k)], look: [lerp(c0.look[0], c1.look[0], k), lerp(c0.look[1], c1.look[1], k), lerp(c0.look[2], c1.look[2], k)], fov: F(14) }; };
+  const cam = t => { const g = t + a, k = ease.io(prog(g, a + .5, b - .9)), h = lerp(-R.H * .96, R.H * .96, k), d = K.sunDirOf(h, R.dec), kk = ease.io(prog(t, 0, b - a));
+    const f = [0, Math.sin(38 * D2R), Math.cos(38 * D2R)], m = [f[0] * .5 + d[0] * .5, f[1] * .5 + Math.max(0, d[1]) * .5, f[2] * .5 + d[2] * .5], L = Math.hypot(m[0], m[1], m[2]) || 1, px = lerp(0, 1.5, kk), pz = lerp(3.0, 2.4, kk);
+    return { pos: [px, 1.75, pz], look: [px + m[0] / L * 30, 1.75 + m[1] / L * 30, pz + m[2] / L * 30], fov: F(14) }; };
   return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 2.4, maxR: 10, focus: 40 }) });
 }
 const sR3 = () => roofShot('R3', false), sR4 = () => roofShot('R4', true);
@@ -98,7 +99,7 @@ function flashShot(key, mode) {
   const cam = camSeq(a, b, mode === 0 ? [
     { t: a, p: [[-1, 3.8, 10.5], [0, 3.4, 9]], l: [-.5, 1.1, 0], mm: 30 },
     { t: g0 + 1.2, p: [[5.5, 2.2, 6.5], [4, 2.0, 7]], l: [3.4, .4, 0], mm: 36 },
-    { t: T0('L05') + 8.2, p: [[-2, 1.6, 5.5], [-3.4, 1.3, 5.0]], l: [-3.4, .3, 0], mm: 38 }] : [
+    { t: T0('L05') + 8.2, p: [[-1, 1.8, 7.4], [-1.4, 1.7, 6.8]], l: [-1, .8, 0], mm: 30 }] : [
     { t: a, p: [[-1, 2.9, 9.5], [1, 3.0, 8.5]], l: [-.4, 1.1, 0], mm: 30 }]);
   return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 3.2, maxR: 12 }) });
 }
@@ -209,7 +210,7 @@ function sHook() {
   [-.6, .6].forEach(z => Wd.add(box(120, .1, .12, 0x6a6a72, { pos: [0, .2, z], inkW: .01 }))); for (let i = -40; i < 40; i++) Wd.add(box(.25, .1, 1.7, 0x5a3a20, { pos: [i * 1.2, .1, 0], ink: false }));
   O.hills(Wd, { colors: [0x6a6a58, 0x7a7a60], list: [[-30, -60, 30, 7, 16], [30, -64, 34, 9, 18], [0, -80, 60, 12, 20]] });
   const T = steamTrain(Wd, { pos: [0, 0, 0], scale: 1 }); Wd.hero = T.group; const t0 = T0('L21') + 1.2, tg = G0('L21');
-  const xAt = t => -26 + 22 * ease.io(prog(t, t0, b - .4)); const clouds = []; for (let i = 0; i < 10; i++) { const s = O.glow(5, 0xf4efe6, .0); Wd.add(s); clouds.push(s); }
+  const xAt = t => -8 + 6.5 * ease.io(prog(t, t0, b - .4)); const clouds = []; for (let i = 0; i < 10; i++) { const s = O.glow(5, 0xf4efe6, .0); Wd.add(s); clouds.push(s); }
   Wd.on((t, cam) => { const g = t + a; T.update(g, xAt(g), 1); T.smoke(g, xAt, 0, 0, 2.6);
     clouds.forEach((s, i) => { const k = ease.out(prog(g, a + .2 + i * .25, a + 2.8 + i * .25)), x = lerp(-14, 6, ((g * .06 + i * .13) % 1)); s.position.set(-9 + i * 1.7 + (g - a) * .8, 2.2 + (i % 3) * .7, 2.2 + (i % 4) * .6); s.scale.setScalar(4 + (i % 3)); s.material.opacity = .5 * k * (1 - ease.in(prog(g, b - 2, b - .3))); }); });
   const cam = camSeq(a, b, [{ t: a, p: [[-1, 1.5, 9.5], [1.2, 1.7, 7.2]], l: [[-6, 1.8, 0], [-3, 1.6, 0]], mm: [34, 40], e: 'io' }]);
