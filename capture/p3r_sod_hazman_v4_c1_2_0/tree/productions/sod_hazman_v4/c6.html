@@ -33,7 +33,7 @@ function sTowns() {
   const A = K.toyTown(Wd, { pos: [-13, 0, 0], seed: 3, S: 43200 }), B = K.toyTown(Wd, { pos: [13, 0, 0], seed: 8, S: 43200 + 1500 });
   [-.6, .6].forEach(z => Wd.add(box(60, .1, .12, 0x6a6a72, { pos: [0, .14, 5 + z], inkW: .01 }))); for (let i = -25; i < 25; i++) Wd.add(box(.25, .08, 1.7, 0x5a3a20, { pos: [i * 1.2, .06, 5], ink: false }));
   O.hills(Wd, { colors: [0x6f9a5a, 0x7aa862], list: [[-40, -70, 40, 9, 18], [40, -72, 44, 11, 20], [0, -90, 70, 14, 24]] });
-  const T = steamTrain(Wd, { scale: .8 }); T.group.position.z = 5; T.group.scale.setScalar(.8); Wd.hero = T.group; const xAt = t => lerp(-9.5, 7.5, ease.io(prog(t, a + .4, b - 1.0))), tg = G0('L01');
+  const T = steamTrain(Wd, { scale: .8 }); T.group.position.z = 5; T.group.scale.setScalar(.8); Wd.hero = B.group; const xAt = t => lerp(-9.5, 7.5, ease.io(prog(t, a + .4, b - 1.0))), tg = G0('L01');
   const rg = goldRing(Wd), rg2 = goldRing(Wd);
   Wd.on((t, cam) => { const g = t + a; T.update(g, xAt(g), 1); T.group.scale.setScalar(.8); T.smoke(g, t2 => xAt(t2) , 0, 5, 2.4);
     A.clock.setTime(43200 + (g - a) * 4, undefined); B.clock.setTime(43200 + 1500 + (g - a) * 4, undefined); rg.position.set(-13, 4.0, 4); rg2.position.set(13, 4.0, 4); ringAnim(rg, cam, g, tg + .2, 1.2, .8, 2.6, .8); ringAnim(rg2, cam, g, tg + .5, 1.2, .8, 2.6, .8); });
@@ -100,7 +100,7 @@ const sW6 = () => watchScene(C, 'L06', { mouth: MOUTH, over: g => { const k = ea
 function sShut() {
   const a = C.START.L07, b = C.ENDOF('L07'), Wd = mkWorld(); dark(Wd); const R = K.shutterRoom(Wd), L = T0('L07'), tj = G0('L07');
   O.lighting(Wd, { key: [0xffe0b0, .8, [-2, 6, 6]], hemi: [0xe8d4a8, 0x3a2a1a, .85], fill: [0x7a96d8, .3, [4, 2, 6]], rim: [0xffe0b0, .4, [0, 3, -4]], target: [0, 1.6, -2], shadowExt: 10, fog: null, points: [[0xffe090, 6, [-2.4, 2.2, -3.2], 9]] });
-  const bd = dayBoard(Wd, { pos: [-.2, 0, -.6], scale: .36, h: 1.4 }); const now = bd.addMark(0xff7a40, () => nowF); let nowF = .08; Wd.hero = R.clock.group;
+  const bd = dayBoard(Wd, { pos: [-.2, 0, -.6], scale: .36, h: 1.4 }); const now = bd.addMark(0xff7a40, () => nowF); let nowF = .08; Wd.hero = R.group;
   Wd.on((t, cam) => { const g = t + a, jump = ease.out(prog(g, tj, tj + .35)), slide = ease.io(prog(g, tj + .4, tj + 4.2)); nowF = .08 + .84 * slide;
     R.clock.setTime(3600 * 6 + 600 + 3600 * jump + (g - a) * 2, undefined); R.shutters.forEach(s => { s.sh.rotation.y = 0; }); ringAnim(R.ring, cam, g, tj, 1.0, .8, 2.4, .8);
     bd.set({ sr: 5 + 40 / 60, ss: 19 + 40 / 60, suns: 1, s: ease.out(prog(g, L + .6, L + 2.0)), lit: 12, pulse: .15 * (.5 + .5 * Math.sin(g * 2)) }); now.k = ease.out(prog(g, tj + .3, tj + .8)); R.wg.material.opacity = .6 + .12 * Math.sin(g * 1.3); });
@@ -115,6 +115,7 @@ function sRing() {
   for (let i = 0; i < 24; i++) { const an = i / 24 * PI * 2, big = i % 6 === 0; const tk = box(big ? .16 : .09, big ? .6 : .36, .12, big ? 0xffd070 : 0xe6c880, { pos: [Math.sin(an) * 4.1, Math.cos(an) * 4.1, 0], rot: [0, 0, -an], inkW: .01 }); ringG.add(tk); const dt = new THREE.Mesh(new THREE.SphereGeometry(.14, 10, 8), O.basic([0xe05a4a, 0x3ab08a, 0x3a9ad0, 0xe8883a][i % 4])); dt.position.set(Math.sin(an) * 3.55, Math.cos(an) * 3.55, 0); ringG.add(dt); }
   const ptr = new THREE.Mesh(new THREE.ConeGeometry(.28, .6, 3), O.basic(0xffd23a)); ptr.position.set(0, 5.1, 0); ptr.rotation.z = PI; Wd.add(ptr);
   const arc = Array.from({ length: 28 }, (_, i) => { const th = PI * (1 - i / 27), m = box(.2, .07, .07, 0xffc84a, { pos: [Math.cos(th) * 2.4, 1.2 + Math.sin(th) * 2.4, .1], rot: [0, 0, th - PI / 2], inkW: .006 }); Wd.add(m); return m; });
+  [[-9, 6, -6, 34, 0x2a3a8a], [9, -2, -6, 38, 0x6a3a7a], [0, 12, -8, 30, 0x2a5a9a], [-8, -6, -6, 30, 0x7a4a3a]].forEach(([x, y, z, sz, c]) => { const gg = O.glow(sz, c, .45); gg.position.set(x, y, z); Wd.add(gg); }); O.motes(Wd, { n: 40, area: [-10, 10, -2, 9, -3, 3], size: .35, color: 0xffe3a8, op: .5, seed: 23 });
   const sun = sunBall(Wd, .34); Wd.hero = sun; const tj = gs('L08', 0), tj2 = gs('L08', 2);
   Wd.on((t, cam) => { const g = t + a, th = PI * (1 - ease.sm(prog(g, a + .3, b - .4)) * .5 - .25); sun.position.set(Math.cos(th) * 2.4, 1.2 + Math.sin(th) * 2.4, .25); arc.forEach((m, i) => { const thd = PI * (1 - i / 27); m.material.color.setHex(th <= thd ? 0xffd86a : 0xb8923a); });
     const sh = ease.out(prog(g, tj + .3, tj + .9)) + ease.out(prog(g, tj2, tj2 + .6)); ringG.rotation.z = -sh * PI * 2 / 24; });
@@ -130,7 +131,7 @@ function sShul() {
   O.olive(Wd, -10, 8, 1.2, 4); O.olive(Wd, 10, 9, 1.0, 6); O.motes(Wd, { n: 20, area: [-12, 12, 1, 8, 2, 12], size: .5, color: 0xffd0a0, op: .3, seed: 77 });
   const tw = gs('L09', 0);
   Wd.on(t => { const g = t + a; S.wins.forEach((w, i) => { if (w.material && w.material.opacity !== undefined && w.isSprite) w.material.opacity = .55 * (.8 + .2 * Math.sin(g * 3 + i)); }); });
-  const cam = camSeq(a, b, [{ t: a, p: [[-9, 3.2, 20], [-3, 2.8, 14]], l: [0, 3, 0], mm: 30 }]);
+  const cam = camSeq(a, b, [{ t: a, p: [[-6, 2.4, 14], [-2, 2.4, 9.5]], l: [0, 3.2, 0], mm: 34 }]);
   return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 2.4, maxR: 10 }) });
 }
 function sSiddur() {
@@ -179,7 +180,7 @@ function sTwin() {
   const suns = [], clks = []; [[-3.2, '#8aa8d8', '#e8dcc8'], [3.2, '#5aa0e0', '#ffe9b8']].forEach(([x, c0, c1]) => { const p = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 3.6), new THREE.MeshBasicMaterial({ map: gtex(c0, c1), fog: false })); p.position.set(x, 4.0, -.2); Wd.add(p); Wd.add(box(4.5, .24, .4, 0x5a3a1c, { pos: [x, 5.9, 0], inkW: .02 })); Wd.add(box(4.5, .24, .4, 0x5a3a1c, { pos: [x, 2.1, 0], inkW: .02 })); [-1, 1].forEach(s => Wd.add(box(.24, 3.8, .4, 0x5a3a1c, { pos: [x + s * 2.15, 4.0, 0], inkW: .02 })));
     for (let i = 0; i <= 18; i++) { const th = PI * (1 - i / 18); Wd.add(box(.16, .06, .06, 0xffc84a, { pos: [x + Math.cos(th) * 1.7, 2.7 + Math.sin(th) * 1.8, .1], rot: [0, 0, th - PI / 2], inkW: .006 })); }
     const s = sunBall(Wd, .3); s.position.set(x + 0.6, 2.7 + 1.3, .25); suns.push(s); const c = O.wallClock(Wd, { pos: [x, 1.0, .2], r: .75, S: 8 * 3600 }); clks.push(c); const gl = O.glow(3.2, 0xffe9a8, .0); gl.position.set(x, 1.0, .5); Wd.add(gl); c.gl = gl; });
-  Wd.hero = clks[0].group; const rg = goldRing(Wd), rg2 = goldRing(Wd), tg = gs('L13', 2); const link = box(6.4, .05, .05, 0xffe08a, { pos: [0, 4.0, .3], ink: false }); Wd.add(link); link.material = new THREE.MeshBasicMaterial({ color: 0xffe08a, transparent: true, opacity: 0, blending: THREE.AdditiveBlending });
+  clks.forEach(c => c.group.scale.setScalar(1.3)); Wd.hero = clks[0].group; const rg = goldRing(Wd), rg2 = goldRing(Wd), tg = gs('L13', 2); const link = box(6.4, .05, .05, 0xffe08a, { pos: [0, 4.0, .3], ink: false }); Wd.add(link); link.material = new THREE.MeshBasicMaterial({ color: 0xffe08a, transparent: true, opacity: 0, blending: THREE.AdditiveBlending });
   Wd.on((t, cam) => { const g = t + a; clks.forEach((c, i) => { c.setTime(8 * 3600 + (g - a) * 2, undefined); c.gl.material.opacity = .25 + .5 * ease.out(prog(g, a + .6, a + 2)) * (.7 + .3 * Math.sin(g * 2 + i)); });
     suns.forEach(s => s.userData.g1.scale.setScalar(1.5 * (1 + .1 * Math.sin(g * 2) + .6 * bump(g, tg + .3, .5)))); link.material.opacity = .8 * bump(g, tg + .4, .7); rg.position.copy(suns[0].position); rg2.position.copy(suns[1].position); ringAnim(rg, cam, g, tg, 1.2, .5, 1.8, .8); ringAnim(rg2, cam, g, tg, 1.2, .5, 1.8, .8); });
   const cam = camSeq(a, b, [{ t: a, p: [[0, 3.6, 13], [0, 3.5, 11]], l: [0, 3.4, 0], mm: 32 }, { t: tg - 1.2, p: [[-1, 3.6, 8.6], [1, 3.6, 8.4]], l: [0, 3.9, 0], mm: 34 }]);

@@ -1,1 +1,1 @@
-[verify_queue] waited 1831s for the lock
+[verify_queue] waited 1750s for the lock
