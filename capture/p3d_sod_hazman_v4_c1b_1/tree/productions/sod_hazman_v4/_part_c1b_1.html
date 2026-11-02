@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>sod hazman v4 c1b</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>window.__T0=36.2867; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js", "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+// Chapter c1b "the route of the lesson" (v4). Everything is timed from timeline.json (chapter id c1b). Zero Hebrew: captions/title via vault ids.
+import { film, world, THREE, ease, prog, clamp, lerp, mesh, toon, box, cyl, ball } from '../../lib/stage3d.js';
+import { captionInfo, titleCard3d } from './lib_v4/caption3d.js';
+import { makeWatch } from './lib_v4/watch.js';
+import * as O from './lib_v4/objects.js';
+import * as K from './lib_v4/objects_c1b.js';
+const { F, D2R, mix3, view, move, cuts, dofAuto, goldRing, ringAnim, backOut } = K;
+
+const ORDER = ['intro', 'L00', 'L01', 'L02', 'L03', 'L04', 'L05', 'L06', 'L07', 'L08', 'L09', 'L10', 'L11'];
+const B = await K.boot('c1b', ORDER), { CH, LN, T0, gold0, goldN, START, ENDOF, baseCam, finish } = B;
+
+// ---------------------------------------------------------------- station schedule (global seconds, from the narration words)
+const TS = [goldN('L01', 0) - .3, lerp(T0('L02'), goldN('L02', 0), .45), goldN('L02', 0), goldN('L03', 0), goldN('L03', 1), goldN('L04', 0), goldN('L05', 0), goldN('L05', 1), goldN('L05', 2)];
+const T_UNROLL = [T0('L00') + .15, T0('L00') + 2.7];
+const T_RELIGHT = [T0('L11') + .15, CH.dur - .5];
+
+// ---------------------------------------------------------------- the shared world of the route table
+function mapWorld(o) {
+  o = o || {}; const Wd = world({ fog: false }); baseCam(Wd, .03, 200); O.skyDome(Wd, { top: 0x0a0e1c, mid: 0x1a2038, bot: 0x30344a, stars: 0 });
+  K.tableSet(Wd); K.tableLights(Wd, { points: [[0xffc070, 6, [0, 1.7, .9], 9], [0xffd890, 2.5, [-2.5, .9, 1.4], 4], [0x9ab8ff, 1.5, [3, 1.2, 1.5], 7]] });
+  const R = K.routeMap(Wd); const wp = [-2.55, .122, 1.15];
+  const W = makeWatch(Wd, { scale: .24, lines: CH.lines, mouth: B.MOUTH }); W.obj.position.set(...wp); W.obj.rotation.set(-.18, .25, 0); Wd.add(W.obj);
+  O.motes(Wd, { n: 24, area: [-3, 3, .3, 1.8, -1, 2.2], size: .05, color: 0xffe3a8, op: .55, seed: 71, rise: .04 });
+  const state = g => {
+    const u = ease.io(prog(g, T_UNROLL[0], T_UNROLL[1])), kst = TS.map(ts => prog(g, ts, ts + .75));
+    let pf = 0; for (let i = 0; i < 9; i++) { if (g >= TS[i] - .9) pf = lerp(i ? R.fr[i - 1] : 0, R.fr[i], ease.io(prog(g, TS[i] - .9, TS[i]))); }
+    if (g >= T_RELIGHT[0]) pf = lerp(R.fr[0], 1, ease.io(prog(g, T_RELIGHT[0], T_RELIGHT[1])));
+    return { u, kst, pf };
+  };
+  return { Wd, R, W, wp, state };
+}
+const watchPose = (M, g, lid, look, eyes) => { M.W.auto(g, { lid, eyes: eyes === undefined ? 1 : eyes, look }); };
+
+// ---------------------------------------------------------------- intro (title card)
+function sIntro() {
+  const Wd = world({ fog: false }); baseCam(Wd, .1, 800); O.skyDome(Wd, { top: 0x03061a, mid: 0x0a1844, bot: 0x2a4a86 });
+  O.lighting(Wd, { key: [0xffffff, .2, [5, 8, 8]], hemi: [0x6a80c0, 0x101830, .6], noShadow: true });
+  [[-30, 8, -60, 40, 0x2a5aa8, .22], [26, -6, -80, 55, 0x4a3a9a, .18], [0, 20, -50, 34, 0x2a6a9a, .14], [-10, -14, -40, 30, 0x5a3a88, .12]].forEach(([x, y, z, s, c, o]) => { const g = O.glow(s, c, o); g.position.set(x, y, z); Wd.add(g); });
+  titleCard3d(Wd, 'T_C1B', { pos: [0, 0, 0], width: 7.2, line: { t0: .6, t1: 2.5 } });
+  O.motes(Wd, { n: 36, area: [-6, 6, -3, 3, 1, 7], size: .22, color: 0xffd98a, op: .55, seed: 3 }); O.motes(Wd, { n: 20, area: [-8, 8, -4, 4, -6, -1], size: .3, color: 0x9ab8ff, op: .35, seed: 8 });
+  const cam = t => { const k = ease.sm(prog(t, 0, 4)); return { pos: [0, lerp(.35, .1, k), lerp(13, 9.8, k)], look: [0, 0, 0], fov: F(40) }; };
+  return finish(Wd, cam, { dof: (t, c) => ({ focus: Math.hypot(c.position.x, c.position.y, c.position.z), ap: 7, maxR: 12, vig: .38 }) });
+}
+
+// ---------------------------------------------------------------- L00..L05: the route is unrolled and its stations light up
+function sRoute(id) {
+  const a = START[id], dur = ENDOF(id) - a, M = mapWorld(), { Wd, R } = M, S = i => M.R.st[i];
+  Wd.on((t, cam) => { const g = t + a, s = M.state(g); R.set(s.u, s.kst, s.pf, g); watchPose(M, g, .72, [.75, .05]); });
+  const at = (i, d, el, az, mm, dy) => ({ t: [S(i)[0], dy === undefined ? .16 : dy, S(i)[2]], d, el, az, mm: mm || 40 });
+  const mid = (a1, a2) => ({ t: mix3(a1.t, a2.t, .5), d: 3.4, el: 32, az: 0, mm: 35 });
+  let cam;
+  if (id === 'L00') cam = cuts(dur, [[0, move({ t: [0, 0, .3], d: 8, el: 52, az: -8, mm: 35 }, { t: [-.4, 0, .2], d: 6.2, el: 38, az: 4, mm: 35 })], [3.1, move({ t: [-2.3, .12, .6], d: 2.8, el: 26, az: 24, mm: 40 }, { t: [-2.1, .12, .5], d: 2.2, el: 22, az: 16, mm: 40 })]]);
+  else if (id === 'L01') cam = cuts(dur, [[0, move(at(0, 3.2, 30, -20), at(0, 2.0, 28, 6))], [3.6, move({ t: [-1.2, .1, .2], d: 5.2, el: 34, az: 8, mm: 35 }, { t: [-1.0, .1, .1], d: 4.4, el: 30, az: 0, mm: 35 })]]);
+  else if (id === 'L02') cam = cuts(dur, [[0, move({ t: [-1.4, .1, .1], d: 4.2, el: 34, az: -8, mm: 35 }, { t: [-1.4, .1, 0], d: 3.4, el: 30, az: 6, mm: 35 })], [3.8, move(at(1, 2.2, 22, -22), at(1, 1.7, 26, -8))], [6.6, move(at(2, 2.2, 24, 18), at(2, 1.6, 26, 6))]]);
+  else if (id === 'L03') cam = cuts(dur, [[0, move({ t: [-.1, .1, 0], d: 4.6, el: 36, az: 0, mm: 35 }, { t: [0, .1, 0], d: 3.8, el: 32, az: -10, mm: 35 })], [3.9, move(at(3, 2.0, 30, 16), at(3, 1.5, 26, 2))], [7.8, move(at(4, 2.0, 30, -16), at(4, 1.5, 26, 0))], [10.4, move({ t: [.1, .1, 0], d: 4.0, el: 34, az: 6, mm: 35 }, { t: [.15, .1, 0], d: 4.8, el: 38, az: 10, mm: 35 })]]);
+  else if (id === 'L04') cam = cuts(dur, [[0, move(at(5, 3.0, 26, 22), at(5, 2.0, 22, 4))], [4.2, move(at(5, 1.6, 28, -22), at(5, 1.3, 25, -8))]]);
+  else cam = cuts(dur, [[0, move(at(6, 2.4, 22, -18), at(6, 1.8, 26, 0))], [3.4, move(at(7, 2.4, 22, 18), at(7, 1.8, 26, 0))], [6.4, move(at(8, 2.4, 22, -14), at(8, 1.8, 26, 10))]]);
+  return finish(Wd, cam, { dof: dofAuto(cam, { ap: 8, maxR: 14, vig: .42 }) });
+}
+
+// ---------------------------------------------------------------- L06 / L10: the watch, close
+function sWatch(id) {
+  const a = START[id], dur = ENDOF(id) - a, M = mapWorld(), { Wd, R, W } = M, ln = LN(id);
+  Wd.hero = W.obj; const tCl = ln.t0 + (ln.t1 - ln.t0) * .8, clickK = id === 'L10' ? 0 : 0;
+  const click = O.glow(1.0, 0xfff0b0, 0); click.position.set(M.wp[0], M.wp[1], M.wp[2] + .14); Wd.add(click); const cr = goldRing(Wd, 0xffe9a8);
+  Wd.on((t, cam) => { const g = t + a, s = M.state(g); R.set(s.u, s.kst, s.pf, g);
+    let lid = .62; if (id === 'L10') lid = lerp(.62, 0, ease.io(prog(g, tCl - .45, tCl)));
+    watchPose(M, g, lid, id === 'L06' ? [0, 0] : [0, .05]);
+    if (id === 'L10') { const e = Math.exp(-Math.pow((g - tCl) / .16, 2)); click.material.opacity = .95 * e; click.scale.setScalar(.7 + 1.1 * e); cr.position.copy(click.position); ringAnim(cr, cam, g, tCl, .6, .08, .5, .8); }
+    M.W.obj.rotation.y = lerp(.25, id === 'L06' ? .02 : .05, ease.io(prog(g, ln.t0 - .6, ln.t0 + .9))); });
+  const wp = M.wp, cam = t => { const k = ease.io(prog(t, 0, dur)); return { pos: [wp[0], wp[1] + .3, wp[2] + lerp(1.34, 1.18, k)], look: [wp[0] - .1, wp[1] + .17, wp[2]], fov: F(50) }; };
+  return finish(Wd, cam, { dof: dofAuto(cam, { ap: 20, maxR: 18, vig: .42 }) });
+}
+
+// ---------------------------------------------------------------- L07: the booklet opens, a pencil writes, the 60 s ring counts
+function sBooklet() {
+  const id = 'L07', a = START[id], b = ENDOF(id), dur = b - a, M = mapWorld(), { Wd, R } = M, bs = 1.9, BP = [0.05, 0, 1.85];
+  const bk = K.booklet(Wd, { pos: BP }); bk.group.scale.setScalar(bs);
+  const ring = K.ringTimer(.9, 0xffc84a); ring.position.set(1.25, .62, 1.5); Wd.add(ring); const rg = O.glow(1.4, 0xffc060, .35); rg.position.copy(ring.position); Wd.add(rg);
+  Wd.hero = bk.group; const tOpen = [T0(id) + .3, T0(id) + 2.0], tWrite = [T0(id) + 2.4, b - 1.0];
+  Wd.on((t, cam) => { const g = t + a, s = M.state(g); R.set(s.u, s.kst, s.pf, g); watchPose(M, g, .72, [.2, .05]);
+    bk.open(prog(g, tOpen[0], tOpen[1])); bk.write(prog(g, tWrite[0], tWrite[1]));
+    ring.userData.set(prog(g, T0(id) + 1.0, b - .6), 12); ring.quaternion.copy(cam.quaternion); ring.scale.setScalar(.6 + .4 * ease.out(prog(g, T0(id) + .6, T0(id) + 1.4))); rg.material.opacity = .35 + .15 * Math.sin(g * 4); });
+  const tip = () => [BP[0] + (bk.tip ? bk.tip[0] : .2) * bs, .0, BP[2] + (bk.tip ? bk.tip[2] : 0) * bs];
+  const cam = cuts(dur, [[0, move({ t: [BP[0], .05, BP[2]], d: 2.7, el: 48, az: 0, mm: 40 }, { t: [BP[0], .05, BP[2]], d: 2.2, el: 52, az: 6, mm: 40 })],
+    [4.4, t => { const p = tip(); return view({ t: [p[0], .02, p[2]], d: lerp(1.25, 1.05, ease.io(clamp((t - 4.4) / 4, 0, 1))), el: 66, az: -8, mm: 50 }); }],
+    [9.0, move({ t: [.6, .35, 1.7], d: 2.6, el: 16, az: -6, mm: 40 }, { t: [.65, .35, 1.7], d: 2.2, el: 14, az: 6, mm: 40 })],
+    [12.6, t => { const p = tip(); return view({ t: [p[0] + .05, .02, p[2]], d: 1.5, el: 46, az: 14, mm: 45 }); }]]);
+  return finish(Wd, cam, { dof: dofAuto(cam, { ap: 10, maxR: 16, vig: .42 }) });
+}
+
+// ---------------------------------------------------------------- L08 / L09: the "?" card with its 8 s ring, then the big spinning "?" and the check
+function sCard(id) {
+  const a = START[id], b = ENDOF(id), dur = b - a, M = mapWorld(), { Wd, R } = M, ln = LN(id), CP = [.1, .92, .55];
+  const card = new THREE.Group(); card.position.set(...CP); Wd.add(card);
+  const q = K.glyph3d(1.0, K.qMarkDraw, { layers: 8, step: .016 }), ck = K.glyph3d(1.0, K.checkDraw, { layers: 8, step: .016 }); card.add(q); card.add(ck);
+  let ring = null, plate = null;
+  if (id === 'L08') { plate = box(.62, .86, .03, 0x1b2a58, { pos: [0, 0, -.035], inkW: .012 }); card.add(plate); card.add(box(.66, .9, .02, 0xffc84a, { pos: [0, 0, -.06], inkW: .008 })); q.scale.setScalar(.7); q.position.z = 0; ck.visible = false; ring = K.ringTimer(1.55, 0xffc84a); ring.position.z = -.02; card.add(ring); }
+  else { q.scale.setScalar(1.45); ck.scale.setScalar(1.45); card.position.set(.15, .95, .5); ring = K.ringTimer(2.4, 0x7dffb0); ring.position.z = -.14; card.add(ring); }
+  const gl = O.glow(2.8, id === 'L08' ? 0xffc060 : 0xffd070, .5); gl.position.set(...CP); gl.position.z -= .1; Wd.add(gl); const cr = goldRing(Wd, 0x9dffc0), cr2 = goldRing(Wd, 0xffe9a8);
+  Wd.hero = card; const tC = ln.t1 - 1.0, tP = ln.t0 + .15;
+  Wd.on((t, cam) => { const g = t + a, s = M.state(g); R.set(s.u, s.kst, s.pf, g); watchPose(M, g, .72, [.5, .35]);
+    if (id === 'L08') { const k = backOut(prog(g, tP, tP + .7)); card.scale.setScalar(Math.max(.001, k)); card.position.y = CP[1] + Math.sin(g * 1.6) * .015; card.rotation.y = Math.sin(g * .7) * .12; ring.userData.set(1 - prog(g, ln.t0 + .9, ln.t0 + 8.9)); gl.material.opacity = .45 + .15 * Math.sin(g * 3); }
+    else { const spin = 4 * Math.PI * ease.io(prog(g, ln.t0 + .25, tC)); card.rotation.y = g < tC ? spin : 0; const qs = 1 - ease.in(prog(g, tC - .22, tC + .05)), cs = backOut(prog(g, tC + .05, tC + .55));
+      q.visible = qs > .01; q.scale.setScalar(1.45 * Math.max(.01, qs)); ck.visible = cs > .01; ck.scale.setScalar(1.45 * Math.max(.01, cs)); ring.userData.set(g < tC ? prog(g, ln.t0 + .25, tC) : 1); ring.visible = true;
+      const e = Math.exp(-Math.pow((g - tC - .1) / .25, 2)); gl.material.opacity = .4 + .4 * e; gl.material.color.set(g < tC ? 0xffc060 : 0x7dffb0); cr.position.set(CP[0] + .15 - .0, .95, .5); ringAnim(cr, cam, g, tC + .05, .9, .5, 2.2, .8); ringAnim(cr2, cam, g, tC + .2, 1.1, .4, 2.8, .45); }
+  });
+  const T = [CP[0], CP[1] - .02, CP[2]];
+  const cam = id === 'L08' ? cuts(dur, [[0, move({ t: T, d: 3.0, el: 8, az: -12, mm: 50 }, { t: T, d: 2.4, el: 6, az: 4, mm: 50 })], [5.0, move({ t: [T[0] + .1, T[1] + .05, T[2]], d: 1.9, el: 4, az: 16, mm: 50 }, { t: [T[0], T[1], T[2]], d: 2.3, el: 8, az: 6, mm: 50 })], [9.2, move({ t: T, d: 2.6, el: 12, az: -14, mm: 40 }, { t: T, d: 2.1, el: 8, az: -2, mm: 40 })]])
+    : cuts(dur, [[0, move({ t: [.15, .95, .5], d: 3.4, el: 6, az: -10, mm: 50 }, { t: [.15, .95, .5], d: 2.8, el: 4, az: 6, mm: 50 })], [4.4, move({ t: [.15, .95, .5], d: 2.5, el: 3, az: 10, mm: 50 }, { t: [.15, .95, .5], d: 2.0, el: 3, az: -4, mm: 50 })]]);
+  return finish(Wd, cam, { dof: dofAuto(cam, { ap: 9, maxR: 15, vig: .42 }) });
+}
+
+// ---------------------------------------------------------------- L11: the camera flies along the gold path
+function sFly() {
+  const id = 'L11', a = START[id], dur = ENDOF(id) - a, M = mapWorld(), { Wd, R } = M;
+  Wd.on((t, cam) => { const g = t + a, s = M.state(g); R.set(s.u, s.kst, s.pf, g); watchPose(M, g, .72, [.75, .05]); });
+  const cam = t => { const s = lerp(.02, .93, ease.io(prog(t, 0, dur))), p = R.curve.getPointAt(s), q = R.curve.getPointAt(Math.min(1, s + .09));
+    return { pos: [p.x - .1, .62 + .06 * Math.sin(t * 1.3), p.z + 1.0], look: [q.x, .1, q.z], fov: F(32) }; };
+  return finish(Wd, cam, { dof: dofAuto(cam, { ap: 9, maxR: 14, vig: .42 }) });
+}
+
+// ================================================================ the film
+const BUILD = { intro: sIntro, L00: () => sRoute('L00'), L01: () => sRoute('L01'), L02: () => sRoute('L02'), L03: () => sRoute('L03'), L04: () => sRoute('L04'), L05: () => sRoute('L05'), L06: () => sWatch('L06'), L07: sBooklet, L08: () => sCard('L08'), L09: () => sCard('L09'), L10: () => sWatch('L10'), L11: sFly };
+const WIDE = { L00: 1, L01: 1, L02: 1, L03: 1, L05: 1, L11: 1 };
+film({ W: 1920, H: 1080, fadeIn: true, shots: ORDER.map(k => ({ id: k, dur: ENDOF(k) - START[k], caps: [], wide: !!WIDE[k], build: BUILD[k] })) });
+const main = document.getElementById('c'), cssScale = () => { const r = main.getBoundingClientRect(); return { k: (r.width || 1920) / 1920, cw: r.width || 1920, ch: r.height || 1080 }; };
+window.__caption = t => { t = Math.max(0, (+t || 0) + (window.__T0 || 0)); const c = captionInfo(t); if (!c) return null; const { k, cw, ch } = cssScale();
+  return { id: c.id, text: c.text, rect: { x: c.rect.x * k, y: c.rect.y * k, w: c.rect.w * k, h: c.rect.h * k }, canvasW: cw, canvasH: ch, dir: 'rtl', lang: 'he', alpha: c.alpha }; };
+window.__chapter = CH;
+</script>
+</html>
