@@ -50,7 +50,7 @@ export function rooftop(Wd, o) {
   const D = 150, N = 46, dots = [], arcP = [];
   for (let i = 0; i <= N; i++) { const h = lerp(-H, H, i / N), d = sunDir(LAT, dec, h).v; arcP.push(d); const m = new THREE.Mesh(new THREE.SphereGeometry(.9, 8, 6), O.basic(0xffd45a)); m.position.set(d[0] * D, d[1] * D, d[2] * D); m.visible = d[1] > 0; Wd.add(m); dots.push(m); }
   const sun = sunBall(Wd, 6, { core: 0xfff0b0, halo: 0xffd070, halo2: 0xffb860 }); Wd.sun.castShadow = true;
-  const api = { H, dec, sun, dots, arcP, setSun(k, lit) { const h = lerp(-H, H, clamp(k, 0, 1)), d = sunDir(LAT, dec, h).v; sun.position.set(d[0] * D, d[1] * D, d[2] * D); sun.visible = d[1] > .01;
+  const api = { H, dec, sun, dots, arcP, setSun(k, lit) { const h = lerp(-H * .96, H * .96, clamp(k, 0, 1)), d = sunDir(LAT, dec, h).v; sun.position.set(d[0] * D, d[1] * D, d[2] * D); sun.visible = d[1] > .01;
       Wd.sun.position.set(d[0] * 60, Math.max(8, d[1] * 60), d[2] * 60 + 4); dots.forEach((m, i) => { const on = i / N <= k; m.material.color.setHex(on ? 0xffd45a : 0xe8d9a8); m.scale.setScalar(on ? 1.15 : .8); }); } };
   return api;
 }
@@ -94,3 +94,5 @@ export function drum(Wd, o) {
   const win = new THREE.Mesh(new THREE.PlaneGeometry(W * 1.1, R * .78), new THREE.MeshBasicMaterial({ color: 0xffe08a, transparent: true, opacity: .0, blending: THREE.AdditiveBlending, depthWrite: false })); win.position.set(0, 0, R + .05); G.add(win);
   return { group: G, set(v, flash) { dr.rotation.x = v / 10 * Math.PI * 2; win.material.opacity = .35 * (flash || 0); } };
 }
+
+export const sunDirOf = (h, dec) => sunDir(LAT, dec, h).v;
