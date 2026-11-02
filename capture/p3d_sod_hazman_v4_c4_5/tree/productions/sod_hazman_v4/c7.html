@@ -26,12 +26,11 @@ const sW0 = () => watchScene(C, 'L00', { mouth: MOUTH, windowColor: 0xe88a5a, su
 
 // ---------------------------------------------------------------- D1 (L01, L02): Jerusalem dawn, then the sun disc breaks the horizon and a shul window catches the first ray
 function sDawn() {
-  const a = C.START.D1, b = C.ENDOF('D1'), Wd = world({ fog: true, ground: false }); C.baseCam(Wd, .1, 1200); const D = K.dawnWorld(Wd); Wd.hero = D.mark;
-  const sh = K6.shulExterior(Wd); sh.group.scale.setScalar(.55); sh.group.position.set(-9, 0, 8); sh.group.rotation.y = .3;
+  const a = C.START.D1, b = C.ENDOF('D1'), Wd = world({ fog: true, ground: false }); C.baseCam(Wd, .1, 1200); const D = K.dawnWorld(Wd); const sh = K6.shulExterior(Wd); Wd.hero = sh.group; sh.group.scale.setScalar(1.0); sh.group.position.set(-6, 0, -8); sh.group.rotation.y = .25;
   O.olive(Wd, 6, 7, 1.0, 3); O.pottedPlant(Wd, 3.2, 0, 9.5, 1.0);
   const L2 = T0('L02'), tg = G0('L02'), u0 = .05, u1 = .42, u2 = .88, rg = goldRing(Wd); rg.position.set(7, 4, -140);
   Wd.on((t, cam) => { const g = t + a, u = g < L2 ? lerp(u0, u1, ease.sm(prog(g, a, L2))) : lerp(u1, u2, ease.sm(prog(g, L2 - .2, b - .3))); D.set(u); sh.wins.forEach((w, i) => { if (w.isSprite) w.material.opacity = .5 * (.5 + .5 * ease.sm(prog(u, .4, .7))); }); ringAnim(rg, cam, g, tg + 1.0, 1.4, 6, 24, .7); });
-  const cam = camSeq(a, b, [{ t: a, p: [[0, 3.2, 8], [0, 3.4, 7]], l: [[0, 5, -60], [0, 7, -80]], mm: 24 }, { t: L2 - .4, p: [[-4, 2.8, 9], [-5.5, 3.2, 10]], l: [[-2, 6, -70], [-6, 4, 4]], mm: [26, 34] }, { t: L2 + 3.6, p: [[-6, 3.6, 12], [-5, 3.2, 11]], l: [-8.4, 2.6, 8.6], mm: 40 }]);
+  const cam = camSeq(a, b, [{ t: a, p: [[0, 3.2, 8], [0, 3.4, 7]], l: [[-2, 5, -60], [-3, 7, -70]], mm: 24 }, { t: L2 - .4, p: [[-2, 2.8, 9], [-4, 3.2, 6]], l: [[-3, 6, -70], [-6, 3, -8]], mm: [26, 34] }, { t: L2 + 3.6, p: [[-4, 3.2, 6], [-3.4, 3.0, 5]], l: [-6, 3.2, -8], mm: 38 }]);
   return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 2.4, maxR: 10, focus: 45 }) });
 }
 
@@ -57,11 +56,11 @@ function sBoard() {
 
 // ---------------------------------------------------------------- L06: evening sky, three stars appear one by one
 function sDusk(key, calm) {
-  const a = C.START[key], b = C.ENDOF(key), Wd = world({ fog: true }); C.baseCam(Wd, .1, 1200); const D = K.duskWorld(Wd); Wd.hero = D.stars[1].g;
+  const a = C.START[key], b = C.ENDOF(key), Wd = world({ fog: true }); C.baseCam(Wd, .1, 1200); const D = K.duskWorld(Wd); const ven = new THREE.Group(); ven.add(new THREE.Mesh(new THREE.SphereGeometry(1.6, 14, 10), O.basic(0xfff2d8))); ven.add(O.glow(40, 0xffe6b0, .8)); ven.position.set(-25, 34, -150); Wd.add(ven); Wd.hero = ven;
   const ts = key === 'L06' ? [gs('L06', 0) + .3, gs('L06', 2), gs('L06', 4)] : [a + 1, a + 2.5, a + 4], L15 = calm ? T0('L15') : 1e9;
   Wd.on((t, cam) => { const g = t + a, u = calm ? 1 : ease.sm(prog(g, a, b - .5)) * .8 + .2; D.setDusk(calm ? 1 : u); D.C.winMat.color.setHex(0xffd488);
     D.stars.forEach((s, i) => { const k = ease.out(prog(g, ts[i], ts[i] + .8)); s.g.visible = k > .01; s.g.scale.setScalar(Math.max(.01, k * (1 + .15 * Math.sin(g * 3 + i) + .8 * bump(g, L15 + .3 + i * .15, .4)))); s.g.rotation.z = g * .4; ringAnim(s.rg, cam, g, ts[i], 1.3, 3, 14, .7); s.rg.position.copy(s.g.position); }); });
-  const cam = camSeq(a, b, calm ? [{ t: a, p: [[-3, 3, 8], [3, 3.4, 8]], l: [[2, 42, -150], [8, 42, -150]], mm: 30, e: 'sm' }, { t: a + 40, p: [[3, 3.4, 8], [-3, 3, 9]], l: [[8, 42, -150], [3, 40, -150]], mm: 30, e: 'sm' }, { t: a + 80, p: [[-3, 3, 9], [0, 3.2, 7]], l: [[3, 40, -150], [8, 44, -150]], mm: [30, 34], e: 'sm' }] : [{ t: a, p: [[0, 3, 8], [0, 3.2, 7]], l: [[6, 38, -150], [10, 44, -150]], mm: 30 }]);
+  const cam = camSeq(a, b, calm ? [{ t: a, p: [[-3, 3, 8], [3, 3.4, 8]], l: [[-12, 26, -150], [-8, 26, -150]], mm: 24, e: 'sm' }, { t: a + 40, p: [[3, 3.4, 8], [-3, 3, 9]], l: [[-8, 26, -150], [-14, 24, -150]], mm: 24, e: 'sm' }, { t: a + 80, p: [[-3, 3, 9], [0, 3.2, 7]], l: [[-14, 24, -150], [-12, 28, -150]], mm: [24, 26], e: 'sm' }] : [{ t: a, p: [[0, 3, 8], [0, 3.2, 7]], l: [[-10, 26, -150], [-8, 30, -150]], mm: 24 }]);
   return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 2.2, maxR: 10, focus: 80 }) });
 }
 
