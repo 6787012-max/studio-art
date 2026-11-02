@@ -1,0 +1,166 @@
+{
+ "film": "c9.html",
+ "status": "FAIL",
+ "time": "2026-11-02T03:26:49",
+ "samples": 78,
+ "findings": [
+  {
+   "sev": "P1",
+   "code": "EMPTY_VOID",
+   "t": 96.47,
+   "shot": "L08",
+   "detail": "77% of the frame is one colour",
+   "fix": "fill the frame: closer camera or more set pieces"
+  },
+  {
+   "sev": "P1",
+   "code": "CAPTION_OFF_SAFE",
+   "t": 29.9,
+   "shot": "L03",
+   "detail": "caption box x=-33 y=563 w=1346 h=116 outside the safe box (4% sides, 4.5% top/bottom of the 1280x720 canvas)",
+   "fix": "shorten the line or shrink the text so the box stays inside the safe area"
+  },
+  {
+   "sev": "P1",
+   "code": "CAPTION_SHORT",
+   "t": 51.0,
+   "shot": "L05",
+   "detail": "caption on screen 4.2 s (< 4.40 s)",
+   "fix": "each caption needs >= 4.4 s on screen: lengthen the window or cut words"
+  },
+  {
+   "sev": "P1",
+   "code": "CAPTION_OFF_SAFE",
+   "t": 55.2,
+   "shot": "L06",
+   "detail": "caption box x=-319 y=563 w=1918 h=116 outside the safe box (4% sides, 4.5% top/bottom of the 1280x720 canvas)",
+   "fix": "shorten the line or shrink the text so the box stays inside the safe area"
+  },
+  {
+   "sev": "P1",
+   "code": "CAPTION_OFF_SAFE",
+   "t": 75.6,
+   "shot": "L07",
+   "detail": "caption box x=-197 y=563 w=1675 h=116 outside the safe box (4% sides, 4.5% top/bottom of the 1280x720 canvas)",
+   "fix": "shorten the line or shrink the text so the box stays inside the safe area"
+  },
+  {
+   "sev": "P1",
+   "code": "CAPTION_OFF_SAFE",
+   "t": 102.6,
+   "shot": "L09",
+   "detail": "caption box x=-158 y=563 w=1596 h=116 outside the safe box (4% sides, 4.5% top/bottom of the 1280x720 canvas)",
+   "fix": "shorten the line or shrink the text so the box stays inside the safe area"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 0.3,
+   "shot": "intro",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 11.44,
+   "shot": "L01",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 20.51,
+   "shot": "L02",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 30.12,
+   "shot": "L03",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 40.89,
+   "shot": "L04",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 55.41,
+   "shot": "L06",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 75.84,
+   "shot": "L07",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 90.65,
+   "shot": "L08",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 102.89,
+   "shot": "L09",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 119.27,
+   "shot": "L10",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 131.96,
+   "shot": "L11",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 137.41,
+   "shot": "L12",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 201.64,
+   "shot": "L13",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  }
+ ],
+ "sheets": null,
+ "timing": {
+  "ready_s": 1.6,
+  "gates_s": 1453.0,
+  "total_s": 1467.5
+ }
+}

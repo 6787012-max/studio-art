@@ -1,0 +1,86 @@
+{
+ "film": "c2.html",
+ "status": "FAIL",
+ "time": "2026-11-02T02:59:29",
+ "samples": 83,
+ "findings": [
+  {
+   "sev": "P0",
+   "code": "HERO_NOT_VISIBLE",
+   "t": 12.09,
+   "shot": "L01",
+   "detail": "hero is outside the frame",
+   "fix": "reframe: the hero must be on screen in every shot"
+  },
+  {
+   "sev": "P0",
+   "code": "HERO_NOT_VISIBLE",
+   "t": 72.45,
+   "shot": "L08",
+   "detail": "hero is outside the frame",
+   "fix": "reframe: the hero must be on screen in every shot"
+  },
+  {
+   "sev": "P1",
+   "code": "CAPTION_OFF_SAFE",
+   "t": 33.0,
+   "shot": "L04",
+   "detail": "caption box x=35 y=563 w=1209 h=116 outside the safe box (4% sides, 4.5% top/bottom of the 1280x720 canvas)",
+   "fix": "shorten the line or shrink the text so the box stays inside the safe area"
+  },
+  {
+   "sev": "P1",
+   "code": "CAPTION_OFF_SAFE",
+   "t": 57.9,
+   "shot": "L07",
+   "detail": "caption box x=-294 y=563 w=1867 h=116 outside the safe box (4% sides, 4.5% top/bottom of the 1280x720 canvas)",
+   "fix": "shorten the line or shrink the text so the box stays inside the safe area"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 0.3,
+   "shot": "intro",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 58.18,
+   "shot": "L07",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 103.51,
+   "shot": "L11",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "HERO_SMALL",
+   "t": 125.82,
+   "shot": "L13",
+   "detail": "hero height 28% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 206.9,
+   "shot": "L16",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  }
+ ],
+ "sheets": null,
+ "timing": {
+  "ready_s": 5.0,
+  "gates_s": 1437.5,
+  "total_s": 1459.4
+ }
+}

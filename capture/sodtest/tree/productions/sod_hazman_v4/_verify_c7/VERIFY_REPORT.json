@@ -1,0 +1,70 @@
+{
+ "film": "c7.html",
+ "status": "FAIL",
+ "time": "2026-11-02T04:50:34",
+ "samples": 63,
+ "findings": [
+  {
+   "sev": "P0",
+   "code": "HERO_NOT_VISIBLE",
+   "t": 10.6,
+   "shot": "D1",
+   "detail": "hero is outside the frame (+2 more samples)",
+   "fix": "reframe: the hero must be on screen in every shot"
+  },
+  {
+   "sev": "P0",
+   "code": "HERO_NOT_VISIBLE",
+   "t": 53.53,
+   "shot": "L06",
+   "detail": "hero is outside the frame",
+   "fix": "reframe: the hero must be on screen in every shot"
+  },
+  {
+   "sev": "P0",
+   "code": "HERO_NOT_VISIBLE",
+   "t": 146.35,
+   "shot": "Q7",
+   "detail": "hero is outside the frame",
+   "fix": "reframe: the hero must be on screen in every shot"
+  },
+  {
+   "sev": "P0",
+   "code": "HERO_TOO_SMALL",
+   "t": 194.18,
+   "shot": "Q7",
+   "detail": "hero height 10% of frame in the key shot (< 20%)",
+   "fix": "dolly in / lower fov so the hero fills at least 35% of the frame height"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 0.3,
+   "shot": "intro",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "HERO_SMALL",
+   "t": 61.11,
+   "shot": "L06",
+   "detail": "hero height 13% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  },
+  {
+   "sev": "P2",
+   "code": "HERO_SMALL",
+   "t": 248.31,
+   "shot": "L18",
+   "detail": "hero height 34% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  }
+ ],
+ "sheets": null,
+ "timing": {
+  "ready_s": 10.2,
+  "gates_s": 1279.7,
+  "total_s": 1314.2
+ }
+}
