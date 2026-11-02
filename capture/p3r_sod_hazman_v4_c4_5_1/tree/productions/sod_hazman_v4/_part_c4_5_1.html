@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>sod hazman v4 c4</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>window.__T0=208.5050; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js", "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+// Chapter c4: the day divided into twelve equal hours (the "day board"). Zero Hebrew here: captions are vault ids resolved by lib_v4/caption3d.js; digits only on screen.
+// Every time below derives from timeline.json (chapter c4) through the ctx helpers.
+import { world, THREE, ease, prog, clamp, lerp, box, cyl, mesh, toon } from '../../lib/stage3d.js';
+import { F, boot, introShot, runFilm, camSeq, dofOf, watchScene, dayBoard, hourglass, tileStrip, pennant, luachBook, textPlane, fmtHM, tube, reveal, O } from './lib_v4/kit_c4567.js';
+import * as K from './lib_v4/objects_c4.js';
+
+const { C, MOUTH } = await boot('c4', ['intro', 'L00', 'L01', 'B1', 'L09', 'B2', 'L13', 'L14', 'L15', 'B3', 'L21'], { B1: 'L02', B2: 'L10', B3: 'L16' });
+const T0 = C.T0, EN = C.EN, G0 = C.gold0, GS = C.goldSpans;
+const gs = (id, i) => { const s = GS(id); return (s[i] || s[s.length - 1] || { t0: T0(id) }).t0; };
+const bump = (g, c, w) => Math.exp(-Math.pow((g - c) / w, 2));
+const SR_SUM = 5 + 40 / 60, SS_SUM = 19 + 40 / 60, SR_WIN = 6.5, SS_WIN = 16.5;
+
+// ---------------------------------------------------------------- L00: the open Shulchan Aruch on a shtender, source tag 58:1
+function sStudy() {
+  const a = C.START.L00, b = C.ENDOF('L00'), Wd = world({ fog: false }); C.baseCam(Wd, .05, 200);
+  const S = K.studyCorner(Wd); Wd.hero = S.hero; const tg = G0('L00');
+  Wd.on((t, cam) => { const g = t + a, k = ease.out(prog(g, tg - .25, tg + .45)); S.tag.set(k > .02 ? '58:1' : ''); S.tag.mesh.scale.setScalar(Math.max(.01, k * (1 + .07 * Math.sin(g * 4)))); S.tag.opacity(k); });
+  const cam = camSeq(a, b, [
+    { t: a, p: [[.5, 2.35, 1.6], [.15, 2.0, 1.0]], l: [0, 1.15, -.05], mm: 42 },
+    { t: a + 4.4, p: [[-.4, 1.45, .95], [.25, 1.5, .62]], l: [[0, 1.2, -.1], [.2, 1.28, -.12]], mm: 60 },
+    { t: a + 8.0, p: [[.6, 1.9, .8], [1.1, 2.3, 1.9]], l: [.1, 1.2, -.1], mm: [50, 40] }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam) });
+}
+
+// ---------------------------------------------------------------- watch shots
+const sW1 = () => watchScene(C, 'L01', { mouth: MOUTH, extras: (Wd, R, W, a) => {
+  const bd = textPlane(.34, .17, { fg: '#fff0c0', glow: 'rgba(255,190,70,.95)', bg: 'rgba(40,24,6,.82)' }); bd.set('9:00'); bd.mesh.position.set(0, .5, .12); Wd.add(bd.mesh);
+  Wd.on((t, cam) => { const g = t + a, k = ease.out(prog(g, T0('L01') - .2, T0('L01') + .5)); bd.mesh.scale.setScalar(Math.max(.01, k)); bd.mesh.position.y = .5 + .012 * Math.sin(g * 2.5); bd.mesh.quaternion.copy(cam.quaternion); });
+} });
+const sW2 = () => watchScene(C, 'L09', { mouth: MOUTH, extras: (Wd, R, W, a) => {
+  const mb = dayBoard(Wd, { pos: [-.46, .0, -.28], scale: .062, h: 1.3 }); mb.set({ sr: SR_WIN, ss: SS_WIN, s: 1, lit: 12, suns: 1, tl: '', tr: '' }); mb.group.rotation.y = .35;
+  Wd.on((t, cam) => { const g = t + a; mb.set({ sr: SR_WIN, ss: SS_WIN, s: 1, lit: 12, suns: 1, pulse: .25 + .2 * Math.sin(g * 2) }); });
+}, over: g => { const k = ease.io(prog(g, T0('L09') - .1, T0('L09') + .7)); return { yaw: -.48 * k, look: [-.9 * k, -.05 * k], brow: .35 * k }; } });
+const sW3 = () => watchScene(C, 'L14', { mouth: MOUTH, extras: (Wd, R, W, a) => {
+  Wd.add(box(.2, .05, .16, 0x5a3416, { pos: [.36, .025, -.55], inkW: .006 })); const clk = O.wallClock(Wd, { pos: [.36, .21, -.55], r: .15 }); clk.group.rotation.y = -.35;
+  Wd.on(t => { const g = t + a; clk.setTime(27720 + g * 6, undefined); });
+}, over: g => { const k = ease.io(prog(g, T0('L14') - .1, T0('L14') + .7)); return { yaw: .5 * k, look: [.9 * k, .12 * k], brow: -.85 * k }; } });
+
+// ---------------------------------------------------------------- B1 (L02..L08): the day board
+function sBoard1() {
+  const a = C.START.B1, b = C.ENDOF('B1'), Wd = world({ fog: false }); C.baseCam(Wd, .05, 300);
+  K.boardRoom(Wd, {});
+  const bd = dayBoard(Wd, { pos: [0, .9, 0] }); Wd.hero = bd.group;
+  const p9 = textPlane(2.6, 1.3, { fg: '#fff0c0', glow: 'rgba(255,190,70,.9)', bg: 'rgba(30,20,8,.85)' }); p9.set('9:00'); p9.mesh.position.set(-3.6, 3.0, 1.4); Wd.add(p9.mesh);
+  const rx = K.redX(Wd, [-3.6, 3.0, 1.55], 2.5);
+  const eq = textPlane(5.2, .95, { fg: '#fff3d0', glow: 'rgba(255,200,90,.9)', bg: 'rgba(30,20,8,.72)', cw: 1024, ch: 190 }); eq.mesh.position.set(0, 4.5, 1.0); Wd.add(eq.mesh);
+  const pin = bd.addMark(0xff7a40, () => .25);
+  const L2 = T0('L02'), tX = gs('L02', 0), tQ = gs('L02', 2), L3 = T0('L03'), tS = G0('L03'), L4 = T0('L04'), tLab = gs('L04', 2), L5 = G0('L05'), L6 = G0('L06'), L8 = T0('L08'), L8g = G0('L08'), tSum2 = gs('L08', 2), L9 = T0('L09');
+  const MORPH = [{ t0: L5 - .3, t1: L5 + 2.2, sr: SR_SUM, ss: SS_SUM }, { t0: L6 - .3, t1: L6 + 2.2, sr: SR_WIN, ss: SS_WIN }, { t0: tSum2 - .6, t1: tSum2 + 1.8, sr: SR_SUM, ss: SS_SUM }];
+  const span = g => { let sr = 6, ss = 18; for (const m of MORPH) { if (g >= m.t1) { sr = m.sr; ss = m.ss; continue; } if (g > m.t0) { const k = ease.io(prog(g, m.t0, m.t1)); sr = lerp(sr, m.sr, k); ss = lerp(ss, m.ss, k); } break; } return { sr, ss }; };
+  const eqText = g => { if (g < L8 + .4) return ''; if (g < tSum2 - .4) { if (g < L8g - .1) return '6:30'; if (g < L8g + 1.3) return '6:30 + 3x50'; return '6:30 + 3x50 = 9:00'; } if (g < tSum2 + 1.3) return '5:40'; if (g < tSum2 + 2.6) return '5:40 + 3x70'; return '5:40 + 3x70 = 9:10'; };
+  Wd.on((t, cam) => {
+    const g = t + a, { sr, ss } = span(g), len = Math.round((ss - sr) * 5), inEq = g > L8 + .4 && g < L9;
+    const vv = 1 - ease.in(prog(g, tQ - .6, tQ)), k1 = ease.out(prog(g, L2 + .4, L2 + 1.1));
+    p9.mesh.scale.setScalar(Math.max(.001, k1 * vv)); p9.mesh.visible = k1 * vv > .01; rx.set(prog(g, tX - .1, tX + .35), prog(g, tX + .3, tX + .75), vv);
+    const lab = g >= tLab ? (g < tLab + 1.0 ? Math.round(len * ease.out(prog(g, tLab, tLab + 1.0))) : len) : null;
+    const pulse = bump(g, tS + 2.4, .5) + .6 * bump(g, tLab + .6, .4) + .7 * bump(g, L5 + 1.2, .4) + .7 * bump(g, L6 + 1.2, .4) + .5 * bump(g, tSum2 + 1.0, .4) + .1 * (.5 + .5 * Math.sin(g * 1.7));
+    bd.set({ sr, ss, suns: ease.out(prog(g, L2 + .2, L2 + 1.2)), q: prog(g, tQ, tQ + 1.1), s: prog(g, tS, tS + 2.2), lit: g < tS ? 0 : 12 * prog(g, tS + 1.0, tS + 3.4), pulse,
+      tl: fmtHM(sr), tr: fmtHM(ss), tagK: ease.out(prog(g, L4 + .3, L4 + 1.2)), label: lab, labelK: ease.out(prog(g, tLab, tLab + .4)), hi: inEq ? [0, 1, 2] : null });
+    pin.k = ease.out(prog(g, L8g + 1.3, L8g + 1.8)) * (g < L9 ? 1 : 0);
+    const et = eqText(g); eq.set(et); const ek = ease.out(prog(g, L8 + .4, L8 + 1.0)) * (g < L9 - .3 ? 1 : 0); eq.opacity(ek); eq.mesh.scale.setScalar(.85 + .15 * ek);
+  });
+  const cam = camSeq(a, b, [
+    { t: L2, p: [[-3, 2.6, 9], [-3.2, 2.6, 7.2]], l: [-3.5, 2.7, 1.2], mm: 38 },
+    { t: tQ - .9, p: [[0, 2.3, 11], [.3, 2.5, 9.5]], l: [0, 2.3, 0], mm: 30 },
+    { t: L3, p: [[0, 1.7, 8], [-1.5, 1.9, 6.5]], l: [[0, 1.8, 0], [-1.5, 1.6, 0]], mm: 36 },
+    { t: L3 + 4.5, p: [[2, 3.4, 9], [-1, 3.0, 8]], l: [0, 2.0, 0], mm: 32 },
+    { t: L4, p: [[-3, 1.7, 6.5], [3, 1.9, 6.5]], l: [[-2.8, 1.6, 0], [2.8, 1.6, 0]], mm: 40 },
+    { t: L4 + 5.2, p: [[0, 2.7, 10.5], [0, 2.5, 9]], l: [0, 2.0, 0], mm: 30 },
+    { t: tLab - .4, p: [[1.2, 1.6, 4.6], [0, 1.6, 4.9]], l: [[.8, 1.7, 0], [0, 1.7, 0]], mm: 45 },
+    { t: L5 - .6, p: [[0, 2.6, 10.5], [0, 2.4, 8.7]], l: [0, 2.0, 0], mm: 30 },
+    { t: L5 + 4.6, p: [[4.2, 2.2, 6.5], [3.6, 2.2, 6.0]], l: [3.8, 1.8, 0], mm: 38 },
+    { t: T0('L06'), p: [[-2, 2.4, 9], [0, 2.2, 8]], l: [0, 1.9, 0], mm: 32 },
+    { t: L6 + 3.4, p: [[-3.2, 2.0, 6.2], [-2.6, 2.0, 5.8]], l: [-2.6, 1.7, 0], mm: 40 },
+    { t: T0('L07'), p: [[-4.5, 2.4, 9.5], [4.5, 2.6, 9.5]], l: [0, 1.9, 0], mm: 32 },
+    { t: L8, p: [[0, 2.9, 9.8], [-.4, 2.8, 9.0]], l: [0, 2.7, 0], mm: 34 },
+    { t: tSum2 - .9, p: [[2, 2.7, 8.4], [0, 2.7, 9.2]], l: [0, 2.7, 0], mm: 34 }], 1.35);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 3.2, maxR: 12 }) });
+}
+
+// ---------------------------------------------------------------- B2 (L10..L12): summer vs winter bars, then two hourglasses
+function sBoard2() {
+  const a = C.START.B2, b = C.ENDOF('B2'), Wd = world({ fog: false }); C.baseCam(Wd, .05, 300);
+  K.boardRoom(Wd, { rack: true });
+  const top = dayBoard(Wd, { pos: [0, 2.7, 0], h: 1.2 }), bot = dayBoard(Wd, { pos: [0, .55, 0], h: 1.2 }); Wd.hero = top.group;
+  const hbig = hourglass(Wd, { pos: [-2.6, 1.65, 5.2], scale: 1.5 }), hsm = hourglass(Wd, { pos: [2.2, 1.05, 5.2], scale: .95 });
+  const L10 = T0('L10'), L11 = T0('L11'), g10a = gs('L10', 0), g10b = gs('L10', 2), gc1 = G0('L11') - .3, gc2 = gs('L11', 3) - .2;
+  Wd.on((t, cam) => {
+    const g = t + a, dis = (g < L11 ? 1 : 0), brea = .1 * (.5 + .5 * Math.sin(g * 1.7));
+    top.set({ sr: SR_SUM, ss: SS_SUM, suns: 1, s: ease.out(prog(g, L10 + .2, L10 + 2.2)), lit: 12, pulse: bump(g, g10a + .4, .5) + brea, label: 70, labelK: ease.out(prog(g, L10 + 1.6, L10 + 2.2)), tl: '5:40', tr: '19:40', tagK: ease.out(prog(g, L10 + 1.0, L10 + 1.8)) });
+    bot.set({ sr: SR_WIN, ss: SS_WIN, suns: 1, s: ease.out(prog(g, L10 + 1.2, L10 + 3.0)), lit: 12, pulse: bump(g, g10b + .4, .5) + brea, label: 50, labelK: ease.out(prog(g, L10 + 2.6, L10 + 3.2)), tl: '6:30', tr: '16:30', tagK: ease.out(prog(g, L10 + 2.0, L10 + 2.8)) });
+    const pop = ease.out(prog(g, L11 - .1, L11 + .8)), popS = ease.out(prog(g, L11 + .1, L11 + .9)), u = prog(g, L11 + .6, b);
+    hbig.group.scale.setScalar(Math.max(.001, 1.5 * pop)); hsm.group.scale.setScalar(Math.max(.001, .95 * popS)); hbig.group.visible = pop > .01; hsm.group.visible = popS > .01;
+    hbig.set(u * .8, String(Math.round(71 * ease.out(prog(g, gc1, gc1 + 2.6)))), pop); hsm.set(clamp(u * .8 * 71 / 50, 0, 1), String(Math.round(50 * ease.out(prog(g, gc2, gc2 + 2.0)))), popS);
+  });
+  const cam = camSeq(a, b, [
+    { t: L10, p: [[0, 3.3, 13.5], [0, 3.1, 11.5]], l: [0, 2.5, 0], mm: 30 },
+    { t: L10 + 4.2, p: [[-3.2, 3.9, 7.2], [-1, 3.9, 7.6]], l: [-1.2, 3.65, 0], mm: 40 },
+    { t: L10 + 6.4, p: [[2.8, 1.7, 7.2], [1, 1.8, 7.6]], l: [1, 1.5, 0], mm: 40 },
+    { t: L11, p: [[0, 2.5, 12.8], [.3, 2.2, 10.4]], l: [0, 1.8, 5.2], mm: 40 },
+    { t: L11 + 4.6, p: [[-1.4, 1.4, 9.2], [-.4, 1.6, 8.6]], l: [-1.2, 2.2, 5.2], mm: 46 },
+    { t: T0('L12'), p: [[-3.5, 2.2, 12], [3.5, 2.4, 12]], l: [0, 1.8, 5.2], mm: 36 }], 1.2);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 3.2, maxR: 12 }) });
+}
+
+// ---------------------------------------------------------------- L13: the end-of-shema marker slides day by day across a calendar strip
+function sCalendar() {
+  const a = C.START.L13, b = C.ENDOF('L13'), Wd = world({ fog: false }); C.baseCam(Wd, .05, 300);
+  K.boardRoom(Wd, {}); const N = 21, ts = tileStrip(Wd, { n: N, tw: .5, th: .78, gap: .06, pos: [0, 2.4, 1.0] }); Wd.hero = ts.group;
+  const mk = pennant(Wd, 0xffc030); mk.scale.setScalar(1.3); const px = i => ts.pos(i)[0], cur = m => .5 + .42 * Math.sin(m / (N - 1) * Math.PI * 1.35 - .35) + 1.55;
+  const tr = tube(Array.from({ length: N }, (_, i) => [px(i), 2.4 + cur(i) + .15, 1.2]), .03, 0xffd870, { seg: 80, rs: 5 }); Wd.add(tr); reveal(tr, 0);
+  const t0 = T0('L13') + .8, t1 = b - 1.0;
+  const mAt = g => (N - 1) * ease.io(prog(g, t0, t1));
+  Wd.on((t, cam) => { const g = t + a, m = mAt(g), i0 = Math.floor(m), f = m - i0, x = lerp(px(i0), px(Math.min(N - 1, i0 + 1)), f);
+    mk.position.set(x, 2.4 + cur(m) - .1, 1.3); mk.rotation.z = .02 * Math.sin(g * 3); reveal(tr, m / (N - 1));
+    for (let i = 0; i < N; i++) { ts.flip(i, clamp(m - i + .6, 0, 1)); ts.glow(i, i === Math.round(m) ? .55 : 0); } });
+  const cam = t => { const g = t + a, m = mAt(g), x = lerp(px(0), px(N - 1), m / (N - 1)), w = 1 - ease.io(prog(g, T0('L13'), T0('L13') + 2.6)), kk = 1 - w;
+    return { pos: [lerp(0, x * .7, kk), lerp(3.2, 3.1, kk), lerp(11.5, 8.6, kk)], look: [lerp(0, x, kk), lerp(2.9, 2.55, kk), 1], fov: F(36) }; };
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 3.5 }) });
+}
+
+// ---------------------------------------------------------------- L15: the luach page, rows lighting one by one
+function sLuach() {
+  const a = C.START.L15, b = C.ENDOF('L15'), Wd = world({ fog: false }); C.baseCam(Wd, .05, 300);
+  K.boardRoom(Wd, {}); const lb = luachBook(Wd, { pos: [0, 2.9, 1.5], w: 3.6, h: 4.6, rows: 10 }); Wd.hero = lb.group;
+  const L = T0('L15'), g1 = G0('L15');
+  Wd.on((t, cam) => { const g = t + a; lb.setLit(10.2 * ease.io(prog(g, L + .5, b - .5))); lb.group.rotation.y = .08 * Math.sin(g * .5); });
+  const cam = camSeq(a, b, [
+    { t: a, p: [[-.6, 2.9, 9.2], [.2, 3.0, 6.4]], l: [0, 2.9, 1.5], mm: 40 },
+    { t: g1 - .2, p: [[1.4, 3.8, 5.2], [.8, 2.4, 4.6]], l: [[.9, 3.6, 1.5], [.9, 2.2, 1.5]], mm: 38 }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 3.5 }) });
+}
+
+// ---------------------------------------------------------------- B3 (L16..L20): the two opinions as two bars; summary question loop
+function sBoard3() {
+  const a = C.START.B3, b = C.ENDOF('B3'), Wd = world({ fog: false }); C.baseCam(Wd, .05, 300);
+  K.boardRoom(Wd, { rack: true });
+  const gra = dayBoard(Wd, { pos: [0, 2.7, 0], h: 1.2 }), mga = dayBoard(Wd, { pos: [0, .55, 0], h: 1.2 }); Wd.hero = gra.group;
+  const SRm = SR_WIN - 1.2, SSm = SS_WIN + 1.2;
+  const guide = (h) => { const m = new THREE.Mesh(new THREE.PlaneGeometry(.06, 5.4), new THREE.MeshBasicMaterial({ color: 0xffd070, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false })); m.position.set((h - 12) * .5, 2.45, .62); Wd.add(m); return m; };
+  const g1 = guide(SR_WIN), g2 = guide(SS_WIN);
+  const pa = pennant(Wd, 0xffc030), pb = pennant(Wd, 0x3ad0c0); pa.position.set(-6.9, 2.7, .5); pb.position.set(-6.9, .55, .5); pa.scale.setScalar(1.1); pb.scale.setScalar(1.1);
+  const L16 = T0('L16'), tE = gs('L16', 2), tP = gs('L16', 0), L18 = T0('L18');
+  Wd.on((t, cam) => {
+    const g = t + a, brea = .12 * (.5 + .5 * Math.sin(g * 1.3)), flash = bump(g, L18 + .6, .4), idx = g > L18 + .15 && g < L18 + 1.8 ? Math.floor(prog(g, L18 + .2, L18 + 1.6) * 11.99) : -1;
+    gra.set({ sr: SR_WIN, ss: SS_WIN, suns: 1, s: ease.out(prog(g, L16 + .3, L16 + 2.0)), lit: 12, pulse: bump(g, tP + .4, .5) + flash + brea, tl: '6:30', tr: '16:30', tagK: ease.out(prog(g, L16 + 1.2, L16 + 2.0)), hi: idx >= 0 ? [idx] : null });
+    mga.set({ sr: SRm, ss: SSm, suns: 1, s: ease.out(prog(g, L16 + 1.1, L16 + 2.9)), lit: 12, pulse: bump(g, tE + .4, .6) + flash + brea, tl: fmtHM(SRm), tr: fmtHM(SSm), tagK: ease.out(prog(g, L16 + 2.0, L16 + 2.8)), hi: idx >= 0 ? [idx] : null });
+    const gk = .55 * ease.out(prog(g, tE - .2, tE + .6)) * (.75 + .25 * Math.sin(g * 4)); g1.material.opacity = gk; g2.material.opacity = gk;
+    pa.position.y = 2.7 + .05 * Math.sin(g * 2); pb.position.y = .55 + .05 * Math.sin(g * 2 + 1);
+  });
+  const cam = camSeq(a, b, [
+    { t: L16, p: [[0, 3.4, 14], [0, 3.2, 12]], l: [0, 2.6, 0], mm: 30 },
+    { t: L16 + 4.4, p: [[5.2, 3.2, 8.4], [6.2, 3.1, 8.0]], l: [5.6, 2.6, 0], mm: 36 },
+    { t: L16 + 6.8, p: [[-4.8, 3.2, 8.4], [-5.8, 3.1, 8.0]], l: [-5.4, 2.6, 0], mm: 36 },
+    { t: tE - .6, p: [[0, 3.2, 13], [0, 3.1, 11.5]], l: [0, 2.6, 0], mm: 30 },
+    { t: T0('L17'), p: [[0, 3.0, 12.5], [-2, 3.1, 11]], l: [0, 2.6, 0], mm: 32 },
+    { t: L18 - .6, p: [[0, 3.2, 13.5], [0, 3.2, 12.8]], l: [0, 2.6, 0], mm: 30 },
+    { t: T0('L19'), p: [[-5, 3.4, 12.5], [5, 3.4, 12.5]], l: [0, 2.6, 0], mm: 32, e: 'sm' },
+    { t: T0('L19') + 30, p: [[5, 3.0, 12.5], [-3, 3.2, 12]], l: [0, 2.6, 0], mm: 32, e: 'sm' },
+    { t: T0('L20') - .5, p: [[0, 3.2, 12.5], [0, 3.0, 9.8]], l: [0, 2.6, 0], mm: 32 }], 1.3);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 3.2, maxR: 12 }) });
+}
+
+// ---------------------------------------------------------------- L21: hook - the Earth axis begins to tilt
+function sHook() {
+  const a = C.START.L21, b = C.ENDOF('L21'), Wd = world({ fog: false }); C.baseCam(Wd, .05, 600);
+  const H = K.earthHook(Wd); Wd.hero = H.E; const gt = G0('L21');
+  Wd.on((t, cam) => { const g = t + a, deg = 23.5 * ease.io(prog(g, gt - .6, gt + 4.2)); H.setTilt(deg, deg / 23.5); H.em.rotation.y = g * .35;
+    const fl = 1 + .28 * Math.sin(g * 17) * Math.sin(g * 5.3) * ease.sm(prog(g, gt, gt + 1)); Wd.sun.intensity = 2.2 * fl; H.sun.userData.g1.material.opacity = .8 * fl; });
+  const cam = camSeq(a, b, [{ t: a, p: [[0, .6, 11.5], [.3, .2, 5.6]], l: [0, 0, 0], mm: [40, 50], e: 'in' }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 4, maxR: 12 }) });
+}
+
+const BUILD = { intro: () => introShot(C, 'T_C4'), L00: sStudy, L01: sW1, B1: sBoard1, L09: sW2, B2: sBoard2, L13: sCalendar, L14: sW3, L15: sLuach, B3: sBoard3, L21: sHook };
+runFilm(C, BUILD, { B1: 1, B2: 1, B3: 1, L21: 1 });
+</script>

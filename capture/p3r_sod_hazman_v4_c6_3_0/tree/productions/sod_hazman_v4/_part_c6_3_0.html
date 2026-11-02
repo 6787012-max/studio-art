@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>sod hazman v4 c6</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>window.__T0=106.3612; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js", "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+// Chapter c6: clocks and time zones - the clock changes, the sun does not. Zero Hebrew: vault ids only, digits/analog dials on screen.
+import { world, THREE, ease, prog, clamp, lerp, rng, box, cyl, mesh, toon } from '../../lib/stage3d.js';
+import { F, boot, introShot, runFilm, camSeq, dofOf, watchScene, textPlane, dayBoard, tube, reveal, sunBall, steamTrain, goldRing, ringAnim, candle, D2R, O } from './lib_v4/kit_c4567.js';
+import * as K from './lib_v4/objects_c6.js';
+
+const ORDER = ['intro', 'L00', 'T1', 'L02', 'L03', 'L04', 'L05', 'L06', 'L07', 'L08', 'L09', 'L09b', 'L10', 'L11', 'L12', 'L13', 'L14', 'L15', 'Q6', 'L20'];
+const { C, MOUTH } = await boot('c6', ORDER, { T1: 'L01', Q6: 'L16' });
+const T0 = C.T0, EN = C.EN, G0 = C.gold0, GS = C.goldSpans, AT = C.at;
+C.START.L09b = AT('L09', .55);
+const gs = (id, i) => { const s = GS(id); return (s[i] || s[s.length - 1] || { t0: T0(id) }).t0; };
+const bump = (g, c, w) => Math.exp(-Math.pow((g - c) / w, 2));
+const PI = Math.PI, bill = (m, cam) => m.quaternion.copy(cam.quaternion);
+const warm = (Wd, o) => O.lighting(Wd, Object.assign({ key: [0xffd9a0, .9, [2, 5, 6]], hemi: [0xe8c898, 0x3a2a1a, .85], fill: [0x7a96d8, .35, [-6, 2, 4]], rim: [0xffe0b0, .5, [0, 3, -6]], target: [0, 1.5, 0], shadowExt: 12, fog: null }, o || {}));
+const mkWorld = (near, far) => { const Wd = world({ fog: false }); C.baseCam(Wd, near || .05, far || 300); return Wd; };
+const dark = Wd => O.skyDome(Wd, { top: 0x0a0806, mid: 0x14100c, bot: 0x241a12, stars: 0 });
+
+// ---------------------------------------------------------------- L00: the watch among many tiny town clocks
+const sW0 = () => watchScene(C, 'L00', { mouth: MOUTH, extras: (Wd, R, W, a) => { const tc = K.tinyClocks(Wd, { pos: [0, .46, -.95], n: 34, w: 2.5, h: 1.2, seed: 9 }); Wd.on(t => tc.update(t + a)); },
+  over: g => { const s = Math.sin((g - T0('L00')) * 1.3); return { look: [.7 * s, .15 * Math.cos(g)], brow: .4 }; } });
+
+// ---------------------------------------------------------------- T1 (L01): the steam train between two toy towns whose clocks disagree
+function sTowns() {
+  const a = C.START.T1, b = C.ENDOF('T1'), Wd = world({ ground: 'grass', groundSize: 300, groundRep: [60, 60], fog: true, fogColor: 0xcfe0f0, fogNear: 50, fogFar: 200, skyTop: 0x6aa4e8, skyBottom: 0xf6e8cc }); C.baseCam(Wd, .1, 500);
+  O.lighting(Wd, { key: [0xfff0d8, 1.5, [-14, 22, 18]], hemi: [0xdbe8f8, 0x6a7a50, .95], fill: [0xa8c0ff, .25, [8, 4, 10]], target: [0, 0, 0], shadowExt: 34, shadowMap: 1024, fog: [0xcfe0f0, 50, 200] }); Wd.scene.fog = new THREE.Fog(0xcfe0f0, 50, 200);
+  const A = K.toyTown(Wd, { pos: [-13, 0, 0], seed: 3, S: 43200 }), B = K.toyTown(Wd, { pos: [13, 0, 0], seed: 8, S: 43200 + 1500 });
+  [-.6, .6].forEach(z => Wd.add(box(60, .1, .12, 0x6a6a72, { pos: [0, .14, 5 + z], inkW: .01 }))); for (let i = -25; i < 25; i++) Wd.add(box(.25, .08, 1.7, 0x5a3a20, { pos: [i * 1.2, .06, 5], ink: false }));
+  O.hills(Wd, { colors: [0x6f9a5a, 0x7aa862], list: [[-40, -70, 40, 9, 18], [40, -72, 44, 11, 20], [0, -90, 70, 14, 24]] });
+  const T = steamTrain(Wd, { scale: .8 }); T.group.position.z = 5; T.group.scale.setScalar(.8); Wd.hero = B.group; const xAt = t => lerp(-9.5, 7.5, ease.io(prog(t, a + .4, b - 1.0))), tg = G0('L01');
+  const rg = goldRing(Wd), rg2 = goldRing(Wd);
+  Wd.on((t, cam) => { const g = t + a; T.update(g, xAt(g), 1); T.group.scale.setScalar(.8); T.smoke(g, t2 => xAt(t2) , 0, 5, 2.4);
+    A.clock.setTime(43200 + (g - a) * 4, undefined); B.clock.setTime(43200 + 1500 + (g - a) * 4, undefined); rg.position.set(-13, 4.0, 4); rg2.position.set(13, 4.0, 4); ringAnim(rg, cam, g, tg + .2, 1.2, .8, 2.6, .8); ringAnim(rg2, cam, g, tg + .5, 1.2, .8, 2.6, .8); });
+  const cam = t => { const g = t + a, x = xAt(g), k1 = ease.io(prog(g, a, a + 3.6)), k2 = ease.io(prog(g, a + 3.6, a + 6.4)), k3 = ease.io(prog(g, a + 6.4, b));
+    const wide = { p: [lerp(-2, 3, k1), lerp(11, 8, k1), lerp(30, 24, k1)], l: [lerp(-2, 0, k1), 2.2, 2] }, fol = { p: [x * .6 - 2, 3.2, 13], l: [x, 1.6, 5] }, cu = { p: [lerp(9, 11.5, k3), 4.6, 12], l: [13, 4.0, 3.65] };
+    const A1 = k2 < 1 && g < a + 6.4 ? [lerp(wide.p[0], fol.p[0], k2), lerp(wide.p[1], fol.p[1], k2), lerp(wide.p[2], fol.p[2], k2), lerp(wide.l[0], fol.l[0], k2), lerp(wide.l[1], fol.l[1], k2), lerp(wide.l[2], fol.l[2], k2)] : (g < a + 6.4 ? [fol.p[0], fol.p[1], fol.p[2], fol.l[0], fol.l[1], fol.l[2]] : [cu.p[0], cu.p[1], cu.p[2], cu.l[0], cu.l[1], cu.l[2]]);
+    return { pos: [A1[0], A1[1], A1[2]], look: [A1[3], A1[4], A1[5]], fov: F(g < a + 6.4 ? lerp(30, 38, k2) : 44) }; };
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 2.5, maxR: 10 }) });
+}
+
+// ---------------------------------------------------------------- L02: the globe cut into vertical zone bands
+function sGlobe() {
+  const a = C.START.L02, b = C.ENDOF('L02'), Wd = mkWorld(.1, 300); O.skyDome(Wd, { top: 0x01030a, mid: 0x02061a, bot: 0x061030, stars: 1 });
+  O.lighting(Wd, { key: [0xfff0d8, 2.0, [-8, 4, 8]], hemi: [0x4a6aa8, 0x101830, .6], fill: [0x5a7ad0, .3, [8, 0, 6]], rim: [0xffb070, .5, [6, 6, -8]], noShadow: true, target: [0, 0, 0], fog: null });
+  const Gl = K.zoneGlobe(Wd, { R: 2.2 }); Wd.hero = Gl.E; const tz = G0('L02');
+  Wd.on((t, cam) => { const g = t + a, k = ease.out(prog(g, tz - 1.0, tz + 1.4)); Gl.em.rotation.y = g * .25 + .4; Gl.shell.material.opacity = .62 * k; Gl.hi.material.opacity = .5 * bump(g, tz + 2.4, .6) * k; });
+  const cam = camSeq(a, b, [{ t: a, p: [[-5, 1.8, 7], [-2.5, 1.2, 7.2]], l: 0, mm: 40 }, { t: a + 4.6, p: [[3.2, 2.2, 6.6], [5.2, 1.6, 5.4]], l: [0, 0, 0], mm: 36 }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 4 }) });
+}
+
+// ---------------------------------------------------------------- L03: a town clock reaches 12, rewinds a few minutes, reaches 12 again
+function sRewind() {
+  const a = C.START.L03, b = C.ENDOF('L03'), Wd = mkWorld(); dark(Wd); warm(Wd, { key: [0xffd9a0, 1.0, [3, 5, 6]], points: [[0xffc070, 7, [0, 4, 3], 12]] });
+  Wd.add(O.texBox(10, 8, .5, O.stoneTex(5, '#cdb98f'), 0xffffff, { pos: [0, 3.2, -.6], inkW: .04 })); const clk = O.wallClock(Wd, { pos: [0, 3.4, 0], r: 1.7, S: 43000 }); Wd.hero = clk.group;
+  [-1, 1].forEach(s => Wd.add(box(.5, 6, .6, 0x8a7550, { pos: [s * 3.4, 3, -.1], inkW: .03 })));
+  O.motes(Wd, { n: 24, area: [-5, 5, 1, 6, 0, 4], size: .12, color: 0xffe3a8, op: .5, seed: 14, rise: .05 }); const rg = goldRing(Wd), rg2 = goldRing(Wd, 0xffe9a8); rg.position.set(0, 3.4, .3); rg2.position.copy(rg.position);
+  const tA = a + .6, tHit = tA + 2.0, tRew = G0('L03') - .2, tFwd = tRew + 1.6, tEnd = tFwd + 2.6, K0 = [[a, 43200 - 190], [tHit, 43200], [tRew, 43200 + 20], [tRew + 1.0, 43200 - 300], [tFwd, 43200 - 300], [tEnd, 43200]];
+  Wd.on((t, cam) => { const g = t + a; let S = K0[0][1]; for (let i = 0; i < K0.length - 1; i++) if (g >= K0[i][0]) S = lerp(K0[i][1], K0[i + 1][1], ease.io(prog(g, K0[i][0], K0[i + 1][0]))); if (g >= K0[K0.length - 1][0]) S = K0[K0.length - 1][1];
+    clk.setTime(S, undefined); ringAnim(rg, cam, g, tHit, 1.0, 1.2, 3.2, .7); ringAnim(rg2, cam, g, tEnd, 1.2, 1.2, 3.6, .8); });
+  const cam = camSeq(a, b, [{ t: a, p: [[1.5, 3.6, 9], [0, 3.5, 6.6]], l: [0, 3.4, 0], mm: 38 }, { t: tRew - .6, p: [[-2.4, 2.6, 6.4], [-1.2, 3.0, 5.8]], l: [0, 3.5, 0], mm: 42 }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 3 }) });
+}
+
+// ---------------------------------------------------------------- L04: the map of Eretz Yisrael inside one band, one clock above it
+function sMap() {
+  const a = C.START.L04, b = C.ENDOF('L04'), Wd = mkWorld(); dark(Wd); warm(Wd, { key: [0xffd9a0, 1.0, [3, 8, 6]], points: [[0xffc070, 6, [0, 5, 3], 14]], target: [0, 0, 0] });
+  Wd.add(box(14, .3, 12, 0x3a2a1a, { pos: [0, -.2, -.5], inkW: .02 })); const M = K.israelMap(Wd, { pos: [0, 0, 0], k: 2.7 }); Wd.hero = M.group;
+  const band = new THREE.Mesh(new THREE.BoxGeometry(5.2, 3.2, 10), new THREE.MeshBasicMaterial({ color: 0x4ad0e8, transparent: true, opacity: 0, depthWrite: false, blending: THREE.AdditiveBlending })); band.position.set(.1, 1.5, -.4); Wd.add(band);
+  const bl = new THREE.LineSegments(new THREE.EdgesGeometry(band.geometry), new THREE.LineBasicMaterial({ color: 0x8ae8ff, transparent: true, opacity: 0 })); bl.position.copy(band.position); Wd.add(bl);
+  const clk = O.wallClock(Wd, { pos: [0, 4.4, -.6], r: 1.3, S: 43200 + 600 }); Wd.add(cyl(.06, .06, 3.0, 0x6a4526, { pos: [0, 2.8, -.7], inkW: .01 })); const tb = G0('L04');
+  Wd.on((t, cam) => { const g = t + a, k = ease.out(prog(g, tb - .2, tb + 1.4)); band.material.opacity = .16 * k; bl.material.opacity = .9 * k; clk.setTime(43200 + 600 + (g - a) * 20, undefined); M.pg.scale.setScalar(.9 * (1 + .25 * Math.sin(g * 5))); });
+  const cam = camSeq(a, b, [{ t: a, p: [[0, 7.5, 9.5], [-3, 6.4, 8.6]], l: [0, 1.2, -1], mm: 34 }, { t: tb - .4, p: [[3.5, 3.4, 8.5], [1.5, 3.0, 8]], l: [0, 2.6, -.6], mm: 40 }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 3 }) });
+}
+
+// ---------------------------------------------------------------- L05: two clocks come together and agree; the sun above stays untouched
+function sBump() {
+  const a = C.START.L05, b = C.ENDOF('L05'), Wd = mkWorld(); dark(Wd); warm(Wd, { key: [0xffd9a0, 1.0, [1, 5, 8]], points: [[0xffc070, 8, [0, 3, 5], 14], [0xffd070, 6, [0, 6, 0], 10]] });
+  const cl = O.wallClock(Wd, { pos: [0, 2.2, 0], r: 1.3, S: 43200 }), cr = O.wallClock(Wd, { pos: [0, 2.2, 0], r: 1.3, S: 43200 + 1500 }); Wd.hero = cl.group; const sun = sunBall(Wd, .8); sun.position.set(0, 5.6, -1.5);
+  Wd.add(box(10, .3, 3, 0x5a3a1c, { pos: [0, .35, 0], inkW: .02 })); const rg = goldRing(Wd), rg2 = goldRing(Wd, 0xffe9a8), shield = goldRing(Wd, 0xaee8ff); rg.position.set(0, 2.2, .6); rg2.position.copy(rg.position);
+  const tb = gs('L05', 0) + .6, ts = gs('L05', 4), gl = O.glow(4, 0xffe9a8, 0); gl.position.set(0, 2.2, .8); Wd.add(gl);
+  Wd.on((t, cam) => { const g = t + a, k = ease.io(prog(g, tb - 1.6, tb)), x = lerp(3.6, 1.4, k), yaw = lerp(.45, .1, k), sw = prog(g, tb, tb + .7);
+    cl.group.position.set(-x, 2.2, 0); cr.group.position.set(x, 2.2, 0); cl.group.rotation.y = yaw; cr.group.rotation.y = -yaw; const SL = 43200 + (g - a) * 8, SR = lerp(43200 + 1500, 43200, ease.io(sw)) + (g - a) * 8;
+    cl.setTime(SL, undefined); cr.setTime(SR - 1500 * 0 , undefined); ringAnim(rg, cam, g, tb, 1.0, .8, 3.0, .8); ringAnim(rg2, cam, g, tb + .12, 1.2, .8, 3.6, .5); gl.material.opacity = .8 * bump(g, tb + .2, .5);
+    sun.userData.g1.scale.setScalar(.8 * 5 * (1 + .1 * Math.sin(g * 2) + .6 * bump(g, ts + .3, .5))); sun.position.y = 5.6; shield.position.copy(sun.position); ringAnim(shield, cam, g, ts, 1.4, 1.2, 2.8, .8); });
+  const cam = camSeq(a, b, [{ t: a, p: [[0, 3.0, 11], [0, 3.0, 9]], l: [0, 3.0, 0], mm: 32 }, { t: tb - .5, p: [[0, 2.5, 8], [0, 2.4, 6.4]], l: [0, 2.3, 0], mm: 36 }, { t: ts - .8, p: [[-1, 4.6, 9], [0, 5, 8]], l: [0, 5.3, -1], mm: 34 }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 3 }) });
+}
+
+// ---------------------------------------------------------------- L06: the watch spins its own hands, dizzy
+const sW6 = () => watchScene(C, 'L06', { mouth: MOUTH, over: g => { const k = ease.out(prog(g, T0('L06'), T0('L06') + .5)), w = (g - T0('L06')) * 7; return { look: [Math.cos(w) * .9 * k, Math.sin(w) * .9 * k], roll: .1 * Math.sin(w * .5) * k, yaw: .15 * Math.sin(w * .7) * k, brow: -.3 * k, shape: 1 }; } });
+
+// ---------------------------------------------------------------- L07: summer morning, shutters closed; the hand jumps +1 and the light bar slides to evening
+function sShut() {
+  const a = C.START.L07, b = C.ENDOF('L07'), Wd = mkWorld(); dark(Wd); const R = K.shutterRoom(Wd), L = T0('L07'), tj = G0('L07');
+  O.lighting(Wd, { key: [0xffe0b0, .8, [-2, 6, 6]], hemi: [0xe8d4a8, 0x3a2a1a, .85], fill: [0x7a96d8, .3, [4, 2, 6]], rim: [0xffe0b0, .4, [0, 3, -4]], target: [0, 1.6, -2], shadowExt: 10, fog: null, points: [[0xffe090, 6, [-2.4, 2.2, -3.2], 9]] });
+  const bd = dayBoard(Wd, { pos: [-.2, 0, -.6], scale: .36, h: 1.4 }); const now = bd.addMark(0xff7a40, () => nowF); let nowF = .08; Wd.hero = R.group;
+  Wd.on((t, cam) => { const g = t + a, jump = ease.out(prog(g, tj, tj + .35)), slide = ease.io(prog(g, tj + .4, tj + 4.2)); nowF = .08 + .84 * slide;
+    R.clock.setTime(3600 * 6 + 600 + 3600 * jump + (g - a) * 2, undefined); R.shutters.forEach(s => { s.sh.rotation.y = 0; }); ringAnim(R.ring, cam, g, tj, 1.0, .8, 2.4, .8);
+    bd.set({ sr: 5 + 40 / 60, ss: 19 + 40 / 60, suns: 1, s: ease.out(prog(g, L + .6, L + 2.0)), lit: 12, pulse: .15 * (.5 + .5 * Math.sin(g * 2)) }); now.k = ease.out(prog(g, tj + .3, tj + .8)); R.wg.material.opacity = .6 + .12 * Math.sin(g * 1.3); });
+  const cam = camSeq(a, b, [{ t: a, p: [[0, 2.4, 5.4], [.4, 2.2, 4.2]], l: [-.6, 1.9, -3], mm: 30 }, { t: tj - .6, p: [[1.4, 2.7, 2.6], [1.5, 2.6, 1.8]], l: [1.6, 2.5, -3.8], mm: 40 }, { t: tj + 1.2, p: [[-1, 1.8, 4.4], [0, 1.6, 3.6]], l: [-.2, .6, -.6], mm: 32 }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 3 }) });
+}
+
+// ---------------------------------------------------------------- L08: the sun arc is unchanged; only the ring of numbers shifts
+function sRing() {
+  const a = C.START.L08, b = C.ENDOF('L08'), Wd = mkWorld(.1, 300); O.skyDome(Wd, { top: 0x04061a, mid: 0x080e2a, bot: 0x101a3a, stars: .6 }); O.lighting(Wd, { key: [0xffffff, .5, [0, 6, 10]], hemi: [0xb0b8d8, 0x30283a, .8], noShadow: true, fog: null });
+  const ringG = new THREE.Group(); ringG.position.set(0, 3, 0); Wd.add(ringG); ringG.add(mesh(new THREE.TorusGeometry(4.6, .08, 10, 96), toon(0xc99a35), { inkW: .02 }));
+  for (let i = 0; i < 24; i++) { const an = i / 24 * PI * 2, big = i % 6 === 0; const tk = box(big ? .16 : .09, big ? .6 : .36, .12, big ? 0xffd070 : 0xe6c880, { pos: [Math.sin(an) * 4.1, Math.cos(an) * 4.1, 0], rot: [0, 0, -an], inkW: .01 }); ringG.add(tk); const dt = new THREE.Mesh(new THREE.SphereGeometry(.14, 10, 8), O.basic([0xe05a4a, 0x3ab08a, 0x3a9ad0, 0xe8883a][i % 4])); dt.position.set(Math.sin(an) * 3.55, Math.cos(an) * 3.55, 0); ringG.add(dt); }
+  const ptr = new THREE.Mesh(new THREE.ConeGeometry(.28, .6, 3), O.basic(0xffd23a)); ptr.position.set(0, 5.1, 0); ptr.rotation.z = PI; Wd.add(ptr);
+  const arc = Array.from({ length: 28 }, (_, i) => { const th = PI * (1 - i / 27), m = box(.2, .07, .07, 0xffc84a, { pos: [Math.cos(th) * 2.4, 1.2 + Math.sin(th) * 2.4, .1], rot: [0, 0, th - PI / 2], inkW: .006 }); Wd.add(m); return m; });
+  [[-9, 6, -6, 34, 0x2a3a8a], [9, -2, -6, 38, 0x6a3a7a], [0, 12, -8, 30, 0x2a5a9a], [-8, -6, -6, 30, 0x7a4a3a]].forEach(([x, y, z, sz, c]) => { const gg = O.glow(sz, c, .45); gg.position.set(x, y, z); Wd.add(gg); }); O.motes(Wd, { n: 40, area: [-10, 10, -2, 9, -3, 3], size: .35, color: 0xffe3a8, op: .5, seed: 23 });
+  const sun = sunBall(Wd, .34); Wd.hero = sun; const tj = gs('L08', 0), tj2 = gs('L08', 2);
+  Wd.on((t, cam) => { const g = t + a, th = PI * (1 - ease.sm(prog(g, a + .3, b - .4)) * .5 - .25); sun.position.set(Math.cos(th) * 2.4, 1.2 + Math.sin(th) * 2.4, .25); arc.forEach((m, i) => { const thd = PI * (1 - i / 27); m.material.color.setHex(th <= thd ? 0xffd86a : 0xb8923a); });
+    const sh = ease.out(prog(g, tj + .3, tj + .9)) + ease.out(prog(g, tj2, tj2 + .6)); ringG.rotation.z = -sh * PI * 2 / 24; });
+  const cam = camSeq(a, b, [{ t: a, p: [[0, 3.2, 14], [0, 3.1, 12]], l: [0, 3, 0], mm: 30 }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 2.5 }) });
+}
+
+// ---------------------------------------------------------------- L09 / L09b: Elul dawn at the shul, then a Yom Kippur siddur
+function sShul() {
+  const a = C.START.L09, b = C.ENDOF('L09'), Wd = world({ ground: 'stone', groundSize: 200, groundRep: [40, 40], fog: true, fogColor: 0x6a5a78, fogNear: 30, fogFar: 160 }); C.baseCam(Wd, .1, 600);
+  O.skyDome(Wd, { top: 0x141a44, mid: 0x6a4a78, bot: 0xf09a70, stars: .35 }); O.lighting(Wd, { key: [0xffb890, .55, [-20, 10, 20]], hemi: [0x7a6a98, 0x3a2a30, .8], fill: [0xffa070, .3, [10, 3, 10]], rim: [0x8aa0ff, .4, [10, 10, -10]], target: [0, 3, 0], shadowExt: 28, fog: [0x6a5a78, 30, 160] }); Wd.scene.fog = new THREE.Fog(0x6a5a78, 30, 160);
+  const S = K.shulExterior(Wd); Wd.hero = S.group; O.hills(Wd, { colors: [0x3a3a5a, 0x4a4a68], list: [[-40, -80, 40, 12, 24], [50, -84, 40, 14, 24], [0, -100, 70, 16, 26]] });
+  O.olive(Wd, -10, 8, 1.2, 4); O.olive(Wd, 10, 9, 1.0, 6); O.motes(Wd, { n: 20, area: [-12, 12, 1, 8, 2, 12], size: .5, color: 0xffd0a0, op: .3, seed: 77 });
+  const tw = gs('L09', 0);
+  Wd.on(t => { const g = t + a; S.wins.forEach((w, i) => { if (w.material && w.material.opacity !== undefined && w.isSprite) w.material.opacity = .55 * (.8 + .2 * Math.sin(g * 3 + i)); }); });
+  const cam = camSeq(a, b, [{ t: a, p: [[-6, 2.4, 14], [-2, 2.4, 9.5]], l: [0, 3.2, 0], mm: 34 }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 2.4, maxR: 10 }) });
+}
+function sSiddur() {
+  const a = C.START.L09b, b = C.ENDOF('L09b'), Wd = mkWorld(); dark(Wd); O.lighting(Wd, { key: [0xffc58a, .9, [1, 4, 3]], hemi: [0x5a4030, 0x1a1008, .6], fill: [0x6a5a80, .2, [-3, 1, 3]], rim: [0xffb070, .5, [-1, 3, -3]], target: [0, 1.1, 0], shadowExt: 4, fog: null, points: [[0xffc070, 7, [0, 2.3, .6], 6]] });
+  O.skyDome(Wd, { top: 0x0a0806, mid: 0x14100c, bot: 0x241a12, stars: 0 }); const Sd = K.siddur(Wd, {}); Wd.hero = Sd.shtender; const c = candle(Wd, { pos: [.95, .93, -.2], h: .26 }); Wd.add(box(.8, .05, .5, 0x5a3416, { pos: [.95, .9, -.2], inkW: .005 }));
+  [-2.4, 2.4].forEach(x => Wd.add(box(1.8, 2.8, .5, 0x4a3018, { pos: [x, 1.4, -3.3], inkW: .01 }))); const r = rng(12); for (let i = 0; i < 6; i++) { const gl = O.glow(1.0 + r() * .6, 0xffc070, .8); gl.position.set(-3.4 + i * 1.4, 1.2 + r() * 2, -3.0); Wd.add(gl); }
+  O.motes(Wd, { n: 30, area: [-1.6, 1.6, .6, 2.4, -2, 1.2], size: .07, color: 0xffd890, op: .6, seed: 45, rise: .05 }); Wd.on(t => c.tick(t, 1, 0));
+  const cam = camSeq(a, b, [{ t: a, p: [[-.5, 2.2, 1.4], [.4, 2.0, 1.0]], l: [0, 1.15, -.05], mm: 50 }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 12 }) });
+}
+
+// ---------------------------------------------------------------- L10: an alarm clock with very early hands, a dark window
+function sAlarm() {
+  const a = C.START.L10, b = C.ENDOF('L10'), Wd = mkWorld(); O.skyDome(Wd, { top: 0x01030a, mid: 0x050a22, bot: 0x0e1840, stars: 1 });
+  O.lighting(Wd, { key: [0x6a88c8, .5, [-3, 5, 4]], hemi: [0x2a3a68, 0x0a0a14, .7], fill: [0x4a5a98, .3, [4, 2, 4]], rim: [0x8aa0ff, .5, [0, 3, -4]], target: [0, 1, 0], shadowExt: 6, fog: null, points: [[0xffd0a0, 3, [0, 1.6, 1.0], 5]] });
+  Wd.add(O.texBox(9, 5, .3, O.plasterTex('#8a8aa8'), 0x8890b0, { pos: [0, 2.5, -2.4], inkW: .01 })); const win = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 2.6), O.basic(0x0a1236)); win.position.set(-2.2, 2.8, -2.22); Wd.add(win); [[0, 0, 2.3, .1], [0, 0, .1, 2.7]].forEach(([x, y, w, h]) => Wd.add(box(w, h, .1, 0x5a3a1c, { pos: [-2.2, 2.8, -2.18], inkW: .008 })));
+  const moon = new THREE.Mesh(new THREE.SphereGeometry(.25, 18, 12), O.basic(0xf4f1e2)); moon.position.set(-2.0, 3.4, -2.2); Wd.add(moon); const mg = O.glow(2.0, 0xaec4ff, .5); mg.position.copy(moon.position); Wd.add(mg);
+  Wd.add(box(3.2, .12, 1.8, 0x7a5232, { pos: [.6, .96, -.9], inkW: .01 })); [[-.9, -1.4], [2.1, -1.4], [-.9, -.4], [2.1, -.4]].forEach(([x, z]) => Wd.add(box(.12, .9, .12, 0x5a3a1c, { pos: [x, .45, z], inkW: .006 })));
+  const al = O.alarmClock(Wd, { pos: [.6, 1.0 + 4.5 * .11, -.8], scale: 4.5 }); Wd.hero = al.group; const glow = O.glow(3.5, 0xffd8a0, .35); glow.position.set(.6, 1.7, -.4); Wd.add(glow);
+  const tr = gs('L10', 0), L = T0('L10');
+  Wd.on((t, cam) => { const g = t + a, S = 3 * 3600 + 20 * 60 + (g - a) * 12, sh = ease.out(prog(g, tr, tr + .3)) * (1 - ease.in(prog(g, tr + 2.4, tr + 3.0))); al.setTime(S, undefined); al.group.rotation.z = .05 * Math.sin(g * 60) * sh; al.group.position.y = 1.0 + 4.5 * .11 + .01 * Math.sin(g * 70) * sh; glow.material.opacity = .3 + .3 * sh; });
+  const cam = camSeq(a, b, [{ t: a, p: [[-1.4, 1.9, 4.0], [.2, 1.7, 2.6]], l: [.3, 1.5, -.8], mm: 36 }, { t: tr - .5, p: [[.5, 1.7, 2.4], [.6, 1.65, 1.6]], l: [.6, 1.55, -.8], mm: 42 }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 4 }) });
+}
+
+// ---------------------------------------------------------------- L11: two clocks for the end of the fast, one hour apart, the sun identical
+function sTwoClocks() {
+  const a = C.START.L11, b = C.ENDOF('L11'), Wd = mkWorld(); dark(Wd); warm(Wd, { key: [0xffd9a0, 1.0, [1, 5, 8]], points: [[0xffc070, 8, [0, 3, 6], 14]] });
+  Wd.add(box(10, .3, 3, 0x5a3a1c, { pos: [0, .35, 0], inkW: .02 })); const cw = O.wallClock(Wd, { pos: [-2.4, 2.2, 0], r: 1.3, S: 5 * 3600 + 300 }), cs = O.wallClock(Wd, { pos: [2.4, 2.2, 0], r: 1.3, S: 6 * 3600 + 300 }); Wd.hero = cw.group;
+  const suns = [-2.4, 2.4].map(x => { const s = sunBall(Wd, .5); s.position.set(x, 4.9, -.8); return s; });
+  const br = box(4.4, .12, .12, 0xffc840, { pos: [0, 4.0, 0], inkW: .01 }); Wd.add(br); [-1, 1].forEach(s => Wd.add(box(.12, .5, .12, 0xffc840, { pos: [s * 2.2, 4.0, 0], inkW: .01 }))); const bg = O.glow(5, 0xffc840, 0); bg.position.set(0, 4.0, .3); Wd.add(bg);
+  const tg = gs('L11', 0) ;
+  Wd.on((t, cam) => { const g = t + a; cw.setTime(5 * 3600 + 300 + (g - a) * 6, undefined); cs.setTime(6 * 3600 + 300 + (g - a) * 6, undefined); bg.material.opacity = .6 * bump(g, tg + .3, .6) + .12 * (.5 + .5 * Math.sin(g * 2)); br.scale.x = .6 + .4 * ease.out(prog(g, a + .4, a + 1.4)); suns.forEach(s => { s.userData.g1.scale.setScalar(2.5 * (1 + .08 * Math.sin(g * 2) + .5 * bump(g, tg + .3, .5))); }); });
+  const cam = camSeq(a, b, [{ t: a, p: [[0, 3, 12], [0, 3, 9.5]], l: [0, 3.2, 0], mm: 32 }, { t: tg - 1.0, p: [[-1.8, 2.6, 7], [-.4, 2.8, 7.4]], l: [-.6, 3.0, 0], mm: 36 }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 3 }) });
+}
+
+// ---------------------------------------------------------------- L12: the watch thinking
+const sW12 = () => watchScene(C, 'L12', { mouth: MOUTH, extras: (Wd, R, W, a) => { const bs = [0, 1, 2].map(i => { const m = new THREE.Mesh(new THREE.SphereGeometry(.018 + i * .012, 12, 8), O.basic(0xfff0c0)); Wd.add(m); return m; }); Wd.on(t => { const g = t + a, u = Math.max(0, g - T0('L12')); bs.forEach((m, i) => { m.position.set(.12 + i * .07, .42 + i * .07 + .01 * Math.sin(g * 2 + i), .1); m.material.opacity = 1; m.visible = u > .3 + i * .35; }); }); },
+  over: g => { const s = Math.sin((g - T0('L12')) * .9); return { look: [-.5 + .3 * s, .55], brow: .6, yaw: -.12 + .06 * s }; } });
+
+// ---------------------------------------------------------------- L13: both windows show the same sun position, the clock 8:00 glows
+function sTwin() {
+  const a = C.START.L13, b = C.ENDOF('L13'), Wd = mkWorld(); dark(Wd); warm(Wd, { key: [0xffd9a0, .9, [1, 5, 8]], points: [[0xffc070, 6, [0, 3, 6], 14]] });
+  const gtex = (c0, c1) => { const c = document.createElement('canvas'); c.width = 4; c.height = 256; const g = c.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 256); gr.addColorStop(0, c0); gr.addColorStop(1, c1); g.fillStyle = gr; g.fillRect(0, 0, 4, 256); const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t; };
+  const suns = [], clks = []; [[-3.2, '#8aa8d8', '#e8dcc8'], [3.2, '#5aa0e0', '#ffe9b8']].forEach(([x, c0, c1]) => { const p = new THREE.Mesh(new THREE.PlaneGeometry(4.2, 3.6), new THREE.MeshBasicMaterial({ map: gtex(c0, c1), fog: false })); p.position.set(x, 4.0, -.2); Wd.add(p); Wd.add(box(4.5, .24, .4, 0x5a3a1c, { pos: [x, 5.9, 0], inkW: .02 })); Wd.add(box(4.5, .24, .4, 0x5a3a1c, { pos: [x, 2.1, 0], inkW: .02 })); [-1, 1].forEach(s => Wd.add(box(.24, 3.8, .4, 0x5a3a1c, { pos: [x + s * 2.15, 4.0, 0], inkW: .02 })));
+    for (let i = 0; i <= 18; i++) { const th = PI * (1 - i / 18); Wd.add(box(.16, .06, .06, 0xffc84a, { pos: [x + Math.cos(th) * 1.7, 2.7 + Math.sin(th) * 1.8, .1], rot: [0, 0, th - PI / 2], inkW: .006 })); }
+    const s = sunBall(Wd, .3); s.position.set(x + 0.6, 2.7 + 1.3, .25); suns.push(s); const c = O.wallClock(Wd, { pos: [x, 1.0, .2], r: .75, S: 8 * 3600 }); clks.push(c); const gl = O.glow(3.2, 0xffe9a8, .0); gl.position.set(x, 1.0, .5); Wd.add(gl); c.gl = gl; });
+  clks.forEach(c => c.group.scale.setScalar(1.3)); Wd.hero = clks[0].group; const rg = goldRing(Wd), rg2 = goldRing(Wd), tg = gs('L13', 2); const link = box(6.4, .05, .05, 0xffe08a, { pos: [0, 4.0, .3], ink: false }); Wd.add(link); link.material = new THREE.MeshBasicMaterial({ color: 0xffe08a, transparent: true, opacity: 0, blending: THREE.AdditiveBlending });
+  Wd.on((t, cam) => { const g = t + a; clks.forEach((c, i) => { c.setTime(8 * 3600 + (g - a) * 2, undefined); c.gl.material.opacity = .25 + .5 * ease.out(prog(g, a + .6, a + 2)) * (.7 + .3 * Math.sin(g * 2 + i)); });
+    suns.forEach(s => s.userData.g1.scale.setScalar(1.5 * (1 + .1 * Math.sin(g * 2) + .6 * bump(g, tg + .3, .5)))); link.material.opacity = .8 * bump(g, tg + .4, .7); rg.position.copy(suns[0].position); rg2.position.copy(suns[1].position); ringAnim(rg, cam, g, tg, 1.2, .5, 1.8, .8); ringAnim(rg2, cam, g, tg, 1.2, .5, 1.8, .8); });
+  const cam = camSeq(a, b, [{ t: a, p: [[0, 3.6, 13], [0, 3.5, 11]], l: [0, 3.4, 0], mm: 32 }, { t: tg - 1.2, p: [[-1, 3.6, 8.6], [1, 3.6, 8.4]], l: [0, 3.9, 0], mm: 34 }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 3 }) });
+}
+
+// ---------------------------------------------------------------- L14: the timeline with year chips sliding in
+function sTimeline() {
+  const a = C.START.L14, b = C.ENDOF('L14'), Wd = mkWorld(); dark(Wd); warm(Wd, { key: [0xffd9a0, 1.0, [1, 6, 8]], points: [[0xffc070, 8, [0, 4, 5], 16]], target: [0, 1, 0] });
+  Wd.add(box(18, .3, 5, 0x3a2412, { pos: [0, -.15, 0], inkW: .02 })); const R = K.timelineRail(Wd, 7); Wd.hero = R.group; const L = T0('L14'), tg = [gs('L14', 2), gs('L14', 6)];
+  const r = rng(31); for (let i = 0; i < 10; i++) { const gl = O.glow(1 + r(), 0xffc070, .5); gl.position.set(-9 + r() * 18, 2 + r() * 4, -5); Wd.add(gl); }
+  Wd.on((t, cam) => { const g = t + a; R.chips.forEach((c, i) => { const t1 = L + .8 + i * ((b - L - 3.6) / 6.5), k = ease.out(prog(g, t1, t1 + .9)); c.visible = k > .01; c.position.y = lerp(3.4, .8, k); c.position.z = lerp(.1 - 2.4, .1, k); c.rotation.z = (1 - k) * .4; c.userData.gl.material.opacity = .9 * bump(g, t1 + .9, .35); }); });
+  const cam = camSeq(a, b, [{ t: a, p: [[-4.5, 2.0, 6.5], [5.5, 2.0, 6.8]], l: [[-3, .9, 0], [3, .9, 0]], mm: 34, e: 'sm' }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 3 }) });
+}
+
+// ---------------------------------------------------------------- L15: the clock settles back into its golden home slot
+function sHome() {
+  const a = C.START.L15, b = C.ENDOF('L15'), Wd = mkWorld(); dark(Wd); warm(Wd, { key: [0xffd9a0, 1.0, [1, 6, 8]], points: [[0xffc070, 8, [0, 4, 5], 16]], target: [0, 3, 0] });
+  const H = K.homeSlot(Wd), clk = O.wallClock(Wd, { pos: [0, 3, 0], r: 1.25, S: 3600 * 7 }); Wd.hero = clk.group; const ts = b - 4.6, rg = goldRing(Wd); rg.position.set(0, 3, .1);
+  Wd.add(box(14, .3, 4, 0x3a2412, { pos: [0, -.15, 1.2], inkW: .02 })); O.motes(Wd, { n: 30, area: [-6, 6, 1, 6, 0, 4], size: .15, color: 0xffe3a8, op: .5, seed: 17, rise: .05 });
+  Wd.on((t, cam) => { const g = t + a, k = ease.out(prog(g, a + .3, ts)), bounce = Math.sin(prog(g, ts - .5, ts + .3) * PI) * .25 * (1 - k * 0);
+    clk.group.position.set(lerp(-6.5, 0, k), lerp(5.6, 3, k) + bounce * .3, lerp(3.6, -.12, k)); clk.group.rotation.set(0, lerp(.9, 0, k), lerp(.8, 0, k)); clk.setTime(3600 * 7 + (g - a) * 40 * (1 - k * .9), undefined); H.gl.material.opacity = .85 * ease.out(prog(g, ts - .1, ts + .8)) + .1 * Math.sin(g * 3); ringAnim(rg, cam, g, ts, 1.2, 1.2, 3.8, .9); H.rim.material.color.setHex(g > ts ? 0xffe070 : 0xffc840); });
+  const cam = camSeq(a, b, [{ t: a, p: [[-2, 3.2, 12], [0, 3.1, 9]], l: [0, 3, 0], mm: 32 }, { t: ts - 1.2, p: [[0, 3.0, 8], [0, 3.0, 6.6]], l: [0, 3, 0], mm: 38 }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 3 }) });
+}
+
+// ---------------------------------------------------------------- Q6 (L16..L19): the home slot, clock and sun; icons flash at L17; calm loop for the question
+function sQ6() {
+  const a = C.START.Q6, b = C.ENDOF('Q6'), Wd = mkWorld(); dark(Wd); warm(Wd, { key: [0xffd9a0, .9, [1, 6, 8]], points: [[0xffc070, 8, [0, 4, 5], 16]], target: [0, 3, 0] });
+  const H = K.homeSlot(Wd), clk = O.wallClock(Wd, { pos: [0, 3, -.12], r: 1.25, S: 3600 * 7 }); Wd.hero = clk.group; Wd.add(box(14, .3, 4, 0x3a2412, { pos: [0, -.15, 1.2], inkW: .02 })); H.gl.material.opacity = .6; H.rim.material.color.setHex(0xffe070);
+  const sun = sunBall(Wd, .7); sun.position.set(5.2, 4.6, 0); const icC = O.wallClock(Wd, { pos: [-2.2, 1.0, 2.2], r: .6, S: 3600 * 3 }), icS = sunBall(Wd, .4); icS.position.set(2.2, 1.0, 2.2); const rg = goldRing(Wd), rg2 = goldRing(Wd), L17 = T0('L17'), L18 = T0('L18');
+  O.motes(Wd, { n: 28, area: [-6, 6, 1, 6, 0, 4], size: .15, color: 0xffe3a8, op: .5, seed: 19, rise: .05 });
+  Wd.on((t, cam) => { const g = t + a, f = bump(g, L18 + .5, .5); clk.setTime(3600 * 7 + (g - a) * 3, undefined); icC.setTime(3 * 3600 + (g - a) * 20, undefined); icC.group.scale.setScalar(1 + .3 * f); icS.scale.setScalar(1 + .45 * f);
+    icS.userData.g1.scale.setScalar(2 * (1 + 1.2 * f)); sun.userData.g1.scale.setScalar(3.5 * (1 + .06 * Math.sin(g * 1.7))); H.gl.material.opacity = .5 + .12 * Math.sin(g * 1.5); rg.position.copy(icC.group.position); rg2.position.copy(icS.position); ringAnim(rg, cam, g, L18 + .1, 1.0, .5, 1.8, .8); ringAnim(rg2, cam, g, L18 + .1, 1.0, .5, 1.8, .8); });
+  const cam = camSeq(a, b, [{ t: a, p: [[-3, 3.4, 10], [3, 3.4, 10]], l: [0, 2.6, 0], mm: 32, e: 'sm' }, { t: L18 - .8, p: [[0, 2.4, 8.4], [0, 2.2, 7.4]], l: [0, 1.8, 1], mm: 34 }, { t: T0('L19') - 4, p: [[-4, 3.4, 11], [4, 3.4, 11]], l: [0, 2.8, 0], mm: 32, e: 'sm' }, { t: T0('L19') + 34, p: [[4, 3.2, 11], [-3, 3.5, 10.5]], l: [0, 2.8, 0], mm: 32, e: 'sm' }, { t: T0('L20') - 1.0, p: [[0, 3.2, 10.5], [0, 3.1, 9]], l: [0, 3, 0], mm: 32 }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 3.2 }) });
+}
+
+// ---------------------------------------------------------------- L20: hook - dawn light crawls over the horizon
+function sDawnHook() {
+  const a = C.START.L20, b = C.ENDOF('L20'), Wd = world({ ground: 'dark', groundSize: 500, groundRep: [80, 80], fog: true, fogColor: 0x1a2448, fogNear: 60, fogFar: 300 }); C.baseCam(Wd, .1, 900);
+  const sky = O.skyDome(Wd, { top: 0x04061a, mid: 0x0c1a48, bot: 0x2a3a78, stars: 1 }); O.lighting(Wd, { key: [0x9db8ff, .7, [-30, 40, -25]], hemi: [0x3a4c82, 0x181420, .8], rim: [0xff9a60, .3, [10, 10, -40]], target: [0, 2, -30], shadowExt: 60, fog: [0x1a2448, 60, 300] }); Wd.scene.fog = new THREE.Fog(0x1a2448, 60, 300);
+  O.hills(Wd, { colors: [0x16203a, 0x1a2640, 0x121a30], list: [[-60, -120, 50, 14, 24], [30, -126, 54, 16, 26], [-110, -118, 36, 11, 20], [110, -118, 40, 13, 22], [0, -170, 100, 20, 30]] });
+  const C2 = O.city(Wd, { seed: 29, n: 50, litFrac: .18, area: [-58, 58, -12, -62], slope: .05, cypress: 6 }); const glows = []; for (let i = 0; i < 16; i++) { const g = O.glow(46, i % 2 ? 0xff9a60 : 0xffc080, 0); g.position.set(-90 + i * 12, 6, -118); Wd.add(g); glows.push(g); }
+  O.motes(Wd, { n: 14, area: [-10, 10, 4, 9, -2, 8], size: .5, color: 0xaec4ff, op: .3, seed: 4 }); const t0 = T0('L20') + .8, tg = G0('L20');
+  Wd.on((t, cam) => { const g = t + a, u = ease.sm(prog(g, t0, b - .4)); glows.forEach((gl, i) => { const k = ease.sm(clamp(u * 1.8 - i / 15 * .8, 0, 1)); gl.material.opacity = .55 * k; }); sky.uni.bot.value.setHex(0x2a3a78).lerp(new THREE.Color(0xe88a5a), u * .75); sky.uni.mid.value.setHex(0x0c1a48).lerp(new THREE.Color(0x4a3a78), u * .6); sky.starU.uA.value = 1 - u * .8; C2.glows.forEach(gl => { gl.material.opacity = .55 * (1 - u * .7); }); });
+  const cam = camSeq(a, b, [{ t: a, p: [[0, 3.2, 8], [0, 3.8, 6.4]], l: [[0, 4.5, -30], [0, 7.5, -80]], mm: [26, 22] }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 2.4, maxR: 10, focus: 60 }) });
+}
+
+const BUILD = { intro: () => introShot(C, 'T_C6'), L00: sW0, T1: sTowns, L02: sGlobe, L03: sRewind, L04: sMap, L05: sBump, L06: sW6, L07: sShut, L08: sRing, L09: sShul, L09b: sSiddur, L10: sAlarm, L11: sTwoClocks, L12: sW12, L13: sTwin, L14: sTimeline, L15: sHome, Q6: sQ6, L20: sDawnHook };
+runFilm(C, BUILD, { T1: 1, L08: 1, L09: 1, L20: 1 });
+</script>
