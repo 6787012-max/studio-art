@@ -94,12 +94,12 @@ function sRelief(id) {
   const sweep = (id === 'L07' || id === 'L08') ? P3.terminatorSweep(Wd, R) : null; if (sweep) sweep.mesh.position.y = .52;
   let inset = null, arrow = null, gap = null, ring = null;
   if (id === 'L08') { inset = P3.sunsetInset(1.7); inset.mesh.position.set(JP.x, JP.y + 1.1, JP.z); Wd.add(inset.mesh); ring = goldRing(Wd, 0xffd070); }
-  if (id === 'L11') { arrow = new THREE.Group(); const L = JP.x - TP2.x; const sh = mesh(new THREE.CylinderGeometry(.035, .035, 1, 12), toon(0xffc84a, { emissive: 0x7a4a08 }), { inkW: .004, rot: [0, 0, Math.PI / 2] }); arrow.add(sh); const hd = mesh(new THREE.ConeGeometry(.11, .26, 16), toon(0xffc84a, { emissive: 0x7a4a08 }), { inkW: .006, rot: [0, 0, -Math.PI / 2] }); arrow.add(hd); arrow.userData = { sh, hd, L }; arrow.position.set(TP2.x, Math.max(JP.y, TP2.y) + .12, (JP.z + TP2.z) / 2); Wd.add(arrow); }
+  if (id === 'L11') { arrow = new THREE.Group(); const L = JP.x - TP2.x; const sh = mesh(new THREE.CylinderGeometry(.035, .035, 1, 12), toon(0xffc84a, { emissive: 0x7a4a08 }), { inkW: .004, rot: [0, 0, Math.PI / 2] }); arrow.add(sh); const hd = mesh(new THREE.ConeGeometry(.07, .18, 16), toon(0xffc84a, { emissive: 0x7a4a08 }), { inkW: .006, rot: [0, 0, -Math.PI / 2] }); arrow.add(hd); arrow.userData = { sh, hd, L }; arrow.position.set(TP2.x, Math.max(JP.y, TP2.y) + .12, (JP.z + TP2.z) / 2); Wd.add(arrow); }
   if (id === 'L12' || id === 'L15') { gap = P3.gapBar(Wd, { pos: [-.1, .3, 1.75], scale: .62 }); Wd.hero = gap.g; }
   Wd.on((t, cam) => { const g = t + a; const gl = id === 'L11' ? ease.sm(prog(t, .2, 1.0)) : (id === 'L08' ? ease.sm(prog(t, tg0 - .5, tg0 + .3)) : .7); R.pinGlow(gl, id === 'L11' ? gl : (id === 'L08' ? 0 : .4), g);
     if (id === 'L07') sweep.set(lerp(1.5, -1.4, ease.io(prog(t, .1, dur - .1))), 1);
     if (id === 'L08') { const tl = lerp(.9, JP.x, ease.io(prog(t, .2, tg0 + .2))), post = lerp(JP.x, -1.4, ease.io(prog(t, tg0 + 2.2, dur))); sweep.set(t < tg0 + 1.6 ? tl : post, .9); const k = backOut(prog(t, tg0, tg0 + .7)); inset.mesh.visible = k > .01; inset.mesh.scale.setScalar(Math.max(.01, k)); inset.set(prog(t, tg0 + .3, tg0 + 4.0)); inset.mesh.quaternion.copy(cam.quaternion); inset.mesh.position.y = JP.y + 1.1 + Math.sin(g * 1.6) * .02; ringAnim(ring, cam, t, tg0, 1.0, .1, .8, .8); }
-    if (id === 'L11') { const k = ease.io(prog(t, tg0 - .2, tg0 + 2.4)), L = arrow.userData.L; arrow.userData.sh.scale.y = Math.max(.001, L * k); arrow.userData.sh.position.x = L * k / 2; arrow.userData.hd.position.x = L * k + .1; arrow.userData.hd.visible = k > .05; arrow.visible = k > .01; }
+    if (id === 'L11') { const k = ease.io(prog(t, tg0 - .2, tg0 + 2.4)), L = arrow.userData.L; arrow.userData.sh.scale.y = Math.max(.001, L * k); arrow.userData.sh.position.x = L * k / 2; arrow.userData.hd.position.x = L * k + .06; arrow.userData.hd.visible = k > .05; arrow.visible = k > .01; }
     if (gap) { if (id === 'L12') gap.set(prog(t, tg0 - .2, tg0 + .6), prog(t, tg1 - .2, tg1 + .6), prog(t, tg2 - .3, tg2 + 1.0), 0, g); else gap.set(1, 1, 1, ease.sm(prog(t, .4, .8)) * (1 - ease.sm(prog(t, 4.6, 5.2))), g); } });
   let cam;
   if (id === 'L07') cam = cuts(dur, [[0, move({ t: [-.3, .3, 0], d: 3.2, el: 36, az: 18, mm: 36 }, { t: [-.4, .3, .1], d: 2.6, el: 32, az: 4, mm: 36 })]]);
@@ -146,7 +146,7 @@ function sTowns() {
   const T = P3.sundialTowns(Wd, {}); Wd.hero = null; const tg = [goldN(id, 0) - a, goldN(id, 1) - a, goldN(id, 2) - a];
   O.motes(Wd, { n: 20, area: [-8, 8, .4, 3, -2, 5], size: .12, color: 0xffe3a8, op: .45, seed: 12 });
   Wd.on((t, cam) => { T.set(.9, t + a); T.towns.forEach((tw, i) => { const k = Math.exp(-Math.pow((t - tg[Math.min(2, Math.floor(i / 2))] - (i % 2) * .15) / .35, 2)); tw.sh.material.opacity = .62 + .3 * k; tw.sh.scale.set(1 + .6 * k, 1 + .1 * k, 1); }); });
-  const cam = cuts(dur, [[0, LK([-8, 1.8, 6.5], [-4.6, .5, 0], 32, [-1, 1.8, 6.5], [0, .5, 0], 32)], [3.6, LK([-6.2, 1.0, 3.8], [-4.6, .25, .6], 45, [-3.4, 1.0, 3.5], [-4.6, .25, .6], 45)], [5.8, LK([4, 3.6, 9], [0, .6, 0], 26, [-3, 3.2, 8.5], [0, .6, 0], 26)]]);
+  const cam = cuts(dur, [[0, LK([-8, 1.8, 6.5], [-4.6, .5, 0], 32, [-1, 1.8, 6.5], [0, .5, 0], 32)], [3.6, LK([-6.0, .9, 4.0], [-4.6, .2, 1.2], 45, [-3.4, .9, 3.8], [-4.6, .2, 1.2], 45)], [5.8, LK([4, 3.6, 9], [0, .6, 0], 26, [-3, 3.2, 8.5], [0, .6, 0], 26)]]);
   return finish(Wd, cam, { dof: dofAuto(cam, { ap: 5, maxR: 12, vig: .4 }) });
 }
 

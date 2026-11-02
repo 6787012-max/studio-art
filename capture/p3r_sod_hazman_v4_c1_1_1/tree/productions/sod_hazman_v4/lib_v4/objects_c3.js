@@ -24,8 +24,8 @@ export function reliefTable(Wd, o) {
   o = o || {}; const s = o.s || .012, vy = o.vy || .04, Wr = 320, Hr = 540, nx = 128, nz = 210, R = { s, vy }, g = O.grp(Wd, o);
   const geo = new THREE.PlaneGeometry(Wr * s, Hr * s, nx, nz); geo.rotateX(-Math.PI / 2); const pos = geo.attributes.position, col = new Float32Array(pos.count * 3), c = new THREE.Color();
   for (let i = 0; i < pos.count; i++) { const x = pos.getX(i) / s, z = pos.getZ(i) / s, h = reliefAt(x, z, c); pos.setY(i, h * 2.4 * vy); col[i * 3] = c.r; col[i * 3 + 1] = c.g; col[i * 3 + 2] = c.b; }
-  geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); geo.computeVertexNormals(); const m = new THREE.Mesh(geo, toon(0xffffff, { vertexColors: true })); m.receiveShadow = false; m.castShadow = false; g.add(m);
-  g.add(box(Wr * s + .3, .22, Hr * s + .3, 0x5a3a1c, { pos: [0, -.14, 0], inkW: .02 }));
+  geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); geo.computeVertexNormals(); const m = new THREE.Mesh(geo, new THREE.MeshLambertMaterial({ vertexColors: true })); m.receiveShadow = false; m.castShadow = false; g.add(m);
+  g.add(box(Wr * s + .3, .22, Hr * s + .3, 0x5a3a1c, { pos: [0, -.28, 0], inkW: .02 }));
   R.g = g; R.mesh = m; R.at = (x, z) => [x * s, reliefAt(x, z) * 2.4 * vy, z * s];
   // pins: Jerusalem (hills) and Tel Aviv (coast): relief coordinates derived from the lat / lon of the two cities
   R.jer = [-11.3, -(-13)]; R.jer = [-11.3, 13]; R.tlv = [-58, -30];
@@ -129,9 +129,9 @@ export function sundialTowns(Wd, o) {
   for (let i = 0; i < N; i++) { const x = (i - (N - 1) / 2) * 4.6, g = O.grp(Wd, { pos: [x, 0, 0] });
     for (let k = 0; k < 6; k++) { const w = .5 + r() * .5, h = .5 + r() * .9; g.add(box(w, h, .5 + r() * .4, [0xcfb88a, 0xd9c49a, 0xbfa678][k % 3], { pos: [(k - 2.5) * .62, h / 2, -1.7 - r() * .8], inkW: .02 })); }
     g.add(cyl(.22, .26, .24, 0xd9c9a4, { pos: [-.55 * 0 + 1.7, .12, -2.2], inkW: .015 })); g.add(box(.14, .5, .1, 0x6a4a1c, { pos: [-1.9, .25, -2.1], inkW: .01 })); // hint of a door tower
-    const base = cyl(.95, 1.02, .16, 0xd9c9a4, { pos: [0, .08, .6], inkW: .02 }); g.add(base); const dial = new THREE.Mesh(new THREE.CylinderGeometry(.9, .9, .02, 40), toon(0xffffff, { map: canvasTex(256, 256, (c, w, h) => { c.fillStyle = '#f2e8cc'; c.fillRect(0, 0, w, h); c.strokeStyle = '#8a6a3c'; c.lineWidth = 5; for (let a = -6; a <= 6; a++) { const an = a * .22; c.beginPath(); c.moveTo(128, 128); c.lineTo(128 + Math.sin(an) * 118, 128 - Math.cos(an) * 118); c.stroke(); } c.strokeStyle = '#6a4a1c'; c.lineWidth = 8; c.beginPath(); c.arc(128, 128, 120, 0, 7); c.stroke(); }) })); dial.position.set(0, .18, .6); g.add(dial);
-    const gn = new THREE.Mesh(new THREE.BoxGeometry(.06, .7, .5), toon(0x4a3a2a)); gn.position.set(0, .55, .6); gn.geometry.translate(0, 0, 0); g.add(gn);
-    const sh = new THREE.Mesh(new THREE.PlaneGeometry(.16, 1.5), new THREE.MeshBasicMaterial({ color: 0x20180c, transparent: true, opacity: .62, depthWrite: false })); sh.rotation.x = -Math.PI / 2; sh.geometry.translate(0, .75, 0); sh.position.set(0, .2, .6); g.add(sh);
+    const dg = new THREE.Group(); dg.position.set(0, 0, 1.2); dg.scale.setScalar(.6); g.add(dg); const base = cyl(.95, 1.02, .16, 0xd9c9a4, { pos: [0, .08, 0], inkW: .02 }); dg.add(base); const dial = new THREE.Mesh(new THREE.CylinderGeometry(.9, .9, .02, 40), toon(0xffffff, { map: canvasTex(256, 256, (c, w, h) => { c.fillStyle = '#f2e8cc'; c.fillRect(0, 0, w, h); c.strokeStyle = '#8a6a3c'; c.lineWidth = 5; for (let a = -6; a <= 6; a++) { const an = a * .22; c.beginPath(); c.moveTo(128, 128); c.lineTo(128 + Math.sin(an) * 118, 128 - Math.cos(an) * 118); c.stroke(); } c.strokeStyle = '#6a4a1c'; c.lineWidth = 8; c.beginPath(); c.arc(128, 128, 120, 0, 7); c.stroke(); }) })); dial.position.set(0, .18, 0); dg.add(dial);
+    const gn = new THREE.Mesh(new THREE.BoxGeometry(.06, .7, .5), toon(0x4a3a2a)); gn.position.set(0, .55, 0); dg.add(gn);
+    const sh = new THREE.Mesh(new THREE.PlaneGeometry(.16, 1.5), new THREE.MeshBasicMaterial({ color: 0x20180c, transparent: true, opacity: .62, depthWrite: false })); sh.rotation.x = -Math.PI / 2; sh.geometry.translate(0, .75, 0); sh.position.set(0, .2, 0); dg.add(sh);
     R.towns.push({ g, sh, x }); }
   R.set = (ang, t) => R.towns.forEach((tw, i) => { tw.sh.rotation.z = -(ang + i * .1 + Math.sin(t * .3 + i) * .004); });
   return R;

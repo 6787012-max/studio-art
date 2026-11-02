@@ -24,7 +24,7 @@ export function makeCtx(CH, ORDER) {
   const ENDOF = k => { const i = ORDER.indexOf(k); return i + 1 < ORDER.length ? START[ORDER[i + 1]] : CH.dur; };
   const baseCam = (Wd, near, far) => Wd.on((t, cam) => { if (cam.near !== near || cam.far !== far) { cam.near = near; cam.far = far; cam.updateProjectionMatrix(); } });
   // long narrator lines (> LONGCH chars) cannot fit two lines at the minimum caption size; they are shown as two consecutive halves (same words, same timing, no new text)
-  const LONGCH = 92, capLines = [];
+  const LONGCH = 1e9, capLines = [];
   CH.lines.forEach(l => { const text = l.cap ? vtxt(l.cap) : '';
     if (l.cap && l.kind === 'N' && text.length > LONGCH && (l.end !== undefined ? l.end : l.t1) - l.t0 >= 9 && l.words && l.words.length >= 6) {
       const tk = text.split(/\s+/).filter(Boolean); if (tk.length !== l.words.length) { capLines.push(l); return; }

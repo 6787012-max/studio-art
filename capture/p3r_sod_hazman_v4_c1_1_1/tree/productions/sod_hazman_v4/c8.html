@@ -77,12 +77,13 @@ function sMidnightSun() {
   O.lighting(Wd, { key: [0xfff0d8, 2.0, [-20, 40, -50]], hemi: [0xbfd4f0, 0x8a96b0, 1.1], fill: [0xffd8b0, .35, [0, 6, 30]], target: [0, 2, -18], shadowExt: 55, shadowMap: 2048, fog: [0xcfdcee, 140, 520] });
   const V = P.village(Wd, { seed: 7, snow: 0xf1f5fc, water: 0x3a74b0, south: 34 }); V.glows.forEach(g => { g.visible = false; }); V.winMat.color.setHex(0x394a60);
   const sun = P.sunBall(7, 70); Wd.add(sun); const B = P.pathBeads(Wd.scene, LAT, RHO, 148, 96, 0xb8923a, .8);
-  const psiOf = g => Math.PI - (Math.PI / (D / 3)) * (g - a);
+  const psiOf = g => Math.PI - TAU * 1.05 * ((g - a) / D);
+  const fol = (base, k) => t => { const d = P.sunDir(LAT, RHO, psiOf(t + a)); return [lerp(base[0], d.x * 100, k), lerp(base[1], Math.max(8, d.y * 100), k), lerp(base[2], d.z * 100, k)]; };
   Wd.on((t) => { const psi = psiOf(t + a), d = P.sunDir(LAT, RHO, psi); sun.position.copy(d.clone().multiplyScalar(150)); Wd.sun.position.copy(d.clone().multiplyScalar(70)); Wd.sun.position.y = Math.max(8, Wd.sun.position.y); B.items.forEach(b => { const dd = ((psi - b.psi) % TAU + TAU) % TAU; const lit = dd > 0 && dd < 1.8; b.m.material.color.setHex(lit ? 0xffe9a0 : 0x9a7a30); b.m.scale.setScalar(lit ? 1.6 : 1); }); });
   return K.finish(Wd, K.rig(D, [
-    { w: 1, p0: [0, 3, 22], p1: [0, 3.4, 20], l0: [0, 40, -100], f0: F(18), ap: 3, focus: 90, drift: .02, e: ease.sm },
-    { w: 1, p0: [-3, 2.4, -2], p1: [2, 2.6, -4], l0: [0, 40, 100], l1: [4, 44, 100], f0: F(20), ap: 3, focus: 80, e: ease.sm },
-    { w: 1, p0: [8, 2.5, 10], p1: [4, 3, 8], l0: [-5, 28, -90], l1: [5, 46, -90], f0: F(20), ap: 3, focus: 90, e: ease.sm }]));
+    { w: 1, p0: [0, 3, 22], p1: [0, 3.4, 20], lf: fol([0, 40, -100], .9), f0: F(18), ap: 3, focus: 90, drift: .02, e: ease.sm },
+    { w: 1, p0: [-3, 2.4, -2], p1: [2, 2.6, -4], lf: fol([0, 40, 100], .9), f0: F(20), ap: 3, focus: 80, e: ease.sm },
+    { w: 1, p0: [8, 2.5, 10], p1: [4, 3, 8], lf: fol([0, 40, -90], .9), f0: F(20), ap: 3, focus: 90, e: ease.sm }]));
 }
 
 // ---------------------------------------------------------------- L03: the tilted Earth again; the polar cap fully lit, then fully dark (Earth circles the sun, the axis keeps its direction)
@@ -218,6 +219,9 @@ function sDunes(id, mode) {
     o.pip.visible = mode === 'count' && g > ti; if (o.pip.visible) { o.pip.position.y = 2.0 + .1 * Math.sin(g * 3 + o.i); o.pip.scale.setScalar(popS(g, ti + .1)); } });
     const b7 = st[6].s.material.emissive.r * 2; beamM.material.opacity = .16 * b7; L7.intensity = 14 * b7; });
   const s6 = st[6].g.position;
+  if (mode === 'glow') return K.finish(Wd, K.rig(D, [
+    { w: 1.3, p0: [-3.5, 1.7, -2], p1: [-5.5, 1.6, -3.5], l0: [s6.x + .6, 1.4, s6.z], f0: F(40), ap: 6, focus: 9 },
+    { w: 1, p0: [1, 2.2, 5], p1: [-1, 2.0, 4], l0: [-3.5, 1.4, -9], f0: F(26), ap: 5, focus: 14 }]));
   return K.finish(Wd, K.rig(D, [
     { w: 1.2, p0: [-9, 1.7, 7], p1: [-3.5, 1.5, 5], l0: [0, 1.4, -9], f0: F(35), ap: 6, focus: 15 },
     { w: 1, p0: [11.5, 1.2, -3], p1: [7.5, 1.3, -4.5], l0: [4.5, 1.3, -10], l1: [3, 1.3, -10.5], f0: F(40), ap: 6, focus: 9 },
@@ -258,8 +262,8 @@ function sDip() {
     const under = clamp(-sun.position.y / 6, 0, 1), near = Math.exp(-Math.pow((psi - Math.PI / 2) / .25, 2)); mg.material.opacity = .35 + .6 * near; mg.scale.setScalar(14 * (1 + .6 * near)); mk.children[1].material.color.setHex(near > .3 ? 0xfff0a0 : 0xffd36a);
     glit.position.set(sun.position.x * .8, .3, sun.position.z * .8); glit.scale.set(18, 60 * (1 - under * .7), 1); glit.material.opacity = .5 * (1 - under); sun.visible = sun.position.y > -9; });
   return K.finish(Wd, K.rig(D, [
-    { w: 1.4, p0: [0, 2.6, 22], p1: [0, 2.4, 14], l0: [0, 7, -100], f0: F(21), ap: 3, focus: 120 },
-    { w: 1.2, p0: [-6, 1.2, 8], p1: [-2, 1.0, 3], l0: [low.x * .2, 3, -110], f0: F(28), ap: 5, focus: 110 }]));
+    { w: 1.4, p0: [0, 2.6, 22], p1: [0, 2.4, 14], lf: t => { const d = P.sunDir(LA, RH, psiOf(t + a)); return [d.x * 90, Math.max(5, d.y * 100 + 4), -100]; }, f0: F(21), ap: 3, focus: 120 },
+    { w: 1.2, p0: [-6, 1.2, 8], p1: [-2, 1.0, 3], lf: t => { const d = P.sunDir(LA, RH, psiOf(t + a)); return [d.x * 100, Math.max(3, d.y * 100 + 3), -110]; }, f0: F(28), ap: 5, focus: 110 }]));
 }
 function sSkyCircle() {
   const id = 'L13', a = START[id], D = shotDur(id), Wd = world({ fog: false }); K.baseCam(Wd, .1, 400);

@@ -54,7 +54,7 @@ function sSunset() {
   for (let i = 0; i < 22; i++) br.add(mesh(new THREE.SphereGeometry(.28, 8, 6), toon(i % 3 ? 0x5f7a4a : 0x7a8c5a), { inkW: .015, scale: [1.8, .3, .6], pos: [-1.4 + i * .14 + r() * .1, -.05 + (r() - .5) * .35 - i * .05, (r() - .5) * .4], rot: [r(), r(), (r() - .5) * 1.4] })); Wd.add(br);
   const col = k => new THREE.Color(k), keys = [[0, 0x050a22, 0x142458, 0x4c4a78], [.4, 0x1a2a64, 0x5a4a88, 0xe88a5a], [.65, 0x4a78c8, 0xf0a870, 0xffd08a], [1, 0x6aa4e8, 0xbcd8f0, 0xfbe6c0]];
   const skyAt = u => { let i = 0; while (i < keys.length - 2 && u > keys[i + 1][0]) i++; const k = clamp((u - keys[i][0]) / (keys[i + 1][0] - keys[i][0]), 0, 1), e = ease.sm(k); return [1, 2, 3].map(j => col(keys[i][j]).lerp(col(keys[i + 1][j]), e)); };
-  Wd.on((t) => { const q = prog(t, .3, D - .3), u = lerp(.84, .36, ease.sm(q)); const [top, mid, bot] = skyAt(u); sky.uni.top.value.copy(top); sky.uni.mid.value.copy(mid); sky.uni.bot.value.copy(bot); sky.starU.uA.value = 1 - ease.sm(prog(u, .3, .45));
+  Wd.on((t) => { const q = prog(t, .3, D - .3), u = lerp(.68, .34, ease.sm(q)); const [top, mid, bot] = skyAt(u); sky.uni.top.value.copy(top); sky.uni.mid.value.copy(mid); sky.uni.bot.value.copy(bot); sky.starU.uA.value = 1 - ease.sm(prog(u, .3, .45));
     sun.position.set(7, lerp(30, -5, ease.in(q) * .85 + q * .15), -150); sg.position.copy(sun.position); sg2.position.copy(sun.position); sg.material.opacity = .8 * (1 - ease.sm(prog(q, .85, 1))); sg2.material.opacity = .35 * (1 - ease.sm(prog(q, .85, 1)));
     Wd.sun.color.copy(col(0xfff0d8).lerp(col(0xff8a50), ease.sm(prog(q, .1, .8)))); Wd.sun.intensity = lerp(1.7, .7, ease.sm(q)); Wd.sun.position.set(30, lerp(30, 6, q), -25); Wd.hemi.intensity = lerp(1.0, .7, q);
     C.winMat.color.set(0x39404a).lerp(col(0xffd488), ease.sm(prog(q, .4, .9))); C.glows.forEach(gl => { gl.material.opacity = .55 * ease.sm(prog(q, .4, .9)); }); mgl.material.opacity = .4 + .5 * ease.sm(prog(q, .6, 1)); Wd.scene.fog.color.copy(col(0xd9c8b0).lerp(col(0x6a5a82), ease.sm(prog(q, .3, 1)))); });
@@ -123,7 +123,7 @@ function sClockSun() {
   return K.finish(Wd, K.rig(D, [
     { w: 1.6, p0: [0, 3, 9.2], p1: [0, 3, 8.4], l0: [0, 3, 0], f0: F(28), ap: 4, focus: 9, vig: .42 },
     { w: 1, p0: [-2.4, 3.1, 6], p1: [-2.8, 3.1, 4.6], l0: [-2.8, 3.1, 0], f0: F(36), ap: 8, focus: 5, vig: .42 },
-    { w: 1, p0: [2.8, 2.6, 6.5], p1: [2.6, 2.4, 5.4], l0: [2.8, 2.5, 0], f0: F(36), ap: 8, focus: 6, vig: .42 }]));
+    { w: 1, p0: [1.4, 2.8, 7.6], p1: [1.0, 2.7, 6.6], l0: [.9, 2.8, 0], f0: F(36), ap: 8, focus: 7, vig: .42 }]));
 }
 
 // ---------------------------------------------------------------- L06 / L09: warm light on an open gemara on a shtender

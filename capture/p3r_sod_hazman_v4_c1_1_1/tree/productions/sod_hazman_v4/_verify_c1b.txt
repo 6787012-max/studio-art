@@ -1,8 +1,6 @@
 heavy_lock: 2 heavy jobs already running, waiting for a slot
-heavy_lock: got slot 1 after 369s
-P1 | CAPTION_OFF_SAFE | t=26.1 | L03 | caption box x=-60 y=563 w=1400 h=116 outside the safe box (4% sides, 4.5% top/bottom of the 1280x720 canvas) | Fix: shorten the line or shrink the text so the box stays inside the safe area
-P1 | CAPTION_OFF_SAFE | t=60.2 | L07 | caption box x=-132 y=563 w=1544 h=116 outside the safe box (4% sides, 4.5% top/bottom of the 1280x720 canvas) | Fix: shorten the line or shrink the text so the box stays inside the safe area
-P1 | CAPTION_SHORT | t=103.8 | L11 | caption on screen 3.6 s (< 4.40 s) | Fix: each caption needs >= 4.4 s on screen: lengthen the window or cut words
+heavy_lock: got slot 1 after 1688s
+PASS
 
 P2 notes:
 P2 | NO_HERO | t=0.3 | intro | __heroBox returned null (no hero registered in this shot) (+2 more samples)
@@ -13,4 +11,11 @@ P2 | NO_HERO | t=26.36 | L03 | __heroBox returned null (no hero registered in th
 P2 | NO_HERO | t=38.7 | L04 | __heroBox returned null (no hero registered in this shot) (+2 more samples)
 P2 | NO_HERO | t=46.45 | L05 | __heroBox returned null (no hero registered in this shot) (+2 more samples)
 P2 | NO_HERO | t=104.06 | L11 | __heroBox returned null (no hero registered in this shot) (+2 more samples)
-SUMMARY | FAIL | samples=63 | dur=108.9 | P0=0 P1=3 P2=8 | {"ready_s": 1.9, "gates_s": 1663.8, "total_s": 1698.4}
+
+Sheets (CLEAN, safe to Read):
+  beat: C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c1b/_view/_verify_c1b_beat_sheet_1.jpg
+  seam: C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c1b/_view/_verify_c1b_seams_1.jpg
+  beat_2: C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c1b/_view/_verify_c1b_beat_sheet_2.jpg
+  seam_2: C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c1b/_view/_verify_c1b_seams_2.jpg
+not CLEAN or not probed (do not Read): phone
+SUMMARY | PASS | samples=63 | dur=108.9 | P0=0 P1=0 P2=8 | {"ready_s": 4.8, "gates_s": 1446.8, "sheets_s": 667.4, "total_s": 2132.0}
