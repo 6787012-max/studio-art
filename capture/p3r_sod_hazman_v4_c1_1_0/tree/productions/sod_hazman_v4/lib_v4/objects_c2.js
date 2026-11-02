@@ -30,7 +30,7 @@ export function dayBlocks(Wd) {
   const gD = O.glow(3.4, 0x5a78ff, 0), gB = O.glow(3.8, 0xffc060, 0); Wd.add(gD); Wd.add(gB);
   const slab = box(5.6, .18, 1.6, 0x5a5666, { pos: [0, -.1, 0], inkW: .02 }); Wd.add(slab);
   const trailD = O.glow(2.2, 0x6a88ff, 0), trailB = O.glow(2.2, 0xffd080, 0); Wd.add(trailD); Wd.add(trailB);
-  R.set = (kd, kb, g) => { const pos = (m, x0, x1, k, gl, tr) => { const e = ease.out(k), x = lerp(x0, x1, e); m.position.set(x, .7 + (1 - e) * .0, 0); m.visible = k > 0; gl.position.set(x, .75, -.1); gl.material.opacity = k > 0 ? (.25 + .6 * Math.exp(-Math.pow((k - 1) * 14, 2) * .02) * (k < 1 ? 1 : 0)) : 0;
+  R.slab = slab; R.set = (kd, kb, g) => { const pos = (m, x0, x1, k, gl, tr) => { const e = ease.out(k), x = lerp(x0, x1, e); m.position.set(x, .7 + (1 - e) * .0, 0); m.visible = k > 0; gl.position.set(x, .75, -.1); gl.material.opacity = k > 0 ? (.25 + .6 * Math.exp(-Math.pow((k - 1) * 14, 2) * .02) * (k < 1 ? 1 : 0)) : 0;
       tr.position.set(x + (x0 > x1 ? .9 : -.9) * (1 - e) * 3, .75, .1); tr.material.opacity = k > 0 && k < 1 ? .7 * (1 - e) : 0; m.rotation.y = (x0 > x1 ? -1 : 1) * (1 - e) * .25; };
     pos(dk, 7.5, 1.05, kd, gD, trailD); pos(br, -7.5, -1.05, kb, gB, trailB); R.dk = dk; R.br = br; };
   R.set(0, 0, 0); return R;

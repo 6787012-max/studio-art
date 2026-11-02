@@ -39,7 +39,7 @@ export function duskWorld(Wd) {
   Wd.scene.fog = new THREE.Fog(0x6a4a68, 60, 300); const g0 = new THREE.Mesh(new THREE.PlaneGeometry(500, 500), toon(0x4a4050)); g0.rotation.x = -Math.PI / 2; Wd.add(g0);
   O.hills(Wd, { colors: [0x3a3050, 0x2a2842, 0x4a3a58], list: [[-30, -118, 34, 12, 22], [40, -120, 40, 14, 24], [-90, -112, 30, 10, 18], [100, -112, 34, 12, 20], [0, -170, 80, 18, 30]] });
   const C = O.city(Wd, { seed: 29, n: 56, litFrac: .25, area: [-58, 58, -12, -62], slope: .05, cypress: 6 });
-  const stars = [[-14, 46, -150], [10, 54, -140], [28, 40, -150]].map(p => { const s = new THREE.Group(); s.position.set(...p); const c = new THREE.Mesh(new THREE.OctahedronGeometry(.9, 0), O.basic(0xfff6d0)); s.add(c); s.add(O.glow(14, 0xfff0b0, .9)); const rg = goldRing(Wd); Wd.add(s); return { g: s, rg }; });
+  const stars = [[-14, 46, -150], [10, 54, -140], [28, 40, -150]].map(p => { const s = new THREE.Group(); s.position.set(...p); const c = new THREE.Mesh(new THREE.OctahedronGeometry(1.7, 0), O.basic(0xfff6d0)); s.add(c); s.add(O.glow(34, 0xfff0b0, .9)); const rg = goldRing(Wd); Wd.add(s); return { g: s, rg }; });
   return { sky, C, stars, setDusk(u) { sky.uni.top.value.setHex(0x142a5a).lerp(col(0x050a22), u); sky.uni.mid.value.setHex(0x6a4a78).lerp(col(0x1a2458), u); sky.uni.bot.value.setHex(0xf09a60).lerp(col(0x4a3a68), u * .8); } };
 }
 // candle room: white tablecloth, two candles, a wall clock, a window with the low winter sun and stone houses outside

@@ -28,7 +28,7 @@ const K = P.kit(CH, ORDER), { START, ENDOF, T0, wordT } = K;
 const shotDur = id => ENDOF(id) - START[id];
 const watchShot = P.watchShotMaker({ K, CH, MOUTH, world, makeWatch });
 const space = (Wd, stars) => { O.skyDome(Wd, { top: 0x02040e, mid: 0x060c20, bot: 0x0c1634, stars: stars === undefined ? 1 : stars }); O.lighting(Wd, { key: [0xffffff, .1, [0, 5, 5]], hemi: [0x223355, 0x080c18, .5], noShadow: true }); };
-const stage = Wd => { O.skyDome(Wd, { top: 0x050a22, mid: 0x0e1a44, bot: 0x1c2c5e, stars: .6 }); O.lighting(Wd, { key: [0xffe0b0, 1.0, [3, 6, 8]], hemi: [0x6a7ab0, 0x141a30, .8], fill: [0x6a8ad0, .35, [-6, 2, 5]], rim: [0xffd890, .7, [0, 4, -6]], noShadow: true, fog: null }); };
+const stage = Wd => { O.skyDome(Wd, { top: 0x050a22, mid: 0x0e1a44, bot: 0x1c2c5e, stars: .6 }); [[0, 0, -9, 46, 0x3a5ac0, .34], [-9, 4, -7, 24, 0xff9a50, .16], [10, -3, -8, 26, 0x4a7ae0, .2]].forEach(([x, y, z, sz, c, op]) => { const g = O.glow(sz, c, op); g.position.set(x, y, z); Wd.add(g); }); O.lighting(Wd, { key: [0xffe0b0, 1.0, [3, 6, 8]], hemi: [0x6a7ab0, 0x141a30, .8], fill: [0x6a8ad0, .35, [-6, 2, 5]], rim: [0xffd890, .7, [0, 4, -6]], noShadow: true, fog: null }); };
 
 // ---------------------------------------------------------------- watch shots
 const sW0 = () => watchShot('L00', {
@@ -40,9 +40,7 @@ const sW0 = () => watchShot('L00', {
     Wd.on((t) => { const g = t + a; moon.position.y = .15 + .02 * Math.sin(g * .7); }); } });
 const sW5 = () => watchShot('L05', {
   key: .9, look: g => { const s = g - T0('L05'); return { yaw: .12 * Math.sin(s * 2), x: .35 * Math.sin(s * 5.2), y: -.55 }; },
-  over: g => ({ brow: .1, nod: .5 + .5 * Math.sin((g - T0('L05')) * 5.2) }), extra: (Wd, R, a, W) => {
-    const bits = [], r = rng(8); for (let i = 0; i < 12; i++) { const m = new THREE.Mesh(new THREE.SphereGeometry(.012, 8, 6), O.basic(0xffd36a)); bits.push(m); Wd.add(m); }
-    Wd.on((t) => { const g = t + a; bits.forEach((m, i) => { const ph = (g * 1.1 + i / 12) % 1, an = i * .5; m.position.set(-.22 + Math.cos(an) * .08 + ph * .5, .12 + Math.sin(g * 2 + i) * .02 + ph * .1, .22); m.scale.setScalar(Math.sin(Math.PI * ph) * 1.4 + .01); }); }); } });
+  over: g => ({ brow: .1, nod: .5 + .5 * Math.sin((g - T0('L05')) * 5.2) }) });
 
 // ---------------------------------------------------------------- L01 / L12 / L13: Earth and Moon, the phases in order
 function sPhases(id, mode) {
@@ -50,7 +48,7 @@ function sPhases(id, mode) {
   const M = C.moonSystem(Wd, {}), alOf = g => mode === 'cycle' ? TAU * prog(g, a + .6, a + D - .8) : (.8 + (g - a) * TAU / 48);
   Wd.on((t) => { M.update(alOf(t + a), true); });
   const eyeP = (t, k) => { const al = alOf(t + a), d = M.posOf(al).normalize(); return [d.x * 2.4, .35, d.z * 2.4]; }, eyeL = t => { const p = M.posOf(alOf(t + a)); return [p.x, p.y, p.z]; };
-  if (mode !== 'cycle') return K.finish(Wd, K.rig(D, [{ w: 1, pf: (t, k) => [lerp(-5, 5, k), lerp(8, 6, k), lerp(11, 12, k)], l0: [0, 0, 1.5], f0: F(34), ap: 4, focus: 12, e: ease.sm }]));
+  if (mode !== 'cycle') { M.strip.visible = false; return K.finish(Wd, K.rig(D, [{ w: 1, pf: (t, k) => [lerp(-6, 6, k), lerp(3.2, 2.2, k), 22], l0: [0, -4.3, 0], f0: F(36), ap: 3, focus: 22, e: ease.sm }])); }
   return K.finish(Wd, K.rig(D, [
     { w: 1.5, p0: [-3, 6.8, 8.2], p1: [2.5, 6.2, 9], l0: [0, 0, 1], f0: F(34), ap: 4, focus: 10 },
     { w: 1.3, pf: eyeP, lf: eyeL, f0: F(38), ap: 6, focus: 2.9, e: ease.sm },
@@ -64,7 +62,7 @@ function sDusk() {
   O.lighting(Wd, { key: [0xffb880, .8, [-40, 12, -30]], hemi: [0x6a6a9a, 0x2a2030, .9], rim: [0x8aa0ff, .5, [25, 30, -50]], target: [0, 4, -30], shadowExt: 60, shadowMap: 2048, fog: [0x6a5a82, 80, 520] });
   O.hills(Wd, { colors: [0x2a2c48, 0x32304e, 0x24263e], list: [[-40, -150, 50, 17, 28], [30, -150, 60, 20, 30], [-100, -140, 40, 13, 22], [100, -140, 44, 14, 24], [0, -190, 120, 22, 40]] });
   const city = O.city(Wd, { seed: 11, n: 70, litFrac: .35, area: [-64, 64, -9, -66] });
-  const moon = P.moonBall(11); moon.userData.u.L.value.set(Math.sin(.75), .25, -Math.cos(.75)); moon.userData.u.dark.value = .22; Wd.add(moon); const mg = O.glow(90, 0xffc890, .4); Wd.add(mg);
+  const moon = P.moonBall(11); moon.userData.u.L.value.set(Math.sin(1.0), .3, -Math.cos(1.0)); moon.userData.u.dark.value = .3; Wd.add(moon); const mg = O.glow(90, 0xffc890, .4); Wd.add(mg);
   const H = C.stoneHall(Wd, 300); O.motes(Wd, { n: 20, area: [-12, 12, 1, 8, -4, 10], size: .16, color: 0xffd8a0, op: .4, seed: 5 });
   Wd.on((t) => { const g = t + a; moon.position.set(22, lerp(26, 20, prog(t, 0, D)), -150); mg.position.copy(moon.position); H.userData.tick(g); });
   return K.finish(Wd, K.rig(D, [
@@ -168,8 +166,8 @@ function sFlash() {
 const tickSec = S => { const f = S - Math.floor(S); return (Math.floor(S) % 60 + ease.out(clamp(f / .22, 0, 1))) * Math.PI / 30; };
 function sNightClock() {
   const id = 'L14', a = START[id], D = shotDur(id), Wd = world({ fog: false }); K.baseCam(Wd, .05, 200); O.skyDome(Wd, {}); const R = O.homeRoom(Wd);
-  O.lighting(Wd, { key: [0x93adff, .38, [-6, 6, 3]], hemi: [0x37446a, 0x15101a, .55], fill: [0x6a60a0, .2, [6, 3, 6]], rim: [0xffa860, .3, [3, 2, -6]], target: [0, 1.4, -2], shadowExt: 9, fog: null,
-    points: [[0x9ec4ff, 2.6, [.65, 1.05, -1.0], 3.2], [0xff9a3c, 1.8, [1.3, 1.05, -3.2], 3.5], [0x7a96d8, 2.5, [-3.6, 1.8, -2.2], 6], [0xffc070, 3, [.2, 2.1, -3.0], 5]] });
+  O.lighting(Wd, { key: [0x93adff, .38, [-6, 6, 3]], hemi: [0x37446a, 0x15101a, .45], fill: [0x6a60a0, .2, [6, 3, 6]], rim: [0xffa860, .3, [3, 2, -6]], target: [0, 1.4, -2], shadowExt: 9, fog: null,
+    points: [[0x9ec4ff, 2.6, [.65, 1.05, -1.0], 3.2], [0xff9a3c, 1.8, [1.3, 1.05, -3.2], 3.5], [0x7a96d8, 2.5, [-3.6, 1.8, -2.2], 6]] });
   Wd.hero = R.clock.group; const ring = new THREE.Mesh(new THREE.TorusGeometry(1, .035, 8, 64), new THREE.MeshBasicMaterial({ color: 0xffc84a, transparent: true, opacity: 0, blending: THREE.AdditiveBlending, depthWrite: false, fog: false })); ring.position.set(.2, 2.1, -3.8); Wd.add(ring);
   R.phone.set('02:00', '02:00', 1, 0); R.oven.set('02:04', '02:04', 1, 0); R.alarm.setTime(7440, tickSec(7440));
   Wd.on((t, cam) => { const g = t + a, S = 7140 + (g - a) * 1.0, k = clamp((g - a - 4.5) / 1.6, 0, 1); R.clock.setTime(S, tickSec(S)); ring.quaternion.copy(cam.quaternion); ring.visible = k > 0 && k < 1; if (ring.visible) { ring.scale.setScalar(lerp(.5, 2.0, ease.out(k))); ring.material.opacity = .8 * (1 - k); } });
