@@ -204,9 +204,14 @@ export function digitalPanel(w, h, o) {
 }
 export function phoneProp(Wd, o) {
   o = o || {}; const g = grp(Wd, o), s = o.s || 1;
-  g.add(box(.085 * s, .011 * s, .17 * s, 0x1d2230, { inkW: .004, pos: [0, .0055 * s, 0] }));
-  const pn = digitalPanel(.075 * s, .156 * s, { cw: 300, fg: '#f2f6ff', glow: 'rgba(160,200,255,.8)', bg: '#0a1020', bgGlow: 'rgba(60,110,200,.35)', fs: .1, blink: false });
-  pn.mesh.rotation.x = -Math.PI / 2; pn.mesh.position.y = .0118 * s; g.add(pn.mesh);
+  // small keypad phone lying flat: body, small screen at the top, 4x3 physical number keys below
+  g.add(box(.062 * s, .014 * s, .128 * s, 0x2a2f3a, { inkW: .004, pos: [0, .007 * s, 0] }));
+  g.add(box(.052 * s, .004 * s, .036 * s, 0x10141c, { inkW: .002, pos: [0, .016 * s, -.044 * s] }));
+  const pn = digitalPanel(.046 * s, .028 * s, { cw: 300, fg: '#f2f6ff', glow: 'rgba(160,200,255,.8)', bg: '#0a1020', bgGlow: 'rgba(60,110,200,.35)', fs: .5, blink: false });
+  pn.mesh.rotation.x = -Math.PI / 2; pn.mesh.position.set(0, .0185 * s, -.044 * s); g.add(pn.mesh);
+  g.add(box(.012 * s, .004 * s, .006 * s, 0x6a7080, { ink: false, pos: [0, .016 * s, -.016 * s] }));
+  for (let r = 0; r < 4; r++) for (let c = 0; c < 3; c++) g.add(box(.013 * s, .004 * s, .0095 * s, r === 3 && c !== 1 ? 0x8a8f9c : 0xd8dce6, { inkW: .0015, pos: [(c - 1) * .0165 * s, .016 * s, (-.002 + r * .0135) * s] }));
+  g.add(cyl(.0025 * s, .0025 * s, .03 * s, 0x2a2f3a, { pos: [.022 * s, .028 * s, -.062 * s], inkW: .002 }));
   const set = (str, prev, k, t) => pn.draw(str, prev, k, t); set('02:00', '02:00', 1, 0);
   return { group: g, set, light: glow(.45 * s, 0x9ec4ff, .5) };
 }

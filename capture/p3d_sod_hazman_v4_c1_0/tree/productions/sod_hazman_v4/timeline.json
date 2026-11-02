@@ -4,7 +4,7 @@
   {
    "id": "c1",
    "title": "T_C1",
-   "dur": 114.49,
+   "dur": 119.06,
    "lines": [
     {
      "id": "L00",
@@ -376,7 +376,7 @@
      "kind": "N",
      "speaker": "narrator",
      "t0": 60.28,
-     "t1": 62.84,
+     "t1": 67.41,
      "words": [
       {
        "gold": false,
@@ -405,19 +405,63 @@
       {
        "gold": false,
        "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
       }
      ],
      "visual": "split 3D: left wall clock jumps, right sun moves smoothly along its arc",
      "dwell": 4.0,
-     "end": 66.84
+     "end": 71.41
     },
     {
      "id": "L09",
      "cap": "C1_L09",
      "kind": "W",
      "speaker": "watch",
-     "t0": 67.54,
-     "t1": 70.05,
+     "t0": 72.11,
+     "t1": 74.62,
      "words": [
       {
        "gold": false,
@@ -446,15 +490,15 @@
      ],
      "visual": "watch looks from clock to sun, eyebrows up",
      "dwell": 1.6,
-     "end": 71.65
+     "end": 76.22
     },
     {
      "id": "L10",
      "cap": "C1_L10",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 72.35,
-     "t1": 77.24,
+     "t0": 76.92,
+     "t1": 81.82,
      "words": [
       {
        "gold": false,
@@ -503,15 +547,15 @@
      ],
      "visual": "camera pulls back from Jerusalem to the whole Earth in space, sun far away",
      "dwell": 1.6,
-     "end": 78.84
+     "end": 83.42
     },
     {
      "id": "L11",
      "cap": "C1_L11",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 79.54,
-     "t1": 83.92,
+     "t0": 84.12,
+     "t1": 88.49,
      "words": [
       {
        "gold": false,
@@ -556,15 +600,15 @@
      ],
      "visual": "an open sefer Bereishit 3D, page light glowing",
      "dwell": 1.6,
-     "end": 85.52
+     "end": 90.09
     },
     {
      "id": "L12",
      "cap": "C1_L12",
      "kind": "S",
      "speaker": "narrator",
-     "t0": 86.22,
-     "t1": 89.96,
+     "t0": 90.79,
+     "t1": 94.54,
      "words": [
       {
        "gold": false,
@@ -601,15 +645,15 @@
      ],
      "visual": "quick card",
      "hold": 8.0,
-     "end": 97.96
+     "end": 102.54
     },
     {
      "id": "L13",
      "cap": "C1_L13",
      "kind": "A",
      "speaker": "narrator",
-     "t0": 98.66,
-     "t1": 101.1,
+     "t0": 103.24,
+     "t1": 105.68,
      "words": [
       {
        "gold": false,
@@ -634,15 +678,15 @@
      ],
      "visual": "clock 2:00 -> 1:00 again, fast",
      "hold": 3.0,
-     "end": 104.1
+     "end": 108.68
     },
     {
      "id": "L14",
      "cap": "C1_L14",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 104.8,
-     "t1": 110.19,
+     "t0": 109.38,
+     "t1": 114.76,
      "words": [
       {
        "gold": false,
@@ -695,14 +739,777 @@
      ],
      "visual": "chapter hook: push-in on the sefer, next chapter title flickers",
      "dwell": 1.6,
-     "end": 111.79
+     "end": 116.36
+    }
+   ]
+  },
+  {
+   "id": "c1b",
+   "title": "T_C1B",
+   "dur": 108.86,
+   "lines": [
+    {
+     "id": "L00",
+     "cap": "C1B_L00",
+     "kind": "N",
+     "speaker": "narrator",
+     "t0": 4.0,
+     "t1": 7.61,
+     "words": [
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      }
+     ],
+     "visual": "a 3D route map unrolls on a table: 9 stations along a winding gold path, the watch at the start",
+     "dwell": 1.6,
+     "end": 9.21
+    },
+    {
+     "id": "L01",
+     "cap": "C1B_L01",
+     "kind": "N",
+     "speaker": "narrator",
+     "t0": 9.91,
+     "t1": 14.35,
+     "words": [
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      }
+     ],
+     "visual": "station 1 lights: open sefer icon",
+     "dwell": 1.6,
+     "end": 15.95
+    },
+    {
+     "id": "L02",
+     "cap": "C1B_L02",
+     "kind": "N",
+     "speaker": "narrator",
+     "t0": 16.65,
+     "t1": 21.36,
+     "words": [
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      }
+     ],
+     "visual": "stations 2-3 light: rotating Earth, tilted orbit icons",
+     "dwell": 4.0,
+     "end": 25.36
+    },
+    {
+     "id": "L03",
+     "cap": "C1B_L03",
+     "kind": "N",
+     "speaker": "narrator",
+     "t0": 26.06,
+     "t1": 33.7,
+     "words": [
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      }
+     ],
+     "visual": "stations 4-5 light: day bar with 12 segments, wall clock",
+     "dwell": 4.0,
+     "end": 37.7
+    },
+    {
+     "id": "L04",
+     "cap": "C1B_L04",
+     "kind": "N",
+     "speaker": "narrator",
+     "t0": 38.4,
+     "t1": 43.85,
+     "words": [
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      }
+     ],
+     "visual": "station 6 lights: clock with arrows, Yom Kippur siddur icon",
+     "dwell": 1.6,
+     "end": 45.45
+    },
+    {
+     "id": "L05",
+     "cap": "C1B_L05",
+     "kind": "N",
+     "speaker": "narrator",
+     "t0": 46.15,
+     "t1": 53.16,
+     "words": [
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      }
+     ],
+     "visual": "stations 7-9 light: sunrise, polar sun circle, moon phases",
+     "dwell": 1.6,
+     "end": 54.76
+    },
+    {
+     "id": "L06",
+     "cap": "C1B_L06",
+     "kind": "W",
+     "speaker": "watch",
+     "t0": 55.46,
+     "t1": 57.81,
+     "words": [
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      }
+     ],
+     "visual": "watch looks at the viewer, lid half open",
+     "dwell": 1.6,
+     "end": 59.41
+    },
+    {
+     "id": "L07",
+     "cap": "C1B_L07",
+     "kind": "N",
+     "speaker": "narrator",
+     "t0": 60.11,
+     "t1": 71.1,
+     "words": [
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      }
+     ],
+     "visual": "booklet 3D opens, a pencil writes, a 60 s ring counts",
+     "dwell": 4.0,
+     "end": 75.1
+    },
+    {
+     "id": "L08",
+     "cap": "C1B_L08",
+     "kind": "N",
+     "speaker": "narrator",
+     "t0": 75.8,
+     "t1": 84.23,
+     "words": [
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      }
+     ],
+     "visual": "small glowing card \"?\" pops with an 8 s ring",
+     "dwell": 4.0,
+     "end": 88.23
+    },
+    {
+     "id": "L09",
+     "cap": "C1B_L09",
+     "kind": "N",
+     "speaker": "narrator",
+     "t0": 88.93,
+     "t1": 95.39,
+     "words": [
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      }
+     ],
+     "visual": "big \"?\" spins, then a check mark",
+     "dwell": 1.6,
+     "end": 96.99
+    },
+    {
+     "id": "L10",
+     "cap": "C1B_L10",
+     "kind": "W",
+     "speaker": "watch",
+     "t0": 97.69,
+     "t1": 101.46,
+     "words": [
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      }
+     ],
+     "visual": "watch closes its lid with a click, ready",
+     "dwell": 1.6,
+     "end": 103.06
+    },
+    {
+     "id": "L11",
+     "cap": "C1B_L11",
+     "kind": "N",
+     "speaker": "narrator",
+     "t0": 103.76,
+     "t1": 104.56,
+     "words": [
+      {
+       "gold": false,
+       "num": false
+      }
+     ],
+     "visual": "the gold path lights from station 1 onward, camera flies along it",
+     "dwell": 1.6,
+     "end": 106.16
     }
    ]
   },
   {
    "id": "c2",
    "title": "T_C2",
-   "dur": 212.93,
+   "dur": 217.25,
    "lines": [
     {
      "id": "L00",
@@ -1107,7 +1914,7 @@
      "kind": "N",
      "speaker": "narrator",
      "t0": 57.88,
-     "t1": 64.75,
+     "t1": 69.85,
      "words": [
       {
        "gold": false,
@@ -1160,19 +1967,67 @@
       {
        "gold": true,
        "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
       }
      ],
      "visual": "sun and moon 3D placed into the sky by light beams, source tag Bereishit 1:14",
      "dwell": 1.6,
-     "end": 66.35
+     "end": 71.45
     },
     {
      "id": "L08",
      "cap": "C2_L08",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 67.05,
-     "t1": 75.01,
+     "t0": 72.15,
+     "t1": 80.11,
      "words": [
       {
        "gold": false,
@@ -1241,15 +2096,15 @@
      ],
      "visual": "sun becomes a giant clock face, moon becomes a calendar ring around it",
      "dwell": 4.0,
-     "end": 79.01
+     "end": 84.11
     },
     {
      "id": "L09",
      "cap": "C2_L09",
      "kind": "W",
      "speaker": "watch",
-     "t0": 79.71,
-     "t1": 82.24,
+     "t0": 84.81,
+     "t1": 87.34,
      "words": [
       {
        "gold": false,
@@ -1278,15 +2133,15 @@
      ],
      "visual": "watch points to himself, a bit embarrassed",
      "dwell": 4.0,
-     "end": 86.24
+     "end": 91.34
     },
     {
      "id": "L10",
      "cap": "C2_L10",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 86.94,
-     "t1": 93.42,
+     "t0": 92.04,
+     "t1": 98.51,
      "words": [
       {
        "gold": false,
@@ -1351,15 +2206,15 @@
      ],
      "visual": "many clocks orbit around the sun like students around a teacher",
      "dwell": 4.0,
-     "end": 97.42
+     "end": 102.51
     },
     {
      "id": "L11",
      "cap": "C2_L11",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 98.12,
-     "t1": 104.45,
+     "t0": 103.21,
+     "t1": 109.54,
      "words": [
       {
        "gold": false,
@@ -1412,15 +2267,15 @@
      ],
      "visual": "sun sets exactly on a marked notch on the horizon, source tag Tehillim 104:19",
      "dwell": 1.6,
-     "end": 106.05
+     "end": 111.14
     },
     {
      "id": "L12",
      "cap": "C2_L12",
      "kind": "G",
      "speaker": "narrator",
-     "t0": 106.75,
-     "t1": 111.89,
+     "t0": 111.84,
+     "t1": 116.98,
      "words": [
       {
        "gold": false,
@@ -1473,15 +2328,15 @@
      ],
      "visual": "guess card, 3 s",
      "hold": 3.0,
-     "end": 114.89
+     "end": 119.98
     },
     {
      "id": "L13",
      "cap": "C2_L13",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 115.59,
-     "t1": 121.16,
+     "t0": 120.68,
+     "t1": 126.26,
      "words": [
       {
        "gold": false,
@@ -1538,15 +2393,15 @@
      ],
      "visual": "counter rolls up to 5787 years",
      "dwell": 4.0,
-     "end": 125.16
+     "end": 130.26
     },
     {
      "id": "L14",
      "cap": "C2_L14",
      "kind": "Q",
      "speaker": "narrator",
-     "t0": 125.86,
-     "t1": 129.63,
+     "t0": 130.96,
+     "t1": 134.73,
      "words": [
       {
        "gold": false,
@@ -1591,15 +2446,15 @@
      ],
      "visual": "summary question card",
      "hold": 60.0,
-     "end": 189.63
+     "end": 194.73
     },
     {
      "id": "L15",
      "cap": "C2_L15",
      "kind": "A",
      "speaker": "narrator",
-     "t0": 190.33,
-     "t1": 197.8,
+     "t0": 195.43,
+     "t1": 202.9,
      "words": [
       {
        "gold": false,
@@ -1668,15 +2523,15 @@
      ],
      "visual": "answer card",
      "hold": 3.0,
-     "end": 200.8
+     "end": 205.9
     },
     {
      "id": "L16",
      "cap": "C2_L16",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 201.5,
-     "t1": 208.63,
+     "t0": 206.6,
+     "t1": 212.95,
      "words": [
       {
        "gold": false,
@@ -1733,30 +2588,18 @@
       {
        "gold": false,
        "num": false
-      },
-      {
-       "gold": false,
-       "num": false
-      },
-      {
-       "gold": false,
-       "num": false
-      },
-      {
-       "gold": false,
-       "num": false
       }
      ],
      "visual": "chapter hook: the sun freezes, the camera starts to rise",
      "dwell": 1.6,
-     "end": 210.23
+     "end": 214.55
     }
    ]
   },
   {
    "id": "c3",
    "title": "T_C3",
-   "dur": 251.89,
+   "dur": 267.91,
    "lines": [
     {
      "id": "L00",
@@ -2104,7 +2947,7 @@
      "kind": "N",
      "speaker": "narrator",
      "t0": 57.12,
-     "t1": 62.37,
+     "t1": 67.32,
      "words": [
       {
        "gold": false,
@@ -2161,17 +3004,57 @@
       {
        "gold": false,
        "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
       }
      ],
      "visual": "terminator line highlighted gold, sweeping across countries",
      "dwell": 4.0,
-     "end": 66.37
+     "end": 71.32
     },
     {
      "id": "L07",
      "kind": "V",
-     "t0": 67.07,
-     "t1": 71.07,
+     "t0": 72.02,
+     "t1": 76.02,
      "visual": "terminator line sweeps over the Mediterranean and reaches the hills of Jerusalem first, then the coast"
     },
     {
@@ -2179,8 +3062,8 @@
      "cap": "C3_L08",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 71.07,
-     "t1": 78.67,
+     "t0": 76.02,
+     "t1": 83.62,
      "words": [
       {
        "gold": false,
@@ -2245,16 +3128,36 @@
      ],
      "visual": "a pin on Jerusalem; the line touches it -> sunset scene inset",
      "dwell": 1.6,
-     "end": 80.27
+     "end": 85.22
     },
     {
      "id": "L09",
      "cap": "C3_L09",
      "kind": "W",
      "speaker": "watch",
-     "t0": 80.97,
-     "t1": 83.52,
+     "t0": 85.92,
+     "t1": 91.07,
      "words": [
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
       {
        "gold": false,
        "num": false
@@ -2282,15 +3185,15 @@
      ],
      "visual": "watch spins slowly like the Earth",
      "dwell": 1.6,
-     "end": 85.12
+     "end": 92.67
     },
     {
      "id": "L10",
      "cap": "C3_L10",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 85.82,
-     "t1": 91.52,
+     "t0": 93.37,
+     "t1": 103.04,
      "words": [
       {
        "gold": false,
@@ -2335,19 +3238,51 @@
       {
        "gold": false,
        "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
       }
      ],
      "visual": "view from Jerusalem rooftop: sun arc east to west, time-lapse",
      "dwell": 4.0,
-     "end": 95.52
+     "end": 107.04
     },
     {
      "id": "L11",
      "cap": "C3_L11",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 96.22,
-     "t1": 101.25,
+     "t0": 107.74,
+     "t1": 112.77,
      "words": [
       {
        "gold": false,
@@ -2392,15 +3327,15 @@
      ],
      "visual": "map 3D of Eretz Yisrael, Jerusalem and Tel Aviv pins, east arrow",
      "dwell": 1.6,
-     "end": 102.85
+     "end": 114.37
     },
     {
      "id": "L12",
      "cap": "C3_L12",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 103.55,
-     "t1": 109.03,
+     "t0": 115.07,
+     "t1": 125.05,
      "words": [
       {
        "gold": false,
@@ -2449,19 +3384,55 @@
       {
        "gold": false,
        "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
       }
      ],
      "visual": "two noon markers, a 2-minute gap bar between them",
      "dwell": 4.0,
-     "end": 113.03
+     "end": 129.05
     },
     {
      "id": "L13",
      "cap": "C3_L13",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 113.73,
-     "t1": 120.3,
+     "t0": 129.75,
+     "t1": 136.32,
      "words": [
       {
        "gold": false,
@@ -2522,15 +3493,15 @@
      ],
      "visual": "sun at top of arc, gold marker \"chatzot\"",
      "dwell": 4.0,
-     "end": 124.3
+     "end": 140.32
     },
     {
      "id": "L14",
      "cap": "C3_L14",
      "kind": "S",
      "speaker": "narrator",
-     "t0": 125.0,
-     "t1": 129.97,
+     "t0": 141.02,
+     "t1": 145.99,
      "words": [
       {
        "gold": false,
@@ -2575,15 +3546,15 @@
      ],
      "visual": "quick card",
      "hold": 8.0,
-     "end": 137.97
+     "end": 153.99
     },
     {
      "id": "L15",
      "cap": "C3_L15",
      "kind": "A",
      "speaker": "narrator",
-     "t0": 138.67,
-     "t1": 141.83,
+     "t0": 154.69,
+     "t1": 157.85,
      "words": [
       {
        "gold": false,
@@ -2616,15 +3587,15 @@
      ],
      "visual": "gap bar flashes 2",
      "hold": 3.0,
-     "end": 144.83
+     "end": 160.85
     },
     {
      "id": "L16",
      "cap": "C3_L16",
      "kind": "W",
      "speaker": "watch",
-     "t0": 145.53,
-     "t1": 150.94,
+     "t0": 161.55,
+     "t1": 166.96,
      "words": [
       {
        "gold": false,
@@ -2685,15 +3656,15 @@
      ],
      "visual": "watch with two little clocks showing different times",
      "dwell": 1.6,
-     "end": 152.54
+     "end": 168.56
     },
     {
      "id": "L17",
      "cap": "C3_L17",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 153.24,
-     "t1": 159.21,
+     "t0": 169.26,
+     "t1": 175.22,
      "words": [
       {
        "gold": false,
@@ -2758,15 +3729,15 @@
      ],
      "visual": "row of old towns each with its own sundial, slightly different shadows",
      "dwell": 1.6,
-     "end": 160.81
+     "end": 176.82
     },
     {
      "id": "L18",
      "cap": "C3_L18",
      "kind": "Q",
      "speaker": "narrator",
-     "t0": 161.51,
-     "t1": 166.86,
+     "t0": 177.52,
+     "t1": 182.88,
      "words": [
       {
        "gold": false,
@@ -2819,15 +3790,15 @@
      ],
      "visual": "summary question card",
      "hold": 60.0,
-     "end": 226.86
+     "end": 242.88
     },
     {
      "id": "L19",
      "cap": "C3_L19",
      "kind": "A",
      "speaker": "narrator",
-     "t0": 227.56,
-     "t1": 236.74,
+     "t0": 243.58,
+     "t1": 252.76,
      "words": [
       {
        "gold": false,
@@ -2908,15 +3879,15 @@
      ],
      "visual": "answer card",
      "hold": 3.0,
-     "end": 239.74
+     "end": 255.76
     },
     {
      "id": "L20",
      "cap": "C3_L20",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 240.44,
-     "t1": 247.59,
+     "t0": 256.46,
+     "t1": 263.61,
      "words": [
       {
        "gold": false,
@@ -2989,14 +3960,14 @@
      ],
      "visual": "chapter hook: the wall clock shows 9:00 with a question mark",
      "dwell": 1.6,
-     "end": 249.19
+     "end": 265.21
     }
    ]
   },
   {
    "id": "c4",
    "title": "T_C4",
-   "dur": 295.33,
+   "dur": 303.28,
    "lines": [
     {
      "id": "L00",
@@ -3389,7 +4360,7 @@
      "kind": "N",
      "speaker": "narrator",
      "t0": 58.6,
-     "t1": 68.52,
+     "t1": 73.37,
      "words": [
       {
        "gold": false,
@@ -3474,19 +4445,63 @@
       {
        "gold": true,
        "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
       }
      ],
      "visual": "board: 5:40 -> 19:40, 14 hours, segments stretch, label 70",
      "dwell": 4.0,
-     "end": 72.52
+     "end": 77.37
     },
     {
      "id": "L06",
      "cap": "C4_L06",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 73.22,
-     "t1": 81.04,
+     "t0": 78.07,
+     "t1": 85.88,
      "words": [
       {
        "gold": false,
@@ -3551,15 +4566,15 @@
      ],
      "visual": "board: 6:30 -> 16:30, 10 hours, segments shrink, label 50",
      "dwell": 4.0,
-     "end": 85.04
+     "end": 89.88
     },
     {
      "id": "L07",
      "cap": "C4_L07",
      "kind": "G",
      "speaker": "narrator",
-     "t0": 85.74,
-     "t1": 90.43,
+     "t0": 90.58,
+     "t1": 95.27,
      "words": [
       {
        "gold": false,
@@ -3608,15 +4623,15 @@
      ],
      "visual": "guess card with the winter board visible",
      "hold": 3.0,
-     "end": 93.43
+     "end": 98.27
     },
     {
      "id": "L08",
      "cap": "C4_L08",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 94.13,
-     "t1": 109.22,
+     "t0": 98.97,
+     "t1": 114.07,
      "words": [
       {
        "gold": false,
@@ -3741,15 +4756,15 @@
      ],
      "visual": "board animates the sums: 6:30 + 3x50 = 9:00 ; 5:40 + 3x70 = 9:10",
      "dwell": 4.0,
-     "end": 113.22
+     "end": 118.07
     },
     {
      "id": "L09",
      "cap": "C4_L09",
      "kind": "W",
      "speaker": "watch",
-     "t0": 113.92,
-     "t1": 116.53,
+     "t0": 118.77,
+     "t1": 121.37,
      "words": [
       {
        "gold": false,
@@ -3778,15 +4793,15 @@
      ],
      "visual": "watch looks at a short winter bar",
      "dwell": 4.0,
-     "end": 120.53
+     "end": 125.37
     },
     {
      "id": "L10",
      "cap": "C4_L10",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 121.23,
-     "t1": 126.48,
+     "t0": 126.07,
+     "t1": 134.44,
      "words": [
       {
        "gold": false,
@@ -3831,19 +4846,39 @@
       {
        "gold": true,
        "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
       }
      ],
      "visual": "summer bar long with long segments above, winter bar short with short segments below",
      "dwell": 4.0,
-     "end": 130.48
+     "end": 138.44
     },
     {
      "id": "L11",
      "cap": "C4_L11",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 131.18,
-     "t1": 140.31,
+     "t0": 139.14,
+     "t1": 148.27,
      "words": [
       {
        "gold": false,
@@ -3916,15 +4951,15 @@
      ],
      "visual": "two hourglasses: big one labelled 71, small one labelled 50; numbers count up",
      "dwell": 1.6,
-     "end": 141.91
+     "end": 149.87
     },
     {
      "id": "L12",
      "cap": "C4_L12",
      "kind": "G",
      "speaker": "narrator",
-     "t0": 142.61,
-     "t1": 146.9,
+     "t0": 150.57,
+     "t1": 154.86,
      "words": [
       {
        "gold": false,
@@ -3973,15 +5008,15 @@
      ],
      "visual": "guess card",
      "hold": 3.0,
-     "end": 149.9
+     "end": 157.86
     },
     {
      "id": "L13",
      "cap": "C4_L13",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 150.6,
-     "t1": 157.65,
+     "t0": 158.56,
+     "t1": 165.61,
      "words": [
       {
        "gold": false,
@@ -4054,15 +5089,15 @@
      ],
      "visual": "the end-of-shema marker slides day by day across a calendar strip",
      "dwell": 1.6,
-     "end": 159.25
+     "end": 167.21
     },
     {
      "id": "L14",
      "cap": "C4_L14",
      "kind": "W",
      "speaker": "watch",
-     "t0": 159.95,
-     "t1": 164.13,
+     "t0": 167.91,
+     "t1": 172.08,
      "words": [
       {
        "gold": false,
@@ -4115,15 +5150,15 @@
      ],
      "visual": "watch frowns at the wall clock",
      "dwell": 1.6,
-     "end": 165.73
+     "end": 173.68
     },
     {
      "id": "L15",
      "cap": "C4_L15",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 166.43,
-     "t1": 172.57,
+     "t0": 174.38,
+     "t1": 180.53,
      "words": [
       {
        "gold": false,
@@ -4176,15 +5211,15 @@
      ],
      "visual": "luach page 3D with zmanim rows lighting one by one",
      "dwell": 1.6,
-     "end": 174.17
+     "end": 182.13
     },
     {
      "id": "L16",
      "cap": "C4_L16",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 174.87,
-     "t1": 183.68,
+     "t0": 182.83,
+     "t1": 191.63,
      "words": [
       {
        "gold": false,
@@ -4265,15 +5300,15 @@
      ],
      "visual": "two bars side by side, the MGA bar longer at both ends; source tags",
      "dwell": 4.0,
-     "end": 187.68
+     "end": 195.63
     },
     {
      "id": "L17",
      "cap": "C4_L17",
      "kind": "S",
      "speaker": "narrator",
-     "t0": 188.38,
-     "t1": 192.79,
+     "t0": 196.33,
+     "t1": 200.75,
      "words": [
       {
        "gold": false,
@@ -4314,15 +5349,15 @@
      ],
      "visual": "quick card",
      "hold": 8.0,
-     "end": 200.79
+     "end": 208.75
     },
     {
      "id": "L18",
      "cap": "C4_L18",
      "kind": "A",
      "speaker": "narrator",
-     "t0": 201.49,
-     "t1": 204.92,
+     "t0": 209.45,
+     "t1": 212.88,
      "words": [
       {
        "gold": false,
@@ -4363,15 +5398,15 @@
      ],
      "visual": "12 segments flash on both bars",
      "hold": 3.0,
-     "end": 207.92
+     "end": 215.88
     },
     {
      "id": "L19",
      "cap": "C4_L19",
      "kind": "Q",
      "speaker": "narrator",
-     "t0": 208.62,
-     "t1": 212.1,
+     "t0": 216.58,
+     "t1": 220.06,
      "words": [
       {
        "gold": false,
@@ -4408,15 +5443,15 @@
      ],
      "visual": "summary question card",
      "hold": 60.0,
-     "end": 272.1
+     "end": 280.06
     },
     {
      "id": "L20",
      "cap": "C4_L20",
      "kind": "A",
      "speaker": "narrator",
-     "t0": 272.8,
-     "t1": 279.91,
+     "t0": 280.76,
+     "t1": 287.87,
      "words": [
       {
        "gold": false,
@@ -4489,15 +5524,15 @@
      ],
      "visual": "answer card",
      "hold": 3.0,
-     "end": 282.91
+     "end": 290.87
     },
     {
      "id": "L21",
      "cap": "C4_L21",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 283.61,
-     "t1": 291.03,
+     "t0": 291.57,
+     "t1": 298.98,
      "words": [
       {
        "gold": false,
@@ -4570,14 +5605,14 @@
      ],
      "visual": "chapter hook: the Earth axis begins to tilt",
      "dwell": 1.6,
-     "end": 292.63
+     "end": 300.58
     }
    ]
   },
   {
    "id": "c5",
    "title": "T_C5",
-   "dur": 278.07,
+   "dur": 294.35,
    "lines": [
     {
      "id": "L00",
@@ -4890,7 +5925,7 @@
      "kind": "N",
      "speaker": "narrator",
      "t0": 53.38,
-     "t1": 64.02,
+     "t1": 68.04,
      "words": [
       {
        "gold": false,
@@ -4983,17 +6018,45 @@
       {
        "gold": false,
        "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
       }
      ],
      "visual": "flashlight beam: straight down = small bright disc; tilted = long weak ellipse",
      "dwell": 1.6,
-     "end": 65.62
+     "end": 69.64
     },
     {
      "id": "L06",
      "kind": "V",
-     "t0": 66.32,
-     "t1": 70.32,
+     "t0": 70.34,
+     "t1": 74.34,
      "visual": "side by side: steep summer rays over Jerusalem vs shallow winter rays, light patches compared"
     },
     {
@@ -5001,8 +6064,8 @@
      "cap": "C5_L07",
      "kind": "W",
      "speaker": "watch",
-     "t0": 70.32,
-     "t1": 73.29,
+     "t0": 74.34,
+     "t1": 77.31,
      "words": [
       {
        "gold": false,
@@ -5031,15 +6094,15 @@
      ],
      "visual": "watch shivers",
      "dwell": 1.6,
-     "end": 74.89
+     "end": 78.91
     },
     {
      "id": "L08",
      "cap": "C5_L08",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 75.59,
-     "t1": 83.84,
+     "t0": 79.61,
+     "t1": 87.86,
      "words": [
       {
        "gold": false,
@@ -5116,15 +6179,15 @@
      ],
      "visual": "distance line shows nearest point in Tevet, big check mark on tilt",
      "dwell": 1.6,
-     "end": 85.44
+     "end": 89.46
     },
     {
      "id": "L09",
      "cap": "C5_L09",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 86.14,
-     "t1": 90.62,
+     "t0": 90.16,
+     "t1": 94.64,
      "words": [
       {
        "gold": false,
@@ -5169,15 +6232,15 @@
      ],
      "visual": "orbit ring with 4 glowing markers",
      "dwell": 4.0,
-     "end": 94.62
+     "end": 98.64
     },
     {
      "id": "L10",
      "cap": "C5_L10",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 95.32,
-     "t1": 104.1,
+     "t0": 99.34,
+     "t1": 108.12,
      "words": [
       {
        "gold": true,
@@ -5254,15 +6317,15 @@
      ],
      "visual": "markers light in order with labels, day/night bars beside each",
      "dwell": 4.0,
-     "end": 108.1
+     "end": 112.12
     },
     {
      "id": "L11",
      "cap": "C5_L11",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 108.8,
-     "t1": 113.82,
+     "t0": 112.82,
+     "t1": 123.97,
      "words": [
       {
        "gold": false,
@@ -5289,11 +6352,59 @@
        "num": false
       },
       {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
        "gold": true,
        "num": false
       },
       {
        "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
        "num": false
       },
       {
@@ -5315,15 +6426,15 @@
      ],
      "visual": "counters 91 days, 7.5 hours roll up",
      "dwell": 4.0,
-     "end": 117.82
+     "end": 127.97
     },
     {
      "id": "L12",
      "cap": "C5_L12",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 118.52,
-     "t1": 125.85,
+     "t0": 128.67,
+     "t1": 140.28,
      "words": [
       {
        "gold": false,
@@ -5392,19 +6503,47 @@
       {
        "gold": false,
        "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
       }
      ],
      "visual": "calendar 3D: from tekufat tishrei marker, 60 day tiles flip",
      "dwell": 1.6,
-     "end": 127.45
+     "end": 141.88
     },
     {
      "id": "L13",
      "cap": "C5_L13",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 128.15,
-     "t1": 135.31,
+     "t0": 142.58,
+     "t1": 149.74,
      "words": [
       {
        "gold": false,
@@ -5465,15 +6604,15 @@
      ],
      "visual": "tile kaf-heh kislev lights, a chanukia glows beside it",
      "dwell": 1.6,
-     "end": 136.91
+     "end": 151.34
     },
     {
      "id": "L14",
      "cap": "C5_L14",
      "kind": "W",
      "speaker": "watch",
-     "t0": 137.61,
-     "t1": 140.83,
+     "t0": 152.04,
+     "t1": 155.26,
      "words": [
       {
        "gold": false,
@@ -5506,15 +6645,15 @@
      ],
      "visual": "watch leans in",
      "dwell": 1.6,
-     "end": 142.43
+     "end": 156.86
     },
     {
      "id": "L15",
      "cap": "C5_L15",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 143.13,
-     "t1": 152.16,
+     "t0": 157.56,
+     "t1": 168.44,
      "words": [
       {
        "gold": false,
@@ -5526,6 +6665,22 @@
       },
       {
        "gold": true,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
        "num": false
       },
       {
@@ -5595,15 +6750,15 @@
      ],
      "visual": "sun travels a long loop and lands on a glowing origin mark",
      "dwell": 1.6,
-     "end": 153.76
+     "end": 170.04
     },
     {
      "id": "L16",
      "cap": "C5_L16",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 154.46,
-     "t1": 163.65,
+     "t0": 170.74,
+     "t1": 179.93,
      "words": [
       {
        "gold": false,
@@ -5668,15 +6823,15 @@
      ],
      "visual": "year counter tav-shin-samech-tet -> tav-shin-tzadi-zayin",
      "dwell": 4.0,
-     "end": 167.65
+     "end": 183.93
     },
     {
      "id": "L17",
      "cap": "C5_L17",
      "kind": "S",
      "speaker": "narrator",
-     "t0": 168.35,
-     "t1": 172.05,
+     "t0": 184.63,
+     "t1": 188.33,
      "words": [
       {
        "gold": false,
@@ -5713,15 +6868,15 @@
      ],
      "visual": "quick card",
      "hold": 8.0,
-     "end": 180.05
+     "end": 196.33
     },
     {
      "id": "L18",
      "cap": "C5_L18",
      "kind": "A",
      "speaker": "narrator",
-     "t0": 180.75,
-     "t1": 184.68,
+     "t0": 197.03,
+     "t1": 200.96,
      "words": [
       {
        "gold": false,
@@ -5754,15 +6909,15 @@
      ],
      "visual": "nearest point marker",
      "hold": 3.0,
-     "end": 187.68
+     "end": 203.96
     },
     {
      "id": "L19",
      "cap": "C5_L19",
      "kind": "Q",
      "speaker": "narrator",
-     "t0": 188.38,
-     "t1": 191.81,
+     "t0": 204.66,
+     "t1": 208.09,
      "words": [
       {
        "gold": false,
@@ -5799,15 +6954,15 @@
      ],
      "visual": "summary question card",
      "hold": 60.0,
-     "end": 251.81
+     "end": 268.09
     },
     {
      "id": "L20",
      "cap": "C5_L20",
      "kind": "A",
      "speaker": "narrator",
-     "t0": 252.51,
-     "t1": 261.95,
+     "t0": 268.79,
+     "t1": 278.23,
      "words": [
       {
        "gold": false,
@@ -5884,15 +7039,15 @@
      ],
      "visual": "answer card",
      "hold": 3.0,
-     "end": 264.95
+     "end": 281.23
     },
     {
      "id": "L21",
      "cap": "C5_L21",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 265.65,
-     "t1": 273.77,
+     "t0": 281.93,
+     "t1": 290.05,
      "words": [
       {
        "gold": false,
@@ -5973,14 +7128,14 @@
      ],
      "visual": "chapter hook: a train whistle, steam enters the frame",
      "dwell": 1.6,
-     "end": 275.37
+     "end": 291.65
     }
    ]
   },
   {
    "id": "c6",
    "title": "T_C6",
-   "dur": 272.51,
+   "dur": 283.63,
    "lines": [
     {
      "id": "L00",
@@ -6138,8 +7293,32 @@
      "kind": "N",
      "speaker": "narrator",
      "t0": 22.18,
-     "t1": 31.16,
+     "t1": 33.48,
      "words": [
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
       {
        "gold": false,
        "num": false
@@ -6211,15 +7390,15 @@
      ],
      "visual": "3D globe sliced into vertical zone bands, each band one colour",
      "dwell": 1.6,
-     "end": 32.76
+     "end": 35.08
     },
     {
      "id": "L03",
      "cap": "C6_L03",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 33.46,
-     "t1": 41.81,
+     "t0": 35.78,
+     "t1": 44.13,
      "words": [
       {
        "gold": false,
@@ -6292,15 +7471,15 @@
      ],
      "visual": "a town clock reaches 12, rewinds a few minutes, reaches 12 again",
      "dwell": 1.6,
-     "end": 43.41
+     "end": 45.73
     },
     {
      "id": "L04",
      "cap": "C6_L04",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 44.11,
-     "t1": 53.12,
+     "t0": 46.43,
+     "t1": 55.44,
      "words": [
       {
        "gold": false,
@@ -6381,15 +7560,15 @@
      ],
      "visual": "map of Eretz Yisrael in one colour band, one clock above it",
      "dwell": 1.6,
-     "end": 54.72
+     "end": 57.04
     },
     {
      "id": "L05",
      "cap": "C6_L05",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 55.42,
-     "t1": 64.13,
+     "t0": 57.74,
+     "t1": 71.84,
      "words": [
       {
        "gold": false,
@@ -6474,19 +7653,63 @@
       {
        "gold": true,
        "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
       }
      ],
      "visual": "handshake of two clocks, the sun glowing above them untouched",
      "dwell": 1.6,
-     "end": 65.73
+     "end": 73.44
     },
     {
      "id": "L06",
      "cap": "C6_L06",
      "kind": "W",
      "speaker": "watch",
-     "t0": 66.43,
-     "t1": 69.21,
+     "t0": 74.14,
+     "t1": 76.92,
      "words": [
       {
        "gold": false,
@@ -6515,15 +7738,15 @@
      ],
      "visual": "watch spins its own hands, dizzy",
      "dwell": 1.6,
-     "end": 70.81
+     "end": 78.52
     },
     {
      "id": "L07",
      "cap": "C6_L07",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 71.51,
-     "t1": 80.72,
+     "t0": 79.22,
+     "t1": 88.44,
      "words": [
       {
        "gold": false,
@@ -6612,15 +7835,15 @@
      ],
      "visual": "summer morning: sun up, shutters closed; then the clock hand jumps +1 and the light bar slides to evening",
      "dwell": 4.0,
-     "end": 84.72
+     "end": 92.44
     },
     {
      "id": "L08",
      "cap": "C6_L08",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 85.42,
-     "t1": 91.22,
+     "t0": 93.14,
+     "t1": 98.93,
      "words": [
       {
        "gold": false,
@@ -6677,15 +7900,15 @@
      ],
      "visual": "sun arc unchanged, only the numbers ring shifts",
      "dwell": 4.0,
-     "end": 95.22
+     "end": 102.93
     },
     {
      "id": "L09",
      "cap": "C6_L09",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 95.92,
-     "t1": 103.53,
+     "t0": 103.63,
+     "t1": 111.24,
      "words": [
       {
        "gold": false,
@@ -6754,15 +7977,15 @@
      ],
      "visual": "Jerusalem at dawn in Elul, a shul with lights on; then a Yom Kippur siddur",
      "dwell": 1.6,
-     "end": 105.13
+     "end": 112.84
     },
     {
      "id": "L10",
      "cap": "C6_L10",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 105.83,
-     "t1": 112.82,
+     "t0": 113.54,
+     "t1": 123.94,
      "words": [
       {
        "gold": false,
@@ -6827,19 +8050,51 @@
       {
        "gold": false,
        "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
       }
      ],
      "visual": "alarm clock showing very early digits, dark window",
      "dwell": 1.6,
-     "end": 114.42
+     "end": 125.54
     },
     {
      "id": "L11",
      "cap": "C6_L11",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 115.12,
-     "t1": 121.85,
+     "t0": 126.24,
+     "t1": 132.97,
      "words": [
       {
        "gold": false,
@@ -6904,15 +8159,15 @@
      ],
      "visual": "two clocks for the end of the fast: winter vs summer, one hour apart",
      "dwell": 1.6,
-     "end": 123.45
+     "end": 134.57
     },
     {
      "id": "L12",
      "cap": "C6_L12",
      "kind": "W",
      "speaker": "watch",
-     "t0": 124.15,
-     "t1": 126.87,
+     "t0": 135.27,
+     "t1": 137.99,
      "words": [
       {
        "gold": false,
@@ -6941,15 +8196,15 @@
      ],
      "visual": "watch thinking",
      "dwell": 1.6,
-     "end": 128.47
+     "end": 139.59
     },
     {
      "id": "L13",
      "cap": "C6_L13",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 129.17,
-     "t1": 135.76,
+     "t0": 140.29,
+     "t1": 146.88,
      "words": [
       {
        "gold": false,
@@ -7010,15 +8265,15 @@
      ],
      "visual": "clock 20:00 glowing, sun position identical in both",
      "dwell": 1.6,
-     "end": 137.36
+     "end": 148.48
     },
     {
      "id": "L14",
      "cap": "C6_L14",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 138.06,
-     "t1": 149.96,
+     "t0": 149.18,
+     "t1": 161.08,
      "words": [
       {
        "gold": false,
@@ -7123,15 +8378,15 @@
      ],
      "visual": "timeline 3D with Hebrew-year chips sliding in",
      "dwell": 1.6,
-     "end": 151.56
+     "end": 162.68
     },
     {
      "id": "L15",
      "cap": "C6_L15",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 152.26,
-     "t1": 160.09,
+     "t0": 163.38,
+     "t1": 171.21,
      "words": [
       {
        "gold": false,
@@ -7204,15 +8459,15 @@
      ],
      "visual": "clock settles back into a golden \"home\" slot",
      "dwell": 1.6,
-     "end": 161.69
+     "end": 172.81
     },
     {
      "id": "L16",
      "cap": "C6_L16",
      "kind": "S",
      "speaker": "narrator",
-     "t0": 162.39,
-     "t1": 166.61,
+     "t0": 173.51,
+     "t1": 177.73,
      "words": [
       {
        "gold": false,
@@ -7257,15 +8512,15 @@
      ],
      "visual": "quick card",
      "hold": 8.0,
-     "end": 174.61
+     "end": 185.73
     },
     {
      "id": "L17",
      "cap": "C6_L17",
      "kind": "A",
      "speaker": "narrator",
-     "t0": 175.31,
-     "t1": 176.77,
+     "t0": 186.43,
+     "t1": 187.89,
      "words": [
       {
        "gold": false,
@@ -7282,15 +8537,15 @@
      ],
      "visual": "two icons flash",
      "hold": 3.0,
-     "end": 179.77
+     "end": 190.89
     },
     {
      "id": "L18",
      "cap": "C6_L18",
      "kind": "Q",
      "speaker": "narrator",
-     "t0": 180.47,
-     "t1": 185.72,
+     "t0": 191.59,
+     "t1": 196.84,
      "words": [
       {
        "gold": false,
@@ -7335,15 +8590,15 @@
      ],
      "visual": "summary question card",
      "hold": 60.0,
-     "end": 245.72
+     "end": 256.84
     },
     {
      "id": "L19",
      "cap": "C6_L19",
      "kind": "A",
      "speaker": "narrator",
-     "t0": 246.42,
-     "t1": 255.74,
+     "t0": 257.54,
+     "t1": 266.86,
      "words": [
       {
        "gold": false,
@@ -7428,15 +8683,15 @@
      ],
      "visual": "answer card",
      "hold": 3.0,
-     "end": 258.74
+     "end": 269.86
     },
     {
      "id": "L20",
      "cap": "C6_L20",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 259.44,
-     "t1": 268.21,
+     "t0": 270.56,
+     "t1": 279.33,
      "words": [
       {
        "gold": false,
@@ -7525,14 +8780,14 @@
      ],
      "visual": "chapter hook: dawn light crawls over the horizon",
      "dwell": 1.6,
-     "end": 269.81
+     "end": 280.93
     }
    ]
   },
   {
    "id": "c7",
    "title": "T_C7",
-   "dur": 246.17,
+   "dur": 254.3,
    "lines": [
     {
      "id": "L00",
@@ -7880,7 +9135,7 @@
      "kind": "N",
      "speaker": "narrator",
      "t0": 53.23,
-     "t1": 62.79,
+     "t1": 66.69,
      "words": [
       {
        "gold": true,
@@ -7949,19 +9204,55 @@
       {
        "gold": false,
        "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
       }
      ],
      "visual": "evening sky, three stars appear one by one",
      "dwell": 1.6,
-     "end": 64.39
+     "end": 68.29
     },
     {
      "id": "L07",
      "cap": "C7_L07",
      "kind": "W",
      "speaker": "watch",
-     "t0": 65.09,
-     "t1": 69.38,
+     "t0": 68.99,
+     "t1": 73.28,
      "words": [
       {
        "gold": false,
@@ -8010,15 +9301,15 @@
      ],
      "visual": "watch looks at a luach",
      "dwell": 1.6,
-     "end": 70.98
+     "end": 74.88
     },
     {
      "id": "L08",
      "cap": "C7_L08",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 71.68,
-     "t1": 78.17,
+     "t0": 75.58,
+     "t1": 82.07,
      "words": [
       {
        "gold": false,
@@ -8083,15 +9374,15 @@
      ],
      "visual": "luach page; turns to a Friday in Tevet",
      "dwell": 1.6,
-     "end": 79.77
+     "end": 83.67
     },
     {
      "id": "L09",
      "cap": "C7_L09",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 80.47,
-     "t1": 89.66,
+     "t0": 84.37,
+     "t1": 93.56,
      "words": [
       {
        "gold": false,
@@ -8164,15 +9455,15 @@
      ],
      "visual": "low winter sun over stone houses, candles on a table, clock 16:2x",
      "dwell": 1.6,
-     "end": 91.26
+     "end": 95.16
     },
     {
      "id": "L10",
      "cap": "C7_L10",
      "kind": "G",
      "speaker": "narrator",
-     "t0": 91.96,
-     "t1": 97.54,
+     "t0": 95.86,
+     "t1": 101.44,
      "words": [
       {
        "gold": false,
@@ -8221,15 +9512,15 @@
      ],
      "visual": "guess card",
      "hold": 3.0,
-     "end": 100.54
+     "end": 104.44
     },
     {
      "id": "L11",
      "cap": "C7_L11",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 101.24,
-     "t1": 108.5,
+     "t0": 105.14,
+     "t1": 112.4,
      "words": [
       {
        "gold": false,
@@ -8286,15 +9577,15 @@
      ],
      "visual": "graph of sunset times across Kislev-Tevet, lowest point earlier than the shortest day",
      "dwell": 4.0,
-     "end": 112.5
+     "end": 116.4
     },
     {
      "id": "L12",
      "cap": "C7_L12",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 113.2,
-     "t1": 123.61,
+     "t0": 117.1,
+     "t1": 131.74,
      "words": [
       {
        "gold": false,
@@ -8391,19 +9682,55 @@
       {
        "gold": false,
        "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
       }
      ],
      "visual": "two curves: sunset and day length, their minimums do not line up",
      "dwell": 4.0,
-     "end": 127.61
+     "end": 135.74
     },
     {
      "id": "L13",
      "cap": "C7_L13",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 128.31,
-     "t1": 135.62,
+     "t0": 136.44,
+     "t1": 143.75,
      "words": [
       {
        "gold": false,
@@ -8472,15 +9799,15 @@
      ],
      "visual": "candles lit; a soft gold glow fills the room before the sun is gone",
      "dwell": 1.6,
-     "end": 137.22
+     "end": 145.35
     },
     {
      "id": "L14",
      "cap": "C7_L14",
      "kind": "S",
      "speaker": "narrator",
-     "t0": 137.92,
-     "t1": 142.4,
+     "t0": 146.05,
+     "t1": 150.53,
      "words": [
       {
        "gold": false,
@@ -8525,15 +9852,15 @@
      ],
      "visual": "quick card",
      "hold": 8.0,
-     "end": 150.4
+     "end": 158.53
     },
     {
      "id": "L15",
      "cap": "C7_L15",
      "kind": "A",
      "speaker": "narrator",
-     "t0": 151.1,
-     "t1": 152.78,
+     "t0": 159.23,
+     "t1": 160.91,
      "words": [
       {
        "gold": false,
@@ -8550,15 +9877,15 @@
      ],
      "visual": "three stars flash",
      "hold": 3.0,
-     "end": 155.78
+     "end": 163.91
     },
     {
      "id": "L16",
      "cap": "C7_L16",
      "kind": "Q",
      "speaker": "narrator",
-     "t0": 156.48,
-     "t1": 160.9,
+     "t0": 164.61,
+     "t1": 169.03,
      "words": [
       {
        "gold": false,
@@ -8607,15 +9934,15 @@
      ],
      "visual": "summary question card",
      "hold": 60.0,
-     "end": 220.9
+     "end": 229.03
     },
     {
      "id": "L17",
      "cap": "C7_L17",
      "kind": "A",
      "speaker": "narrator",
-     "t0": 221.6,
-     "t1": 230.48,
+     "t0": 229.73,
+     "t1": 238.61,
      "words": [
       {
        "gold": false,
@@ -8696,15 +10023,15 @@
      ],
      "visual": "answer card",
      "hold": 3.0,
-     "end": 233.48
+     "end": 241.61
     },
     {
      "id": "L18",
      "cap": "C7_L18",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 234.18,
-     "t1": 241.87,
+     "t0": 242.31,
+     "t1": 250.0,
      "words": [
       {
        "gold": false,
@@ -8781,14 +10108,14 @@
      ],
      "visual": "chapter hook: the sun refuses to touch a white horizon",
      "dwell": 1.6,
-     "end": 243.47
+     "end": 251.6
     }
    ]
   },
   {
    "id": "c8",
    "title": "T_C8",
-   "dur": 289.5,
+   "dur": 296.46,
    "lines": [
     {
      "id": "L00",
@@ -9185,7 +10512,7 @@
      "kind": "N",
      "speaker": "narrator",
      "t0": 59.78,
-     "t1": 67.67,
+     "t1": 71.75,
      "words": [
       {
        "gold": false,
@@ -9250,17 +10577,49 @@
       {
        "gold": false,
        "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
       }
      ],
      "visual": "two counters 84 and 68 with light/dark bars",
      "dwell": 4.0,
-     "end": 71.67
+     "end": 75.75
     },
     {
      "id": "L06",
      "kind": "V",
-     "t0": 72.37,
-     "t1": 76.37,
+     "t0": 76.45,
+     "t1": 80.45,
      "visual": "aurora curtains over a snowy village, camera slowly tilts up"
     },
     {
@@ -9268,8 +10627,8 @@
      "cap": "C8_L07",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 76.37,
-     "t1": 86.24,
+     "t0": 80.45,
+     "t1": 90.32,
      "words": [
       {
        "gold": false,
@@ -9358,15 +10717,15 @@
      ],
      "visual": "tefillin bag, siddur and Shabbat candles on a table, dark polar window",
      "dwell": 1.6,
-     "end": 87.84
+     "end": 91.92
     },
     {
      "id": "L08",
      "cap": "C8_L08",
      "kind": "W",
      "speaker": "watch",
-     "t0": 88.54,
-     "t1": 91.41,
+     "t0": 92.62,
+     "t1": 95.5,
      "words": [
       {
        "gold": false,
@@ -9399,15 +10758,15 @@
      ],
      "visual": "watch, serious, very quiet",
      "dwell": 1.6,
-     "end": 93.01
+     "end": 97.1
     },
     {
      "id": "L09",
      "cap": "C8_L09",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 93.71,
-     "t1": 101.84,
+     "t0": 97.8,
+     "t1": 105.92,
      "words": [
       {
        "gold": false,
@@ -9488,15 +10847,15 @@
      ],
      "visual": "desert dunes 3D, seven stones counted, the seventh glows",
      "dwell": 1.6,
-     "end": 103.44
+     "end": 107.52
     },
     {
      "id": "L10",
      "cap": "C8_L10",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 104.14,
-     "t1": 112.37,
+     "t0": 108.22,
+     "t1": 116.46,
      "words": [
       {
        "gold": false,
@@ -9573,15 +10932,15 @@
      ],
      "visual": "seven day-tiles continue around the globe",
      "dwell": 1.6,
-     "end": 113.97
+     "end": 118.06
     },
     {
      "id": "L11",
      "cap": "C8_L11",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 114.67,
-     "t1": 124.72,
+     "t0": 118.76,
+     "t1": 131.68,
      "words": [
       {
        "gold": false,
@@ -9666,19 +11025,43 @@
       {
        "gold": true,
        "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
       }
      ],
      "visual": "sun dips just below the horizon for a moment; marker",
      "dwell": 1.6,
-     "end": 126.32
+     "end": 133.28
     },
     {
      "id": "L12",
      "cap": "C8_L12",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 127.02,
-     "t1": 131.86,
+     "t0": 133.98,
+     "t1": 138.82,
      "words": [
       {
        "gold": false,
@@ -9735,15 +11118,15 @@
      ],
      "visual": "24h ring split into two equal halves",
      "dwell": 4.0,
-     "end": 135.86
+     "end": 142.82
     },
     {
      "id": "L13",
      "cap": "C8_L13",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 136.56,
-     "t1": 144.03,
+     "t0": 143.52,
+     "t1": 150.99,
      "words": [
       {
        "gold": false,
@@ -9812,15 +11195,15 @@
      ],
      "visual": "sun circle with lowest point marked",
      "dwell": 1.6,
-     "end": 145.63
+     "end": 152.59
     },
     {
      "id": "L14",
      "cap": "C8_L14",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 146.33,
-     "t1": 152.42,
+     "t0": 153.29,
+     "t1": 159.39,
      "words": [
       {
        "gold": false,
@@ -9881,15 +11264,15 @@
      ],
      "visual": "line from the far north to Jerusalem on the globe",
      "dwell": 1.6,
-     "end": 154.02
+     "end": 160.99
     },
     {
      "id": "L15",
      "cap": "C8_L15",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 154.72,
-     "t1": 165.97,
+     "t0": 161.69,
+     "t1": 172.93,
      "words": [
       {
        "gold": false,
@@ -9986,15 +11369,15 @@
      ],
      "visual": "small spacecraft orbit around the Earth, a sunrise flash counter to 16",
      "dwell": 4.0,
-     "end": 169.97
+     "end": 176.93
     },
     {
      "id": "L16",
      "cap": "C8_L16",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 170.67,
-     "t1": 177.86,
+     "t0": 177.63,
+     "t1": 184.82,
      "words": [
       {
        "gold": false,
@@ -10063,15 +11446,15 @@
      ],
      "visual": "a shtender with a lit lamp, open sefer",
      "dwell": 1.6,
-     "end": 179.46
+     "end": 186.42
     },
     {
      "id": "L17",
      "cap": "C8_L17",
      "kind": "S",
      "speaker": "narrator",
-     "t0": 180.16,
-     "t1": 185.3,
+     "t0": 187.12,
+     "t1": 192.26,
      "words": [
       {
        "gold": false,
@@ -10128,15 +11511,15 @@
      ],
      "visual": "quick card",
      "hold": 8.0,
-     "end": 193.3
+     "end": 200.26
     },
     {
      "id": "L18",
      "cap": "C8_L18",
      "kind": "A",
      "speaker": "narrator",
-     "t0": 194.0,
-     "t1": 196.48,
+     "t0": 200.96,
+     "t1": 203.44,
      "words": [
       {
        "gold": false,
@@ -10165,15 +11548,15 @@
      ],
      "visual": "seventh stone glows",
      "hold": 3.0,
-     "end": 199.48
+     "end": 206.44
     },
     {
      "id": "L19",
      "cap": "C8_L19",
      "kind": "Q",
      "speaker": "narrator",
-     "t0": 200.18,
-     "t1": 205.03,
+     "t0": 207.14,
+     "t1": 211.99,
      "words": [
       {
        "gold": false,
@@ -10226,15 +11609,15 @@
      ],
      "visual": "summary question card",
      "hold": 60.0,
-     "end": 265.03
+     "end": 271.99
     },
     {
      "id": "L20",
      "cap": "C8_L20",
      "kind": "A",
      "speaker": "narrator",
-     "t0": 265.73,
-     "t1": 276.25,
+     "t0": 272.69,
+     "t1": 283.21,
      "words": [
       {
        "gold": false,
@@ -10331,15 +11714,15 @@
      ],
      "visual": "answer card",
      "hold": 3.0,
-     "end": 279.25
+     "end": 286.21
     },
     {
      "id": "L21",
      "cap": "C8_L21",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 279.95,
-     "t1": 285.2,
+     "t0": 286.91,
+     "t1": 292.16,
      "words": [
       {
        "gold": false,
@@ -10396,14 +11779,14 @@
      ],
      "visual": "chapter hook: the moon rises, a glowing number hides behind it",
      "dwell": 1.6,
-     "end": 286.8
+     "end": 293.76
     }
    ]
   },
   {
    "id": "c9",
    "title": "T_C9",
-   "dur": 219.12,
+   "dur": 223.82,
    "lines": [
     {
      "id": "L00",
@@ -10773,7 +12156,7 @@
      "kind": "N",
      "speaker": "narrator",
      "t0": 55.11,
-     "t1": 66.14,
+     "t1": 70.84,
      "words": [
       {
        "gold": false,
@@ -10858,19 +12241,59 @@
       {
        "gold": false,
        "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": true,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
+      },
+      {
+       "gold": false,
+       "num": false
       }
      ],
      "visual": "the 1080 tiles regroup into equal blocks again and again",
      "dwell": 4.0,
-     "end": 70.14
+     "end": 74.84
     },
     {
      "id": "L07",
      "cap": "C9_L07",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 70.84,
-     "t1": 80.95,
+     "t0": 75.54,
+     "t1": 85.65,
      "words": [
       {
        "gold": false,
@@ -10967,15 +12390,15 @@
      ],
      "visual": "three counters roll up: 29, 12, 793",
      "dwell": 4.0,
-     "end": 84.95
+     "end": 89.65
     },
     {
      "id": "L08",
      "cap": "C9_L08",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 85.65,
-     "t1": 93.18,
+     "t0": 90.35,
+     "t1": 97.89,
      "words": [
       {
        "gold": false,
@@ -11044,15 +12467,15 @@
      ],
      "visual": "ring of 19 years, 7 of them glow",
      "dwell": 4.0,
-     "end": 97.18
+     "end": 101.89
     },
     {
      "id": "L09",
      "cap": "C9_L09",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 97.88,
-     "t1": 109.57,
+     "t0": 102.59,
+     "t1": 114.27,
      "words": [
       {
        "gold": false,
@@ -11165,15 +12588,15 @@
      ],
      "visual": "week ring: Sunday, Wednesday, Friday tiles lock with a gold seal",
      "dwell": 4.0,
-     "end": 113.57
+     "end": 118.27
     },
     {
      "id": "L10",
      "cap": "C9_L10",
      "kind": "S",
      "speaker": "narrator",
-     "t0": 114.27,
-     "t1": 118.26,
+     "t0": 118.97,
+     "t1": 122.96,
      "words": [
       {
        "gold": false,
@@ -11210,15 +12633,15 @@
      ],
      "visual": "quick card",
      "hold": 8.0,
-     "end": 126.26
+     "end": 130.96
     },
     {
      "id": "L11",
      "cap": "C9_L11",
      "kind": "A",
      "speaker": "narrator",
-     "t0": 126.96,
-     "t1": 128.71,
+     "t0": 131.66,
+     "t1": 133.41,
      "words": [
       {
        "gold": false,
@@ -11235,15 +12658,15 @@
      ],
      "visual": "1080 flashes",
      "hold": 3.0,
-     "end": 131.71
+     "end": 136.41
     },
     {
      "id": "L12",
      "cap": "C9_L12",
      "kind": "Q",
      "speaker": "narrator",
-     "t0": 132.41,
-     "t1": 135.94,
+     "t0": 137.11,
+     "t1": 140.64,
      "words": [
       {
        "gold": false,
@@ -11280,15 +12703,15 @@
      ],
      "visual": "summary question card",
      "hold": 60.0,
-     "end": 195.94
+     "end": 200.64
     },
     {
      "id": "L13",
      "cap": "C9_L13",
      "kind": "A",
      "speaker": "narrator",
-     "t0": 196.64,
-     "t1": 204.26,
+     "t0": 201.34,
+     "t1": 208.97,
      "words": [
       {
        "gold": false,
@@ -11361,15 +12784,15 @@
      ],
      "visual": "answer card",
      "hold": 3.0,
-     "end": 207.26
+     "end": 211.97
     },
     {
      "id": "L14",
      "cap": "C9_L14",
      "kind": "N",
      "speaker": "narrator",
-     "t0": 207.96,
-     "t1": 214.82,
+     "t0": 212.67,
+     "t1": 219.52,
      "words": [
       {
        "gold": false,
@@ -11430,7 +12853,7 @@
      ],
      "visual": "chapter hook: back to the night clock from the opening",
      "dwell": 1.6,
-     "end": 216.42
+     "end": 221.12
     }
    ]
   },

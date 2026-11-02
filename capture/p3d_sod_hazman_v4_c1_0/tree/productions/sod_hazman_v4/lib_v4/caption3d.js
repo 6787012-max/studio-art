@@ -31,7 +31,9 @@ export function wordSpans(line, text, spread) {
 function layout(text, line, o) {
   const g = mctx(), spans = wordSpans(line, text, o.spread), n = spans.length;
   let best = null;
-  for (let px = o.px; px >= o.minPx; px -= 3) {
+  const floor = Math.min(o.minPx, 40);   // long teaser lines: keep shrinking past minPx rather than spill off the frame
+  for (let px = o.px; px >= floor; px -= 3) {
+    if (px < o.minPx && o.maxLines < 3) o = { ...o, maxLines: 3 };
     g.font = `${o.italic ? 'italic ' : ''}700 ${px}px ${FONT}`; g.direction = 'rtl';
     const sp = g.measureText(' ').width * 1.08; spans.forEach(s => { s.w = g.measureText(s.text).width; });
     const pre = [0]; spans.forEach(s => pre.push(pre[pre.length - 1] + s.w));
@@ -208,7 +210,7 @@ export function caption3d(Wd, cam, chapter, opts) {
     else if (k === 'A') o = { px: 62, minPx: 52, maxW: 760, maxLines: 2, spread: .94 };
     else if (k === 'G' || k === 'Q') o = { px: 60, minPx: 52, maxW: k === 'Q' ? 1100 : 860, maxLines: 2, spread: .94 };
     else if (watch) o = { px: 68, minPx: 44, maxW: 700, maxLines: 3, italic: true, lh: 1.2, spread: .94 };
-    else o = { px: 96, minPx: 74, maxW: 1740, maxLines: 2, spread: .94 };
+    else o = { px: 96, minPx: 70, maxW: 1700, maxLines: 2, spread: .94 };
     const lay = layout(text, l, o); lay.text = text; lay.watch = watch; return (layouts[l.id] = lay);
   };
   // geometry of each presentation in screen px (rect used by window.__caption)
