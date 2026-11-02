@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>sod hazman v4 c2</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>window.__T0=126.7292; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js", "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+// Chapter c2 "the day starts at sunset" (v4). All times come from timeline.json (chapter id c2). Zero Hebrew: captions/title are vault ids; gold "letters" are abstract bars.
+import { film, world, THREE, ease, prog, clamp, lerp, rng, mesh, toon, box, cyl, ball } from '../../lib/stage3d.js';
+import { captionInfo, titleCard3d } from './lib_v4/caption3d.js';
+import * as O from './lib_v4/objects.js';
+import * as K from './lib_v4/objects_c1b.js';
+import * as P from './lib_v4/objects_c2.js';
+const { F, D2R, mix3, view, move, cuts, dofAuto, goldRing, ringAnim, backOut } = K;
+
+const ORDER = ['intro', 'L00', 'L01', 'L02', 'L03', 'L04', 'L05', 'L06', 'L07', 'L08', 'L09', 'L10', 'L11', 'L12', 'L13', 'L14', 'L16'];
+const B = await K.boot('c2', ORDER, { mouth: true }), { CH, LN, T0, gold0, goldN, START, ENDOF, baseCam, finish } = B;
+const LK = (p0, l0, m0, p1, l1, m1) => u => { const k = ease.io(clamp(u, 0, 1)); return { pos: mix3(p0, p1, k), look: mix3(l0, l1, k), fov: F(lerp(m0, m1, k)) }; };
+const TP = [0, 3.4, 6.5];
+const A = id => START[id], U = id => ENDOF(id) - START[id];
+const ptsTerrace = Wd => { Wd.add(box(10, 2.4, 7, 0x8a7a62, { pos: [0, 1.2, 3.2], inkW: .03 })); Wd.add(box(10, .5, .5, 0x9a8a70, { pos: [0, 2.65, 6.5], inkW: .03 })); };
+
+// ---------------------------------------------------------------- intro
+function sIntro() {
+  const Wd = world({ fog: false }); baseCam(Wd, .1, 800); O.skyDome(Wd, { top: 0x03061a, mid: 0x0a1844, bot: 0x2a4a86 });
+  O.lighting(Wd, { key: [0xffffff, .2, [5, 8, 8]], hemi: [0x6a80c0, 0x101830, .6], noShadow: true });
+  [[-30, 8, -60, 40, 0x2a5aa8, .22], [26, -6, -80, 55, 0x4a3a9a, .18], [0, 20, -50, 34, 0xc8883a, .14], [-10, -14, -40, 30, 0x5a3a88, .12]].forEach(([x, y, z, s, c, o]) => { const g = O.glow(s, c, o); g.position.set(x, y, z); Wd.add(g); });
+  titleCard3d(Wd, 'T_C2', { pos: [0, 0, 0], width: 7.2, line: { t0: .6, t1: 2.5 } });
+  O.motes(Wd, { n: 36, area: [-6, 6, -3, 3, 1, 7], size: .22, color: 0xffd98a, op: .55, seed: 3 }); O.motes(Wd, { n: 20, area: [-8, 8, -4, 4, -6, -1], size: .3, color: 0x9ab8ff, op: .35, seed: 8 });
+  const cam = t => { const k = ease.sm(prog(t, 0, 4)); return { pos: [0, lerp(.35, .1, k), lerp(13, 9.8, k)], look: [0, 0, 0], fov: F(40) }; };
+  return finish(Wd, cam, { dof: (t, c) => ({ focus: Math.hypot(c.position.x, c.position.y, c.position.z), ap: 7, maxR: 12, vig: .38 }) });
+}
+
+// ---------------------------------------------------------------- L00: the open sefer, the verse words rise as gold 3D letters
+function seferRoom(Wd, bright) {
+  Wd.add(box(14, 6, .3, 0x2a1c12, { pos: [0, 3, -3.6], inkW: .01 }));
+  [-2.4, 2.4, -4.6].forEach((x, i) => { const s = new THREE.Group(); s.position.set(x, 0, -3.3); s.add(box(1.8, 2.8, .5, 0x4a3018, { pos: [0, 1.4, 0], inkW: .01 })); const r = rng(60 + i); for (let row = 0; row < 5; row++) { let bx = -.8; while (bx < .78) { const bw = .08 + r() * .1, bh = .32 + r() * .16; s.add(box(bw, bh, .36, [0x6a2a24, 0x24407a, 0x2f5d3a, 0x6a4a1c, 0x5a2f6a][Math.floor(r() * 5)], { pos: [bx + bw / 2, .35 + row * .55 + bh / 2, .05], inkW: .004 })); bx += bw + .005; } } Wd.add(s); });
+  [[-1.8, 2.2, -2.8, 1.0], [1.7, 1.8, -3.0, .8], [3.2, 2.6, -3.2, 1.2], [-3.4, 1.2, -2.6, .9], [.2, 3.1, -3.0, 1.1]].forEach(([x, y, z, s]) => { const g = O.glow(s, 0xffc070, .9); g.position.set(x, y, z); Wd.add(g); });
+}
+function sSefer() {
+  const id = 'L00', a = A(id), dur = U(id), Wd = world({ fog: false }); baseCam(Wd, .03, 120); O.skyDome(Wd, { top: 0x0a0806, mid: 0x14100c, bot: 0x241a12, stars: 0 });
+  O.lighting(Wd, { key: [0xffc58a, .9, [1, 4, 3]], hemi: [0x5a4030, 0x1a1008, .6], fill: [0x6a5a80, .2, [-3, 1, 3]], rim: [0xffb070, .5, [-1, 3, -3]], target: [0, 1.1, 0], shadowExt: 4, fog: null, points: [[0xffc070, 7, [0, 2.3, .6], 6], [0xffd090, 3, [.7, 1.4, .9], 4]] });
+  const sh = O.shtender(Wd, {}), se = O.sefer(Wd, { pos: [0, .035, 0], bright: 1.05 }); sh.userData.slope.add(se); seferRoom(Wd);
+  const pg = O.glow(2.4, 0xffd890, .45); pg.position.set(0, 1.5, .35); Wd.add(pg);
+  const WD = P.goldWords(6, { seed: 12 }), hov = [[.3, .38], [0, .38], [-.3, .38], [.3, .22], [0, .22], [-.3, .22]], src = [[.4, -.17], [.4, -.03], [.4, .11], [-.02, -.17], [-.02, -.03], [-.02, .11]];
+  WD.forEach(w => { w.g.visible = false; sh.userData.slope.add(w.g); }); Wd.hero = sh;
+  const tw = i => goldN(id, i) - a;
+  Wd.on((t, cam) => { const g = t + a; pg.material.opacity = .4 + .06 * Math.sin(g * 5.3);
+    WD.forEach((w, i) => { const k = prog(t, tw(i) - .15, tw(i) + 1.3), e = ease.out(k); w.g.visible = k > 0; const x = lerp(src[i][0], hov[i][0], e), y = lerp(.03, hov[i][1], e), z = lerp(src[i][1], 0.02, e); w.g.position.set(x + w.w * .5 * 0, y + Math.sin(g * 1.7 + i) * .006 * e, z); w.g.scale.setScalar(lerp(.35, .78, e)); w.g.rotation.x = -.5 * 0; w.gl.material.opacity = .85 * Math.sin(Math.PI * clamp(k * 1.1, 0, 1)) + .25 * e; }); });
+  const cam = cuts(dur, [[0, move({ t: [0, 1.3, -.02], d: 2.3, el: 52, az: 0, mm: 60 }, { t: [0, 1.32, -.02], d: 1.7, el: 48, az: 6, mm: 60 })], [3.9, move({ t: [0, 1.4, 0], d: 1.5, el: 20, az: -32, mm: 50 }, { t: [0, 1.42, 0], d: 1.3, el: 16, az: -18, mm: 50 })], [6.0, move({ t: [0, 1.38, 0], d: 1.9, el: 34, az: 24, mm: 45 }, { t: [0, 1.38, 0], d: 1.6, el: 30, az: 10, mm: 45 })]]);
+  return finish(Wd, cam, { dof: dofAuto(cam, { ap: 12, maxR: 16, vig: .48 }) });
+}
+
+// ---------------------------------------------------------------- L01: the dark evening block slides in first, the bright morning block second
+function sBlocks() {
+  const id = 'L01', a = A(id), dur = U(id), Wd = world({ fog: false }); baseCam(Wd, .05, 200); O.skyDome(Wd, { top: 0x060818, mid: 0x0e1230, bot: 0x2a2a48, stars: .5 });
+  O.lighting(Wd, { key: [0xffe0b0, .9, [2, 5, 6]], hemi: [0x8a90c0, 0x1a1830, .75], fill: [0x7a96d8, .4, [-6, 2, 4]], rim: [0xffd8a0, .7, [0, 4, -6]], target: [0, .8, 0], shadowExt: 8, fog: null, points: [[0x6a88ff, 14, [4, 2, 3], 9], [0xffc070, 14, [-4, 2, 3], 9]] });
+  const R = P.dayBlocks(Wd); const fl = new THREE.Mesh(new THREE.PlaneGeometry(40, 40), toon(0x1a1c34)); fl.rotation.x = -Math.PI / 2; fl.position.y = -.2; fl.receiveShadow = true; Wd.add(fl);
+  O.motes(Wd, { n: 30, area: [-5, 5, .3, 3, -2, 3], size: .14, color: 0xffe3a8, op: .5, seed: 15 }); O.motes(Wd, { n: 16, area: [-6, 6, 1, 4, -5, -2], size: .5, color: 0x8aa0ff, op: .3, seed: 16 });
+  const tD = goldN(id, 0) - a, tBt = goldN(id, 1) - a; Wd.hero = R.slab;
+  Wd.on((t, cam) => { R.set(prog(t, tD - 1.0, tD), prog(t, tBt - 1.0, tBt), t + a); });
+  const cam = cuts(dur, [[0, move({ t: [0, 1.0, 0], d: 7.4, el: 12, az: 0, mm: 35 }, { t: [0, 1.0, 0], d: 6.2, el: 10, az: -6, mm: 35 })], [tBt - 1.2, move({ t: [-1.0, .9, 0], d: 5.8, el: 10, az: 14, mm: 40 }, { t: [-.4, .9, 0], d: 6.6, el: 8, az: 0, mm: 40 })]]);
+  return finish(Wd, cam, { dof: dofAuto(cam, { ap: 6, maxR: 14, vig: .45 }) });
+}
+
+// ---------------------------------------------------------------- watch lines (L02 tilt, L09 points at himself)
+function sWatch(id) {
+  const a = A(id), dur = U(id), Wd = world({ fog: false }); baseCam(Wd, .03, 200); O.skyDome(Wd, { top: 0x0a0e1c, mid: 0x1a2038, bot: 0x30344a, stars: 0 });
+  const S = K.watchStage(Wd, B), W = S.W, wp = S.wp, ln = LN(id); O.motes(Wd, { n: 22, area: [-2, 2, .3, 1.6, -1, 2], size: .05, color: 0xffe3a8, op: .55, seed: 71, rise: .04 });
+  let arrow = null;
+  if (id === 'L09') { arrow = new THREE.Group(); arrow.add(cyl(.012, .012, .2, 0xffc84a, { pos: [0, .1, 0], inkW: .003 })); arrow.add(mesh(new THREE.ConeGeometry(.035, .08, 14), toon(0xffc84a, { emissive: 0x7a4a08 }), { inkW: .004, pos: [0, -.02, 0], rot: [Math.PI, 0, 0] })); arrow.add(O.glow(.4, 0xffc060, .6)); Wd.add(arrow); }
+  Wd.on((t, cam) => { const g = t + a; let over = { lid: .85, eyes: 1, look: [0, 0] };
+    if (id === 'L02') { const tl = ease.io(prog(g, ln.t0 + .5, ln.t0 + 1.6)), back = ease.io(prog(g, ln.t1 + .3, ln.t1 + 1.4)); W.obj.rotation.z = .2 * tl * (1 - back) + Math.sin(g * 1.3) * .01; W.obj.rotation.y = -.1 * tl * (1 - back); over.look = [.15 * tl, .1 * tl]; over.brow = .55 * tl * (1 - back); }
+    else { const e = ease.io(prog(g, ln.t0 + .3, ln.t0 + 1.4)); W.obj.rotation.set(-.18 + .12 * e, .3 * e, -.06 * e); over.look = [-.5 * e, -.6 * e]; over.nod = .9 * e; over.brow = .3 * e; over.lid = .8;
+      const bob = Math.sin(g * 4) * .018; arrow.position.set(wp[0] - .34 + bob * 2, wp[1] + .46 - bob, wp[2] + .15); arrow.rotation.z = .95; arrow.visible = e > .02; arrow.scale.setScalar(Math.max(.01, backOut(e))); }
+    W.auto(g, over); });
+  const cam = K.watchCam(wp, dur); return finish(Wd, cam, { dof: dofAuto(cam, { ap: 20, maxR: 18, vig: .42 }) });
+}
+
+// ---------------------------------------------------------------- L03 / L04 / L11 / L16: Jerusalem at the hours of sunset (shared terrace world)
+function cityWorld() {
+  const Wd = world({ ground: 'dark', groundSize: 500, groundRep: [80, 80], shadowExt: 70 }); baseCam(Wd, .1, 1200); const Cy = P.cityCycle(Wd); ptsTerrace(Wd);
+  return { Wd, Cy };
+}
+function sSunset() {
+  const id = 'L03', a = A(id), dur = U(id), { Wd, Cy } = cityWorld(), tG = goldN(id, 0) - a, tL = goldN(id, 1) - a + .4;
+  const cd = P.candles(Wd, { pos: [1.9, 2.4, 2.5] }); Wd.hero = cd.g;
+  O.motes(Wd, { n: 20, area: [-3, 3, 3, 6, 0, 6], size: .25, color: 0xffd9a0, op: .35, seed: 4 });
+  Wd.on((t, cam) => { const g = t + a; Cy.apply(g < a + tG ? lerp(.04, .42, ease.io(prog(t, 0, tG))) : lerp(.42, .6, ease.io(prog(t, tG, dur)))); cd.set(ease.out(prog(t, tL, tL + .8)), g); });
+  const cam = cuts(dur, [[0, LK(TP, [0, 8, -60], 24, TP, [0, 11, -60], 24)], [4.2, move({ t: [1.9, 3.7, 2.5], d: 3.2, el: 4, az: -16, mm: 50 }, { t: [1.9, 3.8, 2.5], d: 2.4, el: 6, az: -4, mm: 50 })], [7.2, LK([-1, 3.4, 7], [.8, 4.6, -20], 32, [-.4, 3.4, 7], [1.2, 5.6, -20], 32)]]);
+  const dof = t => { const c = cam(t); const f = K.camFocus(c); return { focus: f > 60 ? 80 : f, ap: f > 60 ? 5 : 12, maxR: 14, vig: .4 }; };
+  return finish(Wd, cam, { dof });
+}
+function sNight() {
+  const id = 'L04', a = A(id), dur = U(id), { Wd, Cy } = cityWorld(), SZ = [[-14, 46, -140], [-2, 54, -140], [11, 42, -140]];
+  const stars = P.starSet(Wd, SZ), tile = P.dayTile(Wd, { pos: [1.4, 3.7, 2.4], scale: .9 }); Wd.hero = tile.g; tile.g.rotation.y = -.12;
+  const tF = goldN(id, 3) - a, tS = [goldN(id, 0) - a, goldN(id, 1) - a, goldN(id, 2) - a];
+  const pl = new THREE.PointLight(0xffc880, 2.2, 8, 2); pl.position.set(.4, 4.4, 4.2); Wd.scene.add(pl); const fr = goldRing(Wd, 0xffe9a8);
+  Wd.on((t, cam) => { const g = t + a; Cy.apply(lerp(.66, .82, prog(t, 0, dur))); stars.set(tS.map(s => prog(t, s - .1, s + .7)), g); tile.flip(prog(t, tF, tF + 1.3)); tile.g.position.y = 3.7 + Math.sin(g * 1.5) * .03; fr.position.set(1.4, 3.7, 2.3); ringAnim(fr, cam, t, tF + .9, 1.0, .6, 2.6, .8); });
+  const cam = cuts(dur, [[0, LK(TP, [0, 12, -60], 24, TP, [-1, 20, -60], 24)], [3.4, move({ t: [1.2, 3.8, 2.4], d: 4.8, el: 4, az: -22, mm: 40 }, { t: [1.3, 3.8, 2.4], d: 3.8, el: 4, az: -6, mm: 40 })], [Math.max(tF - 1.0, 5.6), move({ t: [1.4, 3.7, 2.4], d: 3.6, el: 2, az: 12, mm: 45 }, { t: [1.4, 3.7, 2.4], d: 3.0, el: 3, az: 0, mm: 45 })]]);
+  const dof = t => { const c = cam(t), f = K.camFocus(c); return { focus: f > 60 ? 80 : f, ap: f > 60 ? 5 : 12, maxR: 14, vig: .42 }; };
+  return finish(Wd, cam, { dof });
+}
+function sNotch() {
+  const id = 'L11', a = A(id), dur = U(id), { Wd, Cy } = cityWorld(), tG = goldN(id, 0) - a, tT = goldN(id, 2) - a;
+  const SX = Cy.SX, mx = SX * 118 / 156, my = 3.2 + (19.6 - 3.2) * 118 / 156, mr = 6 * 118 / 156 * 1.22;
+  const mk = new THREE.Group(); mk.position.set(mx, my, -112); const rg = new THREE.Mesh(new THREE.TorusGeometry(mr, .3, 10, 64), new THREE.MeshBasicMaterial({ color: 0xffc84a, fog: false })); mk.add(rg); [-1, 1].forEach(s => mk.add(box(.9, 2.6, .9, 0xd9c9a4, { pos: [s * (mr + 1.4), -mr + .6, 0], inkW: .05 })));
+  const mg = O.glow(mr * 3.2, 0xffc060, .0); mk.add(mg); Wd.add(mk); Wd.hero = null;
+  const tag = new THREE.Group(); tag.position.set(-1.4, 3.15, 3.6); const se = O.sefer(Wd, { bright: 1.1 }); se.scale.setScalar(.55); tag.add(se); const tg = O.glow(1.0, 0xffd070, .0); tg.position.y = .12; tag.add(tg); Wd.add(tag);
+  Wd.on((t, cam) => { const g = t + a; const u = lerp(.04, .42, ease.io(prog(t, 0, tG + .3))); Cy.apply(g < a + tG + .3 ? u : lerp(.42, .56, ease.io(prog(t, tG + .3, tG + 3.2))));
+    mg.material.opacity = .55 * ease.sm(prog(t, tG - 2, tG)) * (.8 + .2 * Math.sin(g * 4)); const kt = backOut(prog(t, tT - .2, tT + .6)); tag.scale.setScalar(Math.max(.001, kt)); tag.position.y = 3.15 + Math.sin(g * 1.8) * .03; tg.material.opacity = .7 * clamp(kt, 0, 1); se.rotation.x = .3; });
+  const cam = cuts(dur, [[0, LK(TP, [2, 10, -60], 28, TP, [3, 12, -60], 30)], [4.0, LK(TP, [mx, my, -112], 36, TP, [mx, my, -112], 60)]]);
+  const dof = t => { const c = cam(t); return { focus: 90, ap: 3.5, maxR: 12, vig: .4 }; };
+  return finish(Wd, cam, { dof });
+}
+function sHook() {
+  const id = 'L16', a = A(id), dur = U(id), { Wd, Cy } = cityWorld();
+  const earth = O.earth(Wd, { R: 5, pos: [-26, 44, -135] }); earth.visible = false; const eg = O.glow(26, 0x7ab0ff, 0); eg.position.set(-26, 44, -135); Wd.add(eg);
+  const tR = LN(id).t0 + .6 - a;
+  Wd.on((t, cam) => { const g = t + a, ke = ease.sm(prog(t, dur * .45, dur - .5)); Cy.apply(.42 + .02 * Math.sin(g * .5)); earth.visible = ke > .01; earth.scale.setScalar(Math.max(.01, ke)); earth.rotation.y = g * .1; eg.material.opacity = .5 * ke;
+    const fl = prog(t, dur - 3.2, dur - .3); Wd.hemi.intensity = 1.0 * (1 - .35 * fl * (.5 + .5 * Math.sin(g * 23) * Math.sin(g * 9))); });
+  const cam = t => { const k = ease.io(prog(t, 1.0, dur - .4)); return { pos: [0, lerp(3.4, 54, k), lerp(6.5, 16, k)], look: [lerp(2, -6, k), lerp(9, 30, k), -110], fov: F(lerp(28, 22, k)) }; };
+  const dof = t => ({ focus: 100, ap: 3.5, maxR: 12, vig: .4 });
+  return finish(Wd, cam, { dof });
+}
+
+// ---------------------------------------------------------------- the 24 h ring: L05 sweep, L06 markers, L12 / L14 calm loop
+function ringWorld() {
+  const Wd = world({ fog: false }); baseCam(Wd, .05, 200); O.skyDome(Wd, { top: 0x060a1c, mid: 0x101a3c, bot: 0x2a3050, stars: .55 });
+  O.lighting(Wd, { key: [0xffe0b0, .9, [3, 6, 6]], hemi: [0x8a90c0, 0x1a1830, .8], fill: [0x7a96d8, .4, [-6, 2, 4]], rim: [0xffd8a0, .7, [0, 4, -6]], target: [0, 3, 0], shadowExt: 10, fog: null, points: [[0xffc070, 10, [0, 3.2, 4.5], 10]] });
+  const fl = new THREE.Mesh(new THREE.PlaneGeometry(60, 60), toon(0x1c2040)); fl.rotation.x = -Math.PI / 2; fl.receiveShadow = true; Wd.add(fl);
+  const R = P.dayRing(Wd, { pos: [0, 3.1, 0] }); Wd.hero = R.g;
+  O.motes(Wd, { n: 26, area: [-5, 5, .4, 6, -3, 3], size: .16, color: 0xffe3a8, op: .5, seed: 33 }); O.motes(Wd, { n: 16, area: [-8, 8, 1, 7, -8, -3], size: .55, color: 0x8aa0ff, op: .3, seed: 34 });
+  return { Wd, R };
+}
+function sRing(id) {
+  const a = A(id), dur = U(id), { Wd, R } = ringWorld(), tGs = id === 'L06' ? goldN('L06', 0) - a : 99;
+  Wd.on((t, cam) => { const g = t + a;
+    if (id === 'L05') { R.set(lerp(360, 270, ease.io(prog(t, .35, 2.5))), 1, 0, prog(t, 2.3, 3), g); }
+    else { R.set(null, .75 * (1 - ease.sm(prog(t, 1.0, 2.5))) + .35, ease.sm(prog(t, tGs - .6, tGs + .3)), ease.sm(prog(t, tGs - .3, tGs + 1.2)), g); }
+    R.g.rotation.y = Math.sin(g * .35) * .1; });
+  const cam = id === 'L05' ? cuts(dur, [[0, move({ t: [0, 3.1, 0], d: 8.2, el: 4, az: -8, mm: 40 }, { t: [0, 3.1, 0], d: 7.2, el: 3, az: 6, mm: 40 })]])
+    : cuts(dur, [[0, move({ t: [0, 3.1, 0], d: 6.2, el: 5, az: 14, mm: 40 }, { t: [-.2, 3.1, 0], d: 5.2, el: 4, az: 2, mm: 40 })], [4.2, move({ t: [-1.2, 3.1, .1], d: 4.4, el: 3, az: 22, mm: 45 }, { t: [-1.3, 3.1, .1], d: 3.8, el: 2, az: 10, mm: 45 })], [8.6, move({ t: [0, 4.0, .1], d: 4.6, el: 18, az: -22, mm: 40 }, { t: [0, 3.8, .1], d: 4.0, el: 12, az: -8, mm: 40 })]]);
+  return finish(Wd, cam, { dof: dofAuto(cam, { ap: 7, maxR: 14, vig: .42 }) });
+}
+function sCalmRing(id) { // Q / G / A cards: the scene slows to a calm loop of the chapter's main object
+  const a = A(id), dur = U(id), { Wd, R } = ringWorld();
+  Wd.on((t, cam) => { const g = t + a; R.set(null, .6, .8, .5, g); R.g.rotation.y = Math.sin(g * .25) * .22; });
+  const cam = t => { const k = (t / 24) * Math.PI * 2; return { pos: [Math.sin(k) * 1.8, 3.4 + Math.sin(k * .7) * .25, 6.8 + Math.cos(k * .8) * .5], look: [0, 3.1, 0], fov: F(40) }; };
+  return finish(Wd, cam, { dof: dofAuto(cam, { ap: 4.5, maxR: 12, vig: .45 }) });
+}
+
+// ---------------------------------------------------------------- L07: beams of light place the sun and the moon in the sky
+function sBeams() {
+  const id = 'L07', a = A(id), dur = U(id), Wd = world({ ground: 'dark', groundSize: 300, groundRep: [50, 50], fogColor: 0x1b2850, fogNear: 30, fogFar: 150 }); baseCam(Wd, .05, 600);
+  O.skyDome(Wd, { top: 0x04061a, mid: 0x0a1440, bot: 0x2a3a6a, stars: 1 });
+  O.lighting(Wd, { key: [0xffd8a0, .5, [-3, 8, 4]], hemi: [0x5a6aa8, 0x1a1628, .8], fill: [0x6a60a0, .3, [4, 2, 6]], rim: [0x6f8cff, .5, [0, 6, -10]], target: [0, 2, 0], shadowExt: 20, fog: [0x1b2850, 30, 150] });
+  O.hills(Wd, { colors: [0x14202e, 0x1a2a3a, 0x101a26], list: [[-30, -60, 18, 7, 12], [24, -64, 20, 8, 12], [-6, -84, 40, 11, 16]] });
+  const R = P.lightBeams(Wd, { sunPos: [-3.4, 3.4, -4], moonPos: [3.6, 3.0, -5] });
+  const tag = new THREE.Group(); tag.position.set(-2.2, .95, 2.4); const se = O.sefer(Wd, { bright: 1.05 }); se.scale.setScalar(.8); se.rotation.x = .35; tag.add(se); const tg = O.glow(1.6, 0xffd070, 0); tg.position.y = .2; tag.add(tg); Wd.add(tag); const ped = box(.8, .6, .6, 0x5a3a1c, { pos: [-2.2, .3, 2.4], inkW: .012 }); Wd.add(ped);
+  const tS = goldN(id, 0) - a, tM = goldN(id, 2) - a, tT = goldN(id, 4) - a;
+  Wd.on((t, cam) => { const g = t + a; R.set(prog(t, tS - 1.1, tS - .1), prog(t, tS - .1, tS + .6), prog(t, tM - 1.1, tM - .1), prog(t, tM - .1, tM + .6), g);
+    const kt = backOut(prog(t, tT - .2, tT + .6)); tag.scale.setScalar(Math.max(.001, kt)); tag.position.y = .95 + Math.sin(g * 1.8) * .03; tg.material.opacity = .75 * clamp(kt, 0, 1); ped.visible = kt > .02; });
+  const cam = cuts(dur, [[0, move({ t: [0, 3, -4], d: 10.5, el: 6, az: 0, mm: 30 }, { t: [0, 3.0, -4], d: 9.2, el: 6, az: 4, mm: 30 })], [4.6, move({ t: [-3.4, 3.4, -4], d: 4.4, el: 4, az: 18, mm: 45 }, { t: [-3.2, 3.4, -4], d: 3.4, el: 3, az: 8, mm: 45 })], [Math.min(tM - .6, dur - 2.5), move({ t: [2.4, 3.2, -5], d: 7.4, el: 4, az: -14, mm: 40 }, { t: [2.4, 3.2, -5], d: 6.6, el: 3, az: -6, mm: 40 })]]);
+  return finish(Wd, cam, { dof: dofAuto(cam, { ap: 5, maxR: 14, vig: .45 }) });
+}
+
+// ---------------------------------------------------------------- L08: sun -> clock, moon -> calendar ring
+function sSunClock() {
+  const id = 'L08', a = A(id), dur = U(id), Wd = world({ fog: false }); baseCam(Wd, .05, 400); O.skyDome(Wd, { top: 0x04061a, mid: 0x0a1440, bot: 0x2a3a6a, stars: 1 });
+  O.lighting(Wd, { key: [0xffe8c0, .8, [2, 4, 8]], hemi: [0x7a88c8, 0x1a1830, .9], fill: [0x7a96d8, .4, [-6, 2, 4]], noShadow: true, points: [[0xffc070, 18, [0, 2.2, 3.4], 12]] });
+  const R = P.sunClockSet(Wd); Wd.hero = R.g; O.motes(Wd, { n: 30, area: [-5, 5, -1, 5, -3, 3], size: .2, color: 0xffe3a8, op: .45, seed: 22 });
+  const tC = goldN(id, 0) - a, tR = goldN(id, 3) - a;
+  Wd.on((t, cam) => { const g = t + a; R.set(prog(t, tC, tC + 1.8), prog(t, tR, tR + 2.6), g); R.g.rotation.y = Math.sin(g * .3) * .12; });
+  const cam = cuts(dur, [[0, move({ t: [0, 1.7, 0], d: 9, el: 4, az: 0, mm: 35 }, { t: [0, 1.7, 0], d: 8, el: 4, az: -6, mm: 35 })], [Math.max(tC - .4, 3.4), move({ t: [0, 1.7, 0], d: 5.6, el: 2, az: 10, mm: 40 }, { t: [0, 1.7, 0], d: 4.8, el: 2, az: 0, mm: 40 })], [Math.max(tR - .6, 7.2), move({ t: [0, 1.7, 0], d: 6.8, el: 14, az: -16, mm: 32 }, { t: [0, 1.7, 0], d: 8.6, el: 10, az: 6, mm: 32 })]]);
+  return finish(Wd, cam, { dof: dofAuto(cam, { ap: 5, maxR: 14, vig: .42 }) });
+}
+
+// ---------------------------------------------------------------- L10: many clocks orbit the sun like pupils around a teacher
+function sOrbit() {
+  const id = 'L10', a = A(id), dur = U(id), Wd = world({ fog: false }); baseCam(Wd, .05, 400); O.skyDome(Wd, { top: 0x04061a, mid: 0x0a1440, bot: 0x2a3a6a, stars: 1 });
+  O.lighting(Wd, { key: [0xffe8c0, .7, [2, 4, 8]], hemi: [0x7a88c8, 0x1a1830, .9], noShadow: true, points: [[0xffc070, 30, [0, 1.6, 0], 14]] });
+  const R = P.clockOrbit(Wd, { n: 15 }); Wd.hero = R.sun; O.motes(Wd, { n: 30, area: [-6, 6, -1, 5, -4, 4], size: .2, color: 0xffe3a8, op: .45, seed: 23 });
+  Wd.on((t, cam) => { R.set(t + a, ease.out(prog(t, .2, 2.6))); });
+  const cam = cuts(dur, [[0, t => { const k = prog(t, 0, 4.2); return view({ t: [0, 1.6, 0], d: lerp(10.5, 8.2, k), el: lerp(26, 18, k), az: lerp(-30, 10, k), mm: 32 }); }], [4.2, move({ t: [2.6, 1.6, 1.0], d: 4.4, el: 10, az: 10, mm: 40 }, { t: [-2.2, 1.6, 1.0], d: 4.2, el: 8, az: -12, mm: 40 })], [7.8, move({ t: [0, 1.6, 0], d: 6.6, el: 40, az: 0, mm: 28 }, { t: [0, 1.6, 0], d: 7.6, el: 30, az: -22, mm: 28 })]]);
+  return finish(Wd, cam, { dof: dofAuto(cam, { ap: 5, maxR: 14, vig: .42 }) });
+}
+
+// ---------------------------------------------------------------- L13: the counter rolls up through the years along a timeline road
+function sYears() {
+  const id = 'L13', a = A(id), dur = U(id), Wd = world({ fog: false }); baseCam(Wd, .05, 400); O.skyDome(Wd, { top: 0x04061a, mid: 0x0a1440, bot: 0x2a3a6a, stars: 1 });
+  O.lighting(Wd, { key: [0xffe0b0, .8, [2, 6, 6]], hemi: [0x7a88c8, 0x1a1830, .9], fill: [0x7a96d8, .4, [-6, 2, 4]], noShadow: true, points: [[0xffc070, 14, [0, 2, 0], 14]] });
+  P.yearRoad(Wd, { len: 160 }); const ctr = P.yearCounter(); Wd.add(ctr.mesh); Wd.hero = ctr.mesh; const sun = new THREE.Mesh(new THREE.SphereGeometry(6, 24, 16), O.basic(0xffd23a)); sun.position.set(0, 9, -120); Wd.add(sun); const sg = O.glow(60, 0xffc060, .6); sg.position.copy(sun.position); Wd.add(sg);
+  const tR = [LN(id).t0 + .6 - a, LN(id).t1 - a - .2], TARGET = 5787;
+  Wd.on((t, cam) => { const k = ease.io(prog(t, tR[0], tR[1])); ctr.set(TARGET * k, TARGET); const f = new THREE.Vector3(); cam.getWorldDirection(f); const up = new THREE.Vector3(0, 1, 0); ctr.mesh.position.copy(cam.position).addScaledVector(f, 4.2).addScaledVector(up, .55); ctr.mesh.quaternion.copy(cam.quaternion); ctr.mesh.scale.setScalar(1 + .04 * Math.sin(t * 6) * (k < 1 ? 1 : 0)); });
+  const cam = t => { const k = ease.io(prog(t, 0, dur - .2)); return { pos: [Math.sin(t * .4) * .5, lerp(1.4, 1.7, k), lerp(6, -78, k)], look: [0, 1.5, lerp(-10, -120, k)], fov: F(30) }; };
+  return finish(Wd, cam, { dof: dofAuto(cam, { ap: 3, maxR: 10, vig: .4, fk: 1 }) });
+}
+
+// ================================================================ the film
+const BUILD = { intro: sIntro, L00: sSefer, L01: sBlocks, L02: () => sWatch('L02'), L03: sSunset, L04: sNight, L05: () => sRing('L05'), L06: () => sRing('L06'), L07: sBeams, L08: sSunClock, L09: () => sWatch('L09'), L10: sOrbit, L11: sNotch, L12: () => sCalmRing('L12'), L13: sYears, L14: () => sCalmRing('L14'), L16: sHook };
+const WIDE = { L01: 1, L03: 1, L04: 1, L07: 1, L08: 1, L10: 1, L11: 1, L13: 1, L16: 1 };
+film({ W: 1920, H: 1080, fadeIn: true, shots: ORDER.map(k => ({ id: k, dur: ENDOF(k) - START[k], caps: [], wide: !!WIDE[k], build: BUILD[k] })) });
+const main = document.getElementById('c'), cssScale = () => { const r = main.getBoundingClientRect(); return { k: (r.width || 1920) / 1920, cw: r.width || 1920, ch: r.height || 1080 }; };
+window.__caption = t => { t = Math.max(0, (+t || 0) + (window.__T0 || 0)); const c = captionInfo(t); if (!c) return null; const { k, cw, ch } = cssScale();
+  return { id: c.id, text: c.text, rect: { x: c.rect.x * k, y: c.rect.y * k, w: c.rect.w * k, h: c.rect.h * k }, canvasW: cw, canvasH: ch, dir: 'rtl', lang: 'he', alpha: c.alpha }; };
+window.__chapter = CH;
+</script>
+</html>
