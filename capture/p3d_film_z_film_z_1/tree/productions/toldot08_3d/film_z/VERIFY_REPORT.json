@@ -1,0 +1,22 @@
+{
+ "film": "film_z.html",
+ "status": "FAIL",
+ "time": "2026-11-01T19:58:13",
+ "samples": 8,
+ "findings": [
+  {
+   "sev": "P0",
+   "code": "CAPTION_NO_RTL",
+   "t": 13.9,
+   "shot": "z1_journey",
+   "detail": "caption dir=None (+3 more samples)",
+   "fix": "caption must be dir=rtl, lang=he"
+  }
+ ],
+ "sheets": null,
+ "timing": {
+  "ready_s": 5.6,
+  "gates_s": 31.6,
+  "total_s": 37.4
+ }
+}
