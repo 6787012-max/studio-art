@@ -27,7 +27,7 @@ out = HERE + '/_stills_' + cid
 os.makedirs(out, exist_ok=True)
 url = 'file:///' + HERE + '/' + cid + '.html?hq=1'
 with sync_playwright() as p:
-    b = p.chromium.launch(channel='msedge', headless=True, args=['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--hide-scrollbars', '--allow-file-access-from-files', '--ignore-gpu-blocklist'])
+    b = p.chromium.launch(channel='msedge', headless=True, args=['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--hide-scrollbars', '--allow-file-access-from-files', '--ignore-gpu-blocklist'], timeout=300000)
     try:
         pg = b.new_page(viewport={'width': 1920, 'height': 1080})
         pg.add_init_script('window.__HQ_RENDER=true')
