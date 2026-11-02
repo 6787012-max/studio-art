@@ -57,7 +57,7 @@ with sync_playwright() as p:
         t0, n = time.time(), int(round(a.dur * a.fps))
         for i in range(n):
             pg.evaluate('window.__seek(%f)' % (i / a.fps))
-            ff.stdin.write(pg.screenshot(type='jpeg', quality=93))
+            ff.stdin.write(pg.screenshot(type='jpeg', quality=93, timeout=240000))
         ff.stdin.close()
         code = ff.wait()
         print('frames=%d  render_seconds=%.1f  ffmpeg_exit=%d  errors=%d' % (n, time.time() - t0, code, len(errors)))
