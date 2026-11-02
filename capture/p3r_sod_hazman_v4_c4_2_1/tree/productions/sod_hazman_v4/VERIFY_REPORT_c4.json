@@ -1,0 +1,28 @@
+{
+ "film": "c4.html",
+ "status": "PASS",
+ "time": "2026-11-02T05:22:00",
+ "samples": 53,
+ "findings": [
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 0.3,
+   "shot": "intro",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  }
+ ],
+ "sheets": {
+  "beat": "C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c4/_view/_verify_c4_beat_sheet_1.jpg",
+  "seam": "C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c4/_view/_verify_c4_seams_1.jpg",
+  "phone": "C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c4/_view/_verify_c4_phone_sheet_1.jpg",
+  "seam_2": "C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c4/_view/_verify_c4_seams_2.jpg"
+ },
+ "timing": {
+  "ready_s": 11.3,
+  "gates_s": 1418.7,
+  "sheets_s": 533.8,
+  "total_s": 1982.7
+ }
+}
