@@ -1,0 +1,76 @@
+{
+ "film": "c10.html",
+ "status": "PASS",
+ "time": "2026-11-02T08:14:41",
+ "samples": 53,
+ "findings": [
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 0.3,
+   "shot": "intro",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 10.16,
+   "shot": "L01",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 17.77,
+   "shot": "L02",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 37.22,
+   "shot": "L04",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 59.0,
+   "shot": "L06",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 72.47,
+   "shot": "L08",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 136.54,
+   "shot": "L09",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  }
+ ],
+ "sheets": {
+  "beat": "C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c10/_view/_verify_c10_beat_sheet_1.jpg",
+  "seam": "C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c10/_view/_verify_c10_seams_1.jpg",
+  "phone": "C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c10/_view/_verify_c10_phone_sheet_1.jpg",
+  "seam_2": "C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c10/_view/_verify_c10_seams_2.jpg"
+ },
+ "timing": {
+  "ready_s": 2.5,
+  "gates_s": 1384.8,
+  "sheets_s": 602.1,
+  "total_s": 2002.0
+ }
+}

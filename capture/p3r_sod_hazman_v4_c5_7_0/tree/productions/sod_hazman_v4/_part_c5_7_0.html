@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>sod hazman v4 c5</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>window.__T0=257.5563; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js", "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+// Chapter c5: why the sun's arc is long in summer and short in winter (the tilt of the axis). Zero Hebrew: vault ids only, digits on screen.
+import { world, THREE, ease, prog, clamp, lerp, box, cyl, mesh, toon } from '../../lib/stage3d.js';
+import { F, boot, introShot, runFilm, camSeq, dofOf, watchScene, textPlane, tileStrip, pennant, tube, reveal, arcPts, sunBall, steamTrain, goldRing, ringAnim, D2R, O } from './lib_v4/kit_c4567.js';
+import * as K from './lib_v4/objects_c5.js';
+import * as K4 from './lib_v4/objects_c4.js';
+
+const ORDER = ['intro', 'L00', 'S1', 'R3d', 'R3', 'R4d', 'R4', 'L05', 'L06', 'L07', 'L08', 'O1', 'CAL', 'L14', 'L15', 'L16', 'Q5', 'L21'];
+const { C, MOUTH } = await boot('c5', ORDER, { S1: 'L01', R3d: 'L03', R4d: 'L04', O1: 'L09', CAL: 'L12', Q5: 'L17' });
+const T0 = C.T0, EN = C.EN, G0 = C.gold0, GS = C.goldSpans, AT = C.at;
+C.START.R3 = AT('L03', .4); C.START.R4 = AT('L04', .4);
+const gs = (id, i) => { const s = GS(id); return (s[i] || s[s.length - 1] || { t0: T0(id) }).t0; };
+const bump = (g, c, w) => Math.exp(-Math.pow((g - c) / w, 2));
+const PI = Math.PI, TH_SUM = PI, TH_WIN = 0;
+const bill = (m, cam) => m.quaternion.copy(cam.quaternion);
+
+// ---------------------------------------------------------------- L00: the watch between a summer sun and a winter sun
+const sW0 = () => watchScene(C, 'L00', { mouth: MOUTH, extras: (Wd, R, W, a) => {
+  const hot = new THREE.Mesh(new THREE.SphereGeometry(.07, 16, 10), O.basic(0xffd23a)), hg = O.glow(.9, 0xffc040, .9), cold = new THREE.Mesh(new THREE.SphereGeometry(.045, 16, 10), O.basic(0xdbe9ff)), cg = O.glow(.6, 0x9ac0ff, .6);
+  hot.position.set(.62, .5, -.45); hg.position.copy(hot.position); cold.position.set(-.72, .12, -.45); cg.position.copy(cold.position); [hot, hg, cold, cg].forEach(m => Wd.add(m));
+  const l1 = new THREE.PointLight(0xffa830, 3.2, 4); l1.position.set(.7, .5, -.2); Wd.scene.add(l1); const l2 = new THREE.PointLight(0x80a8ff, 1.8, 4); l2.position.set(-.7, .2, -.2); Wd.scene.add(l2);
+  Wd.on(t => { const g = t + a; hg.scale.setScalar(.9 * (1 + .08 * Math.sin(g * 3))); cg.scale.setScalar(.6 * (1 + .05 * Math.sin(g * 2.1))); });
+}, over: g => { const s = Math.sin((g - T0('L00')) * 1.1); return { look: [.9 * s, .12 * s], yaw: .35 * s }; } });
+const sW7 = () => watchScene(C, 'L07', { mouth: MOUTH, keyColor: 0xaac8ff, fillColor: 0x6a90ff, lamp: 1.5, over: g => { const k = ease.out(prog(g, T0('L07'), T0('L07') + .4)); return { roll: .04 * Math.sin(g * 41) * k, lift: .004 * Math.sin(g * 53) * k, look: [0, -.2 * k], brow: .5 * k }; } });
+const sW14 = () => watchScene(C, 'L14', { mouth: MOUTH, over: g => { const k = ease.io(prog(g, T0('L14') - .1, T0('L14') + .9)); return { nod: 1.6 * k, look: [0, .1 * k], brow: .7 * k }; },
+  cam: [{ t: C.START.L14, p: [[0, .42, 1.5], [0, .4, .98]], l: [[-.17, .3, 0], [-.1, .28, 0]], mm: 50 }] });
+
+// ---------------------------------------------------------------- orbit world helper (Sun at the centre, orbit ring, tilted Earth)
+function orbitShot(key, cfg) {
+  const a = C.START[key], b = C.ENDOF(key), Wd = world({ fog: false }); C.baseCam(Wd, .05, 600);
+  const S = K.orbitWorld(Wd, cfg.world || {}); Wd.hero = S.E; const X = cfg.setup ? cfg.setup(Wd, S, a, b) : {};
+  Wd.on((t, cam) => { cfg.update(t + a, S, X, cam, Wd); });
+  const cam = camSeq(a, b, cfg.cam(S, a, b)); return C.finish(Wd, cam, { dof: dofOf(cam, { ap: cfg.ap || 4, maxR: 12 }) });
+}
+const earthAt = (S, th) => S.pos(th);
+
+// ---------------------------------------------------------------- S1: L01 the tilt with its angle arc, L02 the orbit with the axis keeping its direction
+const sS1 = () => orbitShot('S1', {
+  setup(Wd, S, a, b) {
+    const ep = S.pos(TH_SUM), arcR = 1.9;
+    const ref = new THREE.Mesh(new THREE.CylinderGeometry(.014, .014, 3.6, 6), new THREE.MeshBasicMaterial({ color: 0xffffff, transparent: true, opacity: .5 })); ref.position.copy(ep); Wd.add(ref);
+    const arc = tube(arcPts(arcR, 90, 90 - K.TILT, 20), .03, 0xffe08a, { seg: 20, rs: 5 }); arc.position.copy(ep); Wd.add(arc); reveal(arc, 0);
+    const pn = textPlane(1.4, .7, { fg: '#fff0c0', glow: 'rgba(255,190,70,.95)', bg: 'rgba(20,16,40,.7)' }); pn.mesh.position.set(ep.x + 1.9, ep.y + 2.3, ep.z + .3); Wd.add(pn.mesh);
+    const ghosts = [0, 1, 2, 3].map(i => { const g = new THREE.Group(), th = PI + i * PI / 2, p = S.pos(th); g.position.copy(p); g.rotation.z = -K.TILT * D2R; g.add(new THREE.Mesh(new THREE.SphereGeometry(.5, 16, 10), new THREE.MeshBasicMaterial({ color: 0x6aa0ff, transparent: true, opacity: .45 }))); g.add(new THREE.Mesh(new THREE.CylinderGeometry(.02, .02, 2.3, 6), new THREE.MeshBasicMaterial({ color: 0xffd060 }))); g.visible = false; Wd.add(g); return g; });
+    return { ref, arc, pn, ghosts, ep };
+  },
+  update(g, S, X, cam) {
+    const L1 = T0('L01'), L2 = T0('L02'), tg = G0('L01'), k = prog(g, tg - .2, tg + 2.2);
+    const th = g < L2 ? TH_SUM : PI + 1.5 * PI * ease.io(prog(g, L2 + .3, C.ENDOF('S1') - .6));
+    S.place(th, g * .9); S.tipN.visible = true;
+    reveal(X.arc, k); X.pn.set(g > tg - .2 ? (K.TILT * ease.out(k)).toFixed(1) : ''); X.pn.opacity(ease.out(prog(g, tg - .3, tg + .2))); X.pn.mesh.visible = g < L2 - .2; bill(X.pn.mesh, cam);
+    X.ref.visible = g < L2 - .2; X.arc.visible = X.arc.visible && g < L2 - .2;
+    X.ghosts.forEach((gh, i) => { gh.visible = g > L2 && th >= PI + i * PI / 2 - .05; });
+  },
+  cam(S, a, b) { const ep = S.pos(PI), L2 = T0('L02');
+    return [{ t: a, p: [[ep.x + 1.2, ep.y + .8, ep.z + 5.4], [ep.x + 3.4, ep.y + .6, ep.z + 3.9]], l: [ep.x, ep.y, ep.z], mm: 42 },
+      { t: L2 - .2, p: [[ep.x + 3.4, ep.y + .6, ep.z + 3.9], [0, 13, 16]], l: [[ep.x, 0, 0], [0, 0, -1]], mm: [42, 30], e: 'io' },
+      { t: L2 + 3.5, p: [[0, 13, 16], [-4, 10, 17]], l: [0, 0, -1], mm: 30 }]; } });
+
+// ---------------------------------------------------------------- R3d / R4d: Earth at the summer / winter side of the orbit with the rays arriving at Jerusalem
+function diagShot(key, th, camOff, lookOff) {
+  return orbitShot(key, {
+    setup(Wd, S) { const R = K.sunRays(Wd, 14); return { R, spin: S.noonSpin(th) }; },
+    update(g, S, X, cam) { const a = C.START[key], b = C.ENDOF(key), p = S.place(th, X.spin + .12 * Math.sin((g - a) * .5)); S.E.updateMatrixWorld(true);
+      const pinW = new THREE.Vector3(); S.pin.getWorldPosition(pinW); const dir = new THREE.Vector3(.5, 0, 0).sub(p).normalize(); X.R.set(p, S.R, dir, pinW, 5, ease.out(prog(g, a + .3, a + 1.4))); S.pg.scale.setScalar(S.R * (.5 + .12 * Math.sin(g * 5))); },
+    cam(S, a, b) { const ep = S.pos(th); return [{ t: a, p: [[ep.x + camOff[0], ep.y + camOff[1], ep.z + camOff[2]], [ep.x + camOff[0] * .8, ep.y + camOff[1] * .85, ep.z + camOff[2] * .85]], l: [ep.x + lookOff[0], ep.y + lookOff[1], ep.z], mm: 42 }]; } });
+}
+const sR3d = () => diagShot('R3d', TH_SUM, [3.6, 2.4, 4.8], [1.0, .7, 0]);
+const sR4d = () => diagShot('R4d', TH_WIN, [-3.6, 2.4, 4.8], [-.6, .7, 0]);
+
+// ---------------------------------------------------------------- R3 / R4: the rooftop and the real sun arc (long and high in summer, short and low in winter)
+function roofShot(key, winter) {
+  const a = C.START[key], b = C.ENDOF(key), Wd = world({ fog: false }); C.baseCam(Wd, .1, 800);
+  const R = K.rooftop(Wd, { winter }); Wd.hero = R.sun;
+  Wd.on(t => { const g = t + a, k = ease.io(prog(g, a + .5, b - .9)); R.setSun(k); });
+  const cam = t => { const g = t + a, k = ease.io(prog(g, a + .5, b - .9)), h = lerp(-R.H * .96, R.H * .96, k), d = K.sunDirOf(h, R.dec), kk = ease.io(prog(t, 0, b - a));
+    const f = [0, Math.sin(38 * D2R), Math.cos(38 * D2R)], m = [f[0] * .5 + d[0] * .5, f[1] * .5 + Math.max(0, d[1]) * .5, f[2] * .5 + d[2] * .5], L = Math.hypot(m[0], m[1], m[2]) || 1, px = lerp(0, 1.5, kk), pz = lerp(3.0, 2.4, kk);
+    return { pos: [px, 1.75, pz], look: [px + m[0] / L * 30, 1.75 + m[1] / L * 30, pz + m[2] / L * 30], fov: F(14) }; };
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 2.4, maxR: 10, focus: 40 }) });
+}
+const sR3 = () => roofShot('R3', false), sR4 = () => roofShot('R4', true);
+
+// ---------------------------------------------------------------- L05 / L06: flashlights (straight = small bright disc, tilted = long weak ellipse); steep vs shallow rays
+function flashShot(key, mode) {
+  const a = C.START[key], b = C.ENDOF(key), Wd = world({ fog: false }); C.baseCam(Wd, .05, 300);
+  K.flashFloor(Wd); const f1 = K.flashlight(Wd, { x: -3.4, color: mode ? 0xffd070 : 0xffe9b0 }), f2 = K.flashlight(Wd, { x: 1.4, color: mode ? 0xffd070 : 0xffe9b0 }); Wd.hero = f2.group;
+  O.motes(Wd, { n: 26, area: [-7, 8, .5, 3, -2, 3], size: .1, color: 0xffe8b0, op: .4, seed: 61 });
+  const g0 = gs(key === 'L05' ? 'L05' : 'L05', 0);
+  Wd.on((t, cam) => { const g = t + a; let t1, t2;
+    if (mode === 0) { t1 = 0; t2 = 62 * ease.io(prog(g, g0 - .4, g0 + 3.4)); } else { t1 = 8; t2 = 60; }
+    f1.set(t1 + (mode ? .6 * Math.sin(g * 1.5) : 0), ease.out(prog(g, a + .1, a + .9))); f2.set(t2 + (mode ? .6 * Math.sin(g * 1.7) : 0), ease.out(prog(g, a + .4, a + 1.2))); });
+  const cam = camSeq(a, b, mode === 0 ? [
+    { t: a, p: [[-1, 3.8, 10.5], [0, 3.4, 9]], l: [-.5, 1.1, 0], mm: 30 },
+    { t: g0 + 1.2, p: [[5.5, 2.2, 6.5], [4, 2.0, 7]], l: [3.4, .4, 0], mm: 36 },
+    { t: T0('L05') + 8.2, p: [[-1, 1.8, 7.4], [-1.4, 1.7, 6.8]], l: [-1, .8, 0], mm: 30 }] : [
+    { t: a, p: [[-1, 2.9, 9.5], [1, 3.0, 8.5]], l: [-.4, 1.1, 0], mm: 30 }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 3.2, maxR: 12 }) });
+}
+const sL05 = () => flashShot('L05', 0), sL06 = () => flashShot('L06', 1);
+
+// ---------------------------------------------------------------- L08: the distance line (nearest point in winter) and the big check mark on the tilt
+const sL08 = () => orbitShot('L08', {
+  setup(Wd, S, a, b) {
+    const ep = S.pos(TH_WIN), line = tube([[.5, 0, 0], [ep.x, 0, 0]], .035, 0xffd45a, { seg: 12, rs: 5 }); Wd.add(line);
+    const ck = new THREE.Group(); ck.add(box(.55, .2, .14, 0x3ad06a, { pos: [-.28, -.2, 0], rot: [0, 0, .78], inkW: .02 })); ck.add(box(1.4, .2, .14, 0x3ad06a, { pos: [.35, .05, 0], rot: [0, 0, -.9], inkW: .02 })); const cg = O.glow(3.6, 0x4aff88, .5); ck.add(cg); ck.position.set(ep.x - 2.6, 2.4, ep.z + .8); Wd.add(ck);
+    const rg = goldRing(Wd); rg.position.copy(ep); return { line, ck, rg, ep };
+  },
+  update(g, S, X, cam) { const L = T0('L08'), tg = gs('L08', 0), tk = gs('L08', 2); S.place(TH_WIN, g * .9); reveal(X.line, ease.out(prog(g, tg - .3, tg + 1.2)));
+    X.ck.scale.setScalar(Math.max(.001, ease.out(prog(g, tk, tk + .5)) * (1 + .06 * Math.sin(g * 6)))); X.ck.visible = g > tk; bill(X.ck, cam); ringAnim(X.rg, cam, g, tg + .6, 1.1, .8, 2.6, .8); },
+  cam(S, a, b) { const ep = S.pos(TH_WIN), tk = gs('L08', 2); return [
+    { t: a, p: [[3, 6.5, 10], [5.2, 5.2, 8.4]], l: [4, 0, 0], mm: 32 },
+    { t: tk - .5, p: [[ep.x - 3.4, ep.y + 1.2, ep.z + 4.6], [ep.x - 3.0, ep.y + 1.0, ep.z + 4.0]], l: [ep.x - 1.4, 1.1, 0], mm: 38 }]; } });
+
+// ---------------------------------------------------------------- O1 (L09..L11): the orbit with four glowing markers, day/night bars, counters 91 and 7.5
+const SEAS = [{ th: 1.5 * PI, f: .5, c: 0xff9a40 }, { th: 2 * PI, f: 10 / 24, c: 0x80b8ff }, { th: 2.5 * PI, f: .5, c: 0x6adf8a }, { th: 3 * PI, f: 14 / 24, c: 0xffd23a }];
+const sO1 = () => orbitShot('O1', {
+  setup(Wd, S, a, b) {
+    const ms = SEAS.map((s, i) => { const p = S.pos(s.th), g = new THREE.Group(); g.position.copy(p); g.position.y = 0;
+      g.add(cyl(.05, .05, 2.6, 0x5a3a1c, { pos: [0, 1.5, 0], inkW: .01 })); const bl = new THREE.Mesh(new THREE.SphereGeometry(.26, 16, 10), O.basic(s.c)), gl = O.glow(2.2, s.c, .9); bl.position.y = 2.9; gl.position.y = 2.9; g.add(bl); g.add(gl);
+      const bar = new THREE.Group(); bar.position.y = 3.6; const dw = 2.0 * s.f; const d = new THREE.Mesh(new THREE.BoxGeometry(dw, .28, .1), O.basic(0xffd23a)), n = new THREE.Mesh(new THREE.BoxGeometry(2.0 - dw, .28, .1), O.basic(0x2a3a8a)); d.position.x = -1 + dw / 2; n.position.x = -1 + dw + (2.0 - dw) / 2; bar.add(d); bar.add(n); bar.add(box(2.1, .36, .06, 0x15100c, { pos: [0, 0, -.06], ink: false })); g.add(bar); Wd.add(g); g.visible = false; return { g, bl, gl, bar }; });
+    const p91 = textPlane(2.4, 1.2, { fg: '#fff0c0', glow: 'rgba(255,190,70,.95)', bg: 'rgba(20,16,40,.72)' }), p75 = textPlane(2.4, 1.2, { fg: '#bfe4ff', glow: 'rgba(140,200,255,.95)', bg: 'rgba(20,16,40,.72)' });
+    p91.mesh.position.set(-3.4, 3.4, 1.5); p75.mesh.position.set(3.4, 3.4, 1.5); Wd.add(p91.mesh); Wd.add(p75.mesh);
+    const q = tube(arcPts(RO(), 0, 90, 40, 'xz').map(p => [p[0], .02, -p[2]]), .06, 0xffd45a, { seg: 40, rs: 5, add: true, op: .9 }); Wd.add(q); reveal(q, 0);
+    return { ms, p91, p75, q };
+  },
+  update(g, S, X, cam) {
+    const L9 = T0('L09'), L10 = T0('L10'), L11 = T0('L11'), tl = [gs('L10', 0), gs('L10', 2), gs('L10', 4), gs('L10', 6)];
+    X.ms.forEach((m, i) => { const sh = g > L9 + .6 + i * .35, k = ease.out(prog(g, L9 + .6 + i * .35, L9 + 1.2 + i * .35)), lit = ease.out(prog(g, tl[i], tl[i] + .5)); m.g.visible = sh; m.g.scale.setScalar(Math.max(.001, k)); m.gl.scale.setScalar(2.2 * (.5 + .9 * lit + .1 * Math.sin(g * 5 + i))); m.bl.scale.setScalar(.7 + .6 * lit); m.bar.visible = lit > .02; m.bar.scale.set(lit, 1, 1); bill(m.bar, cam); });
+    let th; if (g < L10) th = 2 * PI; else if (g < tl[3] + .8) { const ks = [[L10, 1.5 * PI], [tl[0] + .3, 1.5 * PI], [tl[1] + .3, 2 * PI], [tl[2] + .3, 2.5 * PI], [tl[3] + .3, 3 * PI]]; th = ks[0][1]; for (let i = 0; i < ks.length - 1; i++) if (g >= ks[i][0]) th = lerp(ks[i][1], ks[i + 1][1], ease.io(prog(g, ks[i][0], ks[i + 1][0]))); if (g >= ks[4][0]) th = 3 * PI; }
+    else if (g < L11) th = 3 * PI + 1.5 * PI * 0; else th = 2 * PI + .5 * PI * ease.io(prog(g, L11 + .3, L11 + 4.2)) + 2 * PI;
+    S.place(th, g * .9);
+    const tc = G0('L11'), kc = ease.out(prog(g, tc - .2, tc + 2.2)), kd = ease.out(prog(g, gs('L11', 3) - .2, gs('L11', 3) + 2.0));
+    X.p91.set(g > L11 ? String(Math.round(91 * kc)) : ''); X.p91.opacity(ease.out(prog(g, L11, L11 + .5))); X.p75.set(g > L11 ? (7.5 * kd).toFixed(1) : ''); X.p75.opacity(ease.out(prog(g, L11 + .2, L11 + .7))); bill(X.p91.mesh, cam); bill(X.p75.mesh, cam);
+    reveal(X.q, ease.io(prog(g, L11 + .3, L11 + 4.2))); },
+  cam(S, a, b) { const L10 = T0('L10'), L11 = T0('L11'); return [
+    { t: a, p: [[0, 10, 15], [0, 8.5, 12.5]], l: [0, 0, 0], mm: 30 },
+    { t: L10, p: [[-11, 6, 11], [11, 6, 11]], l: [0, 1, 0], mm: 28, e: 'sm' },
+    { t: L11 - .3, p: [[0, 8, 14], [3, 7, 11]], l: [0, 1.6, 0], mm: 30 },
+    { t: L11 + 4.4, p: [[6, 4.5, 8], [8, 3.8, 6]], l: [4, 1, -2], mm: 36 }]; } }, 0);
+function RO() { return K.RO; }
+
+// ---------------------------------------------------------------- CAL (L12, L13): 60 day tiles flip from the tekufa marker; the last tile lights and the chanukia glows
+function sCal() {
+  const a = C.START.CAL, b = C.ENDOF('CAL'), Wd = world({ fog: false }); C.baseCam(Wd, .05, 300);
+  K4.boardRoom(Wd, {}); const ts = tileStrip(Wd, { n: 60, cols: 10, tw: .62, th: .62, gap: .06, pos: [0, 5.4, 1.0] }); Wd.hero = ts.group;
+  const mk = pennant(Wd, 0xffc030); mk.scale.setScalar(1.5); mk.position.set(ts.pos(0)[0] - .55, 5.4 + ts.pos(0)[1] - .2, 1.2);
+  const ch = K.chanukia(Wd, { pos: [3.4, .9, 1.6], scale: 1.7 });
+  const L12 = T0('L12'), L13 = T0('L13'), e12 = C.EN('L12');
+  Wd.on((t, cam) => { const g = t + a, m = 59 * ease.io(prog(g, L12 + .9, e12 - .5));
+    for (let i = 0; i < 60; i++) { ts.flip(i, clamp(m - i + .8, 0, 1)); ts.glow(i, i === 59 ? .9 * ease.out(prog(g, L13 + .3, L13 + 1.2)) : (Math.abs(i - m) < .8 && g < L13 ? .5 : 0)); }
+    ch.tick(g, 9 * ease.io(prog(g, L13 + 1.0, b - .6))); mk.rotation.z = .03 * Math.sin(g * 3); });
+  const t59 = ts.pos(59);
+  const cam = camSeq(a, b, [
+    { t: a, p: [[-3.2, 5.8, 6.2], [-2.2, 5.5, 6.6]], l: [-2.8, 5.4, 1], mm: 40 },
+    { t: L12 + 3.6, p: [[0, 4.2, 12.5], [0, 3.9, 11]], l: [0, 3.8, 1], mm: 32 },
+    { t: L13, p: [[0, 3.4, 11], [3.4, 2.4, 7.2]], l: [[0, 3.5, 1], [3.3, 1.8, 1.4]], mm: 34 }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 3 }) });
+}
+
+// ---------------------------------------------------------------- L15: the sun travels a long loop and lands on the origin mark
+function sLoop() {
+  const a = C.START.L15, b = C.ENDOF('L15'), Wd = world({ fog: false }); C.baseCam(Wd, .05, 400);
+  O.skyDome(Wd, { top: 0x02040f, mid: 0x061030, bot: 0x14204a, stars: 1 }); O.lighting(Wd, { key: [0xffffff, .3, [0, 10, 5]], hemi: [0x4a5a90, 0x101830, .8], noShadow: true, fog: null });
+  const P = u => { const a2 = u * PI * 2; return [Math.cos(a2) * 5.5, 1.4 + 1.1 * Math.sin(a2 * 2 + .6) * (.5 + .5 * Math.sin(a2)), -Math.sin(a2) * 5.5]; };
+  const pts = Array.from({ length: 64 }, (_, i) => P(i / 64)), loop = tube(pts, .035, 0x6a8ae0, { closed: true, seg: 160, op: .5 }); Wd.add(loop);
+  const trail = tube(pts.concat([pts[0]]), .06, 0xffd45a, { seg: 160, rs: 5, add: true, op: .9 }); Wd.add(trail); reveal(trail, 0);
+  const sun = sunBall(Wd, .5); const mark = new THREE.Group(); mark.position.set(5.5, 0, 0); mark.add(cyl(.12, .2, 1.4, 0xd9c9a4, { pos: [0, .7, 0], inkW: .02 })); const mg = O.glow(2.6, 0xffd070, .35); mg.position.y = 1.7; mark.add(mg); Wd.add(mark);
+  const ctr = new THREE.Mesh(new THREE.SphereGeometry(.7, 20, 12), toon(0x2a6fb8)); ctr.position.y = 1.4; Wd.add(ctr); Wd.hero = sun; const rg = goldRing(Wd); rg.position.set(5.5, 1.3, 0);
+  const t0 = T0('L15') + .9, t1 = b - 1.8;
+  Wd.on((t, cam) => { const g = t + a, u = ease.io(prog(g, t0, t1)), p = P(u); sun.position.set(p[0], p[1], p[2]); reveal(trail, u * (pts.length / (pts.length + 1)));
+    const arrive = prog(g, t1, t1 + .3); mg.material.opacity = .35 + .65 * bump(g, t1 + .2, .5); mg.scale.setScalar(2.6 * (1 + .7 * bump(g, t1 + .2, .5))); ringAnim(rg, cam, g, t1, 1.3, .6, 3.2, .9); ctr.rotation.y = g * .5; });
+  const cam = camSeq(a, b, [{ t: a, p: [[0, 7.5, 12], [-6, 4.6, 10]], l: [0, 1.4, 0], mm: 30 }, { t: b - 3.6, p: [[-6, 4.6, 10], [3.6, 2.4, 6.5]], l: [[0, 1.4, 0], [5.5, 1.2, 0]], mm: [30, 38] }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 3, maxR: 12 }) });
+}
+
+// ---------------------------------------------------------------- L16: the year counter (four drums, the last two roll)
+function sDrums() {
+  const a = C.START.L16, b = C.ENDOF('L16'), Wd = world({ fog: false }); C.baseCam(Wd, .05, 300);
+  K4.boardRoom(Wd, {}); const ds = [0, 1, 2, 3].map(i => K.drum(Wd, { pos: [(i - 1.5) * 1.55, 3.0, 1.2], r: .75, w: 1.0 })); Wd.hero = ds[0].group;
+  const from = [5, 7, 6, 9], to = [5, 7, 9, 7], tg = gs('L16', 0);
+  Wd.on(t => { const g = t + a; ds.forEach((d, i) => { const k = i < 2 ? 0 : ease.io(prog(g, tg + (i - 2) * .5, tg + 2.6 + (i - 2) * .5)), v = lerp(from[i], to[i], k) + (i < 2 ? 0 : (to[i] > from[i] ? 0 : 10) * k * 0), settle = bump(g, tg + 2.8 + (i - 2) * .5, .4); d.set(i < 2 ? from[i] : lerp(from[i], to[i] < from[i] ? to[i] + 10 : to[i], k), settle); }); });
+  const cam = camSeq(a, b, [{ t: a, p: [[0, 3.6, 11], [0, 3.3, 8.2]], l: [0, 3.0, 1], mm: 32 }, { t: tg + 1, p: [[1.4, 3.1, 6.5], [1.6, 3.0, 5.8]], l: [1.4, 3.0, 1.2], mm: 38 }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 3 }) });
+}
+
+// ---------------------------------------------------------------- Q5 (L17..L20): calm orbit loop; the nearest-point marker at L18
+const sQ5 = () => orbitShot('Q5', {
+  setup(Wd, S, a, b) { const ep = S.pos(0), line = tube([[.5, 0, 0], [ep.x, 0, 0]], .04, 0xffd45a, { seg: 12, rs: 5 }); Wd.add(line); const rg = goldRing(Wd); rg.position.copy(ep); const rg2 = goldRing(Wd, 0xffe9a8); rg2.position.copy(ep); return { line, rg, rg2 }; },
+  update(g, S, X, cam) { const L18 = T0('L18'), w = 2 * PI / 150, th = 2 * PI + w * (g - L18 - .3); S.place(th, g * .9); const k = ease.out(prog(g, L18 - .1, L18 + .8)) * (1 - ease.in(prog(g, T0('L19') + 1, T0('L19') + 2.5))); reveal(X.line, k); X.line.visible = k > .01;
+    ringAnim(X.rg, cam, g, L18 + .3, 1.2, .8, 2.8, .9); ringAnim(X.rg2, cam, g, L18 + .45, 1.3, .7, 3.4, .5); },
+  cam(S, a, b) { const L18 = T0('L18'), L19 = T0('L19'); return [
+    { t: a, p: [[-4, 9, 15], [4, 8, 14]], l: [0, 0, 0], mm: 30, e: 'sm' },
+    { t: L18 - .8, p: [[6, 5.5, 11], [8, 4.2, 9]], l: [5, 0, 0], mm: 34 },
+    { t: L19, p: [[-6, 8, 14], [6, 8, 14]], l: [0, 0, 0], mm: 30, e: 'sm' },
+    { t: L19 + 30, p: [[6, 8, 14], [-5, 9, 15]], l: [0, 0, 0], mm: 30, e: 'sm' },
+    { t: T0('L20') - .5, p: [[0, 6, 14], [0, 4, 11]], l: [0, 0, 0], mm: 32 }]; } });
+
+// ---------------------------------------------------------------- L21: hook - a train whistle, steam enters the frame
+function sHook() {
+  const a = C.START.L21, b = C.ENDOF('L21'), Wd = world({ ground: 'dry', groundSize: 300, groundRep: [50, 50], fog: true, fogColor: 0xd89a70, fogNear: 25, fogFar: 140, skyTop: 0x3a4a8a, skyBottom: 0xf0a868 }); C.baseCam(Wd, .1, 500);
+  O.lighting(Wd, { key: [0xffb070, 1.4, [-20, 12, 14]], hemi: [0xe0a890, 0x4a3a30, .9], fill: [0x7a8ac8, .3, [10, 4, 10]], rim: [0xffd0a0, .5, [10, 8, -10]], target: [0, 1, 0], shadowExt: 30, fog: [0xd89a70, 25, 140] });
+  Wd.scene.fog = new THREE.Fog(0xd89a70, 25, 140);
+  [-.6, .6].forEach(z => Wd.add(box(120, .1, .12, 0x6a6a72, { pos: [0, .2, z], inkW: .01 }))); for (let i = -40; i < 40; i++) Wd.add(box(.25, .1, 1.7, 0x5a3a20, { pos: [i * 1.2, .1, 0], ink: false }));
+  O.hills(Wd, { colors: [0x6a6a58, 0x7a7a60], list: [[-30, -60, 30, 7, 16], [30, -64, 34, 9, 18], [0, -80, 60, 12, 20]] });
+  const T = steamTrain(Wd, { pos: [0, 0, 0], scale: 1 }); Wd.hero = T.group; const t0 = T0('L21') + 1.2, tg = G0('L21');
+  const xAt = t => -8 + 6.5 * ease.io(prog(t, t0, b - .4)); const clouds = []; for (let i = 0; i < 10; i++) { const s = O.glow(5, 0xf4efe6, .0); Wd.add(s); clouds.push(s); }
+  Wd.on((t, cam) => { const g = t + a; T.update(g, xAt(g), 1); T.smoke(g, xAt, 0, 0, 2.6);
+    clouds.forEach((s, i) => { const k = ease.out(prog(g, a + .2 + i * .25, a + 2.8 + i * .25)), x = lerp(-14, 6, ((g * .06 + i * .13) % 1)); s.position.set(-9 + i * 1.7 + (g - a) * .8, 2.2 + (i % 3) * .7, 2.2 + (i % 4) * .6); s.scale.setScalar(4 + (i % 3)); s.material.opacity = .5 * k * (1 - ease.in(prog(g, b - 2, b - .3))); }); });
+  const cam = camSeq(a, b, [{ t: a, p: [[-1, 1.5, 9.5], [1.2, 1.7, 7.2]], l: [[-6, 1.8, 0], [-3, 1.6, 0]], mm: [34, 40], e: 'io' }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 4, maxR: 12 }) });
+}
+
+const BUILD = { intro: () => introShot(C, 'T_C5'), L00: sW0, S1: sS1, R3d: sR3d, R3: sR3, R4d: sR4d, R4: sR4, L05: sL05, L06: sL06, L07: sW7, L08: sL08, O1: sO1, CAL: sCal, L14: sW14, L15: sLoop, L16: sDrums, Q5: sQ5, L21: sHook };
+runFilm(C, BUILD, { S1: 1, R3: 1, R4: 1, O1: 1, Q5: 1, L21: 1 });
+</script>
