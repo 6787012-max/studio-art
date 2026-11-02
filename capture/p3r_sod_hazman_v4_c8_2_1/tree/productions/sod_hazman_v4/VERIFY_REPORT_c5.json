@@ -1,0 +1,62 @@
+{
+ "film": "c5.html",
+ "status": "PASS",
+ "time": "2026-11-02T09:51:32",
+ "samples": 88,
+ "findings": [
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 0.3,
+   "shot": "intro",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "HERO_SMALL",
+   "t": 39.59,
+   "shot": "R3",
+   "detail": "hero height 24% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  },
+  {
+   "sev": "P2",
+   "code": "HERO_SMALL",
+   "t": 50.1,
+   "shot": "R4",
+   "detail": "hero height 29% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  },
+  {
+   "sev": "P2",
+   "code": "HERO_SMALL",
+   "t": 109.41,
+   "shot": "O1",
+   "detail": "hero height 23% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  },
+  {
+   "sev": "P2",
+   "code": "HERO_SMALL",
+   "t": 233.28,
+   "shot": "Q5",
+   "detail": "hero height 20% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  }
+ ],
+ "sheets": {
+  "beat": "C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c5/_view/_verify_c5_beat_sheet_1.jpg",
+  "seam": "C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c5/_view/_verify_c5_seams_1.jpg",
+  "phone": "C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c5/_view/_verify_c5_phone_sheet_1.jpg",
+  "beat_2": "C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c5/_view/_verify_c5_beat_sheet_2.jpg",
+  "seam_2": "C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c5/_view/_verify_c5_seams_2.jpg",
+  "seam_3": "C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c5/_view/_verify_c5_seams_3.jpg"
+ },
+ "timing": {
+  "ready_s": 8.0,
+  "gates_s": 1543.0,
+  "sheets_s": 547.5,
+  "total_s": 2099.1
+ }
+}

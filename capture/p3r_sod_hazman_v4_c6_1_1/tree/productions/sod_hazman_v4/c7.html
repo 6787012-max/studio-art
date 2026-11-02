@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>sod hazman v4 c7</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js", "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+// Chapter c7: the Jerusalem day cycle (dawn, sunrise, day bar marks, stars, luach, Friday candles, sunset graph). Zero Hebrew: vault ids only.
+import { world, THREE, ease, prog, clamp, lerp, rng, box, cyl, mesh, toon } from '../../lib/stage3d.js';
+import { F, boot, introShot, runFilm, camSeq, dofOf, watchScene, textPlane, dayBoard, luachBook, tube, reveal, sunBall, goldRing, ringAnim, candle, fmtHM, D2R, O } from './lib_v4/kit_c4567.js';
+import * as K from './lib_v4/objects_c7.js';
+import * as K4 from './lib_v4/objects_c4.js';
+import * as K6 from './lib_v4/objects_c6.js';
+
+const ORDER = ['intro', 'L00', 'D1', 'L03', 'B7', 'L06', 'L07', 'L08', 'R9', 'GR', 'R13', 'Q7', 'L18'];
+const { C, MOUTH } = await boot('c7', ORDER, { D1: 'L01', B7: 'L04', R9: 'L09', GR: 'L11', R13: 'L13', Q7: 'L14' });
+const T0 = C.T0, EN = C.EN, G0 = C.gold0, GS = C.goldSpans, AT = C.at;
+const gs = (id, i) => { const s = GS(id); return (s[i] || s[s.length - 1] || { t0: T0(id) }).t0; };
+const bump = (g, c, w) => Math.exp(-Math.pow((g - c) / w, 2));
+const PI = Math.PI, mkWorld = (near, far) => { const Wd = world({ fog: false }); C.baseCam(Wd, near || .05, far || 300); return Wd; };
+
+// ---------------------------------------------------------------- L00: the watch wakes in a dark room, the window shows dawn
+const sW0 = () => watchScene(C, 'L00', { mouth: MOUTH, windowColor: 0xe88a5a, sun: .35, lamp: 1.2, keyColor: 0x8aa0e0, fillColor: 0xe08a60, hemi: .45,
+  over: g => { const k = ease.io(prog(g, T0('L00') - .3, T0('L00') + 1.2)); return { lid: k, eyes: ease.out(prog(g, T0('L00') + .2, T0('L00') + 1.0)), look: [.7 * k, .1] , yaw: .25 * k }; } });
+
+// ---------------------------------------------------------------- D1 (L01, L02): Jerusalem dawn, then the sun disc breaks the horizon and a shul window catches the first ray
+function sDawn() {
+  const a = C.START.D1, b = C.ENDOF('D1'), Wd = world({ fog: true, ground: false }); C.baseCam(Wd, .1, 1200); const D = K.dawnWorld(Wd); const sh = K6.shulExterior(Wd); Wd.hero = sh.group; sh.group.scale.setScalar(1.0); sh.group.position.set(-6, 0, -8); sh.group.rotation.y = .25;
+  O.olive(Wd, 6, 7, 1.0, 3); O.pottedPlant(Wd, 3.2, 0, 9.5, 1.0);
+  const L2 = T0('L02'), tg = G0('L02'), u0 = .05, u1 = .42, u2 = .88, rg = goldRing(Wd); rg.position.set(7, 4, -140);
+  Wd.on((t, cam) => { const g = t + a, u = g < L2 ? lerp(u0, u1, ease.sm(prog(g, a, L2))) : lerp(u1, u2, ease.sm(prog(g, L2 - .2, b - .3))); D.set(u); sh.wins.forEach((w, i) => { if (w.isSprite) w.material.opacity = .5 * (.5 + .5 * ease.sm(prog(u, .4, .7))); }); ringAnim(rg, cam, g, tg + 1.0, 1.4, 6, 24, .7); });
+  const cam = camSeq(a, b, [{ t: a, p: [[0, 3.2, 8], [0, 3.4, 7]], l: [[-2, 5, -60], [-3, 7, -70]], mm: 24 }, { t: L2 - .4, p: [[-2, 2.8, 9], [-4, 3.2, 6]], l: [[-3, 6, -70], [-6, 3, -8]], mm: [26, 34] }, { t: L2 + 3.6, p: [[-4, 3.2, 6], [-3.4, 3.0, 5]], l: [-6, 3.2, -8], mm: 38 }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 2.4, maxR: 10, focus: 45 }) });
+}
+
+// ---------------------------------------------------------------- L03 (V): the first ray crawls down the Kotel stones, a minyan window lit
+function sKotel() {
+  const a = C.START.L03, b = C.ENDOF('L03'), Wd = mkWorld(.1, 300); O.skyDome(Wd, { top: 0x4a78c8, mid: 0xf0a870, bot: 0xffd08a, stars: 0 });
+  O.lighting(Wd, { key: [0xffb070, 1.3, [-14, 10, 12]], hemi: [0xb8a0b8, 0x4a3a40, .8], fill: [0x7a96d8, .3, [8, 3, 10]], rim: [0xffd8a0, .5, [6, 8, -8]], target: [0, 4, 0], shadowExt: 16, fog: null });
+  const W = K.kotelWall(Wd); Wd.hero = W.group; O.olive(Wd, -3.4, 6, 1.1, 7); const br = new THREE.Group();
+  Wd.on((t, cam) => { const g = t + a, k = ease.io(prog(g, a, b)); W.band.position.set(lerp(-6, 6, k * .6), lerp(9.2, 3.6, k), .45); W.band.material.opacity = .8 * ease.sm(prog(g, a, a + .6)); W.wg.material.opacity = .9 * ease.out(prog(g, a + 1.4, a + 2.4)); W.win.material.color.setHex(0xffd488).multiplyScalar(ease.out(prog(g, a + 1.2, a + 2.2)) * .85 + .15); });
+  const cam = camSeq(a, b, [{ t: a, p: [[2, 7.5, 13], [0, 5.2, 11]], l: [[0, 8.4, 0], [1, 4.4, 0]], mm: 36 }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 3 }) });
+}
+
+// ---------------------------------------------------------------- B7 (L04, L05): the day bar marks (3/12, 4/12), then the sun at the top and a small step after it
+function sBoard() {
+  const a = C.START.B7, b = C.ENDOF('B7'), Wd = mkWorld(); K4.boardRoom(Wd, {}); const bd = dayBoard(Wd, { pos: [0, .9, 0] }); Wd.hero = bd.group;
+  let f1 = 0, fN = .5; const m3 = bd.addMark(0xffd070, () => 3 / 12), m4 = bd.addMark(0xff9a40, () => 4 / 12), mN = bd.addMark(0xfff0b0, () => fN); const L4 = T0('L04'), L5 = T0('L05'), g4 = [gs('L04', 0), gs('L04', 4)], g5 = gs('L05', 2);
+  Wd.on((t, cam) => { const g = t + a; fN = .5 + .045 * ease.io(prog(g, g5 - .2, g5 + 1.4)); m3.k = ease.out(prog(g, g4[0], g4[0] + .6)); m4.k = ease.out(prog(g, g4[1], g4[1] + .6)); mN.k = ease.out(prog(g, L5 + .5, L5 + 1.2));
+    bd.set({ sr: 6, ss: 18, suns: 1, s: ease.out(prog(g, L4 - .2, L4 + 1.8)), lit: 12, pulse: bump(g, g4[0] + .3, .4) + bump(g, g4[1] + .3, .4) + bump(g, g5 + .5, .5) + .1 * (.5 + .5 * Math.sin(g * 1.7)), tl: '', tr: '', hi: g < L5 ? [Math.floor(prog(g, g4[0], g4[0] + 1) * 3 - .001)].filter(x => x >= 0 && g > g4[0]) : null }); });
+  const cam = camSeq(a, b, [{ t: a, p: [[-3, 2.2, 9.6], [-1, 2.2, 8.6]], l: [-1.5, 2.2, 0], mm: 34 }, { t: gs('L04', 3) - .6, p: [[3, 2.4, 8.4], [1.4, 2.3, 8.0]], l: [-.4, 2.1, 0], mm: 36 }, { t: L5, p: [[0, 2.4, 10], [0, 2.3, 8.2]], l: [0, 2.3, 0], mm: 34 }, { t: g5 - .8, p: [[1, 2.2, 5.2], [.8, 2.2, 4.8]], l: [.4, 2.3, 0], mm: 42 }], 1.2);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 3.2 }) });
+}
+
+// ---------------------------------------------------------------- L06: evening sky, three stars appear one by one
+function sDusk(key, calm) {
+  const a = C.START[key], b = C.ENDOF(key), Wd = world({ fog: true }); C.baseCam(Wd, .1, 1200); const D = K.duskWorld(Wd); const ven = new THREE.Group(); ven.add(new THREE.Mesh(new THREE.SphereGeometry(1.6, 14, 10), O.basic(0xfff2d8))); ven.add(O.glow(40, 0xffe6b0, .8)); ven.position.set(-25, 34, -150); Wd.add(ven); Wd.hero = ven;
+  const ts = key === 'L06' ? [gs('L06', 0) + .3, gs('L06', 2), gs('L06', 4)] : [a + 1, a + 2.5, a + 4], L15 = calm ? T0('L15') : 1e9;
+  Wd.on((t, cam) => { const g = t + a, u = calm ? 1 : ease.sm(prog(g, a, b - .5)) * .8 + .2; D.setDusk(calm ? 1 : u); D.C.winMat.color.setHex(0xffd488);
+    D.stars.forEach((s, i) => { const k = ease.out(prog(g, ts[i], ts[i] + .8)); s.g.visible = k > .01; s.g.scale.setScalar(Math.max(.01, k * (1 + .15 * Math.sin(g * 3 + i) + .8 * bump(g, L15 + .3 + i * .15, .4)))); s.g.rotation.z = g * .4; ringAnim(s.rg, cam, g, ts[i], 1.3, 3, 14, .7); s.rg.position.copy(s.g.position); }); });
+  const cam = camSeq(a, b, calm ? [{ t: a, p: [[-3, 3, 8], [3, 3.4, 8]], l: [[-12, 26, -150], [-8, 26, -150]], mm: 24, e: 'sm' }, { t: a + 40, p: [[3, 3.4, 8], [-3, 3, 9]], l: [[-8, 26, -150], [-14, 24, -150]], mm: 24, e: 'sm' }, { t: a + 80, p: [[-3, 3, 9], [0, 3.2, 7]], l: [[-14, 24, -150], [-12, 28, -150]], mm: [24, 26], e: 'sm' }] : [{ t: a, p: [[0, 3, 8], [0, 3.2, 7]], l: [[-10, 26, -150], [-8, 30, -150]], mm: 24 }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 2.2, maxR: 10, focus: 80 }) });
+}
+
+// ---------------------------------------------------------------- L07: the watch looks at a luach
+const sW7 = () => watchScene(C, 'L07', { mouth: MOUTH, extras: (Wd, R, W, a) => { const lb = luachBook(Wd, { pos: [-.55, .17, -.3], w: 2.4, h: 3.2, rows: 10, scale: .09 }); lb.group.rotation.set(-.35, .35, 0); lb.setLit(7.5); Wd.on(t => lb.setLit(4 + 4 * (.5 + .5 * Math.sin((t + a) * .8)))); },
+  over: g => { const k = ease.io(prog(g, T0('L07') - .1, T0('L07') + .8)); return { yaw: -.5 * k, look: [-.9 * k, -.05 * k], brow: .3 * k }; } });
+
+// ---------------------------------------------------------------- L08: luach page turns to a Friday in Tevet
+function sLuach() {
+  const a = C.START.L08, b = C.ENDOF('L08'), Wd = mkWorld(); K4.boardRoom(Wd, {}); const lb = luachBook(Wd, { pos: [0, 2.9, 1.5], w: 3.6, h: 4.6, rows: 10 }); Wd.hero = lb.group; const L = T0('L08'), tg = G0('L08');
+  Wd.on((t, cam) => { const g = t + a; lb.setLit(10.2 * ease.io(prog(g, L + .3, L + 2.2)), lb.top); lb.turn(prog(g, L + 2.4, tg + .6)); const fr = ease.out(prog(g, tg + .7, tg + 1.4)); lb.setLit(3 + 0 * fr, lb.under); lb.under.userData.rows.forEach((r, i) => { const v = i === 5 ? fr : (i < 3 ? .45 : 0); r.gl.material.opacity = (i === 5 ? .85 : .25) * v; r.ic.material.color.setHex(i === 5 && fr > .5 ? 0xffd060 : 0xa86a2a); }); lb.under.userData.rows.forEach((r, i) => { if (i !== 5 && i >= 3) r.gl.material.opacity = 0; }); });
+  const cam = camSeq(a, b, [{ t: a, p: [[-.6, 2.9, 9.2], [.2, 3.0, 6.8]], l: [0, 2.9, 1.5], mm: 40 }, { t: tg - .6, p: [[.6, 2.7, 6.6], [.4, 2.5, 5.2]], l: [.2, 2.6, 1.5], mm: 42 }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 3.5 }) });
+}
+
+// ---------------------------------------------------------------- R9 (L09, L10): low winter sun over stone houses through the window, candles, clock 4:2x
+function sRoom(key, gold) {
+  const a = C.START[key], b = C.ENDOF(key), Wd = mkWorld(); O.skyDome(Wd, { top: 0x3a4a88, mid: 0xe8a070, bot: 0xffc880, stars: 0 }); const R = K.candleRoom(Wd); Wd.hero = R.group;
+  O.lighting(Wd, { key: [0xffa860, gold ? .5 : 1.0, [-8, 3, 2]], hemi: [0xe8c898, 0x3a2a1a, gold ? .45 : .8], fill: [0x7a96d8, .2, [4, 2, 6]], rim: [0xffe0b0, .4, [0, 3, -6]], target: [0, 1.2, -1.6], shadowExt: 10, fog: null, points: [[0xffb868, gold ? 14 : 5, [0, 1.8, -1.6], 9]] });
+  const city = O.city(Wd, { seed: 41, n: 30, litFrac: .1, area: [-90, -30, -6, 8], slope: 0 }); city.group.rotation.y = -PI / 2; city.group.position.set(-10, 0, -1);
+  const sunO = sunBall(Wd, 3, { core: 0xffb050, halo: 0xff8a40, halo2: 0xe06030 }); sunO.position.set(-60, 5, -1);
+  const ln = key === 'R9' ? 'L09' : 'L13', L = T0(ln); const gl = O.glow(10, 0xffc060, 0); gl.position.set(0, 1.8, -1.6); Wd.add(gl);
+  Wd.on((t, cam) => { const g = t + a; R.candles.forEach((c, i) => c.tick(g, ease.out(prog(g, L + .3 + i * .6, L + 1.2 + i * .6)), i * 2)); R.clock.setTime(4 * 3600 + 22 * 60 + (g - a) * 2, undefined);
+    if (gold) { const k = ease.io(prog(g, a + .5, b - .6)); sunO.position.y = lerp(5, -3, k); R.sunW.position.y = lerp(1.35, .55, k); R.winGlow.material.opacity = .7 * (1 - k * .8); gl.material.opacity = .65 * ease.sm(prog(g, a + 1.0, b - 1.4)); gl.scale.setScalar(10 + 6 * k); R.win.material.color.setHex(0xf6c890).lerp(new THREE.Color(0x6a4a60), k * .7); }
+    else { sunO.position.y = 5 - 1.2 * ease.io(prog(g, a, b)); R.sunW.position.y = 1.35 - .3 * ease.io(prog(g, a, b)); } });
+  const cam = camSeq(a, b, gold ? [{ t: a, p: [[1.6, 2.2, 3.4], [.4, 1.9, 1.8]], l: [0, 1.5, -1.6], mm: 34 }, { t: a + 3.8, p: [[-1.8, 1.6, 1.8], [-.6, 1.5, 1.2]], l: [0, 1.3, -1.6], mm: 40 }] : [{ t: a, p: [[2.4, 2.2, 3.4], [.8, 2.0, 2.2]], l: [-1.4, 1.8, -1.6], mm: 28 }, { t: a + 4.2, p: [[.6, 1.9, 2.0], [-.2, 1.8, 1.6]], l: [0, 1.5, -1.6], mm: 34 }, { t: T0('L10'), p: [[-2, 1.8, 2.6], [1.6, 1.8, 2.4]], l: [0, 1.4, -1.6], mm: 34, e: 'sm' }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 4 }) });
+}
+
+// ---------------------------------------------------------------- GR (L11, L12): sunset graph, then two curves whose minimums do not line up
+function sGraph() {
+  const a = C.START.GR, b = C.ENDOF('GR'), Wd = mkWorld(); O.skyDome(Wd, { top: 0x0a0806, mid: 0x14100c, bot: 0x241a12, stars: 0 }); O.lighting(Wd, { key: [0xffd9a0, .8, [2, 6, 10]], hemi: [0x8a8aa8, 0x2a2018, .9], fill: [0x6a80c8, .3, [-6, 2, 8]], noShadow: true, fog: null, points: [[0xffc070, 6, [4, 4, 6], 14]] });
+  const G = K.graph(Wd); G.group.position.set(-6, 0, 0); Wd.hero = G.group; O.motes(Wd, { n: 20, area: [-8, 8, 0, 6, -2, 6], size: .14, color: 0xffd890, op: .4, seed: 12 });
+  const L11 = T0('L11'), L12 = T0('L12'), tg = G0('L11'), tg2 = G0('L12'), e11 = EN('L11');
+  Wd.on((t, cam) => { const g = t + a, k1 = ease.io(prog(g, L11 + .5, e11 - 1.2)), p1 = Math.min(60, k1 * 60); reveal(G.c1, k1);
+    const kb = Math.min(1, k1 * 1.0), ib = kb * 60, bx = G.X(ib), by = G.Y1(ib) ; G.ball.position.set(bx, by, .15); G.bg.position.copy(G.ball.position); G.ball.visible = G.bg.visible = g > L11 + .4 && g < L12 + .6;
+    G.l14.material.opacity = .55 * ease.out(prog(g, gs('L11', 2), gs('L11', 2) + .6)) * (.7 + .3 * Math.sin(g * 4)); G.l28.material.opacity = .55 * ease.out(prog(g, gs('L11', 5) + .1, gs('L11', 5) + .7));
+    const k2 = ease.io(prog(g, L12 + .6, L12 + 5.2)); reveal(G.c2, k2); G.br.scale.x = Math.max(.001, ease.out(prog(g, gs('L12', 2), gs('L12', 2) + .8))); G.br.visible = G.br.scale.x > .01; });
+  const cam = camSeq(a, b, [{ t: a, p: [[0, 2.8, 14], [0, 2.8, 12]], l: [0, 2.6, 0], mm: 32 }, { t: L11 + 5, p: [[-4.6, 1.6, 7], [-3.4, 1.4, 6.4]], l: [-4.6, 1.2, 0], mm: 40 }, { t: L12, p: [[0, 2.8, 13], [0, 2.8, 11.4]], l: [0, 2.6, 0], mm: 32 }, { t: L12 + 6.5, p: [[-2.8, 1.4, 7.6], [-2.4, 1.6, 7.0]], l: [-2.6, 1.0, 0], mm: 40 }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 3 }) });
+}
+
+// ---------------------------------------------------------------- L18: hook - the sun refuses to touch a white horizon
+function sSnow() {
+  const a = C.START.L18, b = C.ENDOF('L18'), Wd = world({ fog: true }); C.baseCam(Wd, .1, 1200); const S = K.snowHorizon(Wd); Wd.hero = S.sun;
+  Wd.on((t, cam) => { const g = t + a, u = prog(g, a, b), y = 6 + 3 * ease.io(prog(u, 0, .35)) - 9.2 * ease.io(prog(u, .15, .55)) * (1 - ease.io(prog(u, .55, .9))) + 1; S.sun.position.set(lerp(-38, 38, ease.sm(u)), Math.max(2.4, y), -150); S.sun.userData.g1.scale.setScalar(20 * (1 + .06 * Math.sin(g * 2))); });
+  const cam = camSeq(a, b, [{ t: a, p: [[0, 1.6, 12], [0, 1.5, 7]], l: [0, 8, -150], mm: [26, 34], e: 'in' }]);
+  return C.finish(Wd, cam, { dof: dofOf(cam, { ap: 2.4, maxR: 10, focus: 60 }) });
+}
+
+const BUILD = { intro: () => introShot(C, 'T_C7'), L00: sW0, D1: sDawn, L03: sKotel, B7: sBoard, L06: () => sDusk('L06', false), L07: sW7, L08: sLuach, R9: () => sRoom('R9', false), GR: sGraph, R13: () => sRoom('R13', true), Q7: () => sDusk('Q7', true), L18: sSnow };
+runFilm(C, BUILD, { D1: 1, L06: 1, Q7: 1, L18: 1, GR: 1 });
+</script>
