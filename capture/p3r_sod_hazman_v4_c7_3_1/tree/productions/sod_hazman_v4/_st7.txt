@@ -1,0 +1,21 @@
+still L00 7.08
+still L01 15.63
+still L02 24.99
+still L03 31.4
+still L04 39.48
+still L05 49.29
+still L06 61.51
+still L07 72.23
+still L08 80.03
+still L09 90.3
+still L10 100.58
+still L11 111.33
+still L12 127.35
+still L13 141.34
+still L14 152.91
+still L15 161.8
+still L16 200.04
+still L17 236.26
+still L18 247.42
+errors 1
+   warning THREE.WebGLShadowMap: PCFSoftShadowMap has been removed. Using PCFShadowMap instead.
