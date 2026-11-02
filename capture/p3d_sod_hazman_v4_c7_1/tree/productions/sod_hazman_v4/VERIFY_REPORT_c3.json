@@ -1,0 +1,87 @@
+{
+ "film": "c3.html",
+ "status": "PASS",
+ "time": "2026-11-02T04:18:35",
+ "samples": 103,
+ "findings": [
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 0.3,
+   "shot": "intro",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 13.15,
+   "shot": "L01",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 72.32,
+   "shot": "L07",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 76.32,
+   "shot": "L08",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 93.67,
+   "shot": "L10",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 108.04,
+   "shot": "L11",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 141.32,
+   "shot": "L14",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  },
+  {
+   "sev": "P2",
+   "code": "NO_HERO",
+   "t": 169.56,
+   "shot": "L17",
+   "detail": "__heroBox returned null (no hero registered in this shot) (+2 more samples)",
+   "fix": "register a person() or set film({hero})"
+  }
+ ],
+ "sheets": {
+  "beat": "C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c3/_view/_verify_c3_beat_sheet_1.jpg",
+  "seam": "C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c3/_view/_verify_c3_seams_1.jpg",
+  "phone": "C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c3/_view/_verify_c3_phone_sheet_1.jpg",
+  "beat_2": "C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c3/_view/_verify_c3_beat_sheet_2.jpg",
+  "phone_2": "C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c3/_view/_verify_c3_phone_sheet_2.jpg",
+  "seam_2": "C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c3/_view/_verify_c3_seams_2.jpg",
+  "seam_3": "C:/projects/_studio-animatzia/productions/sod_hazman_v4/_verify_c3/_view/_verify_c3_seams_3.jpg"
+ },
+ "timing": {
+  "ready_s": 2.3,
+  "gates_s": 1877.1,
+  "sheets_s": 1188.2,
+  "total_s": 3113.6
+ }
+}
