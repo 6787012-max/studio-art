@@ -1,0 +1,28 @@
+{
+ "jobs": [
+  {
+   "name": "light_floral_a",
+   "model": "flux-dev",
+   "seed": 11,
+   "w": 768,
+   "h": 1088,
+   "prompt": "Vertical elegant invitation poster background, soft bright watercolor and photorealistic style. A large clean empty cream white panel filling the central 75 percent of the image, completely blank for text. Around the edges a lush border of pastel flowers: blush pink peonies, white roses, soft lavender and sage green eucalyptus leaves, thin delicate gold line accents. Very light airy ivory background, soft natural daylight, fresh, festive and refined. No text, no letters, no writing, no people, no cross."
+  },
+  {
+   "name": "light_floral_b",
+   "model": "flux-dev",
+   "seed": 22,
+   "w": 768,
+   "h": 1088,
+   "prompt": "Vertical luxurious bright poster background. An ornate thin gold arch frame decorated with garlands of white and champagne roses, pink ranunculus, baby blue hydrangea and green leaves at the top corners and bottom, a large blank pale ivory panel in the center for text. Soft light airy pastel colors, gentle morning light, elegant, delicate, symmetrical. No text, no letters, no writing, no people, no cross."
+  },
+  {
+   "name": "light_floral_c",
+   "model": "flux-dev",
+   "seed": 33,
+   "w": 768,
+   "h": 1088,
+   "prompt": "Vertical bright elegant celebration card background, watercolor floral. Pale cream paper with a wide empty blank center, framed by delicate hand painted pastel peach roses, white anemones, lilac blossoms and olive branches with gold leaf details on all four sides, light and airy, sunny feeling. No text, no letters, no writing, no people, no cross."
+  }
+ ]
+}
