@@ -1,0 +1,35 @@
+[
+ {
+  "name": "light_floral_a",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1088
+  ],
+  "seconds": 21.1
+ },
+ {
+  "name": "light_floral_b",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1088
+  ],
+  "seconds": 17.2
+ },
+ {
+  "name": "light_floral_c",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   768,
+   1088
+  ],
+  "seconds": 16.2
+ }
+]
