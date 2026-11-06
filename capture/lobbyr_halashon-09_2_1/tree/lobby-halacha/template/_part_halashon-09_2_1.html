@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>lobby halacha</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script src="../../_studio-animatzia/lib/people_pro.js"></script>
+<script>window.__T0=75.0000;window.__EP="../episodes/halashon-09/episode.js";</script>
+<script type="importmap">{ "imports": { "three": "../../_studio-animatzia/node_modules/three/build/three.module.js" } }</script>
+<script>
+// the episode file is chosen by ?ep=<path relative to this page> (or window.__EP, set by the part pages of the remote render)
+(function () {
+  var ep = window.__EP || new URLSearchParams(location.search).get('ep') || '../episodes/sample/episode.js';
+  document.write('<script src="' + ep + '"><\/script>');
+})();
+</script>
+<script type="module">
+import { film, clamp, ease } from '../../_studio-animatzia/lib/stage3d.js';
+import * as S3D from '../../_studio-animatzia/lib/stage3d.js';
+import * as SC from './scenes.js';
+import * as PR from './props.js';
+import { buildBeat, buildHook, buildAnswer, fitText, FONT, REG, THEME, questionMark, camCard } from './scenes.js';
+window.__REG = REG; window.__THREE = S3D.THREE; window.__beats = null;
+
+const T_OPEN = 14, T_BODY_END = 100, T_END = 120;   // 0-14 hook, 14-100 body, 100-120 answer
+const EP = Object.assign({ look: 'v2', series: '', number: '', title: '', source: '', summary: '', summarySource: '', beats: [] }, window.EPISODE || {});   // 01/11/2026 Yosef approved the v2 look: default for every episode (look: 'v1' = old overlay)
+const SERIES = { halashon: ['#4fc3f7', '#17709c', 0x2f9fd6], shabbat: ['#c9a0ff', '#5a3a96', 0x8e5fd0], yomit: ['#6fdc8c', '#1f7a3c', 0x3fb765] }[EP.seriesKey];
+if (SERIES) { THEME.accent = SERIES[0]; THEME.dark = SERIES[1]; THEME.frame = SERIES[2]; }
+const ACC = THEME.accent;
+window.__warnings = window.EPISODE ? [] : ['no EPISODE found'];
+
+// ---- optional episode-specific 3D story: EPISODE.story = 'story.js' (next to episode.js) sets window.STORY = K => ({hook(dur), scenes:[dur=>world...], answer(dur), grade(t), overlay(g,W,H,t)})
+const epPath = window.__EP || new URLSearchParams(location.search).get('ep') || '';
+let STORY = null;
+if (EP.story) {
+  await new Promise(res => { const sc = document.createElement('script'); sc.src = epPath.slice(0, epPath.lastIndexOf('/') + 1) + EP.story; sc.onload = res; sc.onerror = () => { window.__warnings.push('story file failed to load'); res(); }; document.head.appendChild(sc); });
+  if (typeof window.STORY === 'function') { try { STORY = window.STORY(Object.assign({}, S3D, SC, PR)); } catch (e) { window.__warnings.push('story error: ' + e.message); console.error(e); } }
+}
+window.__story = !!STORY;
+// ---- beats: sorted, contiguous, exactly covering 8..100 s
+function normalize(list) {
+  let b = (list || []).filter(x => x && typeof x.t0 === 'number').map(x => Object.assign({}, x)).sort((p, q) => p.t0 - q.t0);
+  b.forEach(x => { x.t0 = clamp(x.t0, T_OPEN, T_BODY_END - 2); });
+  b = b.filter((x, i) => i === 0 || x.t0 - b[i - 1].t0 >= 2);
+  if (!b.length) { window.__warnings.push('no beats'); b = [{ t0: T_OPEN, scene: 'text', caption: '', text: '' }]; }
+  b[0].t0 = T_OPEN;
+  b.forEach((x, i) => { x.t1 = i < b.length - 1 ? b[i + 1].t0 : T_BODY_END; x.caps = [].concat(x.caption || []).filter(Boolean); });
+  return b;
+}
+const beats = normalize(EP.beats); window.__beats = beats;
+if (!EP.hook) { EP.hook = { scene: beats[0].scene }; window.__warnings.push('no hook'); }
+const storyHook = d => { const Wd = STORY.hook(d), c = Wd.center || [0, 0]; if (!Wd.noQ) questionMark(Wd, Wd.qPos || c, Wd.qSize || 1.15);
+  camCard(Wd, { w: 3.4, h: 1.7, d: 3.6, t0: .15, t1: 3.0, draw: SC.titleDraw(EP) }); SC.REG.push(Wd); return Wd; };
+const shots = [{ dur: T_OPEN, caps: [], build: () => STORY ? storyHook(T_OPEN) : buildHook(EP, T_OPEN) }]
+  .concat(beats.map((b, i) => ({ dur: b.t1 - b.t0, caps: [], build: () => { if (STORY && STORY.scenes[i]) { const w = STORY.scenes[i](b.t1 - b.t0); w.beatIdx = i; SC.REG.push(w); return w; } return buildBeat(b, b.t1 - b.t0, i); } })))
+  .concat([{ dur: T_END - T_BODY_END, caps: [], build: () => buildAnswer(EP, T_END - T_BODY_END, STORY && STORY.answer) }]);
+film({ shots, xf: .3 });
+window.__dur = T_END;
+
+// ---- overlay: countdown timer, series badge, captions (drawn over the film canvas)
+const cv = document.getElementById('c'), g = cv.getContext('2d'), OFF = window.__T0 || 0;
+const mmss = s => Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
+function pill(x, y, w, h, fill, stroke, lw) {
+  g.beginPath(); g.roundRect(x, y, w, h, h * .28); g.fillStyle = fill; g.fill(); g.lineWidth = lw; g.strokeStyle = stroke; g.stroke();
+}
+function drawTimer(W, H, now) {
+  const s = H / 1080, x = 36 * s, y = 30 * s, w = 292 * s, h = 132 * s, rem = clamp(T_END - now, 0, T_END), shown = Math.ceil(rem - .05), low = shown <= 10;
+  g.save(); pill(x, y, w, h, low ? 'rgba(122,16,32,.96)' : 'rgba(18,14,44,.94)', ACC, 6 * s);
+  g.direction = 'ltr'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `700 ${Math.round(94 * s)}px ${FONT}`; g.fillStyle = low ? '#ffe28a' : '#ffffff';
+  g.fillText(mmss(Math.max(0, shown)), x + w / 2, y + h * .46);
+  g.fillStyle = 'rgba(255,255,255,.25)'; g.fillRect(x + 26 * s, y + h - 22 * s, w - 52 * s, 8 * s); g.fillStyle = ACC; g.fillRect(x + 26 * s, y + h - 22 * s, (w - 52 * s) * (rem / T_END), 8 * s);
+  g.restore();
+}
+function drawBadge(W, H) {
+  const s = H / 1080, h = 132 * s, y = 30 * s, num = String(EP.number === undefined ? '' : EP.number).trim(), numTxt = /^\d+$/.test(num) ? 'פרק ' + num : num;
+  g.save(); g.direction = 'rtl'; g.textAlign = 'center'; g.textBaseline = 'middle';
+  const f1 = fitText(g, EP.series || '', { maxW: 520 * s, maxLines: 1, max: 48 * s, min: 24 * s, lh: 1.2 }), f2 = fitText(g, numTxt, { maxW: 520 * s, maxLines: 1, max: 54 * s, min: 24 * s, lh: 1.2 });
+  const t1 = f1.lines[0] || '', t2 = f2.lines[0] || '';
+  g.font = `700 ${f1.size}px ${FONT}`; const w1 = g.measureText(t1).width; g.font = `700 ${f2.size}px ${FONT}`; const w2 = g.measureText(t2).width;
+  const w = Math.max(w1, w2, 200 * s) + 70 * s, x = W - 36 * s - w;
+  pill(x, y, w, h, 'rgba(18,14,44,.94)', ACC, 6 * s);
+  if (t1 && t2) { g.font = `700 ${f1.size}px ${FONT}`; g.fillStyle = ACC; g.fillText(t1, x + w / 2, y + h * .33); g.font = `700 ${f2.size}px ${FONT}`; g.fillStyle = '#ffffff'; g.fillText(t2, x + w / 2, y + h * .72); }
+  else if (t1 || t2) { g.font = `700 ${(t1 ? f1 : f2).size}px ${FONT}`; g.fillStyle = ACC; g.fillText(t1 || t2, x + w / 2, y + h * .5); }
+  g.restore();
+}
+function drawCaption(W, H, text, a, mood, big) {
+  const s = H / 1080, maxW = W * .84, fit = fitText(g, text, { maxW, maxLines: 2, max: (big ? 104 : 84) * s, min: 56 * s, lh: 1.3 }), lh = fit.size * 1.3, n = fit.lines.length;
+  g.save(); g.globalAlpha = a; g.direction = 'rtl'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `700 ${fit.size}px ${FONT}`;
+  let mw = 0; for (const l of fit.lines) mw = Math.max(mw, g.measureText(l).width);
+  const bw = Math.min(W * .92, mw + fit.size * 1.5), bh = n * lh + fit.size * .6, bx = W / 2 - bw / 2, by = H - 52 * s - bh;
+  const edge = mood === 'good' ? 'rgb(86,226,138)' : mood === 'bad' ? 'rgb(240,92,92)' : ACC;
+  if (mood === 'good' || mood === 'bad') { g.shadowColor = edge; g.shadowBlur = 46 * s; }
+  g.beginPath(); g.roundRect(bx, by, bw, bh, 30 * s); g.fillStyle = mood === 'good' ? 'rgba(10,38,26,.93)' : mood === 'bad' ? 'rgba(48,14,18,.93)' : 'rgba(16,12,40,.92)'; g.fill();
+  g.shadowBlur = 0; g.lineWidth = (mood ? 8 : 5) * s; g.strokeStyle = edge; g.stroke();
+  g.font = `700 ${fit.size}px ${FONT}`; g.fillStyle = '#ffffff'; g.lineJoin = 'round';
+  fit.lines.forEach((l, i) => g.fillText(l, W / 2, by + fit.size * .3 + lh * (i + .5)));
+  g.restore();
+}
+// caption segments; consecutive captions crossfade (<= 0.3 s) so the caption band is never empty at a cut
+const SEGS = [];
+function addSegs(t0, t1, caps, mood, big) { const n = caps.length, per = (t1 - t0) / n; caps.forEach((text, i) => SEGS.push({ text, s0: t0 + i * per, s1: t0 + (i + 1) * per, mood, big })); }
+addSegs(3.0, T_OPEN, [].concat((EP.hook && EP.hook.question) || []).filter(Boolean), undefined, true);
+beats.forEach(b => addSegs(b.t0, b.t1, b.caps, b.mood, false));
+function captionsAt(now) {
+  const out = [];
+  for (const q of SEGS) { const a = clamp((now - q.s0) / .3, 0, 1) * (1 - clamp((now - q.s1) / .3, 0, 1)); if (a > .01) out.push({ text: q.text, a, mood: q.mood, big: q.big, seg: q }); }
+  return out;
+}
+const lerp = S3D.lerp;
+// ================================================================ v2 look overlay (only when EP.look === 'v2'); everything is a pure function of `now`
+const V2 = EP.look === 'v2';
+const HLMAP = new Map();   // caption segment -> list of highlighted-phrase tokens (from EPISODE.hook.hl / beat.hl); read-only extra data
+if (V2) {
+  const toks = h => [].concat(h || []).join(' ').split(/\s+/).map(x => x.replace(/[^א-ת0-9]/g, '')).filter(Boolean);
+  let si = 0; const nHook = [].concat((EP.hook && EP.hook.question) || []).filter(Boolean).length;
+  for (let i = 0; i < nHook; i++) HLMAP.set(SEGS[si++], toks(EP.hook && EP.hook.hl));
+  beats.forEach(b => { for (let i = 0; i < b.caps.length; i++) HLMAP.set(SEGS[si++], toks(b.hl)); });
+}
+const eBack = u => { const c1 = 1.70158, c3 = c1 + 1, v = u - 1; return 1 + c3 * v * v * v + c1 * v * v; };
+function drawStamp(cx, cy, r, good, a, tl, s) {
+  const u = clamp(tl / .35, 0, 1), eo = ease.out(u); if (u <= 0) return;
+  g.save(); g.globalAlpha = a * clamp(u * 4, 0, 1); g.translate(cx, cy); g.rotate((-12 * (1 - eo)) * Math.PI / 180); g.scale(1 + .6 * (1 - eo), 1 + .6 * (1 - eo));
+  g.shadowColor = good ? 'rgba(86,226,138,.9)' : 'rgba(240,92,92,.9)'; g.shadowBlur = 24 * s;
+  g.beginPath(); g.arc(0, 0, r, 0, Math.PI * 2); g.fillStyle = good ? '#1faa5a' : '#d93a3a'; g.fill(); g.shadowBlur = 0;
+  g.lineWidth = 7 * s; g.strokeStyle = '#ffffff'; g.stroke(); g.beginPath(); g.arc(0, 0, r * .82, 0, Math.PI * 2); g.lineWidth = 3 * s; g.strokeStyle = 'rgba(255,255,255,.55)'; g.stroke();
+  g.lineCap = 'round'; g.lineJoin = 'round'; g.lineWidth = 13 * s; g.strokeStyle = '#ffffff'; g.beginPath();
+  if (good) { g.moveTo(-.36 * r, .02 * r); g.lineTo(-.08 * r, .32 * r); g.lineTo(.4 * r, -.28 * r); } else { g.moveTo(-.3 * r, -.3 * r); g.lineTo(.3 * r, .3 * r); g.moveTo(.3 * r, -.3 * r); g.lineTo(-.3 * r, .3 * r); }
+  g.stroke(); g.restore();
+}
+function drawCaptionV2(W, H, c, now) {
+  const s = H / 1080, seg = c.seg, a = c.a, mood = c.mood, big = c.big, hl = HLMAP.get(seg) || [], tl = now - seg.s0;
+  const fit = fitText(g, c.text, { maxW: W * .84, maxLines: 2, max: (big ? 104 : 84) * s, min: 56 * s, lh: 1.3 }), lh = fit.size * 1.3, n = fit.lines.length, sz = fit.size;
+  g.save(); g.direction = 'rtl'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `700 ${sz}px ${FONT}`;
+  const sp = sz * .27, L = fit.lines.map(l => { const ws = l.split(' ').filter(Boolean).map(w => ({ w, wd: g.measureText(w).width })); return { ws, tw: ws.reduce((p, q) => p + q.wd, 0) + sp * Math.max(0, ws.length - 1) }; });
+  let mw = 0; for (const l of L) mw = Math.max(mw, l.tw);
+  const bw = Math.min(W * .92, mw + sz * 1.5), bh = n * lh + sz * .6, bx = W / 2 - bw / 2, by0 = H - 52 * s - bh;
+  const slide = 30 * s * (1 - ease.out(clamp(tl / .35, 0, 1))), by = by0 + slide, edge = mood === 'good' ? 'rgb(86,226,138)' : mood === 'bad' ? 'rgb(240,92,92)' : ACC;
+  g.globalAlpha = a;
+  if (big) { const S = 1 + .25 * (1 - ease.out(clamp(tl / .2, 0, 1))); g.translate(W / 2, by + bh / 2); g.scale(S, S); g.translate(-W / 2, -(by + bh / 2)); }
+  if (mood) { const ts = tl - .15; if (ts > 0 && ts < .3) g.translate(6 * s * Math.sin(ts * 70) * (1 - ts / .3), 0); }
+  if (mood) { g.shadowColor = edge; g.shadowBlur = 46 * s; }
+  g.beginPath(); g.roundRect(bx, by, bw, bh, 30 * s); g.fillStyle = mood === 'good' ? 'rgba(10,38,26,.93)' : mood === 'bad' ? 'rgba(48,14,18,.93)' : 'rgba(16,12,40,.92)'; g.fill();
+  g.shadowBlur = 0; g.lineWidth = (mood ? 8 : 5) * s; g.strokeStyle = edge; g.stroke();
+  // flatten words (logical order), mark highlighted run (first contiguous match of the hl tokens inside the word tokens)
+  const flat = []; L.forEach((l, li) => l.ws.forEach(w => flat.push({ li, w: w.w, wd: w.wd, nm: w.w.replace(/[^א-ת0-9]/g, ''), hl: false })));
+  if (hl.length) { for (let i = 0; i + hl.length <= flat.length; i++) { if (hl.every((h, j) => flat[i + j].nm && flat[i + j].nm.includes(h))) { for (let j = 0; j < hl.length; j++) flat[i + j].hl = true; break; } } }
+  let k = 0, lastHl = -1; const spans = {};
+  L.forEach((l, li) => { let xr = W / 2 + l.tw / 2; const yc = by + sz * .3 + lh * (li + .5);
+    l.ws.forEach(() => { const f = flat[k]; f.x = xr - f.wd / 2; f.y = yc; f.xr = xr; f.xl = xr - f.wd; f.k = k; if (f.hl) { lastHl = k; const sp0 = spans[li]; spans[li] = sp0 ? { xr: sp0.xr, xl: f.xl, y: yc } : { xr: f.xr, xl: f.xl, y: yc }; } xr -= f.wd + sp; k++; }); });
+  // marker sweep (wipes in right-to-left after the words)
+  const tU = lastHl * .07 + .3, pU = ease.out(clamp((tl - tU) / .35, 0, 1));
+  const HLC = mood === 'bad' ? '#ff8a8a' : ACC;
+  if (pU > 0) for (const li in spans) { const sp0 = spans[li], wd = (sp0.xr - sp0.xl) * pU; g.fillStyle = HLC; g.globalAlpha = a * .92; g.beginPath(); g.roundRect(sp0.xr - wd, sp0.y + sz * .36, wd, sz * .12, sz * .06); g.fill(); }
+  flat.forEach(f => { const u = clamp((tl - f.k * .07 - .05) / .28, 0, 1); if (u <= 0) return;
+    g.save(); g.globalAlpha = a * clamp(u * 3, 0, 1); g.translate(f.x, f.y + 18 * s * (1 - ease.out(u))); const sc = .7 + .3 * eBack(u); g.scale(sc, sc);
+    g.font = `700 ${sz}px ${FONT}`; g.lineJoin = 'round'; g.fillStyle = f.hl ? HLC : '#ffffff'; g.fillText(f.w, 0, 0); g.restore(); });
+  if (mood === 'good' || mood === 'bad') { const r = Math.min(bh * .5, 66 * s); drawStamp(Math.min(bx + bw - r * .2, W - r - 22 * s), by - r * .3, r, mood === 'good', a, tl - .15, s); }
+  g.restore();
+}
+function drawStep(W, H, now) {
+  if (now < T_OPEN || now >= T_BODY_END || !beats.length) return;
+  const s = H / 1080, idx = beats.reduce((p, b, i) => now >= b.t0 ? i : p, 0), N = beats.length, a = clamp((now - T_OPEN) / .3, 0, 1) * (1 - clamp((now - (T_BODY_END - .3)) / .3, 0, 1));
+  const dotR = 9 * s, gap = 28 * s, txtW = 118 * s, w = txtW + N * gap + 54 * s, h = 70 * s, x = W / 2 - w / 2, y = 30 * s + 31 * s;
+  g.save(); g.globalAlpha = a; pill(x, y, w, h, 'rgba(18,14,44,.9)', ACC, 4 * s);
+  g.direction = 'ltr'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.font = `700 ${Math.round(40 * s)}px ${FONT}`; g.fillStyle = '#ffffff'; g.fillText((idx + 1) + ' / ' + N, x + 26 * s + txtW / 2, y + h * .52);
+  for (let i = 0; i < N; i++) { const cx = x + w - 30 * s - i * gap, cy = y + h / 2, cur = i === idx, r = dotR * (cur ? 1.3 + .12 * Math.sin(now * 5) : 1);
+    g.beginPath(); g.arc(cx, cy, r, 0, Math.PI * 2); if (i <= idx) { g.fillStyle = ACC; g.fill(); } else { g.lineWidth = 3 * s; g.strokeStyle = 'rgba(255,255,255,.45)'; g.stroke(); } }
+  g.restore();
+}
+// frame-level effects ------------------------------------------------------------------------------------------------
+const BND = [T_OPEN].concat(beats.slice(1).map(b => b.t0), [T_BODY_END]);
+const grainTile = (() => { const c = document.createElement('canvas'); c.width = c.height = 256; const x = c.getContext('2d'), im = x.createImageData(256, 256), r = S3D.rng(1234);
+  for (let i = 0; i < 256 * 256; i++) { const v = Math.floor(r() * 256); im.data[i * 4] = im.data[i * 4 + 1] = im.data[i * 4 + 2] = v; im.data[i * 4 + 3] = 255; } x.putImageData(im, 0, 0); return c; })();
+let grainPat = null, vigG = null, vigKey = '';
+function copyFrame(W, H) { gx.clearRect(0, 0, W, H); gx.drawImage(cv, 0, 0); }
+function v2Transitions(W, H, now) {
+  const s = H / 1080, HW = .175;
+  for (let bi = 0; bi < BND.length; bi++) { const tb = BND[bi]; if (now < tb - HW || now > tb + HW) continue;
+    const p = (now - (tb - HW)) / (2 * HW), e = Math.sin(Math.PI * p), kind = bi % 3;
+    if (kind === 0) {   // whip: horizontal smear + brightness lift
+      copyFrame(W, H); const dir = (bi % 2 ? -1 : 1);
+      for (let i = 1; i <= 6; i++) { g.globalAlpha = .16; g.drawImage(tmpc, dir * i * 11 * s * e * (p < .5 ? 1 : -1) * 1.0, 0); g.drawImage(tmpc, -dir * i * 11 * s * e * (p < .5 ? 1 : -1), 0); }
+      g.globalAlpha = 1; g.fillStyle = 'rgba(255,255,255,' + (.13 * e).toFixed(3) + ')'; g.fillRect(0, 0, W, H);
+    } else if (kind === 1) {   // zoom punch + 0.12 s white flash at 25 %
+      copyFrame(W, H); const sc = 1 + .07 * e; g.save(); g.fillStyle = '#000'; g.fillRect(0, 0, W, H); g.translate(W / 2, H / 2); g.scale(sc, sc); g.drawImage(tmpc, -W / 2, -H / 2); g.restore();
+      const fl = Math.abs(now - tb) < .06 ? .25 : 0; if (fl) { g.fillStyle = 'rgba(255,255,255,' + fl + ')'; g.fillRect(0, 0, W, H); }
+    } else {   // light sweep: soft diagonal accent band
+      const x0 = lerp(-.35, 1.35, ease.sm(p)) * W, bw = .28 * W, sk = .22 * H; g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = .55 * Math.sin(Math.PI * clamp(p * 1.0, 0, 1));
+      const gr = g.createLinearGradient(x0 - bw, 0, x0 + bw, 0); gr.addColorStop(0, 'rgba(0,0,0,0)'); gr.addColorStop(.5, ACC); gr.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = gr; g.beginPath(); g.moveTo(x0 - bw + sk, 0); g.lineTo(x0 + bw + sk, 0); g.lineTo(x0 + bw - sk, H); g.lineTo(x0 - bw - sk, H); g.closePath(); g.fill(); g.restore();
+    }
+    break; }
+}
+function v2Shakes(W, H, now) {   // hook question slam (8 px, 0.2 s) and answer impact (5 px) -> whole frame jitters
+  const s = H / 1080; let amp = 0, ph = 0;
+  for (const q of SEGS) if (q.big) { const d = now - q.s0; if (d >= 0 && d < .2) { amp = 8 * s * (1 - d / .2); ph = d; } }
+  const da = now - (T_BODY_END + .3); if (da >= 0 && da < .25) { amp = Math.max(amp, 5 * s * (1 - da / .25)); ph = da; }
+  if (amp <= 0) return;
+  copyFrame(W, H); g.save(); g.fillStyle = '#000'; g.fillRect(0, 0, W, H); g.translate(W / 2 + amp * Math.sin(ph * 83), H / 2 + amp * Math.cos(ph * 61)); g.scale(1.02, 1.02); g.drawImage(tmpc, -W / 2, -H / 2); g.restore();
+}
+function v2Finish(W, H, now) {
+  const s = H / 1080;
+  // answer card: gold ring burst behind/around the card
+  const ab = now - (T_BODY_END + .3);
+  if (ab >= 0 && ab < 1.1) for (let i = 0; i < 2; i++) { const d = ab - i * .14; if (d < 0 || d > .9) continue; const u = ease.out(d / .9);
+    g.save(); g.globalCompositeOperation = 'lighter'; g.globalAlpha = (1 - u) * .8; g.lineWidth = (26 - 20 * u) * s; g.strokeStyle = i ? '#fff0b8' : '#ffc94a'; g.beginPath(); g.arc(W / 2, H * .4, (80 + 760 * u) * s, 0, Math.PI * 2); g.stroke(); g.restore(); }
+  // light leak (slow, top-right corner)
+  const lx = W * (.93 + .04 * Math.sin(now * .21)), ly = H * (.06 + .05 * Math.cos(now * .17)), lr = W * .42;
+  g.save(); g.globalCompositeOperation = 'lighter'; const lg = g.createRadialGradient(lx, ly, 0, lx, ly, lr); lg.addColorStop(0, 'rgba(255,170,80,.20)'); lg.addColorStop(.5, 'rgba(255,120,60,.07)'); lg.addColorStop(1, 'rgba(255,100,40,0)'); g.fillStyle = lg; g.fillRect(0, 0, W, H); g.restore();
+  // vignette (edges ~25 % dark)
+  const key = W + 'x' + H; if (key !== vigKey) { vigKey = key; vigG = g.createRadialGradient(W / 2, H / 2, Math.min(W, H) * .42, W / 2, H / 2, Math.hypot(W, H) * .56); vigG.addColorStop(0, 'rgba(0,0,0,0)'); vigG.addColorStop(1, 'rgba(0,0,0,.27)'); }
+  g.save(); g.fillStyle = vigG; g.fillRect(0, 0, W, H); g.restore();
+  // film grain (seeded tile, offset per 24 fps frame, alpha .04)
+  if (!grainPat) grainPat = g.createPattern(grainTile, 'repeat');
+  const fr = Math.floor(now * 24), ox = (fr * 97) % 256, oy = (fr * 57 + 31) % 256;
+  if (false) { g.save(); g.globalAlpha = .04; g.translate(-ox, -oy); g.fillStyle = grainPat; g.fillRect(ox, oy, W, H); g.restore(); }   // grain off 01/11: per-frame noise made a 40 s part 148 MB (> GitHub 100 MB)
+}
+
+const tmpc = document.createElement('canvas'); tmpc.width = 1920; tmpc.height = 1080; const gx = tmpc.getContext('2d');
+const base = window.__seek;
+window.__seek = t => {
+  base(t); const now = Math.max(0, t + OFF), W = cv.width, H = cv.height;
+  if (STORY && STORY.grade) { const gr = STORY.grade(now); if (gr && (gr.sat < .99 || gr.bright !== undefined)) {   // colour grade (what-if = desaturated)
+    gx.clearRect(0, 0, W, H); gx.drawImage(cv, 0, 0); g.save(); g.filter = `saturate(${gr.sat}) brightness(${gr.bright === undefined ? 1 : gr.bright}) contrast(${gr.contrast || 1})`; g.drawImage(tmpc, 0, 0); g.restore(); } }
+  if (STORY && STORY.overlay) { g.save(); STORY.overlay(g, W, H, now); g.restore(); }
+  if (V2) { v2Transitions(W, H, now); v2Shakes(W, H, now); v2Finish(W, H, now); for (const c of captionsAt(now)) drawCaptionV2(W, H, c, now); drawStep(W, H, now); }
+  else for (const c of captionsAt(now)) drawCaption(W, H, c.text, c.a, c.mood, c.big);
+  drawTimer(W, H, now); drawBadge(W, H);
+};
+</script>
+</html>
