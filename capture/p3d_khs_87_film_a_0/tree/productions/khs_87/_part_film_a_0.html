@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>khs 87 film a</title>
+<style>html,body{margin:0;background:#000}canvas{display:block;width:100vw;height:auto}</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>window.__T0=0.0000; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+// khs_87 / film_a - portrait 1080x1920, OBJECTS ONLY (no people, no hands, no silhouettes, no faces).
+// Look (fix round 2): dark walnut desk, cream parchment sheets, brass and gold, crimson accents, warm dark-to-amber sky.
+// Camera: low forward dolly along a timeline road (shots 1-5); side view with the golden rope (shot 6); desk push-in (shot 7).
+// Every state is a pure function of the GLOBAL time g (= shot offset + local t). No Math.random / Date / rAF.
+import { film, world, THREE, prog, ease, clamp, lerp, rng, mesh, toon, canvasTex } from '../../lib/stage3d.js';
+
+const TAU = Math.PI * 2, PI = Math.PI;
+const DESK = 0x4a2d18, PAPER = 0xf3e4c0, PAPER_D = 0xe0c894, INK = 0x22304f, INKC = 0x1a2640, BRASS = 0xd9ad55, BRASS_D = 0xa67c32;
+const CRIMSON = 0x9e1f2e, CRIM_L = 0xd9485a, LAMP = 0xffc878, STONE = 0x9d9385, TEAR = 0x7cc0f0, GREEN = 0x6fa35a, GREEN_L = 0xa9d08a, WHITE = 0xfff7e6, STC = 0xf6ead0;
+const UPV = .2;   // framing: objects of shots 1-5 sit in the upper-middle band (y 15-58%), caption box below 64%
+const sm = (t, a, b) => ease.sm(prog(t, a, b));
+const L3 = (a, b, u) => [lerp(a[0], b[0], u), lerp(a[1], b[1], u), lerp(a[2], b[2], u)];
+
+// ---------------- helpers ----------------
+let GT = null, RT = null;
+const glowTex = () => GT || (GT = canvasTex(128, 128, (g, w, h) => { const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.35, 'rgba(255,255,255,.5)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }));
+const ringTex = () => RT || (RT = canvasTex(128, 128, (g) => { g.strokeStyle = 'rgba(255,255,255,1)'; g.lineWidth = 7; g.shadowColor = 'rgba(255,255,255,.9)'; g.shadowBlur = 8; g.beginPath(); g.arc(64, 64, 52, 0, TAU); g.stroke(); }));
+const spr = (tex, size, op, tint, add) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color: tint === undefined ? 0xfff3d0 : tint, depthWrite: false, transparent: true, fog: false, opacity: op === undefined ? .6 : op, blending: add === false ? THREE.NormalBlending : THREE.AdditiveBlending })); s.scale.set(size, size, 1); s.renderOrder = 10; return s; };
+const mk = (geo, color, o) => { o = o || {}; return mesh(geo, toon(color, o.mat), Object.assign({ inkW: .008, inkColor: INKC }, o)); };
+const plainM = (geo, color, pos, parent, o) => { o = o || {}; const m = new THREE.Mesh(geo, toon(color, o.side ? { side: o.side } : undefined)); m.position.set(pos[0], pos[1], pos[2]); if (o.rot) m.rotation.set(o.rot[0], o.rot[1], o.rot[2]); parent.add(m); return m; };
+const piece = (g, pts) => {   // piecewise smooth path: [[t, [x,y,z]], ...]
+  if (g <= pts[0][0]) return pts[0][1].slice();
+  for (let i = 0; i < pts.length - 1; i++) { const t0 = pts[i][0], t1 = pts[i + 1][0]; if (g <= t1) return L3(pts[i][1], pts[i + 1][1], ease.sm(prog(g, t0, t1))); }
+  return pts[pts.length - 1][1].slice();
+};
+const TOKEN_PATH = [[0, [.9, -.95, -2.4]], [5.0, [.9, -.95, -2.4]], [8.5, [.9, -.95, -3.5]], [12.0, [.95, -.95, -4.6]], [99, [.95, -.95, -4.6]]];
+
+// ---------------- camera (global time) ----------------
+const KEYS = [  // g, pos, target, fov
+  [0, [0, .55, 2.3], [0, -.25, -2.6], 58], [5, [0, .6, 2.0], [0, -.15, -3.2], 58], [11, [0, .65, 1.5], [0, -.3, -4.4], 58],
+  [22.5, [0, .7, .9], [0, -.3, -5.0], 58], [39, [0, .75, .1], [0, -.35, -5.4], 58], [50.5, [0, .85, -2.5], [0, .1, -9.0], 58],
+  [61.5, [0.1, .35, -3.0], [0.1, -.4, -11.0], 70], [67, [0.1, .4, -3.2], [0.1, -.4, -11.0], 70], [73.9, [0.1, .4, -3.2], [0.1, -.4, -11.0], 70],
+  [74, [0, .5, .6], [0, 0, -2.2], 56], [84.6, [0, .5, .6], [0, 0, -2.2], 56]];
+function hermite(g, getter, KS) {
+  let i = 0; while (i < KS.length - 2 && g > KS[i + 1][0]) i++;
+  const k0 = KS[Math.max(i - 1, 0)], k1 = KS[i], k2 = KS[i + 1], k3 = KS[Math.min(i + 2, KS.length - 1)];
+  const h = k2[0] - k1[0], u = clamp((g - k1[0]) / h, 0, 1), u2 = u * u, u3 = u2 * u;
+  const f = (a, b, c, d) => { const m1 = (b - a) / (k1[0] - k0[0] || 1) * .5 + (c - b) / h * .5, m2 = (c - b) / h * .5 + (d - c) / (k3[0] - k2[0] || 1) * .5;
+    return (2 * u3 - 3 * u2 + 1) * b + (u3 - 2 * u2 + u) * h * m1 + (-2 * u3 + 3 * u2) * c + (u3 - u2) * h * m2; };
+  const a = getter(k0), b = getter(k1), c = getter(k2), d = getter(k3);
+  return Array.isArray(a) ? a.map((_, q) => f(a[q], b[q], c[q], d[q])) : f(a, b, c, d);
+}
+const aimUp = (pos, tgt, fov, up) => { const d = Math.hypot(pos[0] - tgt[0], pos[1] - tgt[1], pos[2] - tgt[2]); return [tgt[0], tgt[1] - up * 2 * Math.tan(fov * PI / 360) * d, tgt[2]]; };
+function camAt(g) {
+  // two splines (shots 1-6 and shot 7) so the desk shot does not inherit the road keys' tangents
+  const K = g >= 74 ? KEYS.slice(9) : KEYS.slice(0, 9);
+  const pos = hermite(g, k => k[1], K), tg = hermite(g, k => k[2], K), fov = hermite(g, k => k[3], K);
+  return { pos, look: aimUp(pos, tg, fov, g >= 61.5 ? 0 : UPV), fov };
+}
+
+// ---------------- hero (framing) ----------------
+const heroAt = g => {
+  if (g < 4.9) return [[0, -.55, -2.2, .6, .6, .4]];
+  if (g < 8.5) { const p = piece(g, TOKEN_PATH); return [[p[0], p[1] + .05, p[2], .5, .3, .4]]; }
+  if (g < 22.5) return [[0, -.7, -5.2, .6, .6, .5]];
+  if (g < 39) return [[.95, -.8, -4.6, .4, .35, .35]];
+  if (g < 50.5) return [[1.1, -.5, -5.6, .5, .6, .5]];
+  if (g < 61) return [[0, -.05, -13, 1.0, 1.15, 1.0]];
+  if (g < 66.3) return [[2.2, -0.2, -9.0, .5, 1.1, .3]];
+  if (g < 74) return [[-0.6, 0.2, -7.0, .85, .85, .1]];
+  return [[0, -.05, -2.2, .45, .4, .4]];
+};
+function heroCluster(Wd, fn) {
+  const g = new THREE.Group(), m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()); m.visible = false; g.add(m); Wd.add(g);
+  Wd.on(t => { const bs = fn(t).filter(Boolean); if (!bs.length) return; const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (const b of bs) for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], b[k] - b[k + 3]); hi[k] = Math.max(hi[k], b[k] + b[k + 3]); }
+    g.position.set((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2); g.scale.set(Math.max(hi[0] - lo[0], .01), Math.max(hi[1] - lo[1], .01), Math.max(hi[2] - lo[2], .01)); });
+  Wd.hero = g; return g;
+}
+
+// ---------------- the world ----------------
+function build(off, heroFn) {
+  const Wd = world({ fogColor: 0x6a4424, fogNear: 18, fogFar: 70, skyTop: 0x1b2238, skyBottom: 0xe39a45, hemiSky: 0xffffff, hemiGround: 0x6a4424, hemi: 1.15, sunColor: 0xffefd0, sun: .7, sunPos: [4, 12, 8], shadowExt: 10, skyR: 300 });
+  const S = Wd.scene;
+  const lamp = new THREE.PointLight(LAMP, 1.8, 9, 1.5); lamp.position.set(1.6, 2.4, -1.4); S.add(lamp);
+
+  // ---- walnut desk and the parchment timeline road ----
+  plainM(new THREE.PlaneGeometry(40, 120), DESK, [0, -1.2, -40], S, { rot: [-PI / 2, 0, 0] });
+  const road = plainM(new THREE.BoxGeometry(2.4, .03, 46), PAPER_D, [0, -1.18, -28], S); road.visible = false;
+  const ticks = Array.from({ length: 22 }, (_, i) => { const m = mk(new THREE.BoxGeometry(i % 5 === 0 ? .7 : .36, .03, .06), INK, { pos: [0, -1.16, -6 - i * 2.0], ink: false }); m.visible = false; S.add(m); return m; });
+  // ---- faint parchment writing lines on the desk (texture) ----
+  const RL = rng(7);
+  for (let i = 0; i < 60; i++) { const m = mk(new THREE.BoxGeometry(.25 + RL() * .3, .004, .02), PAPER, { pos: [(RL() - .5) * 5, -1.19, -1 - RL() * 20], ink: false }); m.material.transparent = true; m.material.opacity = .22; S.add(m); }
+
+  // ---- the map (standing parchment sheet) with abstract land shapes, and the flags ----
+  const mapG = new THREE.Group(); mapG.position.set(0, .6, -9); S.add(mapG); mapG.visible = false;
+  plainM(new THREE.PlaneGeometry(4.6, 3.0), PAPER, [0, 0, 0], mapG, { side: THREE.DoubleSide });
+  [[-1.0, .3, .03, 1.0, .7, GREEN_L], [.2, .5, .03, .8, .5, BRASS], [1.2, -.2, .03, .9, .6, GREEN_L], [-.2, -.5, .03, .7, .45, STONE], [.9, .8, .03, .45, .25, CRIM_L]]
+    .forEach(([x, y, z, sx, sy, c]) => { const b = mk(new THREE.SphereGeometry(1, 28, 14), c, { pos: [x, y, z], scale: [sx, sy, .02], ink: false }); mapG.add(b); });
+  const flags = [0, 1, 2].map(i => { const fg = new THREE.Group(); fg.position.set(-.6 + i * .6, -1.2, -6.2 - i * .2); S.add(fg); fg.visible = false;
+    fg.add(mk(new THREE.CylinderGeometry(.02, .02, .6, 8), BRASS_D, { pos: [0, .3, 0], ink: false }));
+    fg.add(mk(new THREE.BoxGeometry(.3, .18, .02), CRIMSON, { pos: [.15, .5, 0], ink: false })); return fg; });
+
+  // ---- the pocket watch (the calm "normal") and the crack under it ----
+  const watch = new THREE.Group(); watch.position.set(0, -.55, -2.2); S.add(watch);
+  watch.add(mk(new THREE.CylinderGeometry(.55, .55, .16, 40), BRASS, { pos: [0, 0, 0], rot: [PI / 2, 0, 0] }));
+  watch.add(mk(new THREE.CircleGeometry(.46, 40), PAPER, { pos: [0, 0, .09], ink: false }));
+  const hand = new THREE.Group(); hand.position.set(0, 0, .11); watch.add(hand); hand.add(mk(new THREE.BoxGeometry(.04, .36, .02), INK, { pos: [0, .16, 0], ink: false }));
+  const hand2 = new THREE.Group(); hand2.position.set(0, 0, .12); watch.add(hand2); hand2.add(mk(new THREE.BoxGeometry(.03, .26, .02), CRIMSON, { pos: [0, .1, 0], ink: false }));
+  const crack = plainM(new THREE.BoxGeometry(1, .02, .05), CRIMSON, [0, -1.17, -2.2], S); crack.visible = false;
+
+  // ---- the Napoleon token: a bicorne (two upturned brim halves) in navy with a brass rim, seen from the side ----
+  const token = new THREE.Group(); S.add(token); token.visible = false;
+  token.add(mk(new THREE.SphereGeometry(1, 28, 16), INK, { pos: [0, 0, 0], scale: [.36, .1, .26] }));
+  token.add(mk(new THREE.TorusGeometry(.38, .07, 10, 28, PI), INK, { pos: [0, .02, 0] }));        // upturned brim arch
+  token.add(mk(new THREE.TorusGeometry(.38, .025, 8, 28), BRASS, { pos: [0, 0, 0], rot: [PI / 2, 0, 0], ink: false }));  // brass rim
+  token.add(mk(new THREE.SphereGeometry(.09, 12, 8), BRASS, { pos: [0, .12, 0] }));
+  const mkQ = () => { const q = new THREE.Group(); q.add(mk(new THREE.TorusGeometry(.2, .05, 12, 28, PI * 1.5), CRIMSON, { pos: [0, .2, 0], rot: [0, 0, -PI / 2], ink: false })); q.add(mk(new THREE.SphereGeometry(.06, 14, 10), CRIMSON, { pos: [0, -.25, 0], ink: false })); q.visible = false; S.add(q); return q; };
+  const q1 = mkQ(), q2 = mkQ();
+
+  // ---- the small town with the shul (lit windows, low stools, sound rings, falling tears) ----
+  const town = new THREE.Group(); S.add(town); town.visible = false;
+  town.add(mk(new THREE.BoxGeometry(2.4, .05, 1.8), PAPER_D, { pos: [0, -1.19, -5.2], ink: false }));
+  town.add(mk(new THREE.BoxGeometry(.8, .7, .7), PAPER, { pos: [0, -.85, -5.2] }));
+  town.add(mk(new THREE.ConeGeometry(.62, .5, 4), INK, { pos: [0, -.25, -5.2], rot: [0, PI / 4, 0] }));
+  [-.18, .18].forEach(x => { town.add(mk(new THREE.BoxGeometry(.2, .26, .03), LAMP, { pos: [x, -.85, -4.83], ink: false, mat: { emissive: 0xffa640, emissiveIntensity: .7 } }));
+    const gl = spr(glowTex(), .75, .45, 0xffc060); gl.position.set(x, -.85, -4.7); town.add(gl); });
+  town.add(mk(new THREE.BoxGeometry(.2, .34, .03), BRASS_D, { pos: [0, -1.03, -4.83], ink: false }));
+  [-.3, 0, .3].forEach(x => town.add(mk(new THREE.CylinderGeometry(.09, .09, .12, 16), BRASS_D, { pos: [x, -1.14, -4.35], ink: false })));
+  [[-.8, -5.9], [.85, -5.5], [-.9, -4.5]].forEach(([x, z]) => { town.add(mk(new THREE.BoxGeometry(.3, .3, .3), WHITE, { pos: [x, -1.05, z] })); town.add(mk(new THREE.ConeGeometry(.24, .22, 4), CRIMSON, { pos: [x, -.82, z], rot: [0, PI / 4, 0] })); });
+  const rings = Array.from({ length: 4 }, () => { const s = spr(ringTex(), 1, 0, 0x9fe0ff); s.visible = false; S.add(s); return s; });
+  const tears = [-.22, .05, .24].map(() => { const m = mk(new THREE.SphereGeometry(.05, 12, 8), TEAR, { pos: [0, 0, -4.45], ink: false }); m.visible = false; S.add(m); return m; });
+
+  // ---- the Beit HaMikdash model: stepped base, two columns, a gate, golden roof edge; destroyed = fallen blocks and a crack ----
+  function mikdash2(x, z, sc) {
+    const g = new THREE.Group(); g.position.set(x, -1.2, z); g.scale.setScalar(sc); S.add(g);
+    g.add(mk(new THREE.BoxGeometry(1.0, .1, 1.0), STC, { pos: [0, .05, 0], ink: false }));   // stepped base
+    g.add(mk(new THREE.BoxGeometry(.9, .1, .9), STC, { pos: [0, .15, 0], ink: false }));
+    g.add(mk(new THREE.BoxGeometry(.8, .1, .8), STC, { pos: [0, .25, 0], ink: false }));
+    g.add(mk(new THREE.BoxGeometry(.7, .5, .6), STC, { pos: [0, .55, 0] }));                 // body
+    [-.2, .2].forEach(cx => g.add(mk(new THREE.CylinderGeometry(.05, .05, .5, 12), WHITE, { pos: [cx, .55, .34] })));  // two front columns
+    g.add(mk(new THREE.BoxGeometry(.16, .3, .03), CRIMSON, { pos: [0, .45, .31], ink: false }));  // gate
+    const topG = new THREE.Group(); topG.position.set(0, .8, 0); g.add(topG);                 // roof group (falls when destroyed)
+    topG.add(mk(new THREE.BoxGeometry(.8, .08, .7), BRASS, { pos: [0, .04, 0] }));            // golden roof edge
+    topG.add(mk(new THREE.ConeGeometry(.28, .2, 4), BRASS_D, { pos: [0, .18, 0], rot: [0, PI / 4, 0] }));
+    const rubble = new THREE.Group(); rubble.visible = false; g.add(rubble);
+    [[.55, .05, .3, .3], [.65, .05, -.2, .25], [-.6, .05, .25, -.4]].forEach(([bx, by, bz, br]) => rubble.add(mk(new THREE.BoxGeometry(.22, .14, .18), STC, { pos: [bx, by, bz], rot: [0, 0, br], ink: false })));
+    const crk = mk(new THREE.BoxGeometry(.03, .4, .02), CRIMSON, { pos: [.1, .5, .31], rot: [0, 0, .25], ink: false }); crk.visible = false; g.add(crk);
+    return { g, topG, rubble, crack: crk };
+  }
+  const mikTown = mikdash2(1.1, -5.6, 1), mikFar = mikdash2(0, -13, 2.2);
+  mikFar.rubble.visible = true; mikFar.crack.visible = true; mikFar.topG.position.set(.15, .8, 0); mikFar.topG.rotation.z = .22; mikTown.g.visible = false; mikFar.g.visible = false;
+
+  // ---- the golden rope (thick, glowing): from the far Mikdash (left, past) to the sapling (right, future) ----
+  const thread = Array.from({ length: 46 }, (_, i) => { const u = i / 45; const m = mk(new THREE.SphereGeometry(.14, 16, 12), BRASS, { pos: [lerp(-2.0, 2.2, u), lerp(-.9, -1.1, u) + .03 * Math.sin(u * PI * 6), lerp(-11, -9, u)], ink: false, mat: { emissive: 0xb07a1e, emissiveIntensity: .6 } }); m.visible = false; S.add(m); return m; });
+  // the golden rope: a thick glowing tube from the temple gate to the tree base, with a light pulse travelling along it (past -> future)
+  const ropeCurve = new THREE.CatmullRomCurve3([new THREE.Vector3(-1.2, -.36, -10.4), new THREE.Vector3(-.2, .02, -9.8), new THREE.Vector3(.6, -.5, -9.3), new THREE.Vector3(1.4, -1.1, -8.2)]);
+  const rope = new THREE.Mesh(new THREE.TubeGeometry(ropeCurve, 90, .16, 14, false), toon(BRASS, { emissive: 0xc08a22, emissiveIntensity: .7 })); S.add(rope); rope.visible = false;
+  const ropePulse = spr(glowTex(), 1.1, .9, 0xfff3b0); S.add(ropePulse); ropePulse.visible = false;
+  const sap = new THREE.Group(); sap.position.set(1.4, -1.2, -8.2); S.add(sap); sap.visible = false;
+  sap.add(mk(new THREE.CylinderGeometry(.03, .045, .5, 10), BRASS_D, { pos: [0, .25, 0], ink: false }));
+  [[0, .6, 0, .22], [-.12, .5, .06, .16], [.13, .48, -.05, .17]].forEach(([x, y, z, r]) => sap.add(mk(new THREE.SphereGeometry(r, 16, 12), GREEN, { pos: [x, y, z], ink: false })));
+  const hz = spr(glowTex(), 7, 0, 0xffd27a); hz.position.set(3.0, .2, -13); S.add(hz);   // sunrise glow on the future side
+  const bigTear = mk(new THREE.SphereGeometry(.08, 14, 10), TEAR, { pos: [0, 0, -9], ink: false }); bigTear.visible = false; S.add(bigTear);
+
+  // ---- the approbation seal (crossed out) ----
+  const seal = new THREE.Group(); seal.position.set(-.6, .2, -7.0); S.add(seal); seal.visible = false;
+  seal.add(mk(new THREE.CylinderGeometry(.84, .84, .07, 40), CRIMSON, { pos: [0, 0, 0], rot: [PI / 2, 0, 0] }));
+  seal.add(mk(new THREE.CylinderGeometry(.4, .4, .02, 24), BRASS_D, { pos: [0, 0, .05], rot: [PI / 2, 0, 0], ink: false }));
+  const xbars = [PI / 4, -PI / 4].map(r => { const m = mk(new THREE.BoxGeometry(1.1, .08, .08), INK, { pos: [0, 0, .06], rot: [0, 0, r], ink: false }); seal.add(m); return m; });
+
+  // ---- the dry stone on a tall parchment plinth (desk push-in), and the forming tear ----
+  const stoneG = new THREE.Group(); stoneG.position.set(0, 0, -2.2); S.add(stoneG); stoneG.visible = false;
+  stoneG.add(mk(new THREE.CylinderGeometry(.36, .42, .44, 36), PAPER, { pos: [0, -.13, 0], ink: false }));
+  stoneG.add(mk(new THREE.CylinderGeometry(.52, .52, .06, 36), BRASS, { pos: [0, .09, 0], ink: false }));
+  stoneG.add(mk(new THREE.SphereGeometry(.3, 32, 18), STONE, { pos: [0, .25, 0], scale: [1.2, .55, .9], ink: false }));
+  // teardrop (sphere + cone tip, about 12% of the stone width) on the stone's front-top edge
+  const drop = new THREE.Group(); drop.position.set(.2, .36, .2); drop.visible = false; stoneG.add(drop);
+  drop.add(mk(new THREE.SphereGeometry(.045, 16, 12), TEAR, { pos: [0, 0, 0], ink: false, mat: { emissive: 0x2a6aa0, emissiveIntensity: .3 } }));
+  drop.add(mk(new THREE.ConeGeometry(.045, .1, 16), TEAR, { pos: [0, .07, 0], ink: false, mat: { emissive: 0x2a6aa0, emissiveIntensity: .3 } }));
+
+  const setRing = (i, p, size, op) => { const s = rings[i]; s.visible = true; s.position.set(p[0], p[1], p[2]); s.scale.setScalar(size); s.material.opacity = op; };
+
+  Wd.on(t => {
+    const g = off + t;
+    const A = g < 73.8;    // the desk / road scene (ends before the desk-stone shot)
+    // ---- shot 1: the calm watch, the crack, the map and the token ----
+    const wOn = g < 8.2; watch.visible = wOn;
+    if (wOn) { watch.position.x = lerp(0, -3.4, sm(g, 4.5, 7.5)); hand.rotation.z = -g * .5; hand2.rotation.z = -g * 3.1; }
+    crack.visible = g > 2.8 && g < 8.2; crack.scale.x = 1.8 * sm(g, 2.8, 4.0);
+    mapG.visible = g > 4.3 && g < 49; mapG.scale.setScalar(.01 + .99 * sm(g, 4.3, 6.2));
+    const tp = piece(g, TOKEN_PATH);
+    token.visible = g > 4.9 && g < 50.5; token.position.set(tp[0], tp[1], tp[2]); token.rotation.y = .5 * Math.sin(g * 1.4);
+    flags.forEach((fg, i) => { fg.visible = g > 8.5 && g < 50.5; fg.scale.setScalar(.001 + sm(g, 8.6 + i * .5, 9.3 + i * .5)); });
+    // ---- shot 2-3: the town, the shul, the crying, the question ----
+    town.visible = g >= 9.5 && g < 50.5;
+    for (let i = 0; i < 4; i++) { const st = 12 + i * 2.2, u = prog(g, st, st + 2.6); if (u > 0 && u < 1 && g < 24) setRing(i, [0, -.3, -5.2], .5 + 1.8 * ease.out(u), .7 * (1 - u)); else rings[i].visible = false; }
+    tears.forEach((m, k) => { const x = g - 13 - k * .55; if (x >= 0 && g < 26.5) { const f = (x % 1.6) / 1.6; m.visible = true; m.position.set([-.22, .05, .24][k], -.35 - .7 * f, -4.45); } else m.visible = false; });
+    q1.visible = g > 25.5 && g < 31.8 && A; q1.position.set(tp[0], tp[1] + .75 + .05 * Math.sin(g * 4), tp[2]); q1.rotation.y = .4 * Math.sin(g * 2);
+    // ---- shot 4: the Beit HaMikdash on the town hill breaks; the question; the road unrolls ----
+    mikTown.g.visible = g >= 36 && g < 50.5;
+    { const f = sm(g, 40, 42.5); mikTown.topG.position.set(.5 * f, .8 - .35 * f, 0); mikTown.topG.rotation.z = -.9 * f; mikTown.rubble.visible = f > .02; mikTown.crack.visible = f > .02; }
+    q2.visible = g > 42.5 && g < 48.5; q2.position.set(.5, .35 + .05 * Math.sin(g * 3), -5.2);
+    road.visible = g > 46 && A;
+    ticks.forEach((m, i) => { m.visible = g > 46.3 + i * .09 && A; });
+    // ---- shot 5: the timeline road, the far Mikdash, "you cry about that now?" ----
+    mikFar.g.visible = g >= 46 && A; mikFar.g.position.x = g >= 61.5 ? -1.2 : 0; mikFar.g.position.z = g >= 61.5 ? -11 : -13; mikFar.g.scale.setScalar(g >= 61.5 ? 1.8 : 2.2);
+    bigTear.visible = g > 53 && g < 57.2; { const f = clamp(prog(g, 53, 56.2), 0, 1); bigTear.position.set(0, lerp(.6, -1.05, ease.in(f)), -9); bigTear.scale.set(1, 1 - .5 * sm(g, 56.1, 57.2) + .5 * sm(g, 53, 53.3), 1); }
+    // ---- shot 6: side view - the golden rope runs from the Mikdash (past, left) to the sapling and the sunrise (future, right) ----
+    const fthr = sm(g, 61.5, 64.5);
+    thread.forEach(m => { m.visible = false; });
+    rope.visible = g > 61.5 && g < 74.2; ropePulse.visible = rope.visible;
+    if (ropePulse.visible) ropePulse.position.copy(ropeCurve.getPointAt(((g - 61.5) / 2.4) % 1));
+    sap.visible = g > 61 && g < 74.2; sap.scale.setScalar(.001 + 3.0 * ease.out(prog(g, 61.8, 65.6)));
+    hz.material.opacity = .55 * sm(g, 61, 63) * (1 - sm(g, 73, 74.2));
+    seal.visible = g > 66 && g < 74.2;
+    seal.position.y = .2 + .6 * (1 - ease.out(prog(g, 66.6, 68.4)));
+    xbars.forEach(x => { x.scale.x = Math.max(.001, sm(g, 69.5, 71.0)); });
+    // ---- shot 7: the stone on its plinth, the tear that tries to form and struggles, then calm ----
+    stoneG.visible = g > 73.6;
+    if (stoneG.visible) {
+      const grow = sm(g, 75, 78.5);
+      // struggle cycle (2.2 s): swells, almost falls (stretches down), shrinks back
+      const cyc = (((g - 76) % 2.2) + 2.2) % 2.2 / 2.2, f = .5 - .5 * Math.cos(TAU * cyc), amp = .6 + .4 * sm(g, 75, 79);
+      drop.scale.setScalar(Math.max(.01, (.35 + .65 * f * amp) * (1 - .4 * sm(g, 83, 84.6))));
+      drop.position.set(.2, .36 - .03 * Math.pow(f, 4), .2);
+      drop.visible = g > 75;
+      const pulseU = prog(g, 80, 83);
+      // two faint concentric effort ripples on the stone
+      for (let k = 0; k < 2; k++) { const ph = (((g - 75 - k * 1.1) % 2.2) + 2.2) % 2.2 / 2.2; setRing(k, [0, .25, -2.2 + .3], .25 + .7 * ph, .3 * (1 - ph) * sm(g, 74.5, 76)); }
+    }
+    rings.forEach((r, i) => { if (!(g >= 12 && g < 24) && !(g > 74 && g < 85) && i > 0) r.visible = false; });
+  });
+  heroCluster(Wd, t => heroFn(off + t));
+  return Object.assign(Wd, { cam: t => camAt(off + t) });
+}
+
+const SH = (id, dur, off, caps, capAt) => ({ id, dur, wide: true, caps, capAt, build() { return build(off, heroAt); } });
+
+film({
+  W: 1080, H: 1920, xf: .4, vault: 'captions_vault.json',
+  shots: [
+    SH('s01', 11.0, 0.0, ['CAP_A_01', 'CAP_A_02'], [0.0, 4.8]),
+    SH('s02', 11.5, 11.0, ['CAP_A_03', 'CAP_A_04'], [0.0, 5.71]),
+    SH('s03', 16.5, 22.5, ['CAP_A_05', 'CAP_A_06', 'CAP_A_07'], [0.0, 5.23, 10.47]),
+    SH('s04', 11.5, 39.0, ['CAP_A_08', 'CAP_A_09'], [0.0, 5.57]),
+    SH('s05', 11.0, 50.5, ['CAP_A_10', 'CAP_A_11'], [0.0, 5.51]),
+    SH('s06', 12.5, 61.5, ['CAP_A_12', 'CAP_A_13'], [0.0, 6.08]),
+    SH('s07', 10.59, 74.0, ['CAP_A_14', 'CAP_A_15'], [0.0, 5.54]),
+  ]
+});
+</script>

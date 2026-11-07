@@ -1,0 +1,53 @@
+06:09:25 render_all: production=khs_87 films=film_a part=50s hq=True dry_run=False
+06:09:29 budget OK: OVERRIDE present; spent $123 of $2309 (cap $1962), allowed by now $142 (86% of pace) [render]
+06:09:29 verify gate: PASS for film_a
+06:09:29 film_a: length 84.6s, rendering (part 50 s, 4 includes)
+06:21:45 film_a part 2/2 t0=42.3 d=42.3 -> rc=1 | studio-art healed a stuck rebase in studio-art healed a stuck rebase in studio-art healed a stuck rebase in studio-art healed a stuck rebase in studio-art healed a stuck rebase in studio-art package p3d_khs_87_film_a_1 is not on origin/main
+06:56:39 film_a part 1/2 t0=0.0 d=42.3 -> rc=1 | studio-art healed a stuck rebase in studio-art healed a stuck rebase in studio-art healed a stuck rebase in studio-art healed a stuck rebase in studio-art healed a stuck rebase in studio-art package p3d_khs_87_film_a_0 is not on origin/main
+06:56:39 film_a: failed parts [0, 1], retry round 1
+07:02:04 film_a retry part 0 sub 2/2 t0=21.1 d=21.1 -> rc=1 | packed 17 files, capture size 1080x1920 healed a stuck rebase in studio-art healed a stuck rebase in studio-art package p3r_khs_87_film_a_0_1 never got into a commit
+07:41:52 film_a retry part 0 sub 1/2 t0=0.0 d=21.1 -> rc=1 | udio-art healed a stuck rebase in studio-art healed a stuck rebase in studio-art healed a stuck rebase in studio-art healed a stuck rebase in studio-art healed a stuck rebase in studio-art package p3r_khs_87_film_a_0_0 is not on origin/main
+Exception in thread Thread-15 (one):
+Traceback (most recent call last):
+  File "C:\Users\יוסף שניידר\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 1045, in _bootstrap_inner
+    self.run()
+  File "C:\Users\יוסף שניידר\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 982, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\projects\_studio-animatzia\tools\render_all.py", line 269, in one
+    page = part_page(src, t0, '_part_%s_%d_%d.html' % (film, idx, k))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\projects\_studio-animatzia\tools\render_all.py", line 219, in part_page
+    io.open(PDIR + '/' + name, 'w', encoding='utf-8').write(out)
+OSError: [Errno 28] No space left on device
+Exception in thread Thread-16 (one):
+Traceback (most recent call last):
+  File "C:\Users\יוסף שניידר\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 1045, in _bootstrap_inner
+    self.run()
+  File "C:\Users\יוסף שניידר\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 982, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\projects\_studio-animatzia\tools\render_all.py", line 269, in one
+    page = part_page(src, t0, '_part_%s_%d_%d.html' % (film, idx, k))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\projects\_studio-animatzia\tools\render_all.py", line 219, in part_page
+    io.open(PDIR + '/' + name, 'w', encoding='utf-8').write(out)
+OSError: [Errno 28] No space left on device
+07:42:32 film_a: failed parts [0, 1], retry round 2
+Exception in thread Thread-17 (one):
+Traceback (most recent call last):
+  File "C:\Users\יוסף שניידר\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 1045, in _bootstrap_inner
+    self.run()
+  File "C:\Users\יוסף שניידר\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 982, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\projects\_studio-animatzia\tools\render_all.py", line 269, in one
+    page = part_page(src, t0, '_part_%s_%d_%d.html' % (film, idx, k))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\projects\_studio-animatzia\tools\render_all.py", line 219, in part_page
+    io.open(PDIR + '/' + name, 'w', encoding='utf-8').write(out)
+OSError: [Errno 28] No space left on device
+Exception in thread Thread-18 (one):
+Traceback (most recent call last):
+object address  : 000001DDB4CB0820
+object refcount : 2
+object type     : 00007FFA1BA6B770
+
+
