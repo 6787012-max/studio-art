@@ -1,0 +1,20 @@
+{
+ "film": "film_a.html",
+ "status": "PASS",
+ "time": "2026-11-08T06:05:24",
+ "samples": 38,
+ "findings": [],
+ "sheets": {
+  "beat": "C:/projects/_studio-animatzia/productions/khs_89/_verify/_view/_verify_beat_sheet_1.jpg",
+  "seam": "C:/projects/_studio-animatzia/productions/khs_89/_verify/_view/_verify_seams_1.jpg",
+  "phone": "C:/projects/_studio-animatzia/productions/khs_89/_verify/_view/_verify_phone_sheet_1.jpg",
+  "beat_2": "C:/projects/_studio-animatzia/productions/khs_89/_verify/_view/_verify_beat_sheet_2.jpg",
+  "phone_2": "C:/projects/_studio-animatzia/productions/khs_89/_verify/_view/_verify_phone_sheet_2.jpg"
+ },
+ "timing": {
+  "ready_s": 0.8,
+  "gates_s": 69.5,
+  "sheets_s": 36.1,
+  "total_s": 106.7
+ }
+}

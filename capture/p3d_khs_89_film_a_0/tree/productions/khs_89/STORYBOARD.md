@@ -1,0 +1,24 @@
+# STORYBOARD - khs_89 "a taste of yichud" (vertical 1080x1920, clip 67.84 s + 0.8 s tail, objects only, no people)
+
+Central metaphor: a shiur klali on one central table. Questions pop out of the open book, blocks clash, the tower stands upside down until ONE golden foundation stone is placed under it; the tower rights itself, and all its threads gather into one beam (one yesod = a taste of yichud). Later, questions turn into a lit lamp; a riddle box opens; the dark sphere cracks open to a glowing star.
+Camera: SLOW ORBIT around the central table (azimuth -1.2 to +1.2 rad over the whole clip, about 137 degrees), crane up in the last shot. No lateral truck, no forward dolly, no top-down.
+Palette: deep emerald, cream/parchment, warm amber light, coral accents. Flat toon, ink outline.
+Caption IDs: the caption file is grouped into display windows of at least 4.6 s (units CAP_01..CAP_47 from short89_captions.txt). Group IDs below are G_CAP_<first unit>, with the units in brackets. Shot cuts sit on group starts, so they land within about 2 s of the storyboard caption boundaries (see Known gaps).
+
+| time (s) | shot | caption groups (units) | narration idea (no Hebrew) | object that acts it out, and how | camera | character | what the viewer learns here |
+|---|---|---|---|---|---|---|---|
+| 0.00-10.78 | s01 | G_CAP_01 (01-03), G_CAP_04 (04-07) | the world to come = a solution to all questions and all hiddenness | dark cloth covers a glowing amber core; the cloth lifts 3.6-6.4 s and the amber light grows; 8 coral question marks float around it, then drift up and vanish 6.8-8.6 s | orbit | none | the questions are answered once the cover lifts |
+| 10.78-22.32 | s02 | G_CAP_08 (08-11), G_CAP_12 (12-15) | Rav Yerucham: the greatest pleasure of a spiritual person is not food, it is a shiur klali | plate with a pastry and a small pot slides off to the left 0.5-3.0 s; a big open book rises from under the table 2.8-5.0 s and its glow grows from 4.6 s | orbit | none | the greatest pleasure is a deep lesson, not food |
+| 22.32-28.17 | s03 | G_CAP_16 (16-18) | a shiur klali is full of questions; the Rambam contradicts; the text is upside down | 4 coral question marks pop out of the book 0.2-2.4 s; two blocks with opposite arrows slide toward each other 2.4-3.8 s and clash (shake) | orbit | none | contradictions and questions everywhere |
+| 28.17-33.82 | s04 | G_CAP_19 (19-23) | everything upside down, a tower of questions that cannot stand; then one yesod | inverted tower (big block on top) wobbles; the golden foundation stone slides in from the left 1.6-3.6 s; the tower lifts above the stone 3.7-4.7 s | orbit | none | the tower is unstable until a foundation is found |
+| 33.82-46.11 | s05 | G_CAP_24 (24-27), G_CAP_28 (28-30) | the blocks turn right side up on one yesod; the many threads gather into one (a taste of yichud) | the tower rights itself on the stone 0.3-3.0 s and descends onto it; 3 gold threads from the blocks gather into one point 4.6-6.6 s; a gold beam rises from the stone 6.8-9.2 s; 3 question marks fall and vanish 0.8-2.4 s | orbit | none | many threads become one beam = one yesod |
+| 46.11-55.71 | s06 | G_CAP_31 (31-35), G_CAP_36 (36-39) | the book glows again; the questions turn into light (learning: question, good answer, real pleasure) | 6 question marks spiral into the book 0.6-3.4 s; a lamp rises beside the book 2.8-4.4 s; its bulb and glow reach full brightness 3.5-5.2 s | orbit | none | a question answered turns into light |
+| 55.71-61.27 | s07 | G_CAP_40 (40-43) | a riddle: a closed box with a keyhole | the box; a gold key slides in 0.8-2.4 s, turns 2.6-3.2 s and goes into the keyhole 3.3-3.8 s; the lid opens 3.8-5.0 s and a light column rises 3.8-5.2 s | orbit | none | the riddle locked in the box opens with the right key |
+| 61.27-68.64 | s08 | G_CAP_44 (44-47) | the light that was inside the darkness = revelation of the oneness (gilui hayichud), the greatest reward | dark sphere cracks (6 gold cracks 0.4-1.8 s), the halves split 2.2-3.6 s, a glowing star grows 3.0-4.8 s and turns; camera crane rises 0.7 to 2.3 | orbit + crane up | none | the darkness opens to light; calm ending |
+
+Character: none in any shot. No people, no hands, no faces, no silhouettes.
+
+Known gaps and decisions:
+- The shot cuts are snapped to caption-group starts (minimum window 4.6 s), not to the exact planned caption IDs. Shot 2 starts at 10.78 s (CAP_08), not 13.00 s (CAP_10); shot 3 holds CAP_16-18, so the "questions pop" action happens on the Rambam sentence and the clash on the next one.
+- The orbit is about 137 degrees, not a full half circle: the flat question marks and the captions stay readable from the front; a wider arc would show the glyphs edge-on.
+- Camera distance keeps the hero at about 35 percent of the frame height or more, with the caption box below 64 percent.
