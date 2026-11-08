@@ -7,7 +7,7 @@ Shots are cut at the storyboard caption IDs (SHOT_START_CAP). Inside each shot, 
 import io, json, sys
 WORK = 'D:/video-projects/kolhalashon-avshalom-schneider/_shorts_tools/work'
 HERE = 'C:/projects/_studio-animatzia/productions/khs_89'
-CLIP = 67.84                    # spoken length (Phase A)
+CLIP = 68.25                    # spoken length (REDO r5: after edge fix)
 TAIL = 0.8
 DUR = round(CLIP + TAIL, 2)
 SHOT_START_CAP = ['CAP_01', 'CAP_10', 'CAP_17', 'CAP_21', 'CAP_26', 'CAP_33', 'CAP_40', 'CAP_43']
@@ -41,6 +41,12 @@ for capid in SHOT_START_CAP[1:]:
     cand = [g['s'] for g in GROUPS if g['s'] >= BOUNDS[-1] + 1.0] or [DUR - 1.0]
     BOUNDS.append(min(cand, key=lambda s: abs(s - tgt)))
 BOUNDS.append(DUR)
+# REDO r5 (08/11): the auto pick above moved s03-s05 by 5 s+ because the new grouping shifted one caption.
+# Shot starts are pinned to the phase-B film timing (T0 in film_a.html), each snapped to the nearest group start (drift <= 0.4 s).
+BOUNDS = [0.0, 10.78, 22.32, 27.78, 32.48, 45.93, 55.88, 61.44, DUR]
+_gs = [g['s'] for g in GROUPS]
+for _b in BOUNDS[1:-1]:
+    assert min(abs(_b - s) for s in _gs) < 0.02, ('bound not on a caption group start', _b)
 CAPS = []   # (id, win_start, win_end, text, shot_index, units)
 for j, g in enumerate(GROUPS):
     k = max(i for i in range(len(SHOTS_ID)) if BOUNDS[i] <= g['s'] + 1e-6)

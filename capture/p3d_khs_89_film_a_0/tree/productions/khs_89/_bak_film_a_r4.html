@@ -1,0 +1,358 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>khs 89 film a</title>
+<style>html,body{margin:0;background:#000}canvas{display:block;width:100vw;height:auto}</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+// khs_89 / film_a - portrait 1080x1920, OBJECTS ONLY (no people, no hands, no faces, no silhouettes).
+// Idea: the greatest pleasure is a shiur klali - full of questions, contradictions, upside down - until ONE yesod makes it all fall into place.
+// Look: deep emerald gradient everywhere, cream table, warm amber glow behind the hero, small coral accents; flat toon, ink outline.
+// Camera: SLOW ORBIT around one central table (azimuth runs across the clip), crane up at the end.
+// Every state is a pure function of the shot-local time t (no Math.random / Date / rAF).
+window.CLIP_DUR = 67.84;
+import { film, world, THREE, ease, clamp, lerp, mesh, toon, canvasTex } from '../../lib/stage3d.js';
+
+const TAU = Math.PI * 2, PI = Math.PI;
+const EMER = 0x0f5b4c, EMER_D = 0x0a3b32, EMER_L = 0x2a9a80, CREAM = 0xf6ecd2, AMBER = 0xffb347, GOLD = 0xffd27a, COPPER = 0xc87533, CORAL = 0xff7f6e, INKC = 0x12201c, DARK = 0x08231d, CLOTH = 0x1d2b26, WHITE = 0xffffff;
+const FLOOR = -0.87;          // top of the table (objects stand on it)
+const TZ = -3;                // z of the central table / hero
+const UPV = .2;               // framing: hero in the upper-middle band; caption box is below 64%
+const T0 = [0, 10.78, 22.32, 28.17, 33.82, 46.11, 55.71, 61.27];   // global start of each shot
+const P = (t, a, b) => clamp((t - a) / (b - a), 0, 1);
+const sm = (t, a, b) => ease.sm(P(t, a, b));
+const AZ = T => lerp(-1.2, 1.2, clamp(T / 68.64, 0, 1));          // orbit azimuth over the whole clip (radians)
+
+// ---------------- helpers ----------------
+let GT = null;
+const glowTex = () => GT || (GT = canvasTex(128, 128, (g, w, h) => { const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.35, 'rgba(255,255,255,.5)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }));
+const spr = (tex, size, op, tint) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color: tint === undefined ? 0xffffff : tint, depthWrite: false, transparent: true, fog: false, opacity: op, blending: THREE.AdditiveBlending })); s.scale.set(size, size, 1); s.renderOrder = 10; return s; };
+const mk = (geo, color, o) => { o = o || {}; return mesh(geo, toon(color, o.mat), Object.assign({ inkW: .008, inkColor: INKC }, o)); };
+const plainM = (geo, color, pos, parent) => { const m = new THREE.Mesh(geo, toon(color)); m.position.set(pos[0], pos[1], pos[2]); parent.add(m); return m; };
+const aimUp = (pos, tgt, fov, up) => { const d = Math.hypot(pos[0] - tgt[0], pos[1] - tgt[1], pos[2] - tgt[2]); return [tgt[0], tgt[1] - up * 2 * Math.tan(fov * PI / 360) * d, tgt[2]]; };
+const azAt = (k, t) => AZ(T0[k] + t);
+const glowMat = (color, intensity) => ({ emissive: color, emissiveIntensity: intensity });
+const V_UP = new THREE.Vector3(0, 1, 0);
+// place a thin cylinder between two points (emissive thread / beam segment)
+function link(m, a, b) { const d = new THREE.Vector3(b[0] - a[0], b[1] - a[1], b[2] - a[2]); const L = d.length(); m.position.set((a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2); m.quaternion.setFromUnitVectors(V_UP, d.normalize()); m.scale.set(1, Math.max(L, .001), 1); }
+// orbit camera: a slow arc around the central table (radius R), optional crane (cy0 -> cy1 over the shot)
+function orbitCam(k, o) {
+  const R = o.R || 6.6, fov = o.fov || 58, ty = o.ty === undefined ? .3 : o.ty, cy0 = o.cy0 === undefined ? .7 : o.cy0, cy1 = o.cy1 === undefined ? .7 : o.cy1;
+  return t => {
+    const az = azAt(k, t), u = clamp(t / o.dur, 0, 1), cy = lerp(cy0, cy1, ease.sm(u));
+    const pos = [R * Math.sin(az), cy, TZ + R * Math.cos(az)];
+    return { pos, look: aimUp(pos, [0, ty, TZ], fov, UPV), fov };
+  };
+}
+function scene(k, o, heroFn) {
+  // one emerald gradient for the whole frame (sky and back wall), no brown anywhere
+  const Wd = world({ fogColor: 0x0d3f36, fogNear: 26, fogFar: 90, skyTop: 0x0b3a31, skyBottom: 0x0d4a3e, hemiSky: 0xfff2d6, hemiGround: 0x2a5a4a, hemi: 1.1, sunColor: 0xffe2a8, sun: .6, sunPos: [3, 10, 8], shadowExt: 10, skyR: 300 });
+  const S = Wd.scene;
+  plainM(new THREE.BoxGeometry(60, 40, .5), EMER_D, [0, 4, -6.6], S);      // back wall (emerald, covers the whole frame)
+  plainM(new THREE.BoxGeometry(2.8, .3, 2.0), CREAM, [0, FLOOR - .15, TZ], S); // central lectern / table (inside the frame)
+  plainM(new THREE.BoxGeometry(2.9, .06, .12), COPPER, [0, FLOOR + .03, TZ + 1.0], S); // table edge line
+  const halo = spr(glowTex(), 9, .45, AMBER); halo.position.set(0, FLOOR + 1.5, TZ - 2.4); S.add(halo); // warm amber glow behind the hero
+  heroBox(Wd, heroFn);
+  Wd.cam = orbitCam(k, o);
+  return { Wd, S };
+}
+function heroBox(Wd, fn) {
+  const g = new THREE.Group(), m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()); m.visible = false; g.add(m); Wd.add(g);
+  Wd.on(t => { const bs = fn(t).filter(Boolean); if (!bs.length) return; const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (const b of bs) for (let q = 0; q < 3; q++) { lo[q] = Math.min(lo[q], b[q] - b[q + 3]); hi[q] = Math.max(hi[q], b[q] + b[q + 3]); }
+    g.position.set((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2); g.scale.set(Math.max(hi[0] - lo[0], .01), Math.max(hi[1] - lo[1], .01), Math.max(hi[2] - lo[2], .01)); });
+  Wd.hero = g; return g;
+}
+// question mark (coral or ink), built facing +z: hook, curve, stem, dot below. Billboarded per frame with rotation.y = azimuth.
+function qMark(S, col, pos, size) {
+  const g = new THREE.Group(); g.position.set(pos[0], pos[1], pos[2]); g.scale.setScalar(size); S.add(g);
+  g.add(mk(new THREE.TorusGeometry(.2, .06, 14, 28, PI * 1.5), col, { pos: [0, .22, 0], rot: [0, 0, -PI / 2], ink: false }));
+  g.add(mk(new THREE.SphereGeometry(.07, 14, 10), col, { pos: [0, -.25, 0], ink: false }));
+  return g;
+}
+// open book: emerald hard cover, two cream pages tilted into a V (about 20 deg), each with five thin text lines
+function book(S) {
+  const g = new THREE.Group(); g.position.set(0, FLOOR - 1.8, TZ); S.add(g);
+  g.add(mk(new THREE.BoxGeometry(2.9, .1, 1.4), EMER, { pos: [0, 0, 0], ink: false }));
+  [-1, 1].forEach(side => {
+    const pg = new THREE.Group(); pg.position.set(side * .72, .37, 0); pg.rotation.z = side * .35; g.add(pg);
+    pg.add(mk(new THREE.BoxGeometry(1.42, .05, 1.2), CREAM, { pos: [0, 0, 0], ink: false }));
+    for (let i = 0; i < 5; i++) pg.add(mk(new THREE.BoxGeometry(1.1, .012, .04), 0x6b5a3a, { pos: [0, .03, -.4 + i * .2], ink: false }));
+  });
+  return g;
+}
+// one plain block (cube) with an arrow cone on its front
+function arrowBlock(S, col, x, y, z, dirX) {
+  const g = new THREE.Group(); g.position.set(x, y, z); S.add(g);
+  g.add(mk(new THREE.BoxGeometry(.9, .9, .9), col, { pos: [0, 0, 0] }));
+  g.add(mk(new THREE.ConeGeometry(.18, .42, 12), GOLD, { pos: [dirX * .34, 0, .5], rot: [0, 0, dirX > 0 ? -PI / 2 : PI / 2], ink: false }));
+  return g;
+}
+function starShape(R, r, n) { const s = new THREE.Shape(); for (let i = 0; i < n * 2; i++) { const a = i * PI / n - PI / 2, rad = i % 2 ? r : R; const x = rad * Math.cos(a), y = rad * Math.sin(a); if (i) s.lineTo(x, y); else s.moveTo(x, y); } s.closePath(); return s; }
+// the inverted / upright tower: small cream block, middle coral block, big green block (local y = centre height above the table)
+function tower(S) {
+  const towerG = new THREE.Group(); towerG.position.set(0, FLOOR, TZ); S.add(towerG);
+  const A = mk(new THREE.BoxGeometry(.6, .6, .6), CREAM, { pos: [0, .3, 0] });
+  const B = mk(new THREE.BoxGeometry(.8, .8, .8), CORAL, { pos: [0, 1.0, 0] });
+  const C = mk(new THREE.BoxGeometry(1.0, 1.0, 1.0), EMER_L, { pos: [0, 1.9, 0] });
+  towerG.add(A); towerG.add(B); towerG.add(C);
+  return { towerG, A, B, C };
+}
+
+// ---------------- shot 1 (0-10.78): a soft dark-green cloth covers a glowing amber core; it lifts away; questions float ----------------
+function b01() {
+  const k = 0, D = 10.78;
+  const { Wd, S } = scene(k, { dur: D, ty: .2 }, t => [[0, .6, TZ, 1.4, 1.2, 1.0]]);
+  const glow = spr(glowTex(), 5.5, 0, AMBER); glow.position.set(0, FLOOR + .3, TZ); S.add(glow);
+  const core = mk(new THREE.BoxGeometry(1.2, .5, .9), AMBER, { pos: [0, FLOOR + .25, TZ], ink: false, mat: glowMat(0xffa030, .7) }); S.add(core);
+  // soft draped cloth: squashed dome on top, flared skirt below, one wavy fold ring
+  const cloth = new THREE.Group(); cloth.position.set(0, FLOOR + .3, TZ); S.add(cloth);
+  const dome = mk(new THREE.SphereGeometry(1.25, 36, 18, 0, TAU, 0, PI / 2), CLOTH, { pos: [0, 0, 0] }); dome.scale.y = .55; cloth.add(dome);
+  const skirt = mk(new THREE.CylinderGeometry(1.25, 1.5, .6, 36, 1, true), CLOTH, { pos: [0, 0, 0], ink: false }); cloth.add(skirt);
+  const fold = mk(new THREE.TorusGeometry(1.36, .05, 10, 48), CLOTH, { pos: [0, -.25, 0], rot: [PI / 2, 0, 0], ink: false }); cloth.add(fold);
+  const qs = Array.from({ length: 8 }, () => qMark(S, CORAL, [0, 0, 0], 1));
+  Wd.on(t => {
+    const az = azAt(k, t);
+    cloth.position.y = FLOOR + .3 + 6.0 * sm(t, 3.0, 8.0);
+    cloth.rotation.y = .25 * sm(t, 3.0, 8.0);
+    core.scale.setScalar(.6 + .4 * sm(t, 3.0, 6.0));
+    glow.material.opacity = .95 * sm(t, 2.8, 6.0);
+    qs.forEach((q, i) => {
+      const a = i * TAU / 8 + .4, r = 1.9 + .25 * Math.sin(t * 1.3 + i);
+      const up = 1 - sm(t, 6.8, 8.6);
+      const s = sm(t, .3 + i * .12, 1.4 + i * .12) * up;
+      q.scale.setScalar(Math.max(.001, .95 * s));
+      q.position.set(Math.cos(a + t * .15) * r, FLOOR + 1.9 + .35 * Math.sin(t * 2 + i) + 1.2 * sm(t, 6.0, 8.5), TZ + Math.sin(a + t * .15) * r);
+      q.rotation.y = az;
+    });
+  });
+  return Wd;
+}
+
+// ---------------- shot 2 (10.78-22.32): the food plate slides away; the big book rises and glows ----------------
+function b02() {
+  const k = 1, D = 11.54;
+  const { Wd, S } = scene(k, { dur: D, ty: .3 }, t => t < 3.0 ? [[0, .4, TZ, 1.1, .6, .6]] : [[0, .9, TZ, 1.5, 1.3, .8]]);
+  const plateG = new THREE.Group(); plateG.position.set(-.6, 0, TZ); S.add(plateG);
+  plateG.add(mk(new THREE.CylinderGeometry(.8, .8, .08, 36), CREAM, { pos: [0, FLOOR + .04, 0] }));
+  plateG.add(mk(new THREE.ConeGeometry(.38, .5, 3), COPPER, { pos: [0, FLOOR + .33, 0], ink: true }));
+  plateG.add(mk(new THREE.CylinderGeometry(.22, .28, .4, 18), EMER_L, { pos: [.5, FLOOR + .25, .3], ink: true }));
+  const bk = book(S);
+  const glow = spr(glowTex(), 1.7, 0, AMBER); S.add(glow);
+  Wd.on(t => {
+    plateG.position.x = -.6 - 4.2 * sm(t, .3, 2.6);
+    plateG.visible = t < 3.0;
+    bk.position.y = FLOOR - 1.8 + 1.9 * sm(t, 2.6, 4.6);
+    glow.material.opacity = .9 * sm(t, 3.6, 5.6);
+    glow.position.set(0, FLOOR + .6 + 1.0 * sm(t, 2.6, 5.6), TZ + .1);
+  });
+  return Wd;
+}
+
+// ---------------- shot 3 (22.32-28.17): questions pop out of the book; two blocks with opposite arrows clash ----------------
+function b03() {
+  const k = 2, D = 5.85;
+  const { Wd, S } = scene(k, { dur: D, ty: .3 }, t => [[0, .4, TZ + .2, 2.0, 1.1, 1.1]]);
+  const bk = book(S); bk.position.y = FLOOR + .1;
+  const glow = spr(glowTex(), 6.5, .85, AMBER); glow.position.set(0, FLOOR + .6, TZ - .2); S.add(glow);
+  const qs = Array.from({ length: 4 }, () => qMark(S, CORAL, [0, 0, 0], 1));
+  const bl = arrowBlock(S, EMER_L, -2.6, FLOOR + .45, TZ + 1.1, 1);
+  const br = arrowBlock(S, CORAL, 2.6, FLOOR + .45, TZ + 1.1, -1);
+  Wd.on(t => {
+    const az = azAt(k, t);
+    qs.forEach((q, i) => {
+      const u = ease.out(P(t, .2 + i * .25, 2.4 + i * .25));
+      const a = i * PI / 2 + .6;
+      q.position.set(lerp(0, Math.cos(a) * 2.0, u), lerp(FLOOR + .5, FLOOR + 2.0 + .4 * i, u), lerp(TZ + .2, TZ + Math.sin(a) * 1.2, u));
+      q.scale.setScalar(Math.max(.001, .9 * sm(t, .2 + i * .25, .8 + i * .25)));
+      q.rotation.y = az;
+    });
+    const approach = sm(t, 2.4, 3.8);
+    const shake = t > 3.8 ? Math.sin(t * 45) * .05 * (1 - sm(t, 4.4, 5.2)) : 0;
+    bl.position.x = lerp(-2.6, -.55, approach) + shake;
+    br.position.x = lerp(2.6, .55, approach) - shake;
+    bl.position.y = FLOOR + .45 + (t > 3.8 ? .25 * Math.max(0, Math.sin(PI * P(t, 3.8, 4.8))) : 0);
+    br.position.y = bl.position.y;
+    glow.material.opacity = .7 + .15 * Math.sin(t * 3);
+  });
+  return Wd;
+}
+
+// ---------------- shot 4 (28.17-33.82): the upside-down tower wobbles, coral questions hover above it; the golden stone slides in ----------------
+function b04() {
+  const k = 3, D = 5.65;
+  const { Wd, S } = scene(k, { dur: D, ty: .6 }, t => [[0, 1.0, TZ, .8, 1.6, .8]]);
+  const { towerG, A, B, C } = tower(S);
+  // stone: 1.3 wide, starts just inside the left edge (x=-1.15) and slides to the centre under the tower
+  const stone = mk(new THREE.BoxGeometry(1.3, .8, 1.1), GOLD, { pos: [0, FLOOR + .4, TZ], mat: glowMat(0xffb040, .25) }); stone.position.set(-1.15, FLOOR + .4, TZ); S.add(stone);
+  const qs = Array.from({ length: 4 }, () => qMark(S, CORAL, [0, 0, 0], 1));
+  Wd.on(t => {
+    const az = azAt(k, t);
+    towerG.rotation.z = .07 * Math.sin(t * 5.5) * (1 - sm(t, 3.4, 4.2)) + .04 * Math.sin(t * 2.1) * sm(t, 1.5, 3.0);
+    towerG.position.y = FLOOR + 1.4 * sm(t, 3.7, 4.7);
+    stone.position.x = lerp(-1.15, 0, sm(t, 1.4, 3.6));
+    // coral questions above the tower: appear at once, then drop and vanish 3.0-4.2 s
+    qs.forEach((q, i) => {
+      const x = (i - 1.5) * .6;
+      q.position.set(x, FLOOR + 3.0 + .15 * Math.sin(t * 2 + i), TZ + .2);
+      q.scale.setScalar(Math.max(.001, .85 * (1 - sm(t, 3.0 + i * .1, 4.2 + i * .1))));
+      q.rotation.y = az;
+    });
+  });
+  return Wd;
+}
+
+// ---------------- shot 5 (33.82-46.11): the tower rights itself on the stone; four amber threads gather into one tall beam ----------------
+function b05() {
+  const k = 4, D = 12.29;
+  const { Wd, S } = scene(k, { dur: D, ty: 1.5 }, t => [[0, 1.2, TZ, 1.1, 2.0, 1.0]]);
+  const { towerG, A, B, C } = tower(S);
+  const stone = mk(new THREE.BoxGeometry(1.3, .8, 1.1), GOLD, { pos: [0, FLOOR + .4, TZ], mat: glowMat(0xffb040, .25) }); S.add(stone);
+  const UP = { A: 2.9, B: 2.2, C: 1.3 }, INV = { A: .3, B: 1.0, C: 1.9 };
+  const yBeam = FLOOR + .8 + 2.4 * 2 / 3;   // beam meets the threads at about two thirds of the tower height
+  // four smooth warm-amber tubes (one per block side, one from the stone), each arcing into the beam
+  const tubes = Array.from({ length: 4 }, () => { const m = new THREE.Mesh(new THREE.BufferGeometry(), new THREE.MeshBasicMaterial({ color: 0xffd27a })); m.visible = false; S.add(m); return m; });
+  const beam = mk(new THREE.CylinderGeometry(.12, .12, 1, 18), AMBER, { pos: [0, FLOOR + .8, TZ], ink: false, mat: glowMat(0xffc860, 1.4) }); S.add(beam);
+  const bGlow = spr(glowTex(), 2.2, 0, AMBER); bGlow.position.set(0, FLOOR + .9, TZ); S.add(bGlow);
+  const qs = Array.from({ length: 4 }, () => qMark(S, CORAL, [0, 0, 0], 1));
+  Wd.on(t => {
+    const az = azAt(k, t);
+    const r = sm(t, .3, 3.0);
+    A.position.y = lerp(INV.A, UP.A, r); B.position.y = lerp(INV.B, UP.B, r); C.position.y = lerp(INV.C, UP.C, r);
+    towerG.position.y = FLOOR + 1.4 * (1 - sm(t, .3, 3.2));
+    towerG.rotation.z = .02 * Math.sin(t * 3) * (1 - r);
+    const ty = towerG.position.y;
+    const srcs = [[.52, ty + C.position.y, 1], [-.42, ty + B.position.y, -1], [.32, ty + A.position.y, 1], [-.66, FLOOR + .4, -1]];
+    const vis = t > 4.0;
+    srcs.forEach(([x, y, sd], i) => {
+      const m = tubes[i]; m.visible = vis; if (!vis) return;
+      const curve = new THREE.CatmullRomCurve3([
+        new THREE.Vector3(x, y, TZ),
+        new THREE.Vector3(x + sd * .4, y + .25, TZ + .1),
+        new THREE.Vector3(sd * .3, yBeam - .3, TZ + .05),
+        new THREE.Vector3(sd * .1, yBeam, TZ)]);
+      m.geometry.dispose(); m.geometry = new THREE.TubeGeometry(curve, 40, .04, 8, false);
+    });
+    const H = 9.0 * sm(t, 5.5, 7.5);
+    beam.visible = H > .01; beam.scale.set(1, Math.max(H, .01), 1); beam.position.set(0, FLOOR + .8 + H / 2, TZ);
+    bGlow.material.opacity = .8 * sm(t, 5.5, 7.0); bGlow.scale.setScalar(2.2 + .4 * Math.sin(t * 3));
+    qs.forEach((q, i) => {
+      const a = i * TAU / 4 + .5;
+      q.position.set(Math.cos(a) * 1.9, FLOOR + 2.8 - 1.0 * sm(t, .8 + i * .4, 2.4 + i * .4), TZ + Math.sin(a) * 1.2);
+      q.scale.setScalar(Math.max(.001, .9 * (1 - sm(t, .8 + i * .4, 2.4 + i * .4))));
+      q.rotation.y = az;
+    });
+  });
+  return Wd;
+}
+
+// ---------------- shot 6 (46.11-55.71): the book glows again; the questions gather into a lit lamp (question -> good answer -> pleasure) ----------------
+function b06() {
+  const k = 5, D = 9.6;
+  const { Wd, S } = scene(k, { dur: D, ty: .4 }, t => [[0, .8, TZ, 1.7, 1.5, 1.0]]);
+  const bk = book(S); bk.position.y = FLOOR + .1;
+  const glow = spr(glowTex(), 6.5, 0, AMBER); glow.position.set(0, FLOOR + .6, TZ - .2); S.add(glow);
+  const lamp = new THREE.Group(); lamp.position.set(1.0, FLOOR, TZ - .3); S.add(lamp);
+  lamp.add(mk(new THREE.CylinderGeometry(.06, .08, 1.8, 12), EMER, { pos: [0, .9, 0], ink: false }));
+  lamp.add(mk(new THREE.ConeGeometry(.6, .55, 24, 1, true), EMER_L, { pos: [0, 2.05, 0], ink: false }));
+  const bulb = mk(new THREE.SphereGeometry(.22, 20, 14), GOLD, { pos: [0, 1.75, 0], ink: false, mat: glowMat(0xffc860, 1) }); lamp.add(bulb);
+  const lGlow = spr(glowTex(), 4, 0, GOLD); lGlow.position.set(1.0, FLOOR + 1.75, TZ - .3); S.add(lGlow);
+  const qs = Array.from({ length: 6 }, () => qMark(S, CORAL, [0, 0, 0], 1));
+  Wd.on(t => {
+    const az = azAt(k, t);
+    glow.material.opacity = .85 * sm(t, 0, 1.5);
+    qs.forEach((q, i) => {
+      const a = i * TAU / 6 + .2, rr = 2.0 * (1 - sm(t, .6 + i * .15, 3.0 + i * .15)) + .1;
+      q.position.set(Math.cos(a + t) * rr, FLOOR + 1.5 + .4 * Math.sin(t * 2 + i) * (1 - sm(t, 2.4, 3.6)), TZ + Math.sin(a + t) * rr);
+      q.scale.setScalar(Math.max(.001, .9 * (1 - sm(t, 1.4 + i * .1, 3.4 + i * .1))));
+      q.rotation.y = az;
+    });
+    lamp.scale.set(1, Math.max(.001, sm(t, 2.8, 4.4)), 1);
+    bulb.material.emissiveIntensity = .4 + .6 * sm(t, 3.5, 5.0);
+    lGlow.material.opacity = .9 * sm(t, 3.8, 5.2);
+    lGlow.scale.setScalar(4 + .4 * Math.sin(t * 2));
+  });
+  return Wd;
+}
+
+// ---------------- shot 7 (55.71-61.27): the riddle box; the key turns in the keyhole; the lid opens; light pours out ----------------
+function b07() {
+  const k = 6, D = 5.56;
+  const { Wd, S } = scene(k, { dur: D, ty: .6 }, t => [[0, .6, TZ, 1.1, 1.3, 1.0]]);
+  const box = mk(new THREE.BoxGeometry(1.6, 1.2, 1.6), EMER, { pos: [0, FLOOR + .6, TZ] }); S.add(box);
+  const keyhole = mk(new THREE.BoxGeometry(.26, .36, .06), DARK, { pos: [0, FLOOR + .7, TZ + .83], ink: false }); S.add(keyhole);
+  const lidP = new THREE.Group(); lidP.position.set(0, FLOOR + 1.2, TZ - .8); S.add(lidP);
+  lidP.add(mk(new THREE.BoxGeometry(1.7, .2, 1.7), COPPER, { pos: [0, .1, .8] }));
+  // gold key in the keyhole on the front face: ring bow, shaft, two teeth
+  const keyG = new THREE.Group(); keyG.position.set(0, FLOOR + .7, TZ + .95); S.add(keyG);
+  keyG.add(mk(new THREE.TorusGeometry(.2, .065, 14, 24), GOLD, { pos: [-.45, 0, 0], ink: true }));
+  keyG.add(mk(new THREE.BoxGeometry(.9, .09, .09), GOLD, { pos: [0, 0, 0], ink: true }));
+  keyG.add(mk(new THREE.BoxGeometry(.12, .2, .09), GOLD, { pos: [.3, -.12, 0], ink: true }));
+  keyG.add(mk(new THREE.BoxGeometry(.12, .14, .09), GOLD, { pos: [.42, -.1, 0], ink: true }));
+  // warm light fountain: wide cone pouring up out of the open box (width about 40 percent of the frame)
+  const addFountain = (rTop, rBot, col, op) => { const m = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBot, 3.0, 32, 1, true), new THREE.MeshBasicMaterial({ color: col, transparent: true, opacity: op, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide })); m.visible = false; S.add(m); return m; };
+  const fountain = addFountain(.85, .3, 0xffe7a0, .55), core = addFountain(.3, .12, 0xfff8e0, .8);
+  const lg = spr(glowTex(), 2.2, 0, GOLD); lg.position.set(0, FLOOR + 1.9, TZ + .2); S.add(lg);
+  Wd.on(t => {
+    keyG.rotation.z = -PI / 2 * sm(t, 1.6, 2.2);
+    lidP.rotation.x = -2.2 * sm(t, 2.4, 3.6);
+    const sc = sm(t, 2.6, 4.0);
+    [fountain, core].forEach(m => { m.visible = sc > .01; m.scale.set(1, Math.max(sc, .001), 1); m.position.set(0, FLOOR + 1.2 + 1.5 * sc, TZ); });
+    lg.material.opacity = .9 * sc;
+  });
+  return Wd;
+}
+
+// ---------------- shot 8 (61.27-68.64): the dark sphere cracks with thin light rays; it opens to a glowing star; the crane rises ----------------
+function b08() {
+  const k = 7, D = 7.37;
+  const { Wd, S } = scene(k, { dur: D, ty: .8, cy0: .7, cy1: 2.3 }, t => [[0, 1.0, TZ, 1.2, 1.2, 1.0]]);
+  const top = mk(new THREE.SphereGeometry(.9, 36, 20, 0, TAU, 0, PI / 2), DARK, { pos: [0, FLOOR + 1.0, TZ] });
+  const bot = mk(new THREE.SphereGeometry(.9, 36, 20, 0, TAU, PI / 2, PI / 2), DARK, { pos: [0, FLOOR + 1.0, TZ] });
+  S.add(top); S.add(bot);
+  // crack rays: thin warm-white additive light bars radiating from the sphere surface (no solid sticks)
+  const rayMat = () => new THREE.MeshBasicMaterial({ color: 0xfff3d0, transparent: true, opacity: 1, blending: THREE.AdditiveBlending, depthWrite: false });
+  const rays = Array.from({ length: 6 }, () => { const m = new THREE.Mesh(new THREE.BoxGeometry(1.0, .03, .02), rayMat()); m.visible = false; S.add(m); return m; });
+  const burst = spr(glowTex(), 3, 0, GOLD); burst.position.set(0, FLOOR + 1.0, TZ + .2); S.add(burst);
+  const star = mk(new THREE.ShapeGeometry(starShape(.85, .36, 5), 1), GOLD, { pos: [0, FLOOR + 1.0, TZ], ink: false, mat: glowMat(0xffd27a, .9) }); S.add(star);
+  const sg = spr(glowTex(), 5.5, 0, AMBER); sg.position.set(0, FLOOR + 1.0, TZ - .2); S.add(sg);
+  Wd.on(t => {
+    const az = azAt(k, t);
+    const sp = sm(t, 2.2, 3.6);
+    top.position.y = FLOOR + 1.0 + 0.9 * sp; top.rotation.z = .55 * sp;
+    bot.position.y = FLOOR + 1.0; bot.rotation.z = -.55 * sp;
+    rays.forEach((m, i) => {
+      const a = i * TAU / 6 + .3, s = sm(t, .4 + i * .1, 1.8 + i * .1);
+      m.visible = s > .01;
+      const dist = .95 + .5 * s;
+      m.position.set(Math.cos(a) * dist, FLOOR + 1.0 + Math.sin(a) * dist, TZ + .3);
+      m.rotation.z = a; m.scale.set(Math.max(.001, s), 1, 1);
+      m.material.opacity = 1 - .7 * sp;
+    });
+    burst.material.opacity = .7 * sm(t, .4, 1.8) * (1 - .5 * sp);
+    star.scale.setScalar(Math.max(.001, sm(t, 3.0, 4.8)));
+    star.rotation.z = .6 * sm(t, 3.0, 6.0);
+    star.rotation.y = az;
+    sg.material.opacity = .8 * sm(t, 2.6, 4.4);
+    sg.scale.setScalar(3 + 2.5 * sm(t, 2.6, 5.0));
+  });
+  return Wd;
+}
+
+const SH = (id, dur, caps, capAt, build) => ({ id, dur, wide: true, caps, capAt, build });
+film({
+  W: 1080, H: 1920, xf: .4, vault: 'captions_vault.json',
+  shots: [
+    SH('s01', 10.78, ['G_CAP_01', 'G_CAP_04'], [0.0, 5.92, 10.78], b01),
+    SH('s02', 11.54, ['G_CAP_08', 'G_CAP_12'], [0.0, 5.52, 11.54], b02),
+    SH('s03', 5.85, ['G_CAP_16'], [0.0, 5.85], b03),
+    SH('s04', 5.65, ['G_CAP_19'], [0.0, 5.65], b04),
+    SH('s05', 12.29, ['G_CAP_24', 'G_CAP_28'], [0.0, 6.61, 12.29], b05),
+    SH('s06', 9.6, ['G_CAP_31', 'G_CAP_36'], [0.0, 4.84, 9.6], b06),
+    SH('s07', 5.56, ['G_CAP_40'], [0.0, 5.56], b07),
+    SH('s08', 7.37, ['G_CAP_44'], [0.0, 7.37], b08),
+  ]
+});
+</script>
+</html>
