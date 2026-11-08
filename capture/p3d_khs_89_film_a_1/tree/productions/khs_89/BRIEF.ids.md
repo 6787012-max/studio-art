@@ -4,9 +4,9 @@
 ### film_a  title=None kicker=None recap=
 - s01 (10.78 s) captions: G_CAP_01 / G_CAP_04 | labels:  | assets: 
 - s02 (11.54 s) captions: G_CAP_08 / G_CAP_12 | labels:  | assets: 
-- s03 (5.85 s) captions: G_CAP_16 | labels:  | assets: 
-- s04 (5.65 s) captions: G_CAP_19 | labels:  | assets: 
-- s05 (12.29 s) captions: G_CAP_24 / G_CAP_28 | labels:  | assets: 
-- s06 (9.6 s) captions: G_CAP_31 / G_CAP_36 | labels:  | assets: 
+- s03 (5.46 s) captions: G_CAP_16 | labels:  | assets: 
+- s04 (4.7 s) captions: G_CAP_19 | labels:  | assets: 
+- s05 (13.45 s) captions: G_CAP_23 / G_CAP_28 | labels:  | assets: 
+- s06 (9.95 s) captions: G_CAP_31 / G_CAP_36 | labels:  | assets: 
 - s07 (5.56 s) captions: G_CAP_40 | labels:  | assets: 
-- s08 (7.37 s) captions: G_CAP_44 | labels:  | assets: 
+- s08 (7.61 s) captions: G_CAP_44 | labels:  | assets: 

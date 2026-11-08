@@ -12,7 +12,7 @@
 // Look: deep emerald gradient everywhere, cream table, warm amber glow behind the hero, small coral accents; flat toon, ink outline.
 // Camera: SLOW ORBIT around one central table (azimuth runs across the clip), crane up at the end.
 // Every state is a pure function of the shot-local time t (no Math.random / Date / rAF).
-window.CLIP_DUR = 67.84;
+window.CLIP_DUR = 68.25;
 import { film, world, THREE, ease, clamp, lerp, mesh, toon, canvasTex } from '../../lib/stage3d.js';
 
 const TAU = Math.PI * 2, PI = Math.PI;
@@ -20,10 +20,10 @@ const EMER = 0x0f5b4c, EMER_D = 0x0a3b32, EMER_L = 0x2a9a80, CREAM = 0xf6ecd2, A
 const FLOOR = -0.87;          // top of the table (objects stand on it)
 const TZ = -3;                // z of the central table / hero
 const UPV = .2;               // framing: hero in the upper-middle band; caption box is below 64%
-const T0 = [0, 10.78, 22.32, 28.17, 33.82, 46.11, 55.71, 61.27];   // global start of each shot
+const T0 = [0, 10.78, 22.32, 27.78, 32.48, 45.93, 55.88, 61.44];   // global start of each shot
 const P = (t, a, b) => clamp((t - a) / (b - a), 0, 1);
 const sm = (t, a, b) => ease.sm(P(t, a, b));
-const AZ = T => lerp(-1.2, 1.2, clamp(T / 68.64, 0, 1));          // orbit azimuth over the whole clip (radians)
+const AZ = T => lerp(-1.2, 1.2, clamp(T / 68.25, 0, 1));          // orbit azimuth over the whole clip (radians)
 
 // ---------------- helpers ----------------
 let GT = null;

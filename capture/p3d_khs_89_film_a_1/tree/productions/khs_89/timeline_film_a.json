@@ -52,13 +52,13 @@
   {
    "id": "s03",
    "brief": "s03",
-   "dur": 5.85,
-   "briefDur": 5.85,
+   "dur": 5.46,
+   "briefDur": 5.46,
    "captions": [
     {
      "id": "G_CAP_16",
      "at": 0.5,
-     "until": 5.55
+     "until": 5.16
     }
    ],
    "capAt": [
@@ -69,13 +69,13 @@
   {
    "id": "s04",
    "brief": "s04",
-   "dur": 5.65,
-   "briefDur": 5.65,
+   "dur": 4.7,
+   "briefDur": 4.7,
    "captions": [
     {
      "id": "G_CAP_19",
      "at": 0.5,
-     "until": 5.35
+     "until": 4.4
     }
    ],
    "capAt": [
@@ -86,46 +86,46 @@
   {
    "id": "s05",
    "brief": "s05",
-   "dur": 12.29,
-   "briefDur": 12.29,
+   "dur": 13.45,
+   "briefDur": 13.45,
    "captions": [
     {
-     "id": "G_CAP_24",
+     "id": "G_CAP_23",
      "at": 0.5,
-     "until": 6.24
+     "until": 6.82
     },
     {
      "id": "G_CAP_28",
-     "at": 6.24,
-     "until": 11.99
+     "at": 6.82,
+     "until": 13.15
     }
    ],
    "capAt": [
     0.5,
-    6.24
+    6.82
    ],
    "words": []
   },
   {
    "id": "s06",
    "brief": "s06",
-   "dur": 9.6,
-   "briefDur": 9.6,
+   "dur": 9.95,
+   "briefDur": 9.95,
    "captions": [
     {
      "id": "G_CAP_31",
      "at": 0.5,
-     "until": 4.9
+     "until": 5.07
     },
     {
      "id": "G_CAP_36",
-     "at": 4.9,
-     "until": 9.3
+     "at": 5.07,
+     "until": 9.65
     }
    ],
    "capAt": [
     0.5,
-    4.9
+    5.07
    ],
    "words": []
   },
@@ -149,13 +149,13 @@
   {
    "id": "s08",
    "brief": "s08",
-   "dur": 7.37,
-   "briefDur": 7.37,
+   "dur": 7.61,
+   "briefDur": 7.61,
    "captions": [
     {
      "id": "G_CAP_44",
      "at": 0.5,
-     "until": 7.07
+     "until": 7.31
     }
    ],
    "capAt": [

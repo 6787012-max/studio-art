@@ -62,13 +62,13 @@
     {
      "id": "s03",
      "brief": "s03",
-     "dur": 5.85,
-     "briefDur": 5.85,
+     "dur": 5.46,
+     "briefDur": 5.46,
      "captions": [
       {
        "id": "G_CAP_16",
        "at": 0.0,
-       "until": 5.85
+       "until": 5.46
       }
      ],
      "capAt": [
@@ -76,19 +76,19 @@
      ],
      "words": [],
      "capUntil": [
-      5.85
+      5.46
      ]
     },
     {
      "id": "s04",
      "brief": "s04",
-     "dur": 5.65,
-     "briefDur": 5.65,
+     "dur": 4.7,
+     "briefDur": 4.7,
      "captions": [
       {
        "id": "G_CAP_19",
        "at": 0.0,
-       "until": 5.65
+       "until": 4.7
       }
      ],
      "capAt": [
@@ -96,61 +96,61 @@
      ],
      "words": [],
      "capUntil": [
-      5.65
+      4.7
      ]
     },
     {
      "id": "s05",
      "brief": "s05",
-     "dur": 12.29,
-     "briefDur": 12.29,
+     "dur": 13.45,
+     "briefDur": 13.45,
      "captions": [
       {
-       "id": "G_CAP_24",
+       "id": "G_CAP_23",
        "at": 0.0,
-       "until": 6.61
+       "until": 7.77
       },
       {
        "id": "G_CAP_28",
-       "at": 6.61,
-       "until": 12.29
+       "at": 7.77,
+       "until": 13.45
       }
      ],
      "capAt": [
       0.0,
-      6.61
+      7.77
      ],
      "words": [],
      "capUntil": [
-      6.61,
-      12.29
+      7.77,
+      13.45
      ]
     },
     {
      "id": "s06",
      "brief": "s06",
-     "dur": 9.6,
-     "briefDur": 9.6,
+     "dur": 9.95,
+     "briefDur": 9.95,
      "captions": [
       {
        "id": "G_CAP_31",
        "at": 0.0,
-       "until": 4.84
+       "until": 5.19
       },
       {
        "id": "G_CAP_36",
-       "at": 4.84,
-       "until": 9.6
+       "at": 5.19,
+       "until": 9.95
       }
      ],
      "capAt": [
       0.0,
-      4.84
+      5.19
      ],
      "words": [],
      "capUntil": [
-      4.84,
-      9.6
+      5.19,
+      9.95
      ]
     },
     {
@@ -176,13 +176,13 @@
     {
      "id": "s08",
      "brief": "s08",
-     "dur": 7.37,
-     "briefDur": 7.37,
+     "dur": 7.61,
+     "briefDur": 7.61,
      "captions": [
       {
        "id": "G_CAP_44",
        "at": 0.0,
-       "until": 7.37
+       "until": 7.61
       }
      ],
      "capAt": [
@@ -190,7 +190,7 @@
      ],
      "words": [],
      "capUntil": [
-      7.37
+      7.61
      ]
     }
    ],
@@ -258,13 +258,13 @@
   {
    "id": "s03",
    "brief": "s03",
-   "dur": 5.85,
-   "briefDur": 5.85,
+   "dur": 5.46,
+   "briefDur": 5.46,
    "captions": [
     {
      "id": "G_CAP_16",
      "at": 0.0,
-     "until": 5.85
+     "until": 5.46
     }
    ],
    "capAt": [
@@ -272,19 +272,19 @@
    ],
    "words": [],
    "capUntil": [
-    5.85
+    5.46
    ]
   },
   {
    "id": "s04",
    "brief": "s04",
-   "dur": 5.65,
-   "briefDur": 5.65,
+   "dur": 4.7,
+   "briefDur": 4.7,
    "captions": [
     {
      "id": "G_CAP_19",
      "at": 0.0,
-     "until": 5.65
+     "until": 4.7
     }
    ],
    "capAt": [
@@ -292,61 +292,61 @@
    ],
    "words": [],
    "capUntil": [
-    5.65
+    4.7
    ]
   },
   {
    "id": "s05",
    "brief": "s05",
-   "dur": 12.29,
-   "briefDur": 12.29,
+   "dur": 13.45,
+   "briefDur": 13.45,
    "captions": [
     {
-     "id": "G_CAP_24",
+     "id": "G_CAP_23",
      "at": 0.0,
-     "until": 6.61
+     "until": 7.77
     },
     {
      "id": "G_CAP_28",
-     "at": 6.61,
-     "until": 12.29
+     "at": 7.77,
+     "until": 13.45
     }
    ],
    "capAt": [
     0.0,
-    6.61
+    7.77
    ],
    "words": [],
    "capUntil": [
-    6.61,
-    12.29
+    7.77,
+    13.45
    ]
   },
   {
    "id": "s06",
    "brief": "s06",
-   "dur": 9.6,
-   "briefDur": 9.6,
+   "dur": 9.95,
+   "briefDur": 9.95,
    "captions": [
     {
      "id": "G_CAP_31",
      "at": 0.0,
-     "until": 4.84
+     "until": 5.19
     },
     {
      "id": "G_CAP_36",
-     "at": 4.84,
-     "until": 9.6
+     "at": 5.19,
+     "until": 9.95
     }
    ],
    "capAt": [
     0.0,
-    4.84
+    5.19
    ],
    "words": [],
    "capUntil": [
-    4.84,
-    9.6
+    5.19,
+    9.95
    ]
   },
   {
@@ -372,13 +372,13 @@
   {
    "id": "s08",
    "brief": "s08",
-   "dur": 7.37,
-   "briefDur": 7.37,
+   "dur": 7.61,
+   "briefDur": 7.61,
    "captions": [
     {
      "id": "G_CAP_44",
      "at": 0.0,
-     "until": 7.37
+     "until": 7.61
     }
    ],
    "capAt": [
@@ -386,7 +386,7 @@
    ],
    "words": [],
    "capUntil": [
-    7.37
+    7.61
    ]
   }
  ],
@@ -398,6 +398,6 @@
  "recapDur": 0,
  "voice": {
   "source": "real recording of the lecturer, mixed locally; NOT part of the render",
-  "clipDur": 67.84
+  "clipDur": 68.25
  }
 }

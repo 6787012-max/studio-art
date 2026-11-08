@@ -1,0 +1,5 @@
+ready_seconds=0.8
+size=540x960 (canvas 1080x1920)
+t=28.50  draw_seconds=0.02
+t=47.50  draw_seconds=0.01
+t=67.50  draw_seconds=0.01
