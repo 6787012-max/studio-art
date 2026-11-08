@@ -1,0 +1,307 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>khs 88 film a</title>
+<style>html,body{margin:0;background:#000}canvas{display:block;width:100vw;height:auto}</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>window.__T0=42.3500; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+// khs_88 / film_a - portrait 1080x1920, OBJECTS ONLY (no people, no hands, no faces, no silhouettes).
+// Look: bright and playful - sunny yellow, turquoise, white, charcoal-black tiles; soft daylight, flat toon, ink outline.
+// Camera: LATERAL TRUCK along a cream shelf (side-to-side tracking) with quick playful push-ins (shot 3 only).
+// Every state is a pure function of the shot-local time t (no Math.random / Date / rAF).
+import { film, world, THREE, ease, clamp, lerp, mesh, toon, canvasTex } from '../../lib/stage3d.js';
+
+const TAU = Math.PI * 2, PI = Math.PI;
+const YEL = 0xffc93c, YEL_D = 0xe0a21e, TURQ = 0x2ec4c4, WHITE = 0xffffff, CREAM = 0xfff4d6, CHAR = 0x2b2b30, GOLD = 0xffc53a, PINK = 0xf27ba6, GREY = 0x9a9ca6, BROWN = 0x6b4a1e;
+const SHELF = 0xfbe9c0, INKC = 0x1b1b22;
+const FLOOR = -0.87;          // top of the shelf (objects stand on it)
+const UPV = .2;               // framing: the hero sits in the upper-middle band; caption box is below 64%
+const P = (t, a, b) => clamp((t - a) / (b - a), 0, 1);
+const sm = (t, a, b) => ease.sm(P(t, a, b));
+
+// ---------------- helpers ----------------
+let GT = null, RT = null;
+const glowTex = () => GT || (GT = canvasTex(128, 128, (g, w, h) => { const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.35, 'rgba(255,255,255,.5)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }));
+const ringTex = () => RT || (RT = canvasTex(128, 128, (g) => { g.strokeStyle = 'rgba(255,255,255,1)'; g.lineWidth = 7; g.beginPath(); g.arc(64, 64, 52, 0, TAU); g.stroke(); }));
+const spr = (tex, size, op, tint) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color: tint === undefined ? 0xffffff : tint, depthWrite: false, transparent: true, fog: false, opacity: op, blending: THREE.AdditiveBlending })); s.scale.set(size, size, 1); s.renderOrder = 10; return s; };
+const mk = (geo, color, o) => { o = o || {}; return mesh(geo, toon(color, o.mat), Object.assign({ inkW: .008, inkColor: INKC }, o)); };
+const plainM = (geo, color, pos, parent) => { const m = new THREE.Mesh(geo, toon(color)); m.position.set(pos[0], pos[1], pos[2]); parent.add(m); return m; };
+const aimUp = (pos, tgt, fov, up) => { const d = Math.hypot(pos[0] - tgt[0], pos[1] - tgt[1], pos[2] - tgt[2]); return [tgt[0], tgt[1] - up * 2 * Math.tan(fov * PI / 360) * d, tgt[2]]; };
+const camFor = C => t => {
+  const u = clamp(t / C.dur, 0, 1), x = lerp(C.x0, C.x1, ease.sm(u));
+  const pos = [x, C.cy, C.cz], tg = [x * .5, C.ty, C.tz];
+  return { pos, look: aimUp(pos, tg, C.fov, UPV), fov: C.fov };
+};
+function scene(C, heroFn) {
+  const Wd = world({ fogColor: C.fog, fogNear: 26, fogFar: 90, skyTop: C.skyTop, skyBottom: C.skyBot, hemiSky: 0xffffff, hemiGround: 0xfff3d6, hemi: 1.25, sunColor: 0xffffff, sun: .75, sunPos: [3, 10, 8], shadowExt: 10, skyR: 300 });
+  const S = Wd.scene;
+  plainM(new THREE.BoxGeometry(40, .5, 6), SHELF, [0, FLOOR - .25, -3.4], S);
+  plainM(new THREE.BoxGeometry(40, .06, 6), TURQ, [0, FLOOR + .03, -3.4], S);
+  heroCluster(Wd, heroFn);
+  Wd.cam = C.cam || camFor(C);
+  return { Wd, S };
+}
+function heroCluster(Wd, fn) {
+  const g = new THREE.Group(), m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()); m.visible = false; g.add(m); Wd.add(g);
+  Wd.on(t => { const bs = fn(t).filter(Boolean); if (!bs.length) return; const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (const b of bs) for (let k = 0; k < 3; k++) { lo[k] = Math.min(lo[k], b[k] - b[k + 3]); hi[k] = Math.max(hi[k], b[k] + b[k + 3]); }
+    g.position.set((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2); g.scale.set(Math.max(hi[0] - lo[0], .01), Math.max(hi[1] - lo[1], .01), Math.max(hi[2] - lo[2], .01)); });
+  Wd.hero = g; return g;
+}
+// question mark, facing the camera: hook starts at the left, curves over the top, comes down on the right and ends at the bottom centre; dot below
+function qMark(S, col, pos, size) {
+  const g = new THREE.Group(); g.position.set(pos[0], pos[1], pos[2]); g.scale.setScalar(size); S.add(g);
+  g.add(mk(new THREE.TorusGeometry(.2, .06, 14, 28, PI * 1.5), col, { pos: [0, .22, 0], rot: [0, 0, -PI / 2], ink: false }));
+  g.add(mk(new THREE.SphereGeometry(.07, 14, 10), col, { pos: [0, -.25, 0], ink: false }));
+  return g;
+}
+// row of seven identical white cubes on the shelf (x = -2.4 .. 2.4)
+const CUBE_X = i => -2.4 + i * .8;
+function cubeRow(S) {
+  return Array.from({ length: 7 }, (_, i) => { const g = new THREE.Group(); g.position.set(CUBE_X(i), FLOOR + .3, -3); S.add(g); g.add(mk(new THREE.BoxGeometry(.6, .6, .6), WHITE, { pos: [0, 0, 0] })); return g; });
+}
+// glossy turquoise ball and a yellow banana peel: a deep crescent with brown tips and three floppy flaps at one tip
+function ballBanana(S) {
+  const ballG = new THREE.Group(); S.add(ballG);
+  ballG.add(mk(new THREE.SphereGeometry(.38, 28, 20), TURQ, { pos: [0, 0, 0] }));
+  ballG.add(mk(new THREE.SphereGeometry(.09, 12, 10), WHITE, { pos: [-.14, .16, .3], ink: false }));
+  const banG = new THREE.Group(); S.add(banG); banG.scale.setScalar(.75);
+  banG.add(mk(new THREE.TorusGeometry(.7, .17, 14, 36, 2.1), YEL, { pos: [0, 0, 0] }));
+  banG.add(mk(new THREE.SphereGeometry(.13, 14, 10), BROWN, { pos: [.7, 0, 0], ink: false }));
+  const tx = .7 * Math.cos(2.1), ty = .7 * Math.sin(2.1);
+  banG.add(mk(new THREE.SphereGeometry(.13, 14, 10), BROWN, { pos: [tx, ty, 0], ink: false }));
+  const flapBase = new THREE.Group(); flapBase.position.set(tx, ty, 0); banG.add(flapBase);
+  const flaps = [0, 1, 2].map(i => { const f = new THREE.Group(); f.position.set((i - 1) * .06, 0, 0); flapBase.add(f); f.add(mk(new THREE.BoxGeometry(.1, .42, .2), YEL_D, { pos: [0, .21, 0], ink: false })); return f; });
+  return { ballG, banG, flaps };
+}
+// 6 x 4 tile wall; each tile is a charcoal front plate and a gold back plate, turned by rotation.y
+function tileWall(S, z) {
+  const tiles = [];
+  for (let c = 0; c < 6; c++) for (let r = 0; r < 4; r++) {
+    const g = new THREE.Group(); g.position.set((c - 2.5) * .6, FLOOR + .6 + r * .6, z); S.add(g);
+    g.add(mk(new THREE.BoxGeometry(.54, .54, .06), CHAR, { pos: [0, 0, .03], ink: false }));
+    const back = mk(new THREE.BoxGeometry(.54, .54, .06), GOLD, { pos: [0, 0, -.03], ink: false }); g.add(back);
+    tiles.push({ g, c, r, back });
+  }
+  return tiles;
+}
+
+// ---------------- shot 1: thank Hashem for the troubles (storm cloud -> gift), then one picture (puzzle) ----------------
+function b01() {
+  const C = { dur: 12.31, x0: -.7, x1: .7, cz: 3.6, cy: .5, fov: 58, ty: .2, tz: -3, fog: 0xcff3f5, skyTop: 0x7ed8e6, skyBot: 0xfff1cc };
+  const { Wd, S } = scene(C, t => t < 5.6 ? [[0, .2, -3, .8, 1.0, .5]] : [[0, .25, -3, 1.05, 1.05, .3]]);
+  const cloud = new THREE.Group(); cloud.position.set(0, FLOOR + 1.3, -3); S.add(cloud);
+  [[0, 0, 0, .5], [-.42, -.08, .05, .38], [.42, -.1, 0, .4], [0, .28, .05, .38]].forEach(([x, y, z, r]) => cloud.add(mk(new THREE.SphereGeometry(r, 24, 16), CHAR, { pos: [x, y, z] })));
+  const gift = new THREE.Group(); gift.position.set(0, FLOOR + .5, -3); S.add(gift);
+  gift.add(mk(new THREE.BoxGeometry(1, 1, 1), YEL, { pos: [0, 0, 0] }));
+  gift.add(mk(new THREE.BoxGeometry(.18, 1.04, 1.04), TURQ, { pos: [0, 0, 0], ink: false }));
+  gift.add(mk(new THREE.BoxGeometry(1.04, 1.04, .18), TURQ, { pos: [0, 0, 0], ink: false }));
+  gift.add(mk(new THREE.SphereGeometry(.2, 20, 14), TURQ, { pos: [0, .6, 0], ink: false }));
+  // four puzzle pieces, each with a question mark, fly in and snap into one picture with a gold frame
+  const slots = [[-.5, .5], [.5, .5], [-.5, -.5], [.5, -.5]];
+  const cols = [YEL, TURQ, CREAM, CHAR], qcol = [INKC, INKC, INKC, GOLD];
+  const starts = [[-2.4, 2.0, -1.8, 1.1], [2.4, 1.5, -2.4, -1.0], [-2.5, -0.3, -1.2, .8], [2.5, .2, -1.6, -.7]];
+  const pcs = slots.map((sl, i) => {
+    const p = new THREE.Group(); p.visible = false; S.add(p);
+    p.add(mk(new THREE.BoxGeometry(.95, .95, .1), cols[i], { pos: [0, 0, 0] }));
+    const q = new THREE.Group(); q.position.set(0, 0, .07); p.add(q);
+    q.add(mk(new THREE.TorusGeometry(.17, .05, 12, 24, PI * 1.5), qcol[i], { pos: [0, .17, 0], rot: [0, 0, -PI / 2], ink: false }));
+    q.add(mk(new THREE.SphereGeometry(.06, 12, 10), qcol[i], { pos: [0, -.22, 0], ink: false }));
+    return { p, q, sl, s: starts[i] };
+  });
+  const frame = mk(new THREE.BoxGeometry(2.1, 2.1, .06), GOLD, { pos: [0, .25, -3.1], ink: false }); frame.visible = false; S.add(frame);
+  Wd.on(t => {
+    cloud.visible = t < 5.4; cloud.scale.setScalar(Math.max(.001, 1 - sm(t, 3.8, 5.0)));
+    cloud.position.y = FLOOR + 1.3 + .05 * Math.sin(t * 3);
+    gift.visible = t > 4.2 && t < 6.0; gift.scale.setScalar(Math.max(.001, sm(t, 4.4, 5.3))); gift.rotation.y = (1 - sm(t, 4.4, 5.3)) * PI;
+    pcs.forEach((o, i) => {
+      const u = ease.sm(P(t, 5.8 + i * .2, 8.6 + i * .2));
+      o.p.visible = t > 5.8;
+      o.p.position.set(lerp(o.s[0], slots[i][0], u), lerp(o.s[1], .25 + slots[i][1], u), lerp(o.s[2], -3, u));
+      o.p.rotation.z = (1 - u) * o.s[3];
+      o.q.scale.setScalar(Math.max(.001, 1 - sm(t, 9.2 + i * .1, 9.9 + i * .1)));
+    });
+    frame.visible = t > 8.6; frame.scale.setScalar(.85 + .15 * sm(t, 8.6, 9.6));
+  });
+  return Wd;
+}
+
+// ---------------- shot 2: the last question blushes pink and hides; "why laughter?"; the row of cubes arrives ----------------
+function b02() {
+  const C = { dur: 12.96, x0: .6, x1: -.6, cz: 4.2, cy: .5, fov: 58, ty: .2, tz: -3, fog: 0xcff3f5, skyTop: 0x7ed8e6, skyBot: 0xfff1cc };
+  const { Wd, S } = scene(C, t => t < 8.6 ? [[-.6, .3, -3, 1.9, 1.3, .4]] : [[0, -.45, -3, 2.6, .5, .45]]);
+  const qDark = qMark(S, CHAR, [0, .3, -3], 2.3);
+  const qPink = qMark(S, PINK, [0, .3, -3], 2.3); qPink.visible = false;
+  const qWhy = qMark(S, YEL, [0, .4, -3], 1.6); qWhy.visible = false;
+  const cubes = cubeRow(S);
+  Wd.on(t => {
+    qDark.visible = t < 2.0;
+    qPink.visible = t >= 2.0;
+    const sh = sm(t, 11.4, 12.96);
+    qPink.scale.setScalar(Math.max(.001, 2.3 * (1 - sh)));
+    qWhy.visible = t > 4.0 && t < 8.6; qWhy.position.x = -1.8;
+    qWhy.scale.setScalar(Math.max(.001, 1.6 * ease.out(P(t, 4.0, 4.6)) * (1 - sm(t, 8.0, 8.6))));
+    qWhy.rotation.z = .2 * Math.sin(t * 2.5);
+    cubes.forEach((c, i) => { const u = ease.sm(P(t, 8.0 + i * .15, 10.6 + i * .15)); c.visible = t > 8.0; c.position.x = CUBE_X(i) - 6 * (1 - u); });
+  });
+  return Wd;
+}
+
+// ---------------- shot 3: "out of the ordinary" - one cube hops out of the row; a ball slips on a banana peel (object only) ----------------
+function b03() {
+  const C = { dur: 15.11, x0: -.8, x1: .8, cz: 6.4, cy: .6, fov: 60, ty: .3, tz: -3, fog: 0xcff3f5, skyTop: 0x7ed8e6, skyBot: 0xfff1cc };
+  const camX = t => lerp(-.8, 1.3, ease.sm(P(t, 5.6, 8.6)));
+  const camZ = t => lerp(6.4, 1.0, ease.sm(P(t, 5.6, 8.6)));
+  C.cam = t => {   // lateral truck, then a push-in on the peel (ball and peel each ~30 percent of frame width)
+    const cx = camX(t), cz = camZ(t), k = ease.sm(P(t, 5.6, 8.6));
+    const pos = [cx, .75, cz], tg = [lerp(cx * .5, cx, k), .1, -3];
+    return { pos, look: aimUp(pos, tg, C.fov, UPV), fov: C.fov };
+  };
+  const { Wd, S } = scene(C, t => t < 5.6 ? [[0, -.4, -3, 2.6, .5, .45]] : [[.7, -.2, -3, 1.5, .9, .5]]);
+  const cubes = cubeRow(S);
+  const { ballG, banG, flaps } = ballBanana(S);
+  banG.position.set(1.3, FLOOR + .6, -3);
+  const lines = [0, 1, 2].map(() => { const m = mk(new THREE.BoxGeometry(.4, .05, .03), WHITE, { pos: [0, 0, 0], ink: false }); m.visible = false; S.add(m); return m; });
+  Wd.on(t => {
+    cubes.forEach(c => c.scale.setScalar(Math.max(.001, 1 - sm(t, 5.2, 6.4))));
+    cubes[3].position.z = -3 + 1.4 * sm(t, 2.2, 3.4);
+    cubes[3].position.y = FLOOR + .3 + .7 * Math.sin(PI * P(t, 2.2, 3.4));
+    // ball: rolls in and touches the peel (~8.0 s), then slips up and over it (8.0-10.6 s), then settles
+    ballG.visible = t > 5.6;
+    let x, y, rx = 0;
+    if (t < 8) { x = lerp(-2.0, .3, ease.sm(P(t, 5.6, 8.0))); y = FLOOR + .38; }
+    else { const u = P(t, 8, 10.6); x = lerp(.3, 1.9, u); y = FLOOR + .38 + 1.0 * Math.sin(PI * u); rx = TAU * 1.2 * u; }
+    ballG.position.set(x, y, -3); ballG.rotation.set(rx, 0, -(x + 2) / .38);
+    // two or three motion lines trailing the ball mid-slip
+    const ml = sm(t, 8.0, 8.4) * (1 - sm(t, 10.0, 10.6));
+    lines.forEach((m, i) => { m.visible = ml > .01; m.position.set(x - .6 - i * .08, y + .15 - i * .15, -3); });
+    // peel: tilts after the hit and its flaps open
+    banG.visible = t > 5.6;
+    const hit = sm(t, 8.0, 9.2);
+    banG.rotation.z = -PI / 2 - 1.05 - .3 * hit;
+    flaps.forEach((f, i) => { f.rotation.z = (i - 1) * (.25 + .5 * hit); });
+  });
+  return Wd;
+}
+
+// ---------------- shot 4: the peel lands; the burst of yellow "laughter"; the row returns in order ----------------
+function b04() {
+  const C = { dur: 11.47, x0: 1.4, x1: .2, cz: 5.2, cy: .6, fov: 60, ty: .3, tz: -3, fog: 0xcff3f5, skyTop: 0x7ed8e6, skyBot: 0xfff1cc };
+  const { Wd, S } = scene(C, t => t < 6.2 ? [[1.6, -.2, -3, 1.2, .9, .6]] : [[0, -.45, -3, 2.6, .5, .45]]);
+  const { ballG, banG, flaps } = ballBanana(S);
+  ballG.position.set(1.9, FLOOR + .38, -3); ballG.rotation.set(TAU * 1.2, 0, -3.9 / .38);
+  banG.position.set(1.3, FLOOR + .6, -3); banG.rotation.z = -PI / 2 - 1.05 - .3;
+  flaps.forEach((f, i) => { f.rotation.z = (i - 1) * .75; });
+  const cubes = cubeRow(S);
+  const grains = Array.from({ length: 14 }, () => { const m = mk(new THREE.SphereGeometry(.07, 12, 10), YEL, { pos: [0, 0, 0], ink: false }); S.add(m); return m; });
+  const ring = spr(ringTex(), 1, 0, TURQ); S.add(ring);
+  Wd.on(t => {
+    const bc = [1.9, FLOOR + .38, -3];
+    const bu = ease.out(P(t, 1.0, 3.6));
+    grains.forEach((m, i) => {
+      const a = i * TAU / 14 + .3, d = .2 + 1.3 * bu;
+      m.visible = t > 1.0 && t < 6.2;
+      m.position.set(bc[0] + Math.cos(a) * d, bc[1] + Math.sin(a) * d * .8 + .3 * bu, bc[2]);
+      m.scale.setScalar(Math.max(.001, 1 - sm(t, 4.6, 6.0)));
+    });
+    ring.visible = t > 1.0 && t < 4.5; ring.position.set(bc[0], bc[1], bc[2] + .1);
+    ring.scale.setScalar(.5 + 3 * sm(t, 1.0, 4.0)); ring.material.opacity = .9 * (1 - sm(t, 1.0, 4.0));
+    ballG.visible = t < 6.2; banG.visible = t < 6.2;
+    cubes.forEach((c, i) => { const u = ease.sm(P(t, 6.0 + i * .18, 8.8 + i * .18)); c.visible = t > 6.0; c.position.x = CUBE_X(i) - 6 * (1 - u); });
+  });
+  return Wd;
+}
+
+// ---------------- shot 5: "everything we saw was reversed" - a wave turns the tiles over from the right toward the left ----------------
+// Timing: right columns flip first; at t=58 (local 6.15) the left half (cols 0-2) is still charcoal, the right half (cols 3-5) is gold,
+// and column 2 (the boundary) is mid-flip at about 90 degrees. The wave ends about 60.6 s.
+function b05() {
+  const C = { dur: 11.52, x0: -.6, x1: .6, cz: 4.6, cy: .6, fov: 58, ty: .3, tz: -3, fog: 0xcff3f5, skyTop: 0x7ed8e6, skyBot: 0xfff1cc };
+  const { Wd, S } = scene(C, t => [[0, .65, -3, 1.85, 1.3, .4]]);
+  const tiles = tileWall(S, -3);
+  const glow = spr(glowTex(), 6, 0, GOLD); glow.position.set(0, .6, -2.6); S.add(glow);
+  Wd.on(t => {
+    tiles.forEach(o => {
+      const base = o.c <= 2 ? 5.65 + (2 - o.c) * 1.05 : 5.65 - (o.c - 2) * 1.0;
+      const a = base + o.r * .08;
+      o.g.rotation.y = PI * sm(t, a, a + 1.0);
+    });
+    glow.material.opacity = .5 * sm(t, 3.5, 6.5);
+  });
+  return Wd;
+}
+
+// ---------------- shot 6: "why cry? one big laughter" - a glossy tear stops in mid-air, bursts into yellow grains that fill a turquoise bowl ----------------
+function b06() {
+  const C = { dur: 11.44, x0: .4, x1: -.4, cz: 4.2, cy: .6, fov: 58, ty: .2, tz: -3, fog: 0xcff3f5, skyTop: 0x7ed8e6, skyBot: 0xfff1cc };
+  const { Wd, S } = scene(C, t => t < 2.6 ? [[0, 1.7, -3, .5, 1.2, .4]] : (t < 7.2 ? [[0, -.1, -3, 1.2, 1.1, .5]] : [[0, -.3, -3, 1.0, .7, .5]]));
+  const tiles = tileWall(S, -3.6);
+  tiles.forEach(o => { o.g.rotation.y = PI; });   // the wall shows its gold side now
+  const drop = new THREE.Group(); S.add(drop);
+  drop.add(mk(new THREE.SphereGeometry(.26, 28, 20), TURQ, { pos: [0, 0, 0] }));
+  drop.add(mk(new THREE.ConeGeometry(.26, .6, 24), TURQ, { pos: [0, .45, 0] }));
+  drop.add(mk(new THREE.SphereGeometry(.07, 12, 10), WHITE, { pos: [-.1, .12, .22], ink: false }));  // gloss highlight
+  const bowl = mk(new THREE.CylinderGeometry(1.0, .7, 1.0, 36, 1, true), TURQ, { pos: [0, -.37, -3], ink: false }); S.add(bowl);
+  const disc = mk(new THREE.CircleGeometry(.7, 28), YEL, { pos: [0, -.86, -3], rot: [-PI / 2, 0, 0], ink: false }); S.add(disc);
+  const N = 45;
+  const grains = Array.from({ length: N }, (_, i) => { const m = mk(new THREE.SphereGeometry(.09, 12, 10), i % 3 === 0 ? GOLD : YEL, { pos: [0, 0, 0], ink: false }); S.add(m); return m; });
+  const fin = i => { const layer = Math.floor(i / 9), k = i % 9, ang = k * 2.39996 + layer, r = .18 + .38 * (((k + layer) % 3) / 2.2 + .3); return [r * Math.cos(ang), -.8 + layer * .2, -3 + r * Math.sin(ang)]; };
+  const glowB = spr(glowTex(), 2.2, 0, GOLD); glowB.position.set(0, 1.1, -3); S.add(glowB);
+  Wd.on(t => {
+    drop.visible = t < 2.7;
+    const fall = ease.in(P(t, 0, 2.0));
+    drop.position.set(0, lerp(2.6, 1.6, fall), -3);
+    drop.scale.setScalar(Math.max(.001, 1 - sm(t, 2.5, 2.7)));
+    const bU = ease.out(P(t, 2.7, 3.5)), gU = ease.sm(P(t, 4.6, 7.0));
+    glowB.material.opacity = .6 * (1 - P(t, 2.7, 3.6));
+    grains.forEach((m, i) => {
+      const a = i * 2.39996, fp = fin(i);
+      const bx = Math.cos(a) * 1.5 * bU, by = 1.6 + Math.abs(Math.sin(a * 1.3)) * 1.2 * bU, bz = -3 + Math.sin(a) * .3 * bU;
+      m.visible = t > 2.7;
+      m.position.set(lerp(bx, fp[0], gU), lerp(by, fp[1], gU), lerp(bz, fp[2], gU));
+    });
+  });
+  return Wd;
+}
+
+// ---------------- shot 7: "in this world we say good" - a dim grey candle in the corner; then the whole board glows warm ----------------
+function b07() {
+  const C = { dur: 9.5, x0: -.3, x1: .3, cz: 4.4, cy: .6, fov: 58, ty: .2, tz: -3, fog: 0xfff3d6, skyTop: 0x9fe0ea, skyBot: 0xfff3d6 };
+  const { Wd, S } = scene(C, t => t < 3.4 ? [[-1.2, .05, -3, .45, .75, .4]] : [[0, .4, -3, 1.9, 1.4, .4]]);
+  const tiles = tileWall(S, -3.6);
+  tiles.forEach(o => { o.g.rotation.y = PI; o.back.material.color.set(GREY); });
+  const candle = new THREE.Group(); candle.position.set(-1.2, FLOOR, -3); S.add(candle);
+  candle.add(mk(new THREE.CylinderGeometry(.2, .2, .7, 24), GREY, { pos: [0, .35, 0], ink: false }));
+  const flame = mk(new THREE.ConeGeometry(.09, .24, 16), GOLD, { pos: [0, .82, 0], ink: false, mat: { emissive: 0xffb040, emissiveIntensity: .8 } });
+  candle.add(flame);
+  const glow = spr(glowTex(), 7, 0, GOLD); glow.position.set(0, .4, -3.3); S.add(glow);
+  const cGrey = new THREE.Color(GREY), cGold = new THREE.Color(GOLD);
+  Wd.on(t => {
+    flame.scale.setScalar(1 + .15 * Math.sin(t * 17));
+    tiles.forEach(o => {
+      const d = (o.c + o.r) * .12, w = sm(t, 3.0 + d, 6.0 + d);
+      o.back.material.color.lerpColors(cGrey, cGold, w);
+      if (o.back.material.emissive) { o.back.material.emissive.set(0xffb040); o.back.material.emissiveIntensity = .45 * w; }
+    });
+    glow.material.opacity = .55 * sm(t, 4.0, 8.0);
+  });
+  return Wd;
+}
+
+const SH = (id, dur, caps, capAt, build) => ({ id, dur, wide: true, caps, capAt, build });
+film({
+  W: 1080, H: 1920, xf: .4, vault: 'captions_vault.json',
+  shots: [
+    SH('s01', 12.31, ['CAP_A_01', 'CAP_A_02'], [0.0, 5.83], b01),
+    SH('s02', 12.96, ['CAP_A_03', 'CAP_A_04'], [0.0, 5.88], b02),
+    SH('s03', 15.11, ['CAP_A_05', 'CAP_A_06'], [0.0, 7.27], b03),
+    SH('s04', 11.47, ['CAP_A_07', 'CAP_A_08'], [0.0, 5.41], b04),
+    SH('s05', 11.52, ['CAP_A_09', 'CAP_A_10'], [0.0, 6.28], b05),
+    SH('s06', 11.44, ['CAP_A_11', 'CAP_A_12'], [0.0, 5.0], b06),
+    SH('s07', 9.5, ['CAP_A_13'], [0.0], b07),
+  ]
+});
+</script>
+</html>
