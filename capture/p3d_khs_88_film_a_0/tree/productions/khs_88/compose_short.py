@@ -14,9 +14,9 @@ os.chdir(SHORTS)
 import pipeline as P  # guarded dispatch (same import as anim/build.py)
 
 render, final = os.path.abspath(sys.argv[1]), os.path.abspath(sys.argv[2])
-cfg = json.load(io.open(SHORTS + '/work/short87_config.json', encoding='utf-8'))
-D = SHORTS + '/anim/short87'
-WORK = os.path.dirname(final) + '/_compose_work_short87'  # per-short: a shared dir reused short73's cached end card (27/10)
+cfg = json.load(io.open(SHORTS + '/work/short88_config.json', encoding='utf-8'))
+D = SHORTS + '/anim/short88'
+WORK = os.path.dirname(final) + '/_compose_work_short88'  # per-short: a shared dir reused short73's cached end card (27/10)
 os.makedirs(WORK, exist_ok=True)
 FPS, END_DUR = 30, 4.8
 pre = cfg.get('pre_roll', 0.15)
