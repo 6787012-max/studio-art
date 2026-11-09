@@ -1,0 +1,319 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>khs 91 film a</title>
+<style>html,body{margin:0;background:#000}canvas{display:block;width:100vw;height:auto}</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+// khs_91 / film_a - portrait 1080x1920, OBJECTS ONLY (no people, no hands, no faces, no silhouettes; one donkey built from shapes).
+// Round 1 fixes: closer locked camera, heroes large and centred, nothing cut at the frame edges, real wings, real millstone, loaf on pedestal.
+// Look: warm WHEAT GOLD + TERRACOTTA + SAGE GREEN + soft SKY BLUE on cream. Flat toon, ink outline.
+// Camera: LOCKED level camera per shot (horizon at about 64% of frame), one slow push-in (about 8%), HARD CUTS between shots.
+// Every state is a pure function of the shot-local time lt (no Math.random / Date / rAF).
+window.CLIP_DUR = 63.52;
+import { film, world, THREE, ease, clamp, lerp, mesh, toon, canvasTex } from '../../lib/stage3d.js';
+
+const PI = Math.PI;
+const FLOOR = -0.9;           // top of the floor slab (objects stand on it)
+const LEV = -0.05;            // camera / look height: floor edge lands at about 64% of frame height
+const WHEAT = 0xe9b44c, WHEAT_D = 0xc98a3a, GOLD = 0xffcf5a, GOLD_L = 0xffe28a, STRAW = 0xb0741f, TERRA = 0xc0583a, SAGE = 0x8fa77a, SAGE_D = 0x5f7a52;
+const CREAM = 0xfff3dc, WOOD = 0x7a5233, GREY = 0xc9ced3, GREY_D = 0x8d939a, DGREY = 0x4a4a46, WHITE = 0xffffff, MEAT = 0x9a4a32;
+const SPROUT = 0x5fbf5a, FLOUR = 0xfff9ee, BLUE = 0x5fb4e8, INK = 0x2a2018, EARTH = 0x7a4f2e, OVEN = 0x8a4a33, DONK = 0x9c9184;
+const STONE = 0x7d7468, STONE_L = 0x9a9184;
+
+const P = (t, a, b) => clamp((t - a) / (b - a), 0, 1);
+const sm = (t, a, b) => ease.sm(P(t, a, b));
+const up = (t, a, b, from, to) => lerp(from, to, sm(t, a, b));
+// piecewise smooth track: keys [[t, x, y], ...] -> [x, y]
+function track(t, keys) {
+  if (t <= keys[0][0]) return [keys[0][1], keys[0][2]];
+  for (let i = 0; i < keys.length - 1; i++) {
+    const a = keys[i], b = keys[i + 1];
+    if (t <= b[0]) { const k = ease.sm(clamp((t - a[0]) / (b[0] - a[0]), 0, 1)); return [lerp(a[1], b[1], k), lerp(a[2], b[2], k)]; }
+  }
+  const z = keys[keys.length - 1]; return [z[1], z[2]];
+}
+
+// ---------------- helpers ----------------
+const mk = (geo, color, o) => { o = o || {}; return mesh(geo, toon(color, o.mat), Object.assign({ inkW: .008, inkColor: INK }, o)); };
+const put = (parent, geo, color, pos, o) => { const m = mk(geo, color, Object.assign({ pos }, o || {})); parent.add(m); return m; };
+const glowMat = (color, intensity) => ({ emissive: color, emissiveIntensity: intensity });
+let GT = null;
+const glowTex = () => GT || (GT = canvasTex(128, 128, (g, w, h) => { const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.35, 'rgba(255,255,255,.5)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }));
+const spr = (tex, size, op, tint) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color: tint === undefined ? 0xffffff : tint, depthWrite: false, transparent: true, fog: false, opacity: op, blending: THREE.AdditiveBlending })); s.scale.set(size, size, 1); s.renderOrder = 10; return s; };
+function heroBox(Wd, fn) {
+  const g = new THREE.Group(), m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()); m.visible = false; g.add(m); Wd.add(g);
+  Wd.on(t => { const bs = fn(t).filter(Boolean); if (!bs.length) return; const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (const b of bs) for (let q = 0; q < 3; q++) { lo[q] = Math.min(lo[q], b[q] - b[q + 3]); hi[q] = Math.max(hi[q], b[q] + b[q + 3]); }
+    g.position.set((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2); g.scale.set(Math.max(hi[0] - lo[0], .01), Math.max(hi[1] - lo[1], .01), Math.max(hi[2] - lo[2], .01)); });
+  Wd.hero = g; return g;
+}
+// one scene: floor slab, sage ground; camera closer and level, aimed at the hero band, slow push-in across the shot
+function scene(heroFn, dur) {
+  const Wd = world({ fogColor: 0xfff1d6, fogNear: 24, fogFar: 70, skyTop: 0x9fd3ee, skyBottom: 0xfff3d8, hemiSky: 0xfff6e6, hemiGround: 0x8a9b6a, hemi: 1.0, sunColor: 0xffe2b0, sun: .7, sunPos: [3, 10, 8], shadowExt: 8, skyR: 200 });
+  const S = Wd.scene;
+  put(S, new THREE.BoxGeometry(60, .4, 30), SAGE, [0, FLOOR - .2, -10], { ink: false });
+  heroBox(Wd, heroFn);
+  Wd.cam = lt => { const z = 6.5 - .5 * ease.sm(clamp(lt / dur, 0, 1)); return { pos: [0, LEV, z], look: [0, LEV, 0], fov: 50 }; };
+  return { Wd, S };
+}
+// trough of raw wheat grains (width w); returns the grain meshes
+function trough(S, x, grains, w) {
+  const W = w || 1.5;
+  put(S, new THREE.BoxGeometry(W, .4, .6), WOOD, [x, FLOOR + .2, 0]);
+  const out = [];
+  if (grains) for (let i = 0; i < 10; i++) { const g = put(S, new THREE.SphereGeometry(.08, 12, 8), WHEAT, [x - W * .4 + i * (W * .8 / 9), FLOOR + .5 + (i % 2) * .05, (i % 3 - 1) * .1], { ink: false }); out.push(g); }
+  return out;
+}
+// low-poly donkey built from shapes (an animal, facing +x); the head pivots at the neck for eating
+function donkey(S, x, y, z, s) {
+  const g = new THREE.Group(); g.position.set(x, y, z); g.scale.setScalar(s); S.add(g);
+  put(g, new THREE.BoxGeometry(1.5, .6, .6), DONK, [0, .75, 0]);
+  [[-.5, .2], [.5, .2], [-.5, -.2], [.5, -.2]].forEach(([lx, lz]) => put(g, new THREE.BoxGeometry(.14, .5, .14), DONK, [lx, .25, lz]));
+  const head = new THREE.Group(); head.position.set(.7, 1.0, 0); g.add(head);
+  put(head, new THREE.BoxGeometry(.3, .6, .3), DONK, [.05, .15, 0]);
+  put(head, new THREE.BoxGeometry(.5, .35, .3), DONK, [.35, .35, 0]);
+  put(head, new THREE.ConeGeometry(.07, .28, 8), DONK, [.2, .62, .1]);
+  put(head, new THREE.ConeGeometry(.07, .28, 8), DONK, [.2, .62, -.1]);
+  return { g, head };
+}
+// golden loaf: flattened ellipsoid with three score lines
+function loaf(parent, x, y, z, glow) {
+  const m = put(parent, new THREE.SphereGeometry(.5, 24, 16), WHEAT_D, [x, y, z], glow ? { mat: glowMat(0xffb35a, glow) } : undefined);
+  m.scale.set(1.3, .62, .85);
+  [-.25, 0, .25].forEach(sx => put(m, new THREE.BoxGeometry(.04, .03, .9), STRAW, [sx, .3, 0], { ink: false }));
+  return m;
+}
+function table(S, x, w) {
+  put(S, new THREE.BoxGeometry(w || 1.2, .1, .9), WOOD, [x, FLOOR + 1.0, 0]);
+  put(S, new THREE.BoxGeometry(.14, 1.0, .14), WOOD, [x, FLOOR + .5, 0]);
+}
+// plate with a raised rim: cream cylinder + torus rim (object, flat disk seen from the camera)
+function plate(parent, r) {
+  const g = new THREE.Group(); parent.add(g);
+  put(g, new THREE.CylinderGeometry(r, r * .9, .08, 36), CREAM, [0, 0, 0]);
+  put(g, new THREE.TorusGeometry(r * .92, .025, 8, 36), WHITE, [0, .04, 0], { rot: [PI / 2, 0, 0], ink: false });
+  return g;
+}
+// question mark (glyph built from hook + stem + dot)
+function sign(parent, col, pos, size) {
+  const g = new THREE.Group(); g.position.set(pos[0], pos[1], pos[2]); g.scale.setScalar(size); parent.add(g);
+  g.add(mk(new THREE.TorusGeometry(.2, .06, 14, 28, PI * 1.5), col, { pos: [0, .22, 0], rot: [0, 0, -PI / 2], ink: false }));
+  g.add(mk(new THREE.BoxGeometry(.13, .5, .1), col, { pos: [0, .12, 0], ink: false }));
+  g.add(mk(new THREE.SphereGeometry(.07, 14, 10), col, { pos: [0, -.25, 0], ink: false }));
+  return g;
+}
+// a real wing: 4 feathers fanned out from the root (white, light-grey shade), root at local origin, extends along +x
+function wing(parent, x, y, side) {
+  const g = new THREE.Group(); g.position.set(x, y, 0); parent.add(g);
+  [0, .3, .6, .9].forEach((a, i) => {
+    const f = put(g, new THREE.SphereGeometry(.22, 18, 12), i % 2 ? GREY : WHITE, [0, 0, 0], { rot: [0, 0, side * (.2 + a)], ink: true });
+    f.scale.set(.9 + i * .08, .24, .1);
+    f.position.set(side * (.42 + i * .05), Math.sin(a) * .22 * side, 0);
+  });
+  return g;
+}
+
+// ---------------- shot 1 (K1, 0-9.45): the punishment - a light cloud dims the sun; two real wings carry a skewer with meat over a small fire and fly out; sickle and blue drop by the wheat ----------------
+function b01() {
+  const { Wd, S } = scene(t => [[-.7, .6, 0, 1.5, 1.3, .4], [1.0, .9, 0, .5, 1.0, .4]], 9.45);
+  const sun = put(S, new THREE.SphereGeometry(.9, 28, 20), GOLD, [0, 1.7, -3], { ink: false, mat: glowMat(0xffd76a, 1.2) });
+  const veil = new THREE.Group(); veil.position.set(-3.2, 1.7, -2.4); S.add(veil);
+  [[0, 0, 0, .8], [.7, -.15, 0, .6], [-.6, -.1, 0, .62], [.1, .45, 0, .55]].forEach(([x, y, z, r]) => put(veil, new THREE.SphereGeometry(r, 24, 16), GREY, [x, y, z], { ink: false }));
+  put(S, new THREE.BoxGeometry(1.1, .2, 1.4), SAGE_D, [1.0, FLOOR + .1, 0]);            // small green garden
+  for (let i = 0; i < 5; i++) put(S, new THREE.CylinderGeometry(.04, .04, 1.0, 6), WHEAT, [.7 + i * .15, FLOOR + .6, .3], { ink: false });  // wheat patch
+  put(S, new THREE.ConeGeometry(.22, .4, 8), TERRA, [-.2, FLOOR + .2, 0], { mat: glowMat(0xff8a3a, .6) });      // fire
+  put(S, new THREE.ConeGeometry(.1, .3, 8), GOLD, [-.4, FLOOR + .15, .05], { mat: glowMat(0xffc85a, .8) });
+  put(S, new THREE.ConeGeometry(.1, .3, 8), GOLD, [0, FLOOR + .15, -.05], { mat: glowMat(0xffc85a, .8) });
+  const pack = new THREE.Group(); pack.position.set(-.2, FLOOR + .9, 0); S.add(pack);     // skewer carried by the wings
+  put(pack, new THREE.BoxGeometry(1.1, .05, .05), WOOD, [0, 0, 0], { ink: false });
+  [-.3, 0, .3].forEach(mx => put(pack, new THREE.BoxGeometry(.2, .18, .16), MEAT, [mx, .06, 0]));
+  wing(pack, -.55, .05, -1);
+  wing(pack, .55, .05, 1);
+  const sickle = new THREE.Group(); sickle.position.set(.35, FLOOR + .9, .3); S.add(sickle);
+  put(sickle, new THREE.TorusGeometry(.32, .05, 8, 20, PI * .8), GREY_D, [0, 0, 0], { rot: [0, 0, PI * .6] });
+  put(sickle, new THREE.CylinderGeometry(.04, .04, .45, 8), WOOD, [-.3, -.22, 0], { rot: [0, 0, .5] });
+  const drop = new THREE.Group(); drop.position.set(-.85, FLOOR + 1.0, .2); S.add(drop);
+  put(drop, new THREE.SphereGeometry(.2, 24, 16), BLUE, [0, 0, 0], { mat: glowMat(0x2a8ad8, .15) });
+  put(drop, new THREE.ConeGeometry(.2, .42, 16), BLUE, [0, .3, 0], { mat: glowMat(0x2a8ad8, .15) });
+  Wd.on(t => {
+    veil.position.x = up(t, .3, 3.2, -3.2, .2);
+    sun.material.emissiveIntensity = 1.2 * (1 - .5 * sm(t, 1, 3.5));
+    pack.position.y = FLOOR + .9 + sm(t, 5.6, 8.0) * 6;
+    sickle.scale.setScalar(Math.max(.001, sm(t, 8.0, 8.9)));
+    drop.scale.setScalar(Math.max(.001, sm(t, 7.6, 8.4)));
+    drop.position.y = FLOOR + 1.0 + .08 * Math.sin(t * 2.2);
+  });
+  return Wd;
+}
+
+// ---------------- shot 2 (K2, 9.45-14.76): the consolation - a heavy dark slab turns over; the other side is warm gold with a wheat sheaf, big in centre frame ----------------
+function b02() {
+  const { Wd, S } = scene(t => [[0, .5, 0, 1.0, 1.2, .4]], 5.31);
+  const pivot = new THREE.Group(); pivot.position.set(0, FLOOR + .95, 0); S.add(pivot);
+  put(pivot, new THREE.BoxGeometry(1.5, 1.9, .3), STONE, [0, 0, 0]);
+  put(pivot, new THREE.BoxGeometry(1.4, 1.8, .05), GOLD_L, [0, 0, -.18], { ink: false });
+  for (let i = 0; i < 6; i++) put(pivot, new THREE.CylinderGeometry(.05, .05, 1.2, 6), STRAW, [-.3 + i * .12, -.35, -.3], { ink: false, rot: [0, 0, (i - 2.5) * .06] });
+  put(pivot, new THREE.SphereGeometry(.14, 14, 10), STRAW, [-.05, .3, -.34], { ink: false });
+  Wd.on(t => { pivot.rotation.y = PI * sm(t, .5, 2.5); });
+  return Wd;
+}
+
+// ---------------- shot 3 (K3-K4, 14.76-19.94): the Gemara - the donkey by a trough; the plate slides to the trough (~16.0); at ~18.5 it slides to the table and a golden loaf lands on it (~19.5); white puff ----------------
+function b03() {
+  const { Wd, S } = scene(t => [[-1.2, .6, 0, 1.0, 1.0, .5], [.9, .9, 0, .7, .9, .5]], 5.18);
+  trough(S, -.25, true, 1.4);
+  const d = donkey(S, -1.15, FLOOR, 0, .45);
+  table(S, .8, .9);
+  const pl = plate(S, .34);
+  pl.position.set(.8, FLOOR + .05, .9);
+  const lf = loaf(pl, 0, .3, 0, 0);
+  lf.scale.set(.001, .001, .001);
+  const puff = spr(glowTex(), 1.0, 0, 0xffffff); puff.position.set(.8, FLOOR + 1.6, .2); S.add(puff);
+  Wd.on(t => {
+    const [px, pz] = track(t, [[0, .8, .9], [1.2, -.1, .9], [3.6, -.1, .9], [4.2, .8, 0], [5.2, .8, 0]]);
+    pl.position.x = px; pl.position.z = pz;
+    pl.position.y = FLOOR + .05 + sm(t, 3.6, 4.2) * 1.0;
+    const ls = sm(t, 4.0, 4.1);
+    lf.scale.set(.85 * ls + .001, .42 * ls + .001, .58 * ls + .001);
+    lf.position.y = .3 + (1 - sm(t, 4.0, 4.8)) * 1.4;
+    d.head.rotation.z = -.15;
+    puff.material.opacity = .55 * sm(t, 4.7, 5.0) * (1 - sm(t, 5.0, 5.18));
+    puff.scale.setScalar(.7 + sm(t, 4.7, 5.1) * .9);
+  });
+  return Wd;
+}
+
+// ---------------- shot 4 (K5, 19.94-24.81): why is he happy? - a big gold question mark (about 30% of frame height) between the trough and the loaf ----------------
+function b04() {
+  const { Wd, S } = scene(t => [[.6, 1.2, 0, .9, 1.0, .4]], 4.87);
+  trough(S, -.7, false, 1.5);
+  table(S, .95, .8);
+  const pl = plate(S, .34); pl.position.set(.95, FLOOR + 1.06, 0);
+  loaf(pl, 0, .3, 0, 0).scale.set(.85, .42, .58);
+  const q = sign(S, GOLD, [.6, FLOOR + 1.25, .3], 2.2);
+  Wd.on(t => { q.position.y = FLOOR + 1.25 + .1 * Math.sin(t * 1.6); q.rotation.y = .15 * Math.sin(t * .9); });
+  return Wd;
+}
+
+// ---------------- shot 5 (K6, 24.81-31.54): an animal does not make bread - the donkey eats raw grain; by the trough a cold, closed oven with a grey X (no fire) ----------------
+function b05() {
+  const { Wd, S } = scene(t => [[-.9, .8, 0, 1.0, 1.0, .5], [1.05, .8, 0, .5, 1.0, .5]], 6.73);
+  const grains = trough(S, -.1, true, 1.5);
+  const d = donkey(S, -1.1, FLOOR, 0, .45);
+  put(S, new THREE.BoxGeometry(.9, 1.3, .9), OVEN, [1.05, FLOOR + .65, 0]);
+  put(S, new THREE.BoxGeometry(.6, .55, .04), DGREY, [1.05, FLOOR + .5, .47], { ink: false });
+  put(S, new THREE.BoxGeometry(.5, .05, .05), GREY, [1.05, FLOOR + .5, .5], { rot: [0, 0, PI / 4], ink: false });
+  put(S, new THREE.BoxGeometry(.5, .05, .05), GREY, [1.05, FLOOR + .5, .5], { rot: [0, 0, -PI / 4], ink: false });
+  Wd.on(t => {
+    const bob = sm(t, .5, 2.0) * (1 - sm(t, 3.5, 4.2));
+    d.head.rotation.z = -.9 * bob + .1 * Math.sin(t * 6) * bob;
+    grains.forEach((g, i) => { g.scale.setScalar(Math.max(.05, 1 - sm(t, 1.0 + i * .12, 3.0 + i * .12))); });
+  });
+  return Wd;
+}
+
+// ---------------- shot 6 (K7, 31.54-37.15): he gave us the way to fix - a cracked plate; gold seams fill the cracks while the loaf sets down on it ----------------
+function b06() {
+  const { Wd, S } = scene(t => [[0, .9, 0, 1.2, 1.0, .5]], 5.61);
+  table(S, 0, 1.4);
+  const pl = plate(S, .62); pl.position.set(0, FLOOR + 1.06, 0);
+  const cr = [[1.0, 0, 0], [.8, PI / 3, .25], [.8, -PI / 3, -.25]];
+  cr.forEach(([len, rz, zo]) => put(pl, new THREE.BoxGeometry(len, .02, .02), DGREY, [0, .05, zo], { rot: [0, rz, 0], ink: false }));
+  const seams = cr.map(([len, rz, zo]) => put(pl, new THREE.BoxGeometry(len, .03, .03), GOLD, [0, .07, zo], { rot: [0, rz, 0], ink: false, mat: glowMat(0xffc85a, .4) }));
+  const lf = loaf(pl, 0, 1.6, 0, 0);
+  lf.scale.set(1.5, .72, 1.0);
+  Wd.on(t => {
+    lf.position.y = .3 + (1 - sm(t, .5, 2.0)) * 1.6;
+    seams.forEach((s, i) => { s.scale.x = Math.max(.01, sm(t, 1.5 + i * .4, 2.6 + i * .4)); });
+  });
+  return Wd;
+}
+
+// ---------------- shot 7 (K8, 37.15-43.55): our tikun - engage with the world but raise it: a wheat sheaf climbs a staircase of terracotta blocks ----------------
+function b07() {
+  const { Wd, S } = scene(t => [[0, 1.0, 0, 1.2, 1.1, .5]], 6.4);
+  for (let k = 0; k < 4; k++) put(S, new THREE.BoxGeometry(.6, .45 * (k + 1), .9), TERRA, [-.9 + k * .6, FLOOR + .225 * (k + 1), 0]);
+  const sheaf = new THREE.Group(); S.add(sheaf);
+  for (let i = 0; i < 7; i++) put(sheaf, new THREE.CylinderGeometry(.06, .06, 1.1, 6), WHEAT, [-.18 + i * .06, .55, (i % 2) * .06], { ink: false, rot: [0, 0, (i - 3) * .05] });
+  put(sheaf, new THREE.SphereGeometry(.15, 14, 10), WHEAT_D, [0, 1.15, 0], { ink: false });
+  Wd.on(t => {
+    const [x, y] = track(t, [[0, -1.5, FLOOR], [1.0, -.9, FLOOR + .45], [2.4, -.3, FLOOR + .9], [3.8, .3, FLOOR + 1.35], [5.2, .9, FLOOR + 1.8]]);
+    sheaf.position.set(x, y, 0);
+  });
+  return Wd;
+}
+
+// ---------------- shot 8 (K9, 43.55-48.57): chewing raw wheat - bracha adama - animal food: raw kernels in the trough; a big earth-brown badge with a green sprout pops up (no text) ----------------
+function b08() {
+  const { Wd, S } = scene(t => [[0, 1.0, 0, 1.3, 1.3, .5]], 5.02);
+  trough(S, 0, true, 1.5);
+  const badge = new THREE.Group(); badge.position.set(0, FLOOR + 1.3, 0); S.add(badge);
+  put(badge, new THREE.CylinderGeometry(.7, .7, .14, 36), EARTH, [0, 0, 0], { rot: [PI / 2, 0, 0] });
+  put(badge, new THREE.CylinderGeometry(.04, .04, .5, 6), SPROUT, [0, .35, -.09], { ink: false });
+  put(badge, new THREE.SphereGeometry(.18, 14, 10), SPROUT, [-.16, .6, -.09], { ink: false });
+  put(badge, new THREE.SphereGeometry(.18, 14, 10), SPROUT, [.16, .6, -.09], { ink: false });
+  Wd.on(t => { const k = sm(t, .6, 1.4); badge.scale.setScalar(Math.max(.001, k)); badge.position.y = FLOOR + 1.3 + .05 * Math.sin(t * 2); });
+  return Wd;
+}
+
+// ---------------- shot 9 (K10-K11, 48.57-54.85): work it, grind it - kernels pour into a real two-stone millstone (top stone turns); flour puff; the loaf rises onto a terracotta pedestal HIGHER than the trough ----------------
+function b09() {
+  const { Wd, S } = scene(t => [[-.9, .7, 0, 1.0, 1.0, .5], [.8, 1.0, 0, .6, 1.5, .5]], 6.28);
+  trough(S, -.85, true, 1.0);
+  const mill = new THREE.Group(); mill.position.set(-.05, FLOOR, 0); S.add(mill);
+  put(mill, new THREE.CylinderGeometry(.55, .6, .35, 36), STONE_L, [0, .175, 0]);
+  const top = new THREE.Group(); top.position.set(0, .36, 0); mill.add(top);
+  put(top, new THREE.CylinderGeometry(.52, .52, .24, 36), STONE, [0, .12, 0]);
+  put(top, new THREE.BoxGeometry(.9, .07, .09), WOOD, [.1, .32, 0], { ink: false });
+  put(top, new THREE.CylinderGeometry(.06, .06, .08, 10), WOOD, [.5, .32, 0], { ink: false });
+  const flour = [0, 1, 2].map(i => put(S, new THREE.SphereGeometry(.16 + i * .03, 14, 10), FLOUR, [.35, FLOOR + .7, 0], { ink: false }));
+  put(S, new THREE.BoxGeometry(.5, 2.0, .5), TERRA, [.95, FLOOR + 1.0, 0]);
+  const kernels = [];
+  for (let i = 0; i < 6; i++) kernels.push(put(S, new THREE.SphereGeometry(.07, 10, 8), WHEAT, [-.05, FLOOR + 2.0, 0], { ink: false }));
+  const lf = loaf(S, .35, FLOOR + .7, .45, 0);
+  lf.scale.set(.001, .001, .001);
+  Wd.on(t => {
+    top.rotation.y = t * 2.2;
+    kernels.forEach((k, i) => { const s = sm(t, .3 + i * .15, 1.6 + i * .15); k.position.set(-.85 + s * .8, lerp(FLOOR + 2.0, FLOOR + .8, s), 0); k.scale.setScalar(1 - .9 * sm(t, 1.6, 2.2)); });
+    flour.forEach((f, i) => { const s = sm(t, 2.4, 3.6); f.position.set(.35 + Math.sin(i * 1.3) * .2 * s, FLOOR + .7 + s * (.3 + .1 * i), Math.cos(i * 1.7) * .2 * s); f.scale.setScalar(Math.max(.001, s * (1 - sm(t, 4.6, 5.2)))); });
+    const g = sm(t, 3.4, 4.0), r = sm(t, 4.2, 5.4);
+    lf.scale.set(.75 * g + .001, .38 * g + .001, .52 * g + .001);
+    lf.position.x = lerp(.35, .95, r);
+    lf.position.y = lerp(FLOOR + .7, FLOOR + 2.0 + .22, r);
+    lf.position.z = .45 * (1 - r);
+  });
+  return Wd;
+}
+
+// ---------------- shot 10 (K12, 54.85-63.52): fix your spoil - the loaf reaches the top and glows warm; a calm last shot on a set table with a white cloth ----------------
+function b10() {
+  const { Wd, S } = scene(t => [[0, 1.0, 0, 1.4, 1.0, .5]], 8.67);
+  put(S, new THREE.BoxGeometry(1.5, .1, 1.1), WHITE, [0, FLOOR + 1.0, 0]);
+  put(S, new THREE.BoxGeometry(.16, 1.0, .16), WOOD, [0, FLOOR + .5, 0]);
+  const lf = put(S, new THREE.SphereGeometry(.5, 24, 16), WHEAT_D, [0, FLOOR + 1.5, 0], { mat: glowMat(0xffb35a, 0), ink: true });
+  lf.scale.set(1.8, .9, 1.2);
+  const glow = spr(glowTex(), 2.6, 0, 0xffc070); glow.position.set(0, FLOOR + 1.6, -.3); S.add(glow);
+  Wd.on(t => { const k = sm(t, 1.0, 5.0); lf.material.emissiveIntensity = .6 * k; glow.material.opacity = .45 * k; });
+  return Wd;
+}
+
+const SH = (id, dur, caps, capAt, build) => ({ id, dur, wide: true, caps, capAt, build });
+film({
+  W: 1080, H: 1920, xf: .0001, vault: 'captions_vault.json',
+  shots: [
+    SH('s01', 9.45, ['G_CAP_01', 'G_CAP_04'], [0.0, 4.76, 9.45], b01),
+    SH('s02', 5.31, ['G_CAP_07'], [0.0, 5.31], b02),
+    SH('s03', 5.18, ['G_CAP_12'], [0.0, 5.18], b03),
+    SH('s04', 4.87, ['G_CAP_16'], [0.0, 4.87], b04),
+    SH('s05', 6.73, ['G_CAP_19'], [0.0, 6.73], b05),
+    SH('s06', 5.61, ['G_CAP_23'], [0.0, 5.61], b06),
+    SH('s07', 6.4, ['G_CAP_27'], [0.0, 6.4], b07),
+    SH('s08', 5.02, ['G_CAP_30'], [0.0, 5.02], b08),
+    SH('s09', 6.28, ['G_CAP_32'], [0.0, 6.28], b09),
+    SH('s10', 8.67, ['G_CAP_35'], [0.0, 8.67], b10),
+  ]
+});
+</script>
+</html>

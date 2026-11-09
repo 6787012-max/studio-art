@@ -1,0 +1,187 @@
+{
+ "fps": 30,
+ "titleDur": 0,
+ "recapDur": 0,
+ "shots": [
+  {
+   "id": "s01",
+   "brief": "s01",
+   "dur": 9.45,
+   "briefDur": 9.45,
+   "captions": [
+    {
+     "id": "G_CAP_01",
+     "at": 0.5,
+     "until": 4.82
+    },
+    {
+     "id": "G_CAP_04",
+     "at": 4.82,
+     "until": 9.15
+    }
+   ],
+   "capAt": [
+    0.5,
+    4.82
+   ],
+   "words": []
+  },
+  {
+   "id": "s02",
+   "brief": "s02",
+   "dur": 5.31,
+   "briefDur": 5.31,
+   "captions": [
+    {
+     "id": "G_CAP_07",
+     "at": 0.5,
+     "until": 5.01
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s03",
+   "brief": "s03",
+   "dur": 5.18,
+   "briefDur": 5.18,
+   "captions": [
+    {
+     "id": "G_CAP_12",
+     "at": 0.5,
+     "until": 4.88
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s04",
+   "brief": "s04",
+   "dur": 4.87,
+   "briefDur": 4.87,
+   "captions": [
+    {
+     "id": "G_CAP_16",
+     "at": 0.5,
+     "until": 4.57
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s05",
+   "brief": "s05",
+   "dur": 6.73,
+   "briefDur": 6.73,
+   "captions": [
+    {
+     "id": "G_CAP_19",
+     "at": 0.5,
+     "until": 6.43
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s06",
+   "brief": "s06",
+   "dur": 5.61,
+   "briefDur": 5.61,
+   "captions": [
+    {
+     "id": "G_CAP_23",
+     "at": 0.5,
+     "until": 5.31
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s07",
+   "brief": "s07",
+   "dur": 6.4,
+   "briefDur": 6.4,
+   "captions": [
+    {
+     "id": "G_CAP_27",
+     "at": 0.5,
+     "until": 6.1
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s08",
+   "brief": "s08",
+   "dur": 5.02,
+   "briefDur": 5.02,
+   "captions": [
+    {
+     "id": "G_CAP_30",
+     "at": 0.5,
+     "until": 4.72
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s09",
+   "brief": "s09",
+   "dur": 6.28,
+   "briefDur": 6.28,
+   "captions": [
+    {
+     "id": "G_CAP_32",
+     "at": 0.5,
+     "until": 5.98
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s10",
+   "brief": "s10",
+   "dur": 8.67,
+   "briefDur": 8.67,
+   "captions": [
+    {
+     "id": "G_CAP_35",
+     "at": 0.5,
+     "until": 8.37
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  }
+ ],
+ "audio": {
+  "narration": null,
+  "music": null
+ }
+}
