@@ -2,3 +2,7 @@
 01:39:04 budget OK: OVERRIDE present; spent $840 of $2309 (cap $1962), allowed by now $930 (90% of pace) [render]
 01:39:04 verify gate: PASS for film_a
 01:39:08 film_a: length 62.8s, rendering (part 50 s, 4 includes)
+01:54:25 film_a part 2/2 t0=31.4 d=31.4 -> rc=0
+01:56:03 film_a part 1/2 t0=0.0 d=31.4 -> rc=0
+01:56:03 film_a: ok 62.7s
+01:56:03 DONE {"film_a": "ok 62.7s"}
