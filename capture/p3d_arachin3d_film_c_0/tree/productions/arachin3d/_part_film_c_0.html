@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>arachin3d film c</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>window.__T0=0.0000; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": {
+  "three": "../../node_modules/three/build/three.module.js",
+  "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+// arachin3d film_c: graphics layer (25.49 s, silent). Text only through vault IDs. Format: ?fmt=land for 1920x1080.
+import { film } from '../../lib/stage3d.js';
+import { W, H, shots } from './fc.js';
+film({ W, H, vault: 'captions_vault.json', fadeIn: false, shots, xf: .4 });   // cross-dissolve between shots: 0.4 s max
+// lib/stage3d.js fades every film to black over its last 0.6 s; film_c must end on a full end card, so the
+// last 0.61 s are held on the frame at that point (deterministic, no change to the shared lib)
+const seekRaw = window.__seek, HOLD = window.__dur - .61 - (window.__T0 || 0);
+window.__seek = t => seekRaw(Math.min(Number(t) || 0, HOLD));
+</script>
+</html>
