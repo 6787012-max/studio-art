@@ -1,0 +1,9 @@
+{
+  "note": "Four letter shapes as hedge polylines. World coordinates [x, z]; +x is EAST (screen right when the camera is south of the clearing looking north), -z is NORTH (away from that camera). Each letter is a list of strokes; each stroke is a polyline. Build order = array order (the rightmost letter first). Do not mirror, reorder or simplify.",
+  "letters": [
+    {"id": "L1", "strokes": [[[8.4, -6.0], [13.2, 0.0]], [[12.9, -6.0], [12.0, -3.6]], [[9.6, -3.3], [8.7, 0.0]]]},
+    {"id": "L2", "strokes": [[[2.2, -8.4], [2.2, -6.0], [5.8, -6.0], [5.8, -3.3], [3.1, 0.0]]]},
+    {"id": "L3", "strokes": [[[-2.6, -6.0], [-1.4, -6.0], [-1.4, 0.0]]]},
+    {"id": "L4", "strokes": [[[-8.8, -8.4], [-8.8, -6.0], [-5.2, -6.0], [-5.2, -3.3], [-7.9, 0.0]]]}
+  ]
+}

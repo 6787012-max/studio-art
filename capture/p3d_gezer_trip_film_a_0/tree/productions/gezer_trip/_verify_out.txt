@@ -1,0 +1,20 @@
+PASS
+
+P2 notes:
+P2 | NO_HERO | t=0.3 | s01 | __heroBox returned null (no hero registered in this shot) (+2 more samples)
+P2 | NO_HERO | t=10.3 | s02 | __heroBox returned null (no hero registered in this shot) (+2 more samples)
+P2 | NO_HERO | t=20.3 | s03 | __heroBox returned null (no hero registered in this shot) (+2 more samples)
+P2 | NO_HERO | t=32.3 | s04 | __heroBox returned null (no hero registered in this shot) (+2 more samples)
+P2 | NO_HERO | t=42.3 | s05 | __heroBox returned null (no hero registered in this shot) (+2 more samples)
+P2 | NO_HERO | t=51.3 | s06 | __heroBox returned null (no hero registered in this shot) (+2 more samples)
+P2 | NO_HERO | t=61.3 | s07 | __heroBox returned null (no hero registered in this shot) (+2 more samples)
+P2 | NO_HERO | t=69.3 | s08 | __heroBox returned null (no hero registered in this shot) (+2 more samples)
+P2 | NO_HERO | t=77.3 | s09 | __heroBox returned null (no hero registered in this shot) (+2 more samples)
+P2 | NO_HERO | t=87.3 | s10 | __heroBox returned null (no hero registered in this shot) (+2 more samples)
+
+Sheets (CLEAN, safe to Read):
+  beat: C:/projects/_studio-animatzia/productions/gezer_trip/film_a/_verify/_view/_verify_beat_sheet_1.jpg
+  seam: C:/projects/_studio-animatzia/productions/gezer_trip/film_a/_verify/_view/_verify_seams_1.jpg
+  phone: C:/projects/_studio-animatzia/productions/gezer_trip/film_a/_verify/_view/_verify_phone_sheet_1.jpg
+  seam_2: C:/projects/_studio-animatzia/productions/gezer_trip/film_a/_verify/_view/_verify_seams_2.jpg
+SUMMARY | PASS | samples=48 | dur=95.0 | P0=0 P1=0 P2=10 | {"ready_s": 32.4, "gates_s": 592.0, "sheets_s": 135.2, "total_s": 760.0}
