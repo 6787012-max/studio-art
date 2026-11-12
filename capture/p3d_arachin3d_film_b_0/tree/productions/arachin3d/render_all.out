@@ -1,0 +1,7 @@
+21:27:59 render_all: production=arachin3d films=film_a,film_b,film_c part=50s hq=True dry_run=False
+21:28:24 budget WARN: cap reached but OVERRIDE file is present - continuing: spent $2666 of $2309 (cap $1962), allowed by now $1962 (136% of pace) [render]
+21:28:24 verify gate: PASS for film_a, film_b, film_c
+21:28:43 film_a: length 39.7s, rendering (part 50 s, 9 includes)
+21:47:03 film_a part 1/1 t0=0.0 d=39.7 -> rc=0
+21:47:13 film_a: ok 39.7s
+21:47:21 film_b: length 22.1s, rendering (part 50 s, 9 includes)

@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>arachin3d film B</title>
+<style>html,body{margin:0;background:#040A1C}canvas{display:block}</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>window.__T0=0.0000; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": {
+  "three": "../../node_modules/three/build/three.module.js",
+  "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+// arachin3d / film B "33 pages": portrait 1080x1920, 22.05 s, silent. Captions are vault IDs only (drawn in fb.js).
+import { film } from '../../lib/stage3d.js';
+import { s01, s02, s03, s04, s05 } from './fb.js';
+
+film({
+  W: 1080, H: 1920,
+  xf: 0,            // hard cuts only: a crossfade would double-expose objects from two shots
+  fadeIn: false,    // no black frame at t=0
+  vault: 'captions_vault.json',
+  shots: [
+    { id: 'b1', dur: 5.3, build: s01 },
+    { id: 'b2', dur: 3.8, build: s02 },
+    { id: 'b3', dur: 2.6, build: s03 },
+    { id: 'b4', dur: 5.9, build: s04 },
+    { id: 'b5', dur: 4.45, build: s05 },
+  ],
+});
+
+// the end card holds: the engine fades to black over the last 0.6 s, so freeze the last frame before that
+const seek0 = window.__seek;
+window.__seek = t => seek0(Math.min(Number(t) || 0, window.__dur - 0.61));
+</script>
+</html>
