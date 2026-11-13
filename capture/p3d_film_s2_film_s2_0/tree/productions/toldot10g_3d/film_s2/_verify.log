@@ -1,0 +1,19 @@
+heavy_lock: 2 heavy jobs already running, waiting for a slot
+heavy_lock: got slot 0 after 455s
+PASS
+
+P2 notes:
+P2 | NO_HERO | t=0.3 | s01 | __heroBox returned null (no hero registered in this shot) (+2 more samples)
+P2 | NO_HERO | t=17.74 | s02 | __heroBox returned null (no hero registered in this shot) (+2 more samples)
+P2 | NO_HERO | t=34.59 | s03 | __heroBox returned null (no hero registered in this shot) (+2 more samples)
+P2 | NO_HERO | t=42.08 | s04 | __heroBox returned null (no hero registered in this shot) (+2 more samples)
+P2 | NO_HERO | t=67.83 | s05 | __heroBox returned null (no hero registered in this shot) (+2 more samples)
+P2 | NO_HERO | t=87.8 | s06 | __heroBox returned null (no hero registered in this shot) (+2 more samples)
+P2 | NO_HERO | t=95.93 | s07 | __heroBox returned null (no hero registered in this shot) (+2 more samples)
+sheet build failed: Page.screenshot: Timeout 30000ms exceeded.
+Call log:
+  - taking page screenshot
+  - waiting for fonts to load...
+  - fonts loaded
+
+SUMMARY | PASS | samples=33 | dur=115.5 | P0=0 P1=0 P2=7 | {"ready_s": 4.4, "gates_s": 520.2, "sheets_s": 67.2, "total_s": 605.0}
