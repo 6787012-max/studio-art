@@ -1,0 +1,8 @@
+PASS
+sheet build failed: Page.screenshot: Timeout 30000ms exceeded.
+Call log:
+  - taking page screenshot
+  - waiting for fonts to load...
+  - fonts loaded
+
+SUMMARY | PASS | samples=33 | dur=116.7 | P0=0 P1=0 P2=0 | {"ready_s": 50.4, "gates_s": 1115.1, "sheets_s": 129.1, "total_s": 1397.7}
