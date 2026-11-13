@@ -1,0 +1,5 @@
+11:43:49 render_all: production=arachin_v3 films=film_e part=50s hq=True dry_run=False
+!! BUDGET GUARD FAILED OPEN (render continues): TimeoutExpired: Command '['C:\\Users\\יוסף שניידר\\AppData\\Local\\Programs\\Python\\Python311\\python.exe', 'C:/tools/usage-budget/budget.py']' timed out after 120 seconds
+11:46:02 budget OK: budget unknown (TimeoutExpired: Command '['C:\\Users\\יוסף שניידר\\AppData\\Local\\Programs\\Python\\Python311\\python.exe', 'C:/tools/usage-budget/budget.py']' timed out after 120 seconds)
+11:46:02 verify gate: PASS for film_e
+11:47:48 film_e: length 36.4s, rendering (part 50 s, 7 includes)

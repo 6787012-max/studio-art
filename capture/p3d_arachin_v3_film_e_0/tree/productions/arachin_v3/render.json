@@ -1,0 +1,11 @@
+{
+  "render_includes": [
+    "lib/figure3d.js",
+    "lib/stage3d.js",
+    "node_modules/three/build/three.core.js",
+    "node_modules/three/build/three.module.js",
+    "productions/arachin_v3/book3d.js",
+    "productions/arachin_v3/fe.js",
+    "productions/arachin_v3/captions_vault.json"
+  ]
+}
