@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>khs 92 film a</title>
+<style>html,body{margin:0;background:#000}canvas{display:block;width:100vw;height:auto}</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+// khs_92 / film_a - portrait 1080x1920, OBJECTS ONLY (no people, no hands, no faces, no silhouettes).
+// Look: MINT-TEAL + CREAM, CORAL accent, deep NAVY rail/frame, soft GOLD only for "actual". Bright studio daylight, flat toon.
+// Round 2 (coordinator fixes): real clock top-right; pale ghost tree, no disc; huge floor; real stairs; thick gold thread; full watering can;
+// camera raised and yawed ~20 deg with a slow 5-8% push-in; bigger heroes; bent old branches.
+window.CLIP_DUR = 29.03;
+import { film, world, THREE, ease, clamp, lerp, mesh, toon, canvasTex } from '../../lib/stage3d.js';
+
+const PI = Math.PI;
+const FLOOR = -0.9;           // top of the floor (objects stand on it)
+const LEV = -0.05;
+const MINT = 0x8fdcc9, MINT_D = 0x3fae98, CREAM = 0xfff6e6, CORAL = 0xf2735f, NAVY = 0x1f2f4f;
+const GOLD = 0xf2c14e, GOLD_L = 0xffe38a, LEAF = 0x4fbf8e, LEAF_D = 0x2f8f6a, POT = 0xf0a07e, BARK = 0x6b4e3d;
+const GREYC = 0xc9cdc9, INK = 0x1b2a3a, BLUE = 0x4fb3e8, DUST = 0xf6ece0, GHOST = 0xe9fbf6;
+
+const P = (t, a, b) => clamp((t - a) / (b - a), 0, 1);
+const sm = (t, a, b) => ease.sm(P(t, a, b));
+const pop = (t, a, b) => Math.max(.001, sm(t, a, b));
+function track(t, keys) {
+  if (t <= keys[0][0]) return [keys[0][1], keys[0][2]];
+  for (let i = 0; i < keys.length - 1; i++) {
+    const a = keys[i], b = keys[i + 1];
+    if (t <= b[0]) { const k = ease.sm(clamp((t - a[0]) / (b[0] - a[0]), 0, 1)); return [lerp(a[1], b[1], k), lerp(a[2], b[2], k)]; }
+  }
+  const z = keys[keys.length - 1]; return [z[1], z[2]];
+}
+
+// ---------------- helpers ----------------
+const mk = (geo, color, o) => { o = o || {}; return mesh(geo, toon(color, o.mat), Object.assign({ inkW: .008, inkColor: INK }, o)); };
+const put = (parent, geo, color, pos, o) => { const m = mk(geo, color, Object.assign({ pos }, o || {})); parent.add(m); return m; };
+let GT = null;
+const glowTex = () => GT || (GT = canvasTex(128, 128, (g, w, h) => { const r = g.createRadialGradient(64, 64, 0, 64, 64, 64); r.addColorStop(0, 'rgba(255,255,255,1)'); r.addColorStop(.35, 'rgba(255,255,255,.5)'); r.addColorStop(1, 'rgba(255,255,255,0)'); g.fillStyle = r; g.fillRect(0, 0, w, h); }));
+const spr = (tex, size, op, tint) => { const s = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, color: tint === undefined ? 0xffffff : tint, depthWrite: false, transparent: true, fog: false, opacity: op, blending: THREE.AdditiveBlending })); s.scale.set(size, size, 1); s.renderOrder = 10; return s; };
+function heroBox(Wd, fn) {
+  const g = new THREE.Group(), m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()); m.visible = false; g.add(m); Wd.add(g);
+  Wd.on(t => { const bs = fn(t).filter(Boolean); if (!bs.length) return; const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (const b of bs) for (let q = 0; q < 3; q++) { lo[q] = Math.min(lo[q], b[q] - b[q + 3]); hi[q] = Math.max(hi[q], b[q] + b[q + 3]); }
+    g.position.set((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2); g.scale.set(Math.max(hi[0] - lo[0], .01), Math.max(hi[1] - lo[1], .01), Math.max(hi[2] - lo[2], .01)); });
+  Wd.hero = g; return g;
+}
+// scene: huge floor; camera on a circle (radius R, yaw az, raised el) looking at the rail; slow push-in R0 -> R1
+function scene(heroFn, dur, o) {
+  o = o || {};
+  const Wd = world({ fogColor: 0xe9fbf6, fogNear: 30, fogFar: 90, skyTop: 0xa7e6da, skyBottom: 0xfff6e6, hemiSky: 0xffffff, hemiGround: 0xbfe9dc, hemi: 1.0, sunColor: 0xfff1d0, sun: .7, sunPos: [3, 10, 8], shadowExt: 8, skyR: 200 });
+  const S = Wd.scene;
+  put(S, new THREE.BoxGeometry(220, .4, 220), MINT, [0, FLOOR - .2, 0], { ink: false });
+  heroBox(Wd, heroFn);
+  const az = (o.az === undefined ? 20 : o.az) * PI / 180, R0 = o.R0 || 6.5, R1 = o.R1 || R0 * .93, el = o.el === undefined ? 1.3 : o.el;
+  Wd.cam = lt => { const k = ease.sm(clamp(lt / dur, 0, 1)); const R = lerp(R0, R1, k);
+    return { pos: [R * Math.sin(az), LEV + el, R * Math.cos(az)], look: [0, FLOOR + .35, 0], fov: 50 }; };
+  return { Wd, S };
+}
+// navy rail along x, starts at x=-2.4 and grows with s in 0..1
+function rail(S) {
+  const g = new THREE.Group(); g.position.set(-2.4, FLOOR + .06, 0); S.add(g);
+  const bar = put(g, new THREE.BoxGeometry(1, .08, .08), NAVY, [0, 0, 0], { ink: false });
+  const R = { g, bar, len: 4.8 };
+  R.set = s => { bar.visible = s > .01; bar.scale.x = Math.max(.001, R.len * s); bar.position.x = R.len * s / 2; };
+  R.set(1);
+  return R;
+}
+const tickX = [-1.8, -1.2, -.6, 0, .6, 1.2, 1.8];
+function ticks(S) { return tickX.map(x => { const g = new THREE.Group(); g.position.set(x, FLOOR, 0); S.add(g); put(g, new THREE.BoxGeometry(.06, .45, .06), NAVY, [0, .225, 0], { ink: false }); return g; }); }
+// real stairs: three blocks, rising along the rail (heights .15 / .3 / .45), each a group based on the floor
+const stairX = [-1.2, 0, 1.2], stairH = [.15, .3, .45];
+function stairs(S) { return stairX.map((x, i) => { const g = new THREE.Group(); g.position.set(x, FLOOR, 0); S.add(g); put(g, new THREE.BoxGeometry(.5, stairH[i], .6), MINT_D, [0, stairH[i] / 2, 0]); return g; }); }
+function setVis(g, s) { g.visible = s > .01; g.scale.setScalar(Math.max(.001, s)); }
+// question mark (hook + stem + dot)
+function sign(parent, col, pos, size) {
+  const g = new THREE.Group(); g.position.set(pos[0], pos[1], pos[2]); g.scale.setScalar(size); parent.add(g);
+  g.add(mk(new THREE.TorusGeometry(.2, .06, 14, 28, PI * 1.5), col, { pos: [0, .22, 0], rot: [0, 0, -PI / 2], ink: false }));
+  g.add(mk(new THREE.BoxGeometry(.13, .5, .1), col, { pos: [0, .12, 0], ink: false }));
+  g.add(mk(new THREE.SphereGeometry(.07, 14, 10), col, { pos: [0, -.25, 0], ink: false }));
+  return g;
+}
+function seed(S, x) {
+  const g = new THREE.Group(); g.position.set(x, FLOOR, 0); S.add(g);
+  put(g, new THREE.CylinderGeometry(.32, .34, .2, 28), CREAM, [0, .1, 0]);
+  put(g, new THREE.SphereGeometry(.13, 16, 12), POT, [0, .3, 0], { ink: false });
+  return g;
+}
+function sprout(S, x) {
+  const g = new THREE.Group(); g.position.set(x, FLOOR, 0); S.add(g);
+  put(g, new THREE.CylinderGeometry(.16, .12, .22, 18), POT, [0, .11, 0]);
+  put(g, new THREE.CylinderGeometry(.025, .03, .4, 8), LEAF_D, [0, .42, 0], { ink: false });
+  put(g, new THREE.SphereGeometry(.11, 14, 10), LEAF, [-.1, .6, 0], { ink: false });
+  put(g, new THREE.SphereGeometry(.11, 14, 10), LEAF, [.1, .64, 0], { ink: false });
+  return g;
+}
+// tree (base at floor). old: gnarled, bare, with bent thin branches.
+function tree(S, x, z, s, old) {
+  const g = new THREE.Group(); g.position.set(x, FLOOR, z); g.scale.setScalar(s); S.add(g);
+  put(g, new THREE.CylinderGeometry(.5, .42, .45, 24), POT, [0, .22, 0]);
+  put(g, new THREE.CylinderGeometry(.07, .11, 1.3, 10), BARK, [0, .9, 0]);
+  if (old) {
+    // trunk bends and forks; thin branches at several angles and heights (bent in two segments each)
+    [[.15, 1.2, -.9, .5], [-.12, 1.35, .8, .45], [.05, 1.6, -.5, .4], [-.05, 1.75, .6, .35], [0, 1.9, 0, .25],
+     [-.2, 1.05, 1.1, .4], [.22, 1.0, -1.0, .36], [-.1, 1.95, .9, .3], [.12, 2.05, -.7, .3]]
+      .forEach(([bx, by, a, len]) => {
+        put(g, new THREE.CylinderGeometry(.03, .05, len, 8), BARK, [bx, by, 0], { rot: [0, 0, a] });
+        put(g, new THREE.CylinderGeometry(.02, .03, len * .6, 6), BARK, [bx + Math.sin(a) * len * .45, by + Math.cos(a) * len * .45, .02], { rot: [0, 0, a * 1.5] });
+      });
+  } else {
+    [[0, 1.5, .42], [-.3, 1.3, .32], [.3, 1.35, .32]].forEach(([bx, by, r]) => put(g, new THREE.SphereGeometry(r, 20, 14), LEAF, [bx, by, 0]));
+  }
+  return g;
+}
+// translucent pale ghost (no disc behind it)
+function ghost(S, x, z, s, op) {
+  const g = tree(S, x, z, s, false);
+  g.traverse(o => { if (o.material) { o.material.transparent = true; o.material.opacity = op; o.material.depthWrite = false; if (o.material.color) o.material.color.setHex(GHOST); } });
+  return g;
+}
+// wall clock, top-right, navy thick frame, cream face, 12 hour marks; live = hands spin (returns hands group)
+function clock(S, x, y, z, live) {
+  const g = new THREE.Group(); g.position.set(x, y, z); S.add(g);
+  put(g, new THREE.CylinderGeometry(.42, .42, .06, 36), live ? CREAM : GREYC, [0, 0, 0], { rot: [PI / 2, 0, 0], ink: false });
+  put(g, new THREE.TorusGeometry(.45, .07, 12, 40), NAVY, [0, 0, 0], { ink: false });
+  for (let i = 0; i < 12; i++) { const a = i * PI / 6; put(g, new THREE.BoxGeometry(.03, i % 3 === 0 ? .12 : .07, .03), NAVY, [Math.sin(a) * .33, Math.cos(a) * .33, .04], { ink: false }); }
+  const hg = new THREE.Group(); hg.position.set(0, 0, .06); g.add(hg);
+  put(hg, new THREE.BoxGeometry(.06, .22, .03), CORAL, [0, .11, 0], { ink: false });
+  put(hg, new THREE.BoxGeometry(.04, .32, .03), CORAL, [0, .16, 0], { ink: false });
+  g.traverse(o => { if (o.isMesh) o.castShadow = false; });
+  return { g, hg };
+}
+// full watering can above the plant, tilted toward it; spout tip is at about (x+0.40, y-0.22)
+function can(S, x, y) {
+  const g = new THREE.Group(); g.position.set(x, y, 0); g.rotation.z = -.9; S.add(g);
+  put(g, new THREE.BoxGeometry(.5, .36, .36), CORAL, [0, 0, 0]);
+  put(g, new THREE.CylinderGeometry(.035, .05, .5, 8), CORAL, [.42, .18, 0], { rot: [0, 0, -.9] });
+  g.traverse(o => { if (o.isMesh) o.castShadow = false; });
+  return g;
+}
+// blue teardrop: round bottom + pointed top
+function drop() {
+  const g = new THREE.Group(); g.add(mk(new THREE.SphereGeometry(.1, 16, 12), BLUE, { pos: [0, 0, 0], ink: false }));
+  g.add(mk(new THREE.ConeGeometry(.1, .2, 14), BLUE, { pos: [0, .14, 0], ink: false }));
+  g.traverse(o => { if (o.isMesh) o.castShadow = false; });
+  return g;
+}
+
+// ---------------- shot 1 (K1a+K1b, 0-3.83): the seed (x1.5) and a pale ghost tree above it; clock top-right, frozen (no hands); coral "?" pops between ----------------
+function b01() {
+  const { Wd, S } = scene(t => [[0, 1.2, 0, 1.6, 1.6, .6]], 3.83, { R0: 6.5 });
+  const ck = clock(S, 1.1, FLOOR + 2.55, -.6, false);
+  ck.hg.visible = false;
+  const sd = seed(S, 0); sd.scale.setScalar(1.5);
+  const gh = ghost(S, 0, 0, 1.0, .35); gh.position.y = FLOOR + 1.45;
+  const q = sign(S, CORAL, [0, FLOOR + 1.0, .3], 1);
+  Wd.on(t => {
+    q.scale.setScalar(Math.max(.001, .9 * sm(t, 1.2, 1.6) * (1 - .9 * sm(t, 3.0, 3.6))));
+    q.rotation.y = .12 * Math.sin(t * 2.5);
+    gh.scale.setScalar(1.0 * (1 + .02 * Math.sin(t * 9)));
+  });
+  return Wd;
+}
+
+// ---------------- shot 2 (K2, 3.83-13.74): the rail draws out; ticks pop; real stairs rise; the seed opens and the sprout climbs one stair, then the next; clock live (two coral hands turning) ----------------
+function b02() {
+  const { Wd, S } = scene(t => [[-.4, .8, 0, 1.2, 1.2, .5]], 9.91, { R0: 6.0, R1: 5.6, az: 18 });
+  const R = rail(S);
+  const tk = ticks(S);
+  const st = stairs(S);
+  const ck = clock(S, 1.1, FLOOR + 2.55, -.6, true);
+  const sd = seed(S, -1.8);
+  const sp = sprout(S, -1.8); sp.scale.setScalar(.001);
+  Wd.on(t => {
+    R.set(sm(t, .2, 1.6));
+    tk.forEach((k, i) => setVis(k, sm(t, 1.2 + i * .2, 1.6 + i * .2)));
+    st.forEach((k, i) => setVis(k, sm(t, 4.0 + i * .8, 4.5 + i * .8)));
+    sd.scale.setScalar(Math.max(.001, 1 - sm(t, 1.0, 1.4)));
+    sp.scale.setScalar(1.5 * pop(t, 1.2, 1.6));
+    const [x, y] = track(t, [[1.6, -1.8, FLOOR], [3.2, -1.2, FLOOR + stairH[0]], [5.4, -1.2, FLOOR + stairH[0]], [7.4, 0, FLOOR + stairH[1]], [8.9, 1.2, FLOOR + stairH[2]]]);
+    sp.position.set(x, y, 0);
+    ck.hg.visible = t >= 8.4;
+    ck.hg.rotation.z = -t * 1.8;
+  });
+  return Wd;
+}
+
+// ---------------- shot 3 (K4, 13.74-20.16): the sprout (near, x1.5) and a big tree (far) are the same one; a thick pulsing gold thread joins them along the rail; the ghost over the sprout fades ----------------
+function b03() {
+  const { Wd, S } = scene(t => [[0, 1.0, -.2, 1.9, 1.6, .8]], 6.42, { R0: 8.0, R1: 7.5, az: 20 });
+  rail(S);
+  const sp = sprout(S, -1.0); sp.scale.setScalar(1.5);
+  const tr = tree(S, 0.9, -1.0, 1.3, false); tr.scale.setScalar(.001);
+  clock(S, -1.15, FLOOR + 2.75, -.6, true);
+  const gh = ghost(S, -1.0, 0, 1.5, .4);
+  const thread = put(S, new THREE.BoxGeometry(2.15, .2, .2), GOLD, [-0.05, FLOOR + .5, -0.5], { ink: false, rot: [0, 0.48, 0], mat: { emissive: GOLD_L, emissiveIntensity: .8 } });
+  Wd.on(t => {
+    sp.scale.setScalar(1.5 + .1 * sm(t, .5, 4.0));
+    gh.scale.setScalar(Math.max(.001, 1.5 * (1 - sm(t, .5, 4.0))));
+    tr.scale.setScalar(pop(t, .3, 1.2) * 1.3);
+    const pulse = .5 + .5 * Math.sin(t * 3.2);
+    thread.material.emissiveIntensity = .9 + .1 * pulse;
+    thread.scale.y = 1 + .05 * pulse;
+    thread.scale.x = Math.max(.001, sm(t, .2, 1.0));
+  });
+  return Wd;
+}
+
+// ---------------- shot 4 (K5, 20.16-23.02): a full watering can above and left of the plant, tilted toward it; the drop falls from the spout onto the plant; each drop: one tick and a notch of growth ----------------
+function b04() {
+  const { Wd, S } = scene(t => [[.2, 1.3, 0, 1.8, 1.8, .6]], 2.86, { R0: 5.6, R1: 5.2, az: 16 });
+  rail(S);
+  const tk = ticks(S);
+  const cn = can(S, -.8, FLOOR + 2.5);
+  clock(S, 1.1, FLOOR + 2.55, -.6, true);
+  const sp = sprout(S, -.4); sp.scale.setScalar(1.5);
+  const landT = [.85, 1.65, 2.45];
+  const drops = [0, 1, 2].map(() => { const d = drop(); S.add(d); return d; });
+  const SX = t => track(t, [[0, -.4, FLOOR], [.85, -.1, FLOOR], [1.65, .5, FLOOR], [2.5, 1.1, FLOOR]]);
+  Wd.on(t => {
+    const [x] = SX(t);
+    sp.position.x = x;
+    const landed = landT.filter(lt => t >= lt).length;
+    sp.scale.setScalar(1.5 + .12 * landed);
+    cn.position.x = x - .40; cn.position.y = FLOOR + 1.82;
+    drops.forEach((d, i) => {
+      const t0 = .4 + i * .8, f = sm(t, t0, t0 + .45);
+      const xl = SX(t0 + .45)[0];
+      d.position.set(xl, lerp(FLOOR + 1.5, FLOOR + 1.15, f), 0);
+      d.visible = t >= t0 && t <= t0 + .45;
+    });
+    tk.forEach((k, i) => {
+      const lit = x > tickX[i] + .1;
+      k.children[0].material.emissive.setHex(lit ? GOLD : 0x000000);
+      k.children[0].material.emissiveIntensity = lit ? .9 : 0;
+    });
+  });
+  return Wd;
+}
+
+// ---------------- shot 5 (K6, 23.02-26.83): from a baby, at once old: the rail, ticks, stairs and the clock hands retract to nothing; the sprout snaps to a huge old bare tree with a dust puff ----------------
+function b05() {
+  const { Wd, S } = scene(t => [[0, 1.2, 0, 1.4, 1.6, .6]], 3.81, { R0: 6.5, R1: 6.0, az: 20 });
+  const R = rail(S);
+  const tk = ticks(S);
+  const st = stairs(S);
+  const ck = clock(S, 1.1, FLOOR + 2.55, -.6, false);
+  const sp = sprout(S, 0); sp.scale.setScalar(1.5);
+  const old = tree(S, 0, 0, 1.25, true); old.scale.setScalar(.001);
+  const puff = spr(glowTex(), 1.6, 0, DUST); puff.position.set(0, FLOOR + .4, .3); S.add(puff);
+  Wd.on(t => {
+    const r = 1 - sm(t, 0, .1);
+    R.set(r);
+    tk.forEach(k => setVis(k, r));
+    st.forEach(k => setVis(k, r));
+    ck.hg.visible = false;
+    const snap = t >= .2;
+    sp.visible = !snap; sp.scale.setScalar(1.5);
+    old.scale.setScalar(snap ? 1.25 : .001);
+    puff.material.opacity = .7 * sm(t, .2, .3) * (1 - sm(t, .4, 1.2));
+    puff.scale.setScalar(1.2 + sm(t, .2, 1.2) * 1.2);
+  });
+  return Wd;
+}
+
+// ---------------- shot 6 (K7, 26.83-29.03): no process at all: only the old tree on a bare floor (no tiles, no shadows, no leftovers); the camera rises a little; in the last second the rail and stairs glide back in, soft gold ----------------
+function b06() {
+  const { Wd, S } = scene(t => [[0, 1.4, 0, 1.4, 1.6, .6]], 2.2, { R0: 6.5, R1: 6.0, az: 20, el: 1.4 });
+  const old = tree(S, 0, 0, 1.25, true);
+  const ck = clock(S, 1.1, FLOOR + 2.55, -.6, false); ck.hg.visible = false;
+  const R = rail(S); R.set(0);
+  const tk = ticks(S); tk.forEach(k => setVis(k, 0));
+  const st = stairs(S); st.forEach(k => setVis(k, 0));
+  Wd.on(t => {
+    const g = sm(t, 1.2, 2.2);
+    R.set(g);
+    R.bar.material.emissive.setHex(GOLD_L); R.bar.material.emissiveIntensity = .8 * g;
+    tk.forEach((k, i) => { setVis(k, sm(t, 1.3 + i * .05, 1.9 + i * .05)); k.children[0].material.emissive.setHex(GOLD); k.children[0].material.emissiveIntensity = .6 * g; });
+    st.forEach((k, i) => { setVis(k, sm(t, 1.4 + i * .1, 2.0 + i * .1)); k.children[0].material.emissive.setHex(GOLD); k.children[0].material.emissiveIntensity = .5 * g; });
+  });
+  return Wd;
+}
+
+const SH = (id, dur, caps, capAt, build) => ({ id, dur, wide: true, caps, capAt, build });
+film({
+  W: 1080, H: 1920, xf: .0001, vault: 'captions_vault.json',
+  shots: [
+    SH('s01', 3.83, ['G_CAP_01'], [0.0, 3.83], b01),
+    SH('s02', 9.91, ['G_CAP_04', 'G_CAP_08'], [0.0, 4.67, 9.91], b02),
+    SH('s03', 6.42, ['G_CAP_11'], [0.0, 6.42], b03),
+    SH('s04', 2.86, ['G_CAP_16'], [0.0, 2.86], b04),
+    SH('s05', 3.81, ['G_CAP_17'], [0.0, 3.81], b05),
+    SH('s06', 2.2, ['G_CAP_21'], [0.0, 2.2], b06),
+  ]
+});
+</script>
+</html>
