@@ -190,7 +190,7 @@ window.STORY = function (K) {
     });
     const w = [3.5, 3.9, 3.5, 3.1];
     Wd.cam = cuts([
-      [w[0], HH(truck([-4.2, 1.2, 0], { dur: w[0], dist0: 14, dist1: 13.5, h0: 1.6, h1: 1.8, a0: -6, a1: 6, fov0: 44, fov1: 44, shift: [.6, 0, 0] }), 1)],
+      [w[0], HH(truck([-4.2, 1.2, 0], { dur: w[0], dist0: 10.5, dist1: 9.8, h0: 1.6, h1: 1.8, a0: -6, a1: 6, fov0: 44, fov1: 44, shift: [.6, 0, 0] }), 1)],
       [w[1], HH(punch(insert([-4.3, 2.9, 0], { dur: w[1], dist0: 7.6, dist1: 7.2, h0: 1.8, h1: 2.0, a0: -6, a1: 6, fov0: 42, fov1: 40 }), [1.0, 2.2]), 2)],
       [w[2], HH(pushIn([SX, 1.4, 0], { dur: w[2], dist0: 6.5, dist1: 5.8, h0: 1.0, h1: 1.2, a0: 6, a1: -6, fov0: 42, fov1: 40 }), 3)],
       [w[3], HH(crane([-3.0, 1.2, 0], { dur: w[3], dist0: 10, dist1: 9, h0: .8, h1: 2.2, a0: -6, a1: 6, fov0: 42, fov1: 40 }), 4)]]);
@@ -229,7 +229,7 @@ window.STORY = function (K) {
     });
     const w = [3.5, 3.8, 3.7, 3.0];
     Wd.cam = cuts([
-      [w[0], HH(truck([-3.6, 1.4, 0], { dur: w[0], dist0: 14, dist1: 13.5, h0: 1.8, h1: 2.0, a0: -6, a1: 6, fov0: 44, fov1: 44, shift: [.6, 0, 0] }), 21)],
+      [w[0], HH(truck([-3.6, 1.4, 0], { dur: w[0], dist0: 10.5, dist1: 9.8, h0: 1.8, h1: 2.0, a0: -6, a1: 6, fov0: 44, fov1: 44, shift: [.6, 0, 0] }), 21)],
       [w[1], HH(punch(insert([-4.3, 2.9, 0], { dur: w[1], dist0: 7.6, dist1: 7.2, h0: 1.8, h1: 2.0, a0: -6, a1: 6, fov0: 42, fov1: 40 }), [1.2]), 22)],
       [w[2], HH(pushIn([LX1, 1.6, 0], { dur: w[2], dist0: 5.0, dist1: 4.4, h0: 1.3, h1: 1.6, a0: -4, a1: 4, fov0: 42, fov1: 40 }), 23)],
       [w[3], HH(crane([SCX, 1.4, 0], { dur: w[3], dist0: 9.0, dist1: 8.0, h0: .8, h1: 2.0, a0: 6, a1: -6, fov0: 42, fov1: 40 }), 24)]]);
@@ -267,7 +267,7 @@ window.STORY = function (K) {
     });
     const w = [3.5, 3.8, 3.7, 3.0];
     Wd.cam = cuts([
-      [w[0], HH(truck([-7.0, 1.4, 0], { dur: w[0], dist0: 16, dist1: 15.5, h0: 1.8, h1: 2.0, a0: -6, a1: 6, fov0: 46, fov1: 46, shift: [.6, 0, 0] }), 31)],
+      [w[0], HH(truck([-7.0, 1.4, 0], { dur: w[0], dist0: 12, dist1: 11.2, h0: 1.8, h1: 2.0, a0: -6, a1: 6, fov0: 46, fov1: 46, shift: [.6, 0, 0] }), 31)],
       [w[1], HH(punch(insert([-8.6, 1.7, .6], { dur: w[1], dist0: 6.8, dist1: 6.4, h0: 1.4, h1: 1.6, a0: -8, a1: 8, fov0: 40, fov1: 38 }), [1.7]), 32)],
       [w[2], HH(crane([UN[0] + .5, 1.4, 1.0], { dur: w[2], dist0: 9.5, dist1: 8.4, h0: .9, h1: 2.0, a0: 8, a1: -6, fov0: 42, fov1: 40 }), 33)],
       [w[3], HH(pushIn([LX1, 1.4, 0], { dur: w[3], dist0: 7.0, dist1: 6.2, h0: 1.2, h1: 1.4, a0: -6, a1: 6, fov0: 42, fov1: 40 }), 34)]]);
@@ -300,10 +300,10 @@ window.STORY = function (K) {
     });
     const w = [4.0, 3.6, 3.4, 3.0];
     Wd.cam = cuts([
-      [w[0], HH(truck([3.0, 1.4, 0], { dur: w[0], dist0: 16, dist1: 15, h0: 2.0, h1: 2.2, a0: -6, a1: 6, fov0: 46, fov1: 44, shift: [.6, 0, 0] }), 51)],
+      [w[0], HH(truck([3.0, 1.4, 0], { dur: w[0], dist0: 11.5, dist1: 10.5, h0: 2.0, h1: 2.2, a0: -6, a1: 6, fov0: 46, fov1: 44, shift: [.6, 0, 0] }), 51)],
       [w[1], HH(punch(insert([HOUSE[0], 1.6, HOUSE[1]], { dur: w[1], dist0: 7.5, dist1: 7.0, h0: 1.6, h1: 1.8, a0: 6, a1: -6, fov0: 40, fov1: 40 }), [2.6]), 52)],
       [w[2], HH(crane([2.0, 1.8, 0], { dur: w[2], dist0: 11, dist1: 12, h0: 1.0, h1: 2.6, a0: -6, a1: 6, fov0: 42, fov1: 42 }), 53)],
-      [w[3], HH(truck([-2.0, 1.3, 0], { dur: w[3], dist0: 13, dist1: 12.6, h0: 1.6, h1: 1.8, a0: 6, a1: -6, fov0: 44, fov1: 44 }), 54)]]);
+      [w[3], HH(truck([-2.0, 1.3, 0], { dur: w[3], dist0: 10, dist1: 9.4, h0: 1.6, h1: 1.8, a0: 6, a1: -6, fov0: 44, fov1: 44 }), 54)]]);
     return Wd;
   }
 
@@ -349,10 +349,10 @@ window.STORY = function (K) {
     });
     const w = [4.0, 3.9, 3.6, 2.5];
     Wd.cam = cuts([
-      [w[0], HH(truck([3.0, 1.2, 0], { dur: w[0], dist0: 17, dist1: 16.5, h0: 1.8, h1: 2.0, a0: -6, a1: 6, fov0: 46, fov1: 46, shift: [.6, 0, 0] }), 61)],
+      [w[0], HH(truck([3.0, 1.2, 0], { dur: w[0], dist0: 12.5, dist1: 11.5, h0: 1.8, h1: 2.0, a0: -6, a1: 6, fov0: 46, fov1: 46, shift: [.6, 0, 0] }), 61)],
       [w[1], HH(punch(insert([4.6, 1.5, 0], { dur: w[1], dist0: 9.6, dist1: 9.2, h0: 1.5, h1: 1.7, a0: -6, a1: 6, fov0: 42, fov1: 40 }), [3.0, 6.0]), 62)],
       [w[2], HH(punch(insert([HOUSE[0], 1.4, HOUSE[1]], { dur: w[2], dist0: 7.5, dist1: 7.0, h0: 1.4, h1: 1.6, a0: 6, a1: -6, fov0: 40, fov1: 40 }), [1.0]), 63)],
-      [w[3], HH(crane([2.0, 1.4, 0], { dur: w[3], dist0: 12, dist1: 10.5, h0: 1.0, h1: 2.4, a0: -6, a1: 6, fov0: 44, fov1: 42 }), 64)]]);
+      [w[3], HH(crane([2.0, 1.4, 0], { dur: w[3], dist0: 10.5, dist1: 9, h0: 1.0, h1: 2.4, a0: -6, a1: 6, fov0: 44, fov1: 42 }), 64)]]);
     return Wd;
   }
 

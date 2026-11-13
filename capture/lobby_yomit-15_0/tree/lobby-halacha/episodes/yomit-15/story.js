@@ -232,7 +232,7 @@ window.STORY = function (K) {
     Wd.cam = C4(dur,
       HH(truck([0, 1.0, -.6], { dur: dur * .25, dist0: 8.6, dist1: 8.0, h0: 1.2, h1: 1.5, a0: -8, a1: 8, fov0: 46, fov1: 44 }), 11),
       HH(punch(pushIn([0, 2.4, -.6], { dur: dur * .25, dist0: 5.4, dist1: 4.6, h0: 1.4, h1: 1.8, a0: -6, a1: 6, fov0: 42, fov1: 40 }), [1.4]), 12),
-      HH(insert([CROWN_A[0], CROWN_A[1], CROWN_A[2]], { dur: dur * .25, dist0: 2.9, dist1: 2.5, h0: 1.5, h1: 1.8, a0: 8, a1: -8, fov0: 36, fov1: 34 }), 13),
+      HH(insert([CROWN_A[0], CROWN_A[1], CROWN_A[2]], { dur: dur * .25, dist0: 4.8, dist1: 4.2, h0: 1.5, h1: 1.8, a0: 8, a1: -8, fov0: 36, fov1: 34 }), 13),
       HH(orbitShot([0, 1.6, -.6], { dur: dur * .25, dist0: 7.4, dist1: 7.0, h0: 1.2, h1: 1.4, a0: -14, a1: 10, fov0: 44, fov1: 44 }), 14));
     return Wd;
   }
@@ -381,7 +381,7 @@ window.STORY = function (K) {
     Wd.cam = C4(dur,
       HH(crane([.4, .5, -1.2], { dur: dur * .25, dist0: 9.0, dist1: 8.2, h0: 1.4, h1: 1.8, a0: -6, a1: 8, fov0: 46, fov1: 44 }), 71),
       HH(punch(pushIn([0, 1.0, -.9], { dur: dur * .25, dist0: 5.8, dist1: 5.4, h0: 1.3, h1: 1.4, a0: -8, a1: 8, fov0: 46, fov1: 44 }), [dur * .25 * .5]), 72),
-      HH(insert([BASK_END[0], .6, BASK_END[2]], { dur: dur * .25, dist0: 2.9, dist1: 2.5, h0: .8, h1: .9, a0: 10, a1: -10, fov0: 36, fov1: 34 }), 73),
+      HH(insert([BASK_END[0], .6, BASK_END[2]], { dur: dur * .25, dist0: 4.4, dist1: 3.9, h0: .8, h1: .9, a0: 10, a1: -10, fov0: 36, fov1: 34 }), 73),
       HH(orbitShot([.2, 1.0, -.4], { dur: dur * .25, dist0: 6.8, dist1: 6.6, h0: 1.0, h1: 1.2, a0: -20, a1: 12, fov0: 44, fov1: 44 }), 74));
     return Wd;
   }
