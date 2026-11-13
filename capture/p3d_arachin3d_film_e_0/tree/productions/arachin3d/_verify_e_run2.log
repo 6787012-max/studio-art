@@ -1,0 +1,2 @@
+P0 | HERO_TOO_SMALL | t=3.2 | e1 | hero height 14% of frame in the key shot (< 20%) | Fix: dolly in / lower fov so the hero fills at least 35% of the frame height
+SUMMARY | FAIL | samples=28 | dur=36.4 | P0=1 P1=0 P2=0 | {"ready_s": 1.5, "gates_s": 59.5, "total_s": 62.0}

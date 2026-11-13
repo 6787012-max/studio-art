@@ -1,0 +1,2 @@
+P0 | HERO_BEHIND_CAMERA | t=6.3 | e1 | hero is behind the camera | Fix: fix the camera path; the hero must be in front of the lens
+SUMMARY | FAIL | samples=28 | dur=36.4 | P0=1 P1=0 P2=0 | {"ready_s": 1.3, "gates_s": 58.5, "total_s": 60.4}

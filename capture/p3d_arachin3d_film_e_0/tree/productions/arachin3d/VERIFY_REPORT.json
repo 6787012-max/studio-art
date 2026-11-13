@@ -1,0 +1,19 @@
+{
+ "film": "film_e.html",
+ "status": "PASS",
+ "time": "2026-11-13T08:20:25",
+ "samples": 28,
+ "findings": [],
+ "sheets": {
+  "beat": "C:/projects/_studio-animatzia/productions/arachin3d/_verify/_view/_verify_beat_sheet_1.jpg",
+  "seam": "C:/projects/_studio-animatzia/productions/arachin3d/_verify/_view/_verify_seams_1.jpg",
+  "phone": "C:/projects/_studio-animatzia/productions/arachin3d/_verify/_view/_verify_phone_sheet_1.jpg",
+  "phone_2": "C:/projects/_studio-animatzia/productions/arachin3d/_verify/_view/_verify_phone_sheet_2.jpg"
+ },
+ "timing": {
+  "ready_s": 5.3,
+  "gates_s": 199.5,
+  "sheets_s": 62.2,
+  "total_s": 267.3
+ }
+}

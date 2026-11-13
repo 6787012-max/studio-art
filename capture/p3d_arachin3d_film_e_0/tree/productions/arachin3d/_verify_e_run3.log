@@ -1,0 +1,8 @@
+PASS
+
+Sheets (CLEAN, safe to Read):
+  beat: C:/projects/_studio-animatzia/productions/arachin3d/_verify/_view/_verify_beat_sheet_1.jpg
+  seam: C:/projects/_studio-animatzia/productions/arachin3d/_verify/_view/_verify_seams_1.jpg
+  phone: C:/projects/_studio-animatzia/productions/arachin3d/_verify/_view/_verify_phone_sheet_1.jpg
+  phone_2: C:/projects/_studio-animatzia/productions/arachin3d/_verify/_view/_verify_phone_sheet_2.jpg
+SUMMARY | PASS | samples=28 | dur=36.4 | P0=0 P1=0 P2=0 | {"ready_s": 5.3, "gates_s": 199.5, "sheets_s": 62.2, "total_s": 267.3}

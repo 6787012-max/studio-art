@@ -1,0 +1,4 @@
+08:20:45 render_all: production=arachin3d films=film_e part=50s hq=True dry_run=False
+08:20:54 budget WARN: ahead of pace - continue sparingly: spent $268 of $2600 (cap $2210), allowed by now $189 (142% of pace) [render]
+08:20:54 verify gate: PASS for film_e
+08:21:10 film_e: length 36.4s, rendering (part 50 s, 10 includes)
