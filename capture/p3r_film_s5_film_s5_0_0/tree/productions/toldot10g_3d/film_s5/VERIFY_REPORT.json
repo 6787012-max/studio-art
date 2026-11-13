@@ -1,0 +1,14 @@
+{
+ "film": "film_s5.html",
+ "status": "PASS",
+ "time": "2026-11-13T12:15:07",
+ "samples": 33,
+ "findings": [],
+ "sheets": null,
+ "timing": {
+  "ready_s": 50.4,
+  "gates_s": 1115.1,
+  "sheets_s": 129.1,
+  "total_s": 1397.7
+ }
+}
