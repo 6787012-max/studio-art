@@ -14,9 +14,9 @@ os.chdir(SHORTS)
 import pipeline as P  # guarded dispatch (same import as anim/build.py)
 
 render, final = os.path.abspath(sys.argv[1]), os.path.abspath(sys.argv[2])
-cfg = json.load(io.open(SHORTS + '/work/short91_config.json', encoding='utf-8'))
-D = SHORTS + '/anim/short91'
-WORK = os.path.dirname(final) + '/_compose_work_short91'  # per-short: a shared dir reused short73's cached end card (27/10)
+cfg = json.load(io.open(SHORTS + '/work/short92_config.json', encoding='utf-8'))
+D = SHORTS + '/anim/short92'
+WORK = os.path.dirname(final) + '/_compose_work_short92'  # per-short: a shared dir reused short73's cached end card (27/10)
 os.makedirs(WORK, exist_ok=True)
 FPS, END_DUR = 30, 4.8
 pre = cfg.get('pre_roll', 0.15)
@@ -53,7 +53,9 @@ if not os.path.exists(outro):
 # 2) audio: same cuts / loudnorm / music as anim/build.py
 narr = WORK + '/narr_stereo.wav'
 P.extract_with_cuts(cfg['local_mp4'], keep, 2, 44100, narr)
-nf = "volume=enable='lt(t,0.38)':volume=0,afade=t=in:st=0.38:d=0.04"  # mute the leading fragment 'shemizkenu' (not captioned, dangling)
+nf = "afade=t=in:st=0:d=0.03"  # short92: no head mute (the short91 head mute cut the first words); tiny fade-in only
+# short92: the 1.0 s tail comes from the source and carries the dangling start of the next sentence -> silence it
+nf = nf + ",afade=t=out:st=%.3f:d=0.10" % (clip - float(cfg.get('tail', 1.0)))
 if cfg.get('loudnorm'):
     ln = cfg['loudnorm'] if isinstance(cfg['loudnorm'], dict) else {}
     nf = nf + ',loudnorm=I=%s:TP=%s:LRA=%s' % (ln.get('I', -16.5), ln.get('TP', -2.0), ln.get('LRA', 7))
