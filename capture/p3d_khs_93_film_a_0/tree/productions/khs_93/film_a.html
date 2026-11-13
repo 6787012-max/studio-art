@@ -1,0 +1,353 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>khs 93 film a</title>
+<style>html,body{margin:0;background:#000}canvas{display:block;width:100vw;height:auto}</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+// khs_93 / film_a, fix round 2. Portrait 1080x1920, OBJECTS ONLY (no people, hands, arms, feet, faces, silhouettes).
+// 9 shots = caption groups G1..G9. Look: lavender-violet sky, WHITE clouds in the sky only, peach-sand floor; GOLD = right, ROSE = left.
+window.CLIP_DUR = 39.98;
+import { film, world, THREE, ease, clamp, lerp, mesh, toon, canvasTex } from '../../lib/stage3d.js';
+
+const PI = Math.PI;
+const FLOOR = -0.9;
+const CY = 6.0;
+const LAV_D = 0x7b64c9, PEACH = 0xf6d3b0, CLOUD = 0xffffff, CREAM = 0xfff8ec, WHITE = 0xffffff;
+const GOLD = 0xf2c14e, GOLD_L = 0xffe38a, ROSE = 0xc2305a, ROSE_L = 0xff7a9c, INK = 0x3b2a4f, NAVY = 0x3c3370, GLOBE = 0xfbf7ff, STONE = 0x9f97b8;
+
+const P = (t, a, b) => clamp((t - a) / (b - a), 0, 1);
+const sm = (t, a, b) => ease.sm(P(t, a, b));
+
+const mk = (geo, color, o) => { o = o || {}; const m = mesh(geo, toon(color, o.mat), Object.assign({ inkW: .008, inkColor: INK }, o)); m.castShadow = false; return m; };
+const put = (parent, geo, color, pos, o) => { const m = mk(geo, color, Object.assign({ pos }, o || {})); parent.add(m); return m; };
+function heroBox(Wd, fn) {
+  const g = new THREE.Group(), m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()); m.visible = false; g.add(m); Wd.add(g);
+  Wd.on(t => { const bs = fn(t).filter(Boolean); if (!bs.length) return; const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (const b of bs) for (let q = 0; q < 3; q++) { lo[q] = Math.min(lo[q], b[q] - b[q + 3]); hi[q] = Math.max(hi[q], b[q] + b[q + 3]); }
+    g.position.set((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2); g.scale.set(Math.max(hi[0] - lo[0], .01), Math.max(hi[1] - lo[1], .01), Math.max(hi[2] - lo[2], .01)); });
+  Wd.hero = g; return g;
+}
+// white clouds: emissive white so the floor bounce does not tint them
+function cloud(S, x, y, z, s) {
+  const g = new THREE.Group(); g.position.set(x, y, z); g.scale.setScalar(s); S.add(g);
+  [[0, 0, 0, .6], [.55, .1, 0, .45], [-.55, .05, 0, .45], [.25, .4, 0, .4], [-.25, .36, 0, .38]]
+    .forEach(([a, b, c, r]) => put(g, new THREE.SphereGeometry(r, 18, 12), CLOUD, [a, b, c], { ink: false, mat: { emissive: 0xffffff, emissiveIntensity: 1 } }));
+  return g;
+}
+function scene(heroFn) {
+  const Wd = world({ fogColor: 0xe6dcff, fogNear: 40, fogFar: 120, skyTop: 0xf4f0ff, skyBottom: 0x9d8ee6, hemiSky: 0xffffff, hemiGround: 0xf3d9c0, hemi: 1.0, sunColor: 0xfff3e0, sun: .7, sunPos: [3, 10, 8], shadowExt: 8, skyR: 260 });
+  const S = Wd.scene;
+  put(S, new THREE.BoxGeometry(260, .4, 260), PEACH, [0, FLOOR - .2, 0], { ink: false });
+  cloud(S, -3.6, 3.6, -10, 1.3); cloud(S, 3.8, 6.4, -12, 1.6); cloud(S, -2.0, 8.6, -13, 1.4); cloud(S, 4.6, 2.2, -9, 1.1);
+  heroBox(Wd, heroFn);
+  return { Wd, S };
+}
+function frame(Wd, fn) {
+  Wd.cam = lt => { const f = fn(lt); const a = f.az * PI / 180, T = f.T;
+    return { pos: [T[0] + Math.sin(a) * f.d, T[1] + f.el, T[2] + Math.cos(a) * f.d], look: [T[0], T[1], T[2]], fov: 50 }; };
+}
+const WIDE = { T: [0, -.025, 0], d: 20, az: 6, el: .6 };
+const wideFrame = Wd => frame(Wd, () => WIDE);
+
+const BX = [-.85, 0, .85];
+function bpos(i) { const r = Math.floor(i / 3), c = i % 3; return [BX[c], CY + (1 - r) * .7, -.3]; }
+function consoleUnit(S) {
+  const g = new THREE.Group(); g.position.set(0, CY, -.6); S.add(g);
+  put(g, new THREE.BoxGeometry(2.8, 2.2, .3), NAVY, [0, 0, 0], { ink: false });
+  [[-1.4, -1.1], [1.4, -1.1], [-1.4, 1.1], [1.4, 1.1]].forEach(([x, y]) => put(g, new THREE.SphereGeometry(.15, 14, 10), NAVY, [x, y, 0], { ink: false }));
+  const btn = [];
+  for (let i = 0; i < 9; i++) {
+    const r = Math.floor(i / 3), c = i % 3, x = BX[c], y = (1 - r) * .7;
+    put(g, new THREE.CylinderGeometry(.27, .27, .08, 28), LAV_D, [x, y, .2], { ink: false, rot: [PI / 2, 0, 0] });
+    const cap = put(g, new THREE.CylinderGeometry(.22, .22, .16, 28), CREAM, [x, y, .3], { ink: false, rot: [PI / 2, 0, 0] });
+    btn.push({ cap, z0: .3 });
+  }
+  return { g, btn };
+}
+function pressBtnMulti(b, t, t0s, col) {
+  let d = 0;
+  for (const t0 of t0s) { const dd = t < t0 ? 0 : (t < t0 + .12 ? (t - t0) / .12 : (t < t0 + .4 ? 1 - (t - t0 - .12) / .28 : 0)); d = Math.max(d, dd); }
+  b.cap.position.z = b.z0 - .07 * d;
+  const lit = t >= Math.min(...t0s);
+  b.cap.material.emissive.setHex(lit ? col : 0x000000);
+  b.cap.material.emissiveIntensity = lit ? .9 : 0;
+}
+const pressBtn = (b, t, t0, col) => pressBtnMulti(b, t, [t0], col);
+function globeUnit(S) {
+  const globe = new THREE.Group(); globe.position.set(0, 2.6, 0); S.add(globe);
+  const body = put(globe, new THREE.SphereGeometry(.8, 28, 20), GLOBE, [0, 0, 0], { ink: false, mat: { emissive: GOLD, emissiveIntensity: 0 } });
+  [[.35, .3, .66], [-.4, -.2, .64], [.1, -.45, .66], [-.3, .45, .6]].forEach(([x, y, z]) => put(globe, new THREE.SphereGeometry(.32, 14, 10), LAV_D, [x, y, z], { ink: false }).scale.set(1, 1, .35));
+  put(S, new THREE.CylinderGeometry(.04, .04, 1.5, 8), NAVY, [0, 4.15, -.1], { ink: false });
+  return { globe, body };
+}
+function thread(S, x, y0, y1, col) {
+  return put(S, new THREE.CylinderGeometry(.04, .04, y1 - y0, 8), col, [x, (y0 + y1) / 2, 0], { ink: false, mat: { emissive: col, emissiveIntensity: .6 } });
+}
+function pulseSphere(S, x, col) {
+  const m = put(S, new THREE.SphereGeometry(.14, 14, 10), col, [x, FLOOR, 0], { ink: false, mat: { emissive: col, emissiveIntensity: 1 } });
+  m.visible = false; return m;
+}
+function flash(S, pos, col, flat) {
+  const m = put(S, new THREE.TorusGeometry(.36, .045, 10, 32), col, pos, { ink: false, rot: flat ? [PI / 2, 0, 0] : [0, 0, 0], mat: { emissive: col, emissiveIntensity: 1 } });
+  m.visible = false; return { m, t0: 0 };
+}
+function flashUpd(f, t) {
+  const on = t >= f.t0 && t <= f.t0 + .45;
+  f.m.visible = on; if (on) f.m.scale.setScalar(.4 + 1.0 * P(t, f.t0, f.t0 + .45));
+}
+function leverUnit(S) {
+  const leverG = new THREE.Group(); leverG.position.set(-1.5, FLOOR, 0); S.add(leverG);
+  put(leverG, new THREE.CylinderGeometry(.4, .45, .35, 20), NAVY, [0, .17, 0], { ink: false });
+  const arm = put(leverG, new THREE.BoxGeometry(1.75, .22, .22), GOLD, [.87, 0, 0], { ink: false, mat: { emissive: GOLD, emissiveIntensity: .3 } });
+  return { leverG, arm };
+}
+// SNEAKER from behind/above, toe pointing away (-z); sole ~1.6x its width; collar and dark opening at the near end (+z)
+function shoe(S, upCol, x, z, sc) {
+  // sneaker: flat stretched sole (rounded ends), elongated upper with a rounded toe, collar + dark opening on the near third,
+  // 4 thin lace bars across the middle third, bow at the collar end. Toe points away from the camera (-z).
+  const g = new THREE.Group(); g.position.set(x, FLOOR, z); g.scale.setScalar(sc); S.add(g);
+  const W = .62;
+  put(g, new THREE.SphereGeometry(.5, 28, 16), WHITE, [0, .06, 0], { ink: false }).scale.set(W, .12, 2.4);
+  const up = put(g, new THREE.SphereGeometry(.5, 28, 20), upCol, [0, .215, 0], { ink: false });
+  up.scale.set(.95 * W, .5 * W, 2.3 * W);
+  put(g, new THREE.TorusGeometry(.21, .035, 12, 28), WHITE, [0, .33, .45], { ink: false, rot: [PI / 2, 0, 0] });
+  put(g, new THREE.CylinderGeometry(.15, .15, .02, 24), INK, [0, .34, .45], { ink: false });
+  [-.16, -.05, .06, .17].forEach(z2 => put(g, new THREE.BoxGeometry(.7 * W, .014, .03), WHITE, [0, .38, z2], { ink: false }));
+  const bow = new THREE.Group(); bow.position.set(0, .4, .3); bow.scale.setScalar(.001); g.add(bow);
+  put(bow, new THREE.TorusGeometry(.12, .03, 10, 20), WHITE, [-.13, 0, 0], { ink: false, rot: [.5, 0, 0] });
+  put(bow, new THREE.TorusGeometry(.12, .03, 10, 20), WHITE, [.13, 0, 0], { ink: false, rot: [.5, 0, 0] });
+  put(bow, new THREE.BoxGeometry(.05, .03, .22), WHITE, [-.05, -.02, .12], { ink: false, rot: [.3, 0, .3] });
+  put(bow, new THREE.BoxGeometry(.05, .03, .22), WHITE, [.05, -.02, .1], { ink: false, rot: [.3, 0, -.3] });
+  return { g, up, bow };
+}
+function shoeOld(S, upCol, x, z, sc) {
+  const g = new THREE.Group(); g.position.set(x, FLOOR, z); g.scale.setScalar(sc); S.add(g);
+  put(g, new THREE.BoxGeometry(.62, .14, 1.0), WHITE, [0, .07, 0], { ink: false });
+  const up = put(g, new THREE.SphereGeometry(.5, 24, 16), upCol, [0, .36, -.04], { ink: false });
+  up.scale.set(.62, .5, .9);
+  put(g, new THREE.SphereGeometry(.3, 16, 12), upCol, [0, .26, -.42], { ink: false }).scale.set(1, .75, 1);
+  put(g, new THREE.TorusGeometry(.2, .07, 12, 24), WHITE, [0, .48, .4], { ink: false, rot: [PI / 2, 0, 0] });
+  put(g, new THREE.CylinderGeometry(.14, .14, .03, 20), INK, [0, .5, .4], { ink: false });
+  [-.2, -.07, .07, .2].forEach(z2 => put(g, new THREE.BoxGeometry(.62, .04, .07), WHITE, [0, .6, z2], { ink: false }));
+  const bow = new THREE.Group(); bow.position.set(0, .66, 0); bow.scale.setScalar(.001); g.add(bow);
+  put(bow, new THREE.TorusGeometry(.13, .04, 10, 20), WHITE, [-.14, 0, 0], { ink: false, rot: [.5, 0, 0] });
+  put(bow, new THREE.TorusGeometry(.13, .04, 10, 20), WHITE, [.14, 0, 0], { ink: false, rot: [.5, 0, 0] });
+  put(bow, new THREE.BoxGeometry(.05, .03, .26), WHITE, [-.05, -.02, .14], { ink: false, rot: [.3, 0, .3] });
+  put(bow, new THREE.BoxGeometry(.05, .03, .26), WHITE, [.05, -.02, .12], { ink: false, rot: [.3, 0, -.3] });
+  return { g, up, bow };
+}
+
+// shot 1 (G1, 0.00-4.08): simple layer - balance scale tips gently on the floor
+function b01() {
+  const { Wd, S } = scene(t => [[0, .2, 0, 1.3, 1.3, .6]]);
+  frame(Wd, lt => ({ T: [0, -.62, 0], d: 6.2, az: 14 + 3 * sm(lt, 0, 4.0), el: 1.0 }));
+  put(S, new THREE.CylinderGeometry(.5, .55, .14, 28), STONE, [0, FLOOR + .07, 0], { ink: false });
+  put(S, new THREE.CylinderGeometry(.08, .08, 1.35, 14), NAVY, [0, FLOOR + .675, 0], { ink: false });
+  const beam = new THREE.Group(); beam.position.set(0, FLOOR + 1.35, 0); S.add(beam);
+  put(beam, new THREE.BoxGeometry(2.2, .07, .07), NAVY, [0, 0, 0], { ink: false });
+  [-1.05, 1.05].forEach(x => {
+    put(beam, new THREE.CylinderGeometry(.015, .015, .5, 6), NAVY, [x, -.25, 0], { ink: false });
+    put(beam, new THREE.CylinderGeometry(.32, .32, .08, 28), x < 0 ? GOLD : LAV_D, [x, -.52, 0], { ink: false });
+  });
+  const star = put(beam, new THREE.DodecahedronGeometry(.2), GOLD_L, [-1.05, -.42, 0], { ink: false, mat: { emissive: GOLD, emissiveIntensity: .4 } });
+  put(beam, new THREE.IcosahedronGeometry(.17), STONE, [1.05, -.42, 0], { ink: false });
+  Wd.on(t => { beam.rotation.z = .16 * Math.sin(t * 2.0) * sm(t, 0, .4); star.rotation.z = t; });
+  return Wd;
+}
+
+// shot 2 (G2, 4.08-9.75): camera cranes UP a glowing thread to the console; nine buttons press in turn
+function b02() {
+  const { Wd, S } = scene(t => [[0, CY, -.6, 1.6, 1.3, .6]]);
+  frame(Wd, lt => { const k = sm(lt, 0, 3.86); return { T: [0, lerp(2.5, CY - 1.0, k), 0], d: lerp(8.4, 7.6, k), az: 12, el: 1.0 }; });
+  const C = consoleUnit(S);
+  thread(S, 0, FLOOR, CY - 1.1, GOLD_L);
+  const order = [0, 1, 2, 5, 4, 3, 6, 7, 8];
+  const fl = order.map((bi, k) => { const f = flash(S, bpos(bi), GOLD_L, false); f.t0 = .4 + k * .35; return f; });
+  Wd.on(t => {
+    order.forEach((bi, k) => pressBtn(C.btn[bi], t, .4 + k * .35, GOLD));
+    fl.forEach(f => flashUpd(f, t));
+  });
+  return Wd;
+}
+
+// shot 3 (G3 = K2, 9.75-12.78): wide; a lever tilts on the floor -> pulse up the thread -> button -> globe turns a notch
+function b03() {
+  const { Wd, S } = scene(t => [[0, CY, -.6, 1.6, 1.3, .6]]);
+  wideFrame(Wd);
+  const C = consoleUnit(S);
+  const gl = globeUnit(S);
+  thread(S, -.85, FLOOR, CY - 1.1, GOLD_L);
+  thread(S, .85, FLOOR, CY - 1.1, LAV_D);
+  const lv = leverUnit(S);
+  const pulse = pulseSphere(S, -.85, GOLD_L);
+  Wd.on(t => {
+    lv.arm.parent.rotation.z = .5 * Math.sin(PI * P(t, .3, .7));
+    pulse.visible = t >= .7 && t <= 1.7;
+    if (pulse.visible) pulse.position.y = lerp(FLOOR, CY - .7, P(t, .7, 1.7));
+    pressBtn(C.btn[6], t, 1.7, GOLD);
+    gl.globe.rotation.y = .5 * sm(t, 1.8, 2.4);
+  });
+  return Wd;
+}
+
+// shot 4 (G4 = K3, 12.78-18.83): camera from above (~35 deg); two empty sneakers, smaller and centred; right hops in, then left; bow LEFT first, then RIGHT
+function b04() {
+  const { Wd, S } = scene(t => [[0, -.7, 0, 1.2, .6, .8]]);
+  frame(Wd, () => ({ T: [0, -1.04, 0], d: 2.7, az: 0, el: 3.7 }));
+  // lavender sky band behind the pair (top of frame) with two white clouds
+  put(S, new THREE.BoxGeometry(40, 14, .2), 0xb9a8ef, [0, FLOOR + 7, -2.6], { ink: false, mat: { emissive: 0xb9a8ef, emissiveIntensity: .9 } });
+  [[-.9, 1.6, -2.4, .6], [.9, 2.2, -2.4, .5]].forEach(([x, y, z, s]) => cloud(S, x, y, z, s));
+  const R = shoe(S, GOLD, .6, .5, .9);
+  const L = shoe(S, ROSE, -.6, .5, .9);
+  const fl = [flash(S, [.6, FLOOR + .03, 0], GOLD_L, true), flash(S, [-.6, FLOOR + .03, 0], ROSE_L, true)];
+  fl[0].t0 = 1.2; fl[1].t0 = 2.4;
+  Wd.on(t => {
+    R.g.position.z = lerp(.5, 0, sm(t, .3, 1.2)); R.g.position.y = FLOOR + .4 * Math.sin(PI * P(t, .3, 1.2));
+    L.g.position.z = lerp(.5, 0, sm(t, 1.5, 2.4)); L.g.position.y = FLOOR + .4 * Math.sin(PI * P(t, 1.5, 2.4));
+    L.bow.scale.setScalar(Math.max(.001, sm(t, 2.5, 2.9)));
+    R.bow.scale.setScalar(Math.max(.001, sm(t, 3.6, 4.0)));
+    fl.forEach(f => flashUpd(f, t));
+  });
+  return Wd;
+}
+
+// shot 5 (G5 = K4a first sentence, 18.83-22.37): gold right shoe glows; gold pulse climbs its thread to the gold button; it presses
+function b05() {
+  const { Wd, S } = scene(t => [[0, 3.0, -.6, 2.0, 3.6, 1.0]]);
+  wideFrame(Wd);
+  const C = consoleUnit(S);
+  const gl = globeUnit(S);
+  thread(S, .85, FLOOR, CY - 1.1, GOLD_L);
+  thread(S, -.85, FLOOR, CY - 1.1, LAV_D);
+  const sh = shoe(S, GOLD, .85, 0, 1.5);
+  const pulse = pulseSphere(S, .85, GOLD_L);
+  Wd.on(t => {
+    sh.up.material.emissive.setHex(GOLD); sh.up.material.emissiveIntensity = .9 * sm(t, 0, .6);
+    pulse.visible = t >= .6 && t <= 1.6;
+    if (pulse.visible) pulse.position.y = lerp(FLOOR, CY - .7, P(t, .6, 1.6));
+    pressBtn(C.btn[8], t, 1.6, GOLD);
+    gl.body.material.emissiveIntensity = .3 * sm(t, 1.8, 3.2);
+  });
+  return Wd;
+}
+
+// shot 6 (G6 = K4a rest, 22.37-27.76): gold wave spreads over the globe, gold drops fall, the globe warms
+function b06() {
+  const { Wd, S } = scene(t => [[0, 3.0, -.6, 2.0, 3.6, 1.0]]);
+  wideFrame(Wd);
+  const C = consoleUnit(S);
+  const gl = globeUnit(S);
+  thread(S, .85, FLOOR, CY - 1.1, GOLD_L);
+  thread(S, -.85, FLOOR, CY - 1.1, LAV_D);
+  const sh = shoe(S, GOLD, .85, 0, 1.5);
+  const wave = put(S, new THREE.SphereGeometry(1, 24, 16), GOLD_L, [0, 2.6, 0], { ink: false, mat: { transparent: true, opacity: .5, emissive: GOLD_L, emissiveIntensity: .6 } });
+  wave.visible = false;
+  const drops = [-.4, 0, .4].map(x => { const d = put(S, new THREE.SphereGeometry(.09, 12, 8), GOLD_L, [x, 4.4, .2], { ink: false, mat: { emissive: GOLD, emissiveIntensity: .8 } }); d.visible = false; return d; });
+  Wd.on(t => {
+    sh.up.material.emissive.setHex(GOLD); sh.up.material.emissiveIntensity = .9;
+    pressBtn(C.btn[8], t, -1, GOLD);
+    wave.visible = t <= 3.0;
+    if (wave.visible) { const k = P(t, 0, 3.0); wave.scale.setScalar(.8 + 1.4 * k); wave.material.opacity = .5 * (1 - k); }
+    gl.body.material.emissiveIntensity = .3 + .3 * sm(t, 0, 2.5);
+    drops.forEach((d, i) => { const t0 = .4 + i * .35; d.visible = t >= t0 && t <= t0 + 1.2; if (d.visible) d.position.y = lerp(4.4, 3.5, P(t, t0, t0 + 1.2)); });
+    gl.globe.rotation.y = .3 * sm(t, 0, 5.0);
+  });
+  return Wd;
+}
+
+// shot 7 (G7 = K4b, 27.76-31.67): rose shoe's bow pulls into a knot; pulse climbs to the rose button; spiky rose block wrapped and shrinking
+function b07() {
+  const { Wd, S } = scene(t => [[0, 2.4, -.4, 3.2, 3.2, 1.0]]);
+  frame(Wd, () => ({ T: [0, .35, 0], d: 16, az: 8, el: 1.5 }));
+  const C = consoleUnit(S);
+  const gl = globeUnit(S);
+  thread(S, -.85, FLOOR, CY - 1.1, ROSE_L);
+  const sh = shoe(S, ROSE, -.85, 0, 1.5);
+  const pulse = pulseSphere(S, -.85, ROSE_L);
+  const bl = new THREE.Group(); bl.position.set(1.8, FLOOR + .5, .2); S.add(bl);
+  bl.scale.setScalar(1.8);
+  put(bl, new THREE.BoxGeometry(.8, .8, .8), ROSE, [0, 0, 0], { ink: false });
+  [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]].forEach(([x, y, z]) => {
+    put(bl, new THREE.ConeGeometry(.16, .35, 10), ROSE, [x * .55, y * .55, z * .55], { ink: false, rot: [z ? PI / 2 : 0, 0, x ? PI / 2 : 0] });
+  });
+  const rings = [-.2, 0, .2].map(y => put(bl, new THREE.TorusGeometry(.5, .05, 10, 28), WHITE, [0, y, 0], { ink: false, rot: [PI / 2, 0, 0] }));
+  const bw = new THREE.Group(); bw.position.set(0, .6, 0); bl.add(bw);
+  put(bw, new THREE.SphereGeometry(.14, 12, 8), WHITE, [-.13, 0, 0], { ink: false }).scale.set(1.3, .7, .6);
+  put(bw, new THREE.SphereGeometry(.14, 12, 8), WHITE, [.13, 0, 0], { ink: false }).scale.set(1.3, .7, .6);
+  Wd.on(t => {
+    const knot = sm(t, .2, 1.0);
+    sh.bow.scale.setScalar(Math.max(.001, 1 - .6 * knot));
+    sh.up.material.emissive.setHex(ROSE); sh.up.material.emissiveIntensity = .4 * knot;
+    pulse.visible = t >= 1.0 && t <= 2.0;
+    if (pulse.visible) pulse.position.y = lerp(FLOOR, CY - .7, P(t, 1.0, 2.0));
+    pressBtn(C.btn[6], t, 2.0, ROSE_L);
+    const s = 1 - .45 * sm(t, 2.2, 3.6);
+    bl.scale.setScalar(1.8 * s);
+    rings.forEach((r, i) => { r.position.y = [-.2, 0, .2][i] * s; r.scale.setScalar(1 - .3 * sm(t, 2.2, 3.6)); });
+    gl.globe.rotation.y = .2 * sm(t, 0, 3.9);
+  });
+  return Wd;
+}
+
+// shot 8 (G8 = K5 + first half of K6, 31.67-36.77): wide; console cascades; globe glows; gold/rose pads, gold on top, SWAP at 3.5-4.2 s
+function b08() {
+  const { Wd, S } = scene(t => [[0, 2.4, 0, 3.0, 3.6, 1.0]]);
+  wideFrame(Wd);
+  const C = consoleUnit(S);
+  const gl = globeUnit(S);
+  [-1.3, -.85, .85, 1.3].forEach(x => thread(S, x, FLOOR, CY - 1.1, x < 0 ? ROSE_L : GOLD_L));
+  const sg = shoe(S, GOLD, .85, -.3, 1.5), sr = shoe(S, ROSE, -.85, -.3, 1.5);
+  const padR = put(S, new THREE.CylinderGeometry(.6, .6, .2, 28), ROSE, [0, FLOOR + .1, .4], { ink: false });
+  const padG = put(S, new THREE.CylinderGeometry(.6, .6, .2, 28), GOLD, [0, FLOOR + .3, .4], { ink: false });
+  Wd.on(t => {
+    C.btn.forEach((b, i) => pressBtn(b, t, .3 + i * .22, i % 2 ? ROSE_L : GOLD_L));
+    gl.body.material.emissiveIntensity = .5 * sm(t, 1.0, 3.0);
+    gl.globe.rotation.y = .4 * sm(t, 1.0, 5.0);
+    sg.up.material.emissive.setHex(GOLD); sg.up.material.emissiveIntensity = .5 * sm(t, .5, 1.5);
+    sr.up.material.emissive.setHex(ROSE); sr.up.material.emissiveIntensity = .5 * sm(t, .5, 1.5);
+    const sw = sm(t, 2.2, 2.9);
+    padG.position.y = FLOOR + lerp(.3, .1, sw);
+    padR.position.y = FLOOR + lerp(.1, .3, sw);
+    pressBtn(C.btn[7], t, 1.8, GOLD_L);
+  });
+  return Wd;
+}
+
+// shot 9 (G9 = rest of K6, 36.77-39.98): after the swap, rose pad on top; a different button (top-middle) presses rose
+function b09() {
+  const { Wd, S } = scene(t => [[0, 2.4, 0, 3.0, 3.6, 1.0]]);
+  wideFrame(Wd);
+  const C = consoleUnit(S);
+  const gl = globeUnit(S);
+  [-1.3, -.85, .85, 1.3].forEach(x => thread(S, x, FLOOR, CY - 1.1, x < 0 ? ROSE_L : GOLD_L));
+  shoe(S, GOLD, .85, -.3, 1.5); shoe(S, ROSE, -.85, -.3, 1.5);
+  put(S, new THREE.CylinderGeometry(.6, .6, .2, 28), GOLD, [0, FLOOR + .1, .4], { ink: false });
+  put(S, new THREE.CylinderGeometry(.6, .6, .2, 28), ROSE, [0, FLOOR + .3, .4], { ink: false });
+  Wd.on(t => {
+    C.btn.forEach((b, i) => pressBtn(b, t, -1, GOLD_L));
+    gl.body.material.emissiveIntensity = .5;
+    gl.globe.rotation.y = .4 + .2 * sm(t, 0, 3.2);
+    pressBtn(C.btn[1], t, .6, ROSE_L);
+  });
+  return Wd;
+}
+
+const SH = (id, dur, caps, capAt, build) => ({ id, dur, wide: true, caps, capAt, build });
+film({
+  W: 1080, H: 1920, xf: .0001, vault: 'captions_vault.json',
+  shots: [
+    SH('s01', 4.08, ['G_CAP_01'], [0.0, 4.08], b01),
+    SH('s02', 3.86, ['G_CAP_04'], [0.0, 3.86], b02),
+    SH('s03', 4.84, ['G_CAP_07'], [0.0, 4.84], b03),
+    SH('s04', 6.05, ['G_CAP_10'], [0.0, 6.05], b04),
+    SH('s05', 3.54, ['G_CAP_15'], [0.0, 3.54], b05),
+    SH('s06', 5.39, ['G_CAP_18'], [0.0, 5.39], b06),
+    SH('s07', 3.91, ['G_CAP_20'], [0.0, 3.91], b07),
+    SH('s08', 3.68, ['G_CAP_23'], [0.0, 3.68], b08),
+    SH('s09', 4.63, ['G_CAP_26'], [0.0, 4.63], b09),
+  ]
+});
+</script>
+</html>
