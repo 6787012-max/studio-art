@@ -1,0 +1,12 @@
+PASS
+
+P2 notes:
+P2 | HERO_SMALL | t=182.0 | s14 | hero height 31% of frame in the key shot (< 35%)
+sheet build failed: Page.screenshot: Timeout 30000ms exceeded.
+Call log:
+  - taking page screenshot
+  - waiting for fonts to load...
+  - fonts loaded
+
+SUMMARY | PASS | samples=83 | dur=240.0 | P0=0 P1=0 P2=1 | {"ready_s": 1.7, "gates_s": 830.8, "sheets_s": 172.5, "total_s": 1077.1}
+EXIT=0

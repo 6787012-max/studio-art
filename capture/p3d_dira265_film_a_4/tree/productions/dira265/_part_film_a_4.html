@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>dira265 film a</title>
+<style>html,body{margin:0;background:#000}canvas{display:block;width:100vw;height:auto}</style>
+<canvas id="c" width="1920" height="1080"></canvas>
+<script>window.__T0=192.0000; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+// dira265 / film_a: 3D walkthrough of a ground-floor apartment. Objects only: no people, no figures, no faces.
+// Captions are referenced only by id (captions_vault.json). All scene state is a pure function of global time g.
+// Plan coordinates are in cm (origin SW, x east, y north). World: X = x/100 - 5.3, Z = 4.6 - y/100 (north = -Z), Y up in m.
+// Interior shots (4-12, 15) are room close-ups: ceilings removed, walls cut to 0.9 m, camera 3.2-4.4 m above the floor.
+import { film, world, THREE, prog, ease, rng, toon, canvasTex } from '../../lib/stage3d.js';
+
+const PI = Math.PI;
+const X = x => x / 100 - 5.3, Z = y => 4.6 - y / 100;
+const sm = (g, a, b) => ease.sm(prog(g, a, b));
+const C = { wall: 0xf2f0eb, ext: 0xe6d5b8, rail: 0x2a2a2a, oak: 0xb98b5e, walnut: 0x5a4330, dark: 0x6b3a2a,
+  cream: 0xefe6d2, white: 0xfafafa, cab: 0xf7f6f2, quartz: 0xd8d2c6, steel: 0xc4c8cc, chrome: 0xc8c8c8,
+  fabric: 0xeae6de, cush: 0xe4ded3, stripe: 0xe8dcc8, rug: 0xcfc6b8, leaf: 0x4f7a3c, pot: 0xf4f4f4,
+  sand: 0xd9c6a8, grass: 0x3e7a3a, roof: 0xcfc8bb, chair: 0x222222, glass: 0xbfe0ee, stone: 0xc9a97a, seam: 0x3a3a3a };
+const M = (c, o) => toon(c, Object.assign({}, o || {}));
+
+const DAY_TOP = new THREE.Color(0x8fb7d9), DAY_BOT = new THREE.Color(0xf3e6cf);
+const DUSK_TOP = new THREE.Color(0x3b3366), DUSK_BOT = new THREE.Color(0xf0a070);
+
+const Wd = world({ fogColor: 0xd9c9b5, fogNear: 30, fogFar: 120, skyTop: 0x8fb7d9, skyBottom: 0xf3e6cf,
+  hemiSky: 0xfff4e6, hemiGround: 0xc9b89a, hemi: 1.5, sunColor: 0xffe2b8, sun: 1.25, sunPos: [7, 11, 9], shadowExt: 11, skyR: 400 });
+const S = Wd.scene;
+
+// ---------- registries ----------
+const CEIL = [], ROOF = [], GLASS = [], TAGS = [], DOORS = [], CAB = [], CURT = [], PLANTS = [], DIMS = [], WARN = [], PLOT = [], BATH_L = [], WC_L = [], WALLS = [];
+const FLOOR_TEX = canvasTex(256, 256, (g, w, h) => { g.fillStyle = '#d6d3cc'; g.fillRect(0, 0, w, h); g.strokeStyle = '#b3afa6'; g.lineWidth = 5; g.strokeRect(0, 0, w, h); });
+function floorTex(wm, dm) { const t = FLOOR_TEX.clone(); t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(wm / 0.6, dm / 0.6); t.needsUpdate = true; return t; }
+
+// ---------- primitives (plan cm sizes, metres for heights) ----------
+function bx(x, y, w, d, h, c, y0, o) {
+  o = o || {}; y0 = y0 || 0;
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w / 100, h, d / 100), o.map ? M(c, { map: o.map }) : M(c, o.m));
+  m.position.set(X(x), y0 + h / 2, Z(y)); m.castShadow = true; m.receiveShadow = true; S.add(m); return m;
+}
+function cyl(x, y, r, h, c, y0, o) {
+  o = o || {}; y0 = y0 || 0;
+  const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 28), M(c, o.m));
+  m.position.set(X(x), y0 + h / 2, Z(y)); m.castShadow = true; m.receiveShadow = true; S.add(m); return m;
+}
+function plant(x, y, s) {
+  s = s || 1;
+  const g = new THREE.Group(); g.position.set(X(x), 0, Z(y)); S.add(g);
+  const pot = new THREE.Mesh(new THREE.CylinderGeometry(0.18 * s, 0.14 * s, 0.42 * s, 24), M(C.pot)); pot.position.y = 0.21 * s; pot.castShadow = true; g.add(pot);
+  const lm = M(C.leaf);
+  [[0, 0.78, 0, 0.36], [0.15, 0.95, 0.06, 0.26], [-0.13, 0.98, -0.07, 0.24], [0.02, 1.2, 0.02, 0.2]].forEach(a => {
+    const m = new THREE.Mesh(new THREE.SphereGeometry(a[3] * s, 18, 12), lm); m.position.set(a[0] * s, a[1] * s, a[2] * s); m.castShadow = true; g.add(m); });
+  PLANTS.push(g); return g;
+}
+function olive(x, z, s) {
+  const g = new THREE.Group(); g.position.set(x, 0, z); S.add(g);
+  const tr = new THREE.Mesh(new THREE.CylinderGeometry(0.12 * s, 0.18 * s, 1.3 * s, 10), M(0x6b5a48)); tr.position.y = 0.65 * s; tr.castShadow = true; g.add(tr);
+  const cn = new THREE.Mesh(new THREE.SphereGeometry(0.95 * s, 16, 12), M(0x7d8a4e)); cn.position.y = 1.9 * s; cn.scale.set(1, 0.8, 1); cn.castShadow = true; g.add(cn);
+  return g;
+}
+function glass(x, y, w, h, y0, rot) {
+  const m = new THREE.Mesh(new THREE.PlaneGeometry(w / 100, h), M(C.glass, { transparent: true, opacity: 0.32, emissive: 0xffb36a, emissiveIntensity: 0, side: THREE.DoubleSide, depthWrite: false }));
+  m.position.set(X(x), y0 + h / 2, Z(y)); if (rot) m.rotation.y = rot; S.add(m); GLASS.push(m); return m;
+}
+function chairAt(x, y, ox, oy, c) {
+  c = c || C.oak;
+  bx(x, y, 46, 46, 0.05, c, 0.45);
+  [[-18, -18], [18, -18], [-18, 18], [18, 18]].forEach(p => bx(x + p[0], y + p[1], 3, 3, 0.45, C.walnut, 0));
+  if (ox) bx(x + ox * 22, y, 3, 46, 0.45, c, 0.45); else bx(x, y + oy * 22, 46, 3, 0.45, c, 0.45);
+}
+function shutter(x, y, w, top, h) {
+  const g = new THREE.Group(); g.position.set(X(x), top, Z(y)); S.add(g);
+  const m = new THREE.Mesh(new THREE.BoxGeometry(w / 100, h, 0.04), M(C.cream)); m.position.y = -h / 2; m.castShadow = true; g.add(m); return g;
+}
+function setShutter(g, s) { g.visible = s > 0.01; g.scale.y = Math.max(0.001, s); }
+function door(hx, hy, dx, dy, len, sign, t0, t1, c) {
+  const piv = new THREE.Group(); piv.position.set(X(hx), 0, Z(hy)); piv.rotation.y = Math.atan2(dy, dx); S.add(piv);
+  const leaf = new THREE.Mesh(new THREE.BoxGeometry(len / 100, 2.1, 0.04), M(c || C.oak));
+  leaf.position.set(len / 200, 1.05, 0); leaf.castShadow = true; leaf.receiveShadow = true; piv.add(leaf);
+  DOORS.push({ piv, a0: piv.rotation.y, sign, t0, t1 });
+}
+// wall along an axis: segment (x0,y0)-(x1,y1) in cm, th cm, gaps [[a,b,lo,hi]] along the segment (lo/hi in m)
+function wl(x0, y0, x1, y1, th, c, gaps, h) {
+  gaps = gaps || []; h = h || 2.7;
+  const hz = y0 === y1, k = hz ? y0 : x0;
+  const a0 = hz ? Math.min(x0, x1) : Math.min(y0, y1), a1 = hz ? Math.max(x0, x1) : Math.max(y0, y1);
+  const put = (p, q, lo, hi) => {
+    if (q - p <= 0.5 || hi - lo <= 0.001) return;
+    const cc = (p + q) / 2, L = q - p;
+    const m = hz ? bx(cc, k, L, th, hi - lo, c, lo) : bx(k, cc, th, L, hi - lo, c, lo);
+    WALLS.push({ m, y0: lo, h: hi - lo });
+  };
+  let cur = a0;
+  gaps.slice().sort((u, v) => u[0] - v[0]).forEach(g => { put(cur, g[0], 0, h); put(g[0], g[1], 0, g[2]); put(g[0], g[1], g[3], h); cur = g[1]; });
+  put(cur, a1, 0, h);
+}
+function glowLine(x0, y0, x1, y1, yh, th) {
+  const mt = new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0, depthWrite: false, fog: false });
+  const dX = X(x1) - X(x0), dZ = Z(y1) - Z(y0), L = Math.hypot(dX, dZ);
+  const m = new THREE.Mesh(new THREE.BoxGeometry(L, th, th), mt);
+  m.position.set((X(x0) + X(x1)) / 2, yh, (Z(y0) + Z(y1)) / 2); m.rotation.y = -Math.atan2(dZ, dX); S.add(m); return mt;
+}
+function rectGlow(x0, y0, x1, y1, yh, th) { return [glowLine(x0, y0, x1, y0, yh, th), glowLine(x1, y0, x1, y1, yh, th), glowLine(x1, y1, x0, y1, yh, th), glowLine(x0, y1, x0, y0, yh, th)]; }
+function tagTex(t) {
+  return canvasTex(512, 192, (g, w, h) => {
+    g.fillStyle = 'rgba(20,18,30,0.82)'; g.beginPath(); g.roundRect(12, 24, w - 24, h - 48, 44); g.fill();
+    g.fillStyle = '#ffd166'; g.font = 'bold 92px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText(t, w / 2, h / 2 + 4);
+  });
+}
+function tag(t, x, y, z, room) {
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tagTex(t), transparent: true, depthTest: false }));
+  sp.position.set(x, y, z); sp.scale.set(2.4, 0.9, 1); sp.renderOrder = 15; S.add(sp); TAGS.push({ sp, room, w0: 2.4, h0: 0.9 }); return sp;
+}
+function dimLine(p0, p1, text) {
+  const L = Math.hypot(p1[0] - p0[0], p1[2] - p0[2]), ang = Math.atan2(p1[2] - p0[2], p1[0] - p0[0]);
+  const g = new THREE.Group(); g.position.set((p0[0] + p1[0]) / 2, (p0[1] + p1[1]) / 2, (p0[2] + p1[2]) / 2); g.rotation.y = -ang; S.add(g);
+  const bm = new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, depthTest: false, fog: false });
+  const bar = new THREE.Mesh(new THREE.BoxGeometry(L, 0.03, 0.03), bm); bar.renderOrder = 20; g.add(bar);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: tagTex(text), transparent: true, depthTest: false, opacity: 0 }));
+  sp.scale.set(2.2, 0.84, 1); sp.position.set((p0[0] + p1[0]) / 2, p0[1] + 0.3, (p0[2] + p1[2]) / 2); sp.renderOrder = 21; S.add(sp);
+  return { sp, w0: 2.2, h0: 0.84, setP(p, f) { f = f === undefined ? 1 : f; const v = p > 0.01 && f > 0.01; g.visible = v; bar.scale.x = Math.max(p, 0.001); bar.position.x = -L / 2 * (1 - p); bm.opacity = f; sp.material.opacity = Math.min(p, 1) * f; sp.visible = v; } };
+}
+function warnTex() {
+  return canvasTex(128, 128, (g) => {
+    g.fillStyle = '#ffd23f'; g.beginPath(); g.moveTo(64, 10); g.lineTo(120, 116); g.lineTo(8, 116); g.closePath(); g.fill();
+    g.strokeStyle = '#2a2030'; g.lineWidth = 8; g.stroke();
+    g.fillStyle = '#2a2030'; g.font = 'bold 80px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('!', 64, 72);
+  });
+}
+function lamp(x, y) { cyl(x, y, 0.2, 0.04, 0xfff3d6, 2.58, { m: { emissive: 0xffe2b0, emissiveIntensity: 0.7 } }); }
+function seam(x, y, w, d, h, y0) { return bx(x, y, w, d, h, C.seam, y0); }
+
+// ---------- hero box (used by the verify gate) ----------
+const HERO = new THREE.Group(); { const hm = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()); hm.visible = false; HERO.add(hm); } S.add(HERO);
+function setHero(b) { HERO.position.set(b[0], b[1], b[2]); HERO.scale.set(b[3] * 2, b[4] * 2, b[5] * 2); }
+
+// ---------- ground, hills, village, road ----------
+const R = rng(42);
+{ const gnd = new THREE.Mesh(new THREE.PlaneGeometry(400, 400), M(0xb4a474)); gnd.rotation.x = -PI / 2; gnd.position.y = -0.02; gnd.receiveShadow = true; S.add(gnd); }
+const HILL_COLS = [0xbfa77a, 0xa8a06a, 0xc4a878, 0xa39a6a, 0xb8a06e];
+for (let i = 0; i < 14; i++) {
+  const x = (R() - 0.5) * 170, z = (R() - 0.5) * 170; if (Math.abs(x) < 26 && Math.abs(z) < 26) continue;
+  const r = 9 + R() * 16;
+  const h = new THREE.Mesh(new THREE.SphereGeometry(r, 24, 12), M(HILL_COLS[i % HILL_COLS.length])); h.scale.set(1, 0.24, 1); h.position.set(x, -r * 0.05, z); h.receiveShadow = true; S.add(h);
+}
+for (let i = 0; i < 16; i++) {
+  const th = R() * 2 * PI, d = 22 + R() * 34, x = Math.cos(th) * d, z = Math.sin(th) * d;
+  if (Math.abs(x) < 18 && Math.abs(z) < 18) continue;
+  const w = 6 + R() * 4, dp = 6 + R() * 3, hh = 3.2 + R() * 2.2;
+  const col = [0xf2e6d0, 0xe9d7b5, 0xd9c3a0, 0xc98f5e][Math.floor(R() * 4)];
+  const b = new THREE.Mesh(new THREE.BoxGeometry(w, hh, dp), M(col)); b.position.set(x, hh / 2, z); b.castShadow = true; b.receiveShadow = true; S.add(b);
+  const rf = new THREE.Mesh(new THREE.BoxGeometry(w + 0.4, 0.3, dp + 0.4), M(0xa0573a)); rf.position.set(x, hh + 0.15, z); rf.castShadow = true; S.add(rf);
+}
+// neighbour houses close to the unit, olive trees, and a road
+bx(-1400, 300, 700, 600, 4.0, 0xf2e6d0, 0);            // neighbour (west, plan cm)
+bx(-300, -1200, 700, 600, 3.6, 0xd9c3a0, 0);           // neighbour (south-west)
+bx(1200, -1000, 600, 600, 4.6, 0xe9d7b5, 0);           // neighbour (south-east)
+[[-14, 6], [-16, -6], [-7, -12], [9, -11], [13, 7], [-22, 0], [22, -6], [4, -18]].forEach(p => olive(p[0], p[1], 1.0 + R() * 0.4));
+{ const road = new THREE.Mesh(new THREE.PlaneGeometry(70, 2.6), M(0x6e6a64)); road.rotation.x = -PI / 2; road.position.set(0, 0.02, -15); road.receiveShadow = true; S.add(road); }
+// plot 265 outline (glowing) and house-2 pillar
+PLOT.push(...rectGlow(-120, -390, 1210, 960, 0.04, 0.07));
+const PILLAR = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 25, 20), new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0, depthWrite: false, fog: false }));
+PILLAR.position.set(X(530), 12.5, Z(380)); S.add(PILLAR);
+bx(1430, 360, 300, 800, 5.5, 0xd9c3a0, 0);             // neighbour 266 (site shot)
+{ const na = new THREE.Mesh(new THREE.PlaneGeometry(1.4, 1.4), new THREE.MeshBasicMaterial({ map: canvasTex(128, 128, (g) => { g.fillStyle = '#2a2030'; g.font = 'bold 90px sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('N', 64, 64); }), transparent: true, depthWrite: false })); na.rotation.x = -PI / 2; na.position.set(-9, 0.03, -6); S.add(na); }
+
+const INT0 = S.children.length;   // interior objects start here (eye-level occlusion handling)
+// ---------- rooms: floors and ceilings (ceilings stay hidden: cutaway) ----------
+const RM = { bed2: [0, 0, 316, 289], bath: [316, 0, 528, 289], living: [528, 0, 1059, 291], bed1: [0, 290, 306, 636], wc: [306, 290, 388, 457], hall: [388, 290, 528, 520], corr: [306, 457, 388, 560], kit: [528, 291, 904, 526] };
+Object.keys(RM).forEach(k => {
+  const r = RM[k], w = r[2] - r[0], d = r[3] - r[1], cx = (r[0] + r[2]) / 2, cy = (r[1] + r[3]) / 2;
+  bx(cx, cy, w, d, 0.02, 0xffffff, 0, { map: floorTex(w / 100, d / 100) });
+  CEIL.push(bx(cx, cy, w, d, 0.04, C.wall, 2.66));
+});
+bx(140, 699, 281, 126, 0.02, C.sand, 0);                       // terrace floor
+bx(693, -80, 614, 120, 0.02, C.sand, 0);                       // patio (yard)
+bx(693, -225, 614, 170, 0.02, C.grass, 0);                     // lawn strip
+
+// ---------- walls (exterior 25 cm, interior 12 cm, mamad 30 cm) ----------
+wl(0, 0, 316, 0, 25, C.ext, [[80, 200, 0.9, 2.1]]);
+wl(316, 0, 528, 0, 25, C.ext);
+wl(528, 0, 1059, 0, 25, C.ext, [[640, 760, 0, 2.15], [880, 1000, 0.9, 2.1]]);
+wl(1059, 0, 1059, 291, 25, C.ext);
+wl(904, 291, 1059, 291, 25, C.ext);
+wl(528, 291, 904, 291, 12, C.wall, [[620, 710, 0, 2.1]]);
+wl(904, 291, 904, 526, 25, C.ext, [[380, 460, 0.9, 2.1]]);
+wl(528, 526, 904, 526, 25, C.ext, [[640, 780, 0.95, 2.1]]);
+wl(528, 291, 528, 526, 12, C.wall, [[380, 470, 0, 2.1]]);
+wl(528, 0, 528, 290, 12, C.wall);
+wl(316, 0, 316, 289, 30, C.wall, [[100, 190, 0, 2.1]]);       // mamad wall with steel door
+wl(316, 290, 528, 290, 12, C.wall, [[440, 510, 0, 2.1]]);
+wl(0, 290, 306, 290, 20, C.wall);
+wl(306, 290, 306, 457, 12, C.wall);
+wl(306, 457, 306, 636, 12, C.wall, [[470, 555, 0, 2.1]]);
+wl(306, 457, 388, 457, 12, C.wall);
+wl(388, 290, 388, 520, 12, C.wall, [[370, 440, 0, 2.1], [462, 520, 0, 2.1]]);
+wl(388, 520, 388, 560, 25, C.ext);
+wl(306, 560, 388, 560, 25, C.ext);
+wl(388, 520, 528, 520, 25, C.ext, [[420, 510, 0, 2.15]]);
+wl(0, 0, 0, 290, 25, C.ext);
+wl(0, 290, 0, 636, 25, C.ext, [[380, 500, 0.9, 2.1]]);
+wl(0, 636, 306, 636, 25, C.ext, [[40, 130, 0, 2.15], [180, 280, 0.9, 2.1]]);
+wl(0, 636, 0, 762, 8, C.rail, [], 1.0);
+wl(0, 762, 281, 762, 8, C.rail, [], 1.0);
+wl(281, 636, 281, 762, 8, C.rail, [], 1.0);
+
+// ---------- doors (animated) ----------
+door(420, 520, 1, 0, 90, -1, 38.5, 41.5, C.dark);             // entrance
+door(620, 291, 1, 0, 90, -1, 44, 46);                          // living <-> kitchen
+door(528, 380, 0, 1, 90, 1, 72, 74);                           // kitchen <-> hall
+door(388, 370, 0, 1, 70, -1, 156, 158);                        // hall -> guest WC
+door(316, 100, 0, 1, 90, -1, 122, 124, C.steel);               // mamad steel door
+door(440, 290, 1, 0, 70, 1, 132, 134);                         // bath <-> hall
+door(40, 636, 1, 0, 90, 1, 111, 113);                          // parents room -> terrace
+
+// ---------- glazing ----------
+glass(140, 0, 120, 1.2, 0.9);                                  // mamad blast window
+glass(700, 0, 120, 2.15, 0);                                   // living patio door
+glass(940, 0, 120, 1.2, 0.9);                                  // living window
+glass(230, 636, 100, 1.2, 0.9);                                // parents window
+glass(0, 440, 120, 1.2, 0.9, PI / 2);                          // parents west window
+glass(85, 636, 90, 2.15, 0);                                   // terrace door
+glass(700, 526, 120, 1.2, 0.95);                               // kitchen north window
+const SH_LIV = shutter(700, -6, 120, 2.15, 2.15);             // living electric shutter (outside)
+const SH_BED = shutter(230, 641, 100, 2.1, 1.2);              // parents window shutter (outside)
+
+// ---------- BED2 (mamad, kids room) ----------
+bx(150, 150, 170, 200, 0.01, C.rug, 0.025);
+bx(70, 150, 90, 190, 0.35, C.oak, 0); bx(70, 150, 84, 184, 0.14, C.white, 0.35); bx(70, 132, 86, 130, 0.05, C.stripe, 0.49);
+bx(70, 251, 92, 8, 0.9, C.cream, 0); bx(70, 226, 60, 30, 0.12, C.white, 0.49); bx(70, 205, 60, 30, 0.12, C.white, 0.49);
+bx(205, 150, 90, 190, 0.35, C.oak, 0); bx(205, 150, 84, 184, 0.14, C.white, 0.35); bx(205, 132, 86, 130, 0.05, C.cush, 0.49);
+bx(205, 251, 92, 8, 0.9, C.cream, 0); bx(205, 226, 60, 30, 0.12, C.white, 0.49); bx(205, 205, 60, 30, 0.12, C.white, 0.49);
+bx(282, 150, 60, 200, 2.1, C.oak, 0);                          // wardrobe
+seam(251.5, 100, 1.0, 1.2, 2.0, 0.05); seam(251.5, 200, 1.0, 1.2, 2.0, 0.05);   // wardrobe door seams
+bx(210, 27, 70, 46, 0.74, C.walnut, 0); bx(210, 27, 72, 48, 0.03, C.white, 0.74);  // desk
+CURT.push(bx(74, 8, 12, 10, 2.1, C.cush, 0), bx(206, 8, 12, 10, 2.1, C.cush, 0));  // blast window curtains
+plant(30, 265, 1.0);
+lamp(158, 144);
+
+// ---------- BATH ----------
+bx(483, 203, 75, 162, 0.55, C.white, 0); bx(483, 203, 62, 150, 0.03, 0xdfe9ef, 0.5);   // tub
+bx(445.5, 203, 1.5, 162, 0.06, C.white, 0.55); bx(520.5, 203, 1.5, 162, 0.06, C.white, 0.55);
+bx(483, 122.5, 75, 1.5, 0.06, C.white, 0.55); bx(483, 283.5, 75, 1.5, 0.06, C.white, 0.55);   // tub rim
+bx(345, 70, 40, 52, 0.4, C.white, 0); bx(345, 28, 40, 16, 0.72, C.white, 0.4);          // toilet
+bx(342, 215, 50, 80, 0.85, C.walnut, 0); bx(342, 215, 40, 45, 0.02, C.white, 0.85);   // vanity + basin
+cyl(342, 232, 0.015, 0.2, C.chrome, 0.87);                                              // tap
+bx(321, 215, 2, 60, 0.7, 0xbfd6e0, 1.3);                                                // mirror
+bx(478, 60, 60, 60, 0.85, C.white, 0); bx(478, 60, 60, 60, 0.8, C.white, 0.87);       // washer + dryer
+bx(478, 90.5, 44, 1.5, 0.5, 0x3a3a3a, 0.2);                                            // washer door
+lamp(422, 150);
+BATH_L.push(...rectGlow(318, 2, 526, 287, 2.0, 0.035));
+const MAMAD_HL = new THREE.Mesh(new THREE.BoxGeometry(0.34, 2.7, 1.3), new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0, depthWrite: false, fog: false }));
+MAMAD_HL.position.set(X(316), 1.35, Z(145)); S.add(MAMAD_HL);
+
+// ---------- LIVING + DINING ----------
+bx(800, 130, 230, 240, 0.012, C.rug, 0.025);
+bx(805, 120, 90, 220, 0.42, C.fabric, 0); bx(745, 120, 26, 220, 0.85, C.fabric, 0);      // sofa
+bx(905, 120, 60, 100, 0.36, C.oak, 0); bx(905, 120, 62, 102, 0.04, C.oak, 0.36);        // coffee table
+bx(1032, 110, 44, 220, 0.5, C.walnut, 0); bx(1040, 110, 4, 130, 0.7, 0x1a1a1a, 1.05);  // TV unit + TV
+bx(640, 150, 90, 190, 0.04, C.oak, 0.72);                                               // dining table
+[[605, 75], [675, 75], [605, 225], [675, 225]].forEach(p => bx(p[0], p[1], 6, 6, 0.72, C.dark, 0));
+[80, 150, 220].forEach(y => { chairAt(570, y, -1, 0); chairAt(710, y, 1, 0); });
+cyl(640, 150, 0.01, 0.6, C.dark, 2.0); cyl(640, 150, 0.22, 0.2, 0xf5e7c8, 1.85);       // pendant lamp
+CURT.push(bx(630, 25, 30, 6, 2.2, C.cush, 0), bx(770, 25, 30, 6, 2.2, C.cush, 0));     // patio curtains
+plant(1000, 265, 1.4); plant(560, 30, 1.0);
+lamp(794, 150);
+
+// ---------- KITCHEN (white L cabinets, oak edge, sink, cooktop, oven, fridge) ----------
+bx(750, 496, 260, 60, 0.86, C.cab, 0); bx(750, 468, 258, 2, 0.86, C.oak, 0);            // north run
+bx(750, 494, 262, 64, 0.04, C.quartz, 0.86);
+bx(750, 464, 262, 4, 0.04, C.oak, 0.86);                                                 // oak counter edge
+bx(874, 383, 60, 166, 0.86, C.cab, 0); bx(842, 383, 2, 164, 0.86, C.oak, 0);            // east run
+bx(874, 383, 64, 168, 0.04, C.quartz, 0.86);
+bx(730, 494, 60, 42, 0.02, C.steel, 0.9); cyl(730, 520, 0.02, 0.3, C.chrome, 0.9);      // sink + tap
+bx(790, 494, 58, 50, 0.01, 0x222222, 0.9);                                              // cooktop
+[[770, 484], [806, 484], [770, 504], [806, 504]].forEach(p => cyl(p[0], p[1], 0.06, 0.01, 0x111111, 0.91));
+bx(790, 465, 58, 2, 0.55, 0x2a2a2a, 0.15);                                              // oven front
+bx(750, 506, 260, 40, 0.7, C.cab, 1.5);                                                  // upper cabinets
+for (let i = 1; i <= 5; i++) seam(620 + 43.3 * i, 485.5, 0.6, 1.2, 0.7, 1.5);            // upper door seams
+for (let i = 1; i <= 5; i++) seam(620 + 43.3 * i, 467.5, 0.6, 1.2, 0.76, 0.1);           // base door seams
+for (let i = 1; i <= 3; i++) seam(841.5, 300 + 41.5 * i, 1.2, 0.6, 0.76, 0.1);           // east door seams
+for (let i = 0; i < 6; i++) {
+  const xc = 620 + 21.7 + 43.3 * i;
+  const pv = new THREE.Group(); pv.position.set(X(xc), 1.5, Z(486)); S.add(pv);
+  const dm = new THREE.Mesh(new THREE.BoxGeometry(0.43, 0.7, 0.02), M(C.cab)); dm.position.set(0, 0.35, 0.01); dm.castShadow = true; pv.add(dm);
+  CAB.push(pv);
+}
+bx(565, 497, 62, 58, 1.85, C.steel, 0); seam(565, 468.5, 60, 0.6, 1.85, 0);               // fridge + door line
+lamp(716, 380);
+
+// ---------- PARENTS ROOM ----------
+bx(120, 402, 160, 200, 0.35, C.oak, 0); bx(120, 402, 150, 192, 0.16, C.white, 0.35);
+bx(120, 378, 152, 140, 0.05, C.stripe, 0.51);
+bx(120, 299, 170, 12, 1.0, C.cream, 0);                                                 // tufted headboard
+bx(90, 330, 60, 35, 0.12, C.white, 0.51); bx(150, 330, 60, 35, 0.12, C.white, 0.51);
+bx(228, 330, 45, 45, 0.5, C.oak, 0);                                                    // nightstand R
+bx(18, 330, 36, 36, 0.5, C.oak, 0); cyl(18, 330, 0.07, 0.25, 0xfff3d6, 0.5);            // nightstand L + lamp
+bx(30, 570, 60, 130, 2.1, C.cab, 0);                                                    // wardrobe
+seam(60.5, 540, 1.0, 1.2, 2.0, 0.05); seam(60.5, 600, 1.0, 1.2, 2.0, 0.05);             // wardrobe door seams
+CURT.push(bx(10, 372, 12, 8, 2.1, C.cush, 0));                                          // window curtain
+bx(120, 400, 190, 210, 0.01, C.rug, 0.025);
+plant(265, 600, 1.0);
+lamp(153, 463);
+
+// ---------- GUEST WC ----------
+bx(345, 330, 40, 50, 0.85, C.white, 0); bx(345, 330, 30, 30, 0.03, C.white, 0.85);     // sink
+WC_L.push(...rectGlow(308, 292, 386, 455, 1.2, 0.035));
+lamp(347, 373);
+
+// ---------- HALL + CORRIDOR ----------
+bx(345, 520, 60, 24, 0.9, C.oak, 0);                                                    // console
+plant(505, 500, 1.0);
+lamp(458, 405);
+
+// ---------- TERRACE ----------
+cyl(140, 700, 0.35, 0.03, C.white, 0.72); cyl(140, 700, 0.04, 0.72, C.dark, 0);
+chairAt(90, 700, -1, 0, C.chair); chairAt(190, 700, 1, 0, C.chair);
+plant(250, 740, 1.0); plant(20, 740, 0.8);
+
+const INT1 = S.children.length;
+// ---------- YARD ----------
+bx(693, -312, 620, 20, 0.6, C.stone, 0);                                                // garden wall
+bx(510, -210, 6, 6, 2.0, C.dark, 0); bx(670, -210, 6, 6, 2.0, C.dark, 0); bx(590, -210, 166, 6, 0.06, C.dark, 1.98);
+const SWING = new THREE.Group(); SWING.position.set(X(590), 1.98, Z(-210)); S.add(SWING);
+{ const seat = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.04, 0.35), M(C.cream)); seat.position.set(0, -0.6, 0); seat.castShadow = true; SWING.add(seat);
+  [-0.22, 0.22].forEach(sx => { const r = new THREE.Mesh(new THREE.BoxGeometry(0.02, 0.6, 0.02), M(C.dark)); r.position.set(sx, -0.3, 0); SWING.add(r); }); }
+cyl(820, -260, 0.45, 0.04, C.white, 0.72); cyl(820, -260, 0.05, 0.72, C.dark, 0);
+chairAt(760, -260, -1, 0, C.chair); chairAt(880, -260, 1, 0, C.chair); chairAt(820, -200, 0, 1, C.chair);
+plant(640, -120, 1.2);
+
+// ---------- ROOF (2 solar collectors, 150 L tank) ----------
+ROOF.push(bx(529.5, 318, 1059, 636, 0.2, C.roof, 2.72));
+[-1.9, -0.5].forEach(px => { const p = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.03, 1.7), M(0x1d3b5c)); p.position.set(px, 2.98, -0.2); p.rotation.x = -0.3; p.castShadow = true; S.add(p); ROOF.push(p); });
+{ const t = new THREE.Mesh(new THREE.CylinderGeometry(0.32, 0.32, 0.9, 24), M(0xf5f5f5)); t.position.set(1.4, 3.17, 0.2); t.castShadow = true; S.add(t); ROOF.push(t); }
+
+// ---------- AC socket point (living east wall) ----------
+const SOCK_HALO = new THREE.MeshBasicMaterial({ color: 0xffd166, transparent: true, opacity: 0, depthWrite: false, fog: false });
+const SOCK = new THREE.Mesh(new THREE.SphereGeometry(0.14, 16, 12), SOCK_HALO); SOCK.position.set(5.22, 2.05, 2.2); S.add(SOCK);
+{ const plate = new THREE.Mesh(new THREE.BoxGeometry(0.03, 0.14, 0.14), M(C.white)); plate.position.set(5.265, 2.05, 2.2); S.add(plate); }
+
+// ---------- warm ceiling-height point lights per room ----------
+[[-3.7, 3.1], [-3.8, 0.0], [-1.1, 3.2], [2.6, 3.1], [1.9, 0.5], [-0.7, 0.6]].forEach(p => {
+  const l = new THREE.PointLight(0xffd9a0, 1.6, 9, 1.5); l.position.set(p[0], 2.5, p[1]); S.add(l); });
+
+// ---------- dimension lines and tags (room tags carry the room key) ----------
+DIMS.push(dimLine([X(528), 0.9, Z(30)], [X(1059), 0.9, Z(30)], '5.31'));
+DIMS.push(dimLine([4.9, 0.9, Z(0)], [4.9, 0.9, Z(291)], '2.91'));
+DIMS.push(dimLine([X(620), 1.0, Z(455)], [X(880), 1.0, Z(455)], '2.60'));
+DIMS.push(dimLine([X(830), 1.0, Z(300)], [X(830), 1.0, Z(466)], '1.66'));
+DIMS.push(dimLine([X(300), 1.2, Z(150)], [X(332), 1.2, Z(150)], '0.30'));
+[[158, 144, '3.16 x 2.89', 'bed2'], [422, 144, '2.12 x 2.89', 'bath'], [794, 145, '5.31 x 2.91', 'living'], [716, 408, '3.76 x 2.35', 'kit'],
+ [153, 463, '3.06 x 3.46', 'bed1'], [347, 373, '0.82 x 1.67', 'wc'], [458, 405, '1.40 x 2.30', 'hall'], [140, 699, '2.81 x 1.26', 'terr'], [692, -160, '11.99', 'yard']
+].forEach(t => tag(t[2], X(t[0]), 3.3, Z(t[1]), t[3]));
+[[1.7, 2.6, 6.2, 197.5], [1.7, 2.6, 0.6, 206], [-0.85, 2.6, -0.6, 215]].forEach(w => {
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({ map: warnTex(), transparent: true, depthTest: false, opacity: 0 }));
+  sp.position.set(w[0], w[1], w[2]); sp.scale.set(0.9, 0.9, 1); sp.renderOrder = 25; S.add(sp); WARN.push({ sp, t0: w[3] });
+});
+
+const FILL = new THREE.PointLight(0xfff1de, 0, 12, 1.2); S.add(FILL);   // soft fill that follows the camera
+
+// ---------- cameras ----------
+const KF = {
+  s1: [[0, 10.4, 10.3, 11.8, 0, 0, 1.4, 40], [12, 8.5, 7.5, 9.5, 0, 0, 1.4, 40]],
+  s2: [[0, -14, 22, 4, 1, 0, 1.4, 40], [10, 14, 20, 6, 1, 0, 1.4, 40]],
+  s13: [[0, 1.7, 1.4, 4.2, 1.7, 1.0, 6.5, 58], [12, 0.9, 3.6, 10.0, 1.2, 0.4, 6.2, 56]],
+  s14: [[0, 0.2, 2.0, 9.0, -1.0, 2.6, 0.5, 50], [12, -1.0, 6.5, 6.5, -1.0, 3.0, 0.5, 50]],
+  s17: [[0, 1.2, 2.6, 11.0, 0.3, 1.3, 2.0, 46], [16, 1.8, 4.2, 15.0, 0.2, 1.0, 1.5, 50]]
+};
+function orbit(cx, cz, r, h, a0, a1, d, look) {
+  return lt => { const a = a0 + (a1 - a0) * (lt / d); return { pos: [cx + r * Math.cos(a), h, cz + r * Math.sin(a)], look, fov: 46 }; };
+}
+// two-part room shot: eye-level view from 0.35 m inside a corner looking diagonally across the room (1.6 m, fov 62), then rise to the cutaway overhead view
+function eyeRise(P, T0, T1, cx, cz, a1, d, dEye, rr, hOver, lookOver) {
+  const L = (p, q, u) => p + (q - p) * u;
+  const dir = [T0[0] - P[0], 0, T0[2] - P[2]], dl = Math.hypot(dir[0], dir[2]) || 1;
+  return lt => {
+    const pu = ease.io(Math.min(1, lt / dEye));
+    const pe = [P[0] + dir[0] / dl * 0.3 * pu, 1.6, P[2] + dir[2] / dl * 0.3 * pu];
+    const le = [L(T0[0], T1[0], pu), L(T0[1], T1[1], pu), L(T0[2], T1[2], pu)];
+    if (lt <= dEye) return { pos: pe, look: le, fov: 62 };
+    const u = ease.io(Math.min(1, (lt - dEye) / (d - dEye)));
+    const po = [cx + rr * Math.cos(a1), hOver, cz + rr * Math.sin(a1)];
+    return { pos: [L(pe[0], po[0], u), L(pe[1], po[1], u), L(pe[2], po[2], u)], look: [L(le[0], lookOver[0], u), L(le[1], lookOver[1], u), L(le[2], lookOver[2], u)], fov: L(62, 46, u) };
+  };
+}
+const wp = (x, h, y) => [X(x), h, Z(y)];
+// room close-up: eased orbit around a room centre; pitch set by (h - 0.4) / rr (about 45 deg)
+function roomCam(cx, cz, rr, h, a0, a1, d, look) {
+  return lt => { const u = ease.io(Math.min(1, Math.max(0, lt / d))), a = a0 + (a1 - a0) * u;
+    return { pos: [cx + rr * Math.cos(a), h, cz + rr * Math.sin(a)], look: look || [cx, 0.4, cz], fov: 46 }; };
+}
+function camEval(k, lt) {
+  if (typeof k === 'function') return k(lt);
+  let i = 0; while (i < k.length - 2 && lt > k[i + 1][0]) i++;
+  const a = k[i], b = k[i + 1] || a, u = b[0] === a[0] ? 1 : ease.io(prog(lt, a[0], b[0]));
+  const L = (p, q) => p + (q - p) * u;
+  return { pos: [L(a[1], b[1]), L(a[2], b[2]), L(a[3], b[3])], look: [L(a[4], b[4]), L(a[5], b[5]), L(a[6], b[6])], fov: L(a[7], b[7]) };
+}
+const CAM = [
+  KF.s1, KF.s2, orbit(0, 1.4, 9.5, 8.5, -0.6, -0.6 + 2 * PI, 16, [0, 0.4, 1.4]),
+  roomCam(-0.72, 0.55, 3.2, 3.6, -1.9, -1.3, 10),           // s4 hall (entrance side)
+  eyeRise(wp(569, 1.6, 250), wp(760, 1.2, 60), wp(1020, 1.3, 40), 2.64, 3.15, 0.3, 18, 10.8, 4.0, 4.4, [2.64, 0.4, 3.15]), // s5 living + dining
+  roomCam(1.7, 3.2, 3.2, 3.8, 1.2, 1.5, 8, [1.7, 0.4, 3.4]), // s6 living patio door
+  eyeRise(wp(569, 1.6, 332), wp(650, 1.2, 490), wp(860, 1.2, 430), 1.86, 0.55, 0.3, 22, 13.2, 0.5, 3.4, [1.86, 0.0, 0.55]), // s7 kitchen
+  eyeRise(wp(265, 1.6, 588), wp(150, 1.0, 320), wp(40, 1.1, 400), -3.77, -0.03, 0.4, 18, 10.8, 3.5, 3.9, [-3.77, 0.4, -0.03]), // s8 parents room
+  roomCam(-3.9, -2.39, 3.0, 3.4, 0.9, 1.3, 8, [-3.9, 0.3, -2.4]), // s9 terrace
+  eyeRise(wp(138, 1.6, 245), wp(150, 1.1, 20), wp(205, 1.2, 60), -3.72, 3.16, 0.3, 14, 8.4, 3.2, 3.6, [-3.72, 0.4, 3.16]), // s10 mamad
+  roomCam(-1.08, 3.16, 0.4, 3.5, -2.4, -2.0, 20, [-1.08, 0, 3.16]),           // s11 bath
+  roomCam(-1.83, 0.87, 0.35, 3.0, 0.3, 0.7, 8, [-1.83, 0, 0.87]),              // s12 guest WC
+  KF.s13, KF.s14,
+  roomCam(3.6, 3.0, 3.0, 4.0, -0.4, 0.0, 8, [5.0, 1.6, 2.4]), // s15 AC socket
+  orbit(0, 1.4, 11, 10, 1.2, 2.6, 28, [0, 0.2, 1.4]), KF.s17
+];
+const SHOTS = [
+  { d: 12, c: ['c01', 'c02'], at: [0, 6], h: [0, 1.2, 1.4, 5.5, 1.4, 6.2] },
+  { d: 10, c: ['c03'], at: [0], h: [0, 1.0, 1.4, 8, 1.0, 8] },
+  { d: 16, c: ['c04', 'c25'], at: [0, 8], h: [0, 1.3, 1.4, 5.5, 1.4, 6.2] },
+  { d: 10, c: ['c05'], at: [0], h: [-0.72, 1.2, 0.55, 1.2, 1.2, 1.2] },
+  { d: 18, c: ['c06', 'c18'], at: [0, 10], h: [2.64, 1.2, 3.15, 2.6, 1.2, 1.45] },
+  { d: 8, c: ['c07'], at: [0], h: [1.7, 1.2, 3.6, 1.0, 1.2, 0.8] },
+  { d: 22, c: ['c08', 'c09', 'c10'], at: [0, 8, 15], h: [1.86, 1.2, 0.52, 1.9, 1.2, 1.2] },
+  { d: 18, c: ['c11', 'c12'], at: [0, 10], h: [-3.77, 1.0, -0.03, 1.5, 1.0, 1.8] },
+  { d: 8, c: ['c13'], at: [0], h: [-3.9, 0.9, -2.4, 1.4, 0.9, 0.7] },
+  { d: 14, c: ['c14'], at: [0], h: [-2.14, 1.2, 3.16, 1.0, 1.2, 1.5] },
+  { d: 20, c: ['c15', 'c16'], at: [0, 10], h: [-1.08, 1.0, 3.16, 1.2, 1.1, 1.5] },
+  { d: 8, c: ['c17'], at: [0], h: [-1.83, 1.0, 0.87, 0.6, 1.0, 0.9] },
+  { d: 12, c: ['c19'], at: [0], h: [1.6, 0.8, 6.2, 3.2, 0.8, 1.6] },
+  { d: 12, c: ['c20'], at: [0], h: [-0.9, 2.9, 0.5, 2.5, 0.6, 2.0] },
+  { d: 8, c: ['c21'], at: [0], h: [5.1, 2.0, 2.2, 0.5, 0.5, 0.6] },
+  { d: 28, c: ['c22', 'c23', 'c24'], at: [0, 9, 18], h: [0, 1.3, 1.4, 5.5, 1.4, 6.2] },
+  { d: 16, c: ['c26'], at: [0], h: [0.5, 1.2, 1.0, 5.5, 1.4, 6.0] }
+];
+const START = []; { let acc = 0; SHOTS.forEach((s, i) => { START[i] = acc; acc += s.d; }); }
+
+// ---------- per-time state (pure function of global time g) ----------
+function roomKey(g) {
+  if (g < 48) return 'hall'; if (g < 74) return 'living'; if (g < 96) return 'kit'; if (g < 114) return 'bed1';
+  if (g < 122) return 'terr'; if (g < 136) return 'bed2'; if (g < 156) return 'bath'; if (g < 164) return 'wc'; return 'living';
+}
+const EYE_T = { 4: 10.8, 6: 13.2, 7: 10.8, 9: 8.4 };   // eye-level phase (s) of the two-part room shots
+const EYE_RECT = { 4: [534, 13, 1046, 285], 6: [534, 297, 891, 513], 7: [13, 300, 300, 623], 9: [13, 13, 301, 280] };   // interior rectangles (plan cm)
+let EYE = false, ER = null;
+const FADE = 0.4;
+const fw = (g, a, b) => Math.min(1, Math.max(0, Math.min(g - a, b - g) / FADE));   // 0..1 trapezoid window
+const tw = (g, wins) => wins.reduce((m, w) => Math.max(m, fw(g, w[0], w[1])), 0);
+const EYE_END = i => START[i] + EYE_T[i];
+const DOLL_WIN = [[22, 38], [196, 224]];
+const TAG_WIN = { hall: [[38, 48]], living: [[EYE_END(4), 74], [186, 196]], kit: [[EYE_END(6), 96]], bed1: [[EYE_END(7), 114]], terr: [[114, 122]], bed2: [[EYE_END(9), 136]], bath: [[136, 156]], wc: [[156, 164]] };
+const DIM_WIN = [[49, 66], [53, 66], [79, 96], [82.5, 96], [122, 136]];
+function capSprite(sp, w0, h0, cam, cap) {
+  const d = Math.hypot(cam.pos[0] - sp.position.x, cam.pos[1] - sp.position.y, cam.pos[2] - sp.position.z);
+  const w = Math.min(w0, cap * 2 * d * Math.tan(cam.fov * PI / 360) * (16 / 9));
+  sp.scale.set(w, w * h0 / w0, 1);
+}
+// eye-level occlusion: hide walls of other rooms, and anything on the line of sight or within 0.5 m of the camera
+const _bx = new THREE.Box3(), _v = new THREE.Vector3(), _hid = []; let WALLSET = null;
+function segHit(p, q, b, pad) {
+  const lo = [b.min.x - pad, b.min.y - pad, b.min.z - pad], hi = [b.max.x + pad, b.max.y + pad, b.max.z + pad];
+  let t0 = 0, t1 = 1;
+  for (let a = 0; a < 3; a++) {
+    const d = q[a] - p[a];
+    if (Math.abs(d) < 1e-9) { if (p[a] < lo[a] || p[a] > hi[a]) return false; continue; }
+    let u0 = (lo[a] - p[a]) / d, u1 = (hi[a] - p[a]) / d; if (u0 > u1) { const t = u0; u0 = u1; u1 = t; }
+    t0 = Math.max(t0, u0); t1 = Math.min(t1, u1); if (t0 > t1) return false;
+  }
+  return true;
+}
+function eyeHide(cam, rr) {
+  if (!WALLSET) WALLSET = new Set(WALLS.map(w => w.m));
+  const p = cam.pos, q = cam.look, x0 = X(rr[0]) - 0.45, x1 = X(rr[2]) + 0.45, z0 = Z(rr[3]) - 0.45, z1 = Z(rr[1]) + 0.45;
+  _v.set(p[0], p[1], p[2]);
+  for (let i = INT0; i < INT1; i++) {
+    const o = S.children[i]; if (!o.visible) continue;
+    _bx.setFromObject(o);
+    if (_bx.max.y < 0.06 || _bx.min.y > 2.6) continue;
+    const hide = WALLSET.has(o)
+      ? (_bx.max.x < x0 || _bx.min.x > x1 || _bx.max.z < z0 || _bx.min.z > z1 || segHit(p, q, _bx, 0.02))
+      : (segHit(p, q, _bx, 0.1) || _bx.distanceToPoint(_v) < 0.5);
+    if (hide) { o.visible = false; _hid.push(o); }
+  }
+}
+function roomOnly(rr) {   // top-down room shots: keep only this room's floor, own walls and contents
+  const x0 = X(rr[0]) - 0.3, x1 = X(rr[2]) + 0.3, z0 = Z(rr[3]) - 0.3, z1 = Z(rr[1]) + 0.3;
+  if (!WALLSET) WALLSET = new Set(WALLS.map(w => w.m));
+  for (let i = INT0; i < INT1; i++) {
+    const o = S.children[i]; if (!o.visible) continue;
+    _bx.setFromObject(o);
+    if (_bx.max.y < 0.06) continue;
+    if (!WALLSET.has(o) && _bx.min.y > 1.7) { o.visible = false; _hid.push(o); continue; }   // ceiling lamps right under the camera
+    const out = WALLSET.has(o) ? (_bx.max.x < x0 || _bx.min.x > x1 || _bx.max.z < z0 || _bx.min.z > z1)
+      : (() => { const cx = (_bx.min.x + _bx.max.x) / 2, cz = (_bx.min.z + _bx.max.z) / 2; return cx < x0 || cx > x1 || cz < z0 || cz > z1; })();
+    if (out) { o.visible = false; _hid.push(o); }
+  }
+}
+function update(g, cam) {
+  _hid.forEach(o => { o.visible = true; }); _hid.length = 0;
+  const CUT = (g >= 38 && g < 164) || (g >= 186 && g < 196);   // interior close-ups: cutaway
+  const CUTW = CUT && !EYE;                                    // walls drop to 0.9 m only after the eye-level phase
+  const DOLL = (g >= 22 && g < 38) || (g >= 196 && g < 224);   // dollhouse: all tags
+  CEIL.forEach(m => { m.visible = false; });
+  WALLS.forEach(w => {
+    if (CUTW && w.y0 >= 0.9) { w.m.visible = false; return; }
+    w.m.visible = true;
+    if (CUTW && w.y0 + w.h > 0.9) { const s = (0.9 - w.y0) / w.h; w.m.scale.y = s; w.m.position.y = w.y0 + w.h * s / 2; }
+    else { w.m.scale.y = 1; w.m.position.y = w.y0 + w.h / 2; }
+  });
+  const RK = roomKey(g);
+  TAGS.forEach(t => { const f = Math.max(tw(g, DOLL_WIN), tw(g, TAG_WIN[t.room] || [])); t.sp.visible = f > 0.01 && !EYE; t.sp.material.opacity = f; if (cam) capSprite(t.sp, t.w0, t.h0, cam, DOLL ? 0.09 : 0.08); });
+  const roofOn = g >= 176 && g < 188;
+  ROOF.forEach(m => { m.visible = roofOn; });
+  const k = sm(g, 222, 234);
+  Wd.sky.material.uniforms.top.value.lerpColors(DAY_TOP, DUSK_TOP, k);
+  Wd.sky.material.uniforms.bot.value.lerpColors(DAY_BOT, DUSK_BOT, k);
+  Wd.sun.intensity = 1.25 * (1 - 0.6 * k);
+  GLASS.forEach(m => { m.material.emissiveIntensity = 0.9 * k; });
+  DOORS.forEach(d => { d.piv.rotation.y = d.a0 + d.sign * 1.6 * sm(g, d.t0, d.t1); });
+  CAB.forEach((p, i) => { p.rotation.x = 1.3 * sm(g, 76 + i * 2.4, 77.2 + i * 2.4); });
+  setShutter(SH_LIV, 1 - sm(g, 66.5, 70));
+  setShutter(SH_BED, 1 - sm(g, 100, 106));
+  CURT.forEach((c, i) => { c.rotation.z = 0.02 * Math.sin(g * 1.3 + i); });
+  PLANTS.forEach((p, i) => { p.rotation.z = 0.025 * Math.sin(g * 0.9 + i * 1.7); });
+  SWING.rotation.x = 0.18 * Math.sin(g * 1.1);
+  const dp = [prog(g, 49, 53), prog(g, 53, 56.5), prog(g, 79, 82.5), prog(g, 82.5, 85.5), prog(g, 121, 123)];
+  DIMS.forEach((d, i) => { d.setP(dp[i], fw(g, DIM_WIN[i][0], DIM_WIN[i][1])); if (cam) capSprite(d.sp, d.w0, d.h0, cam, 0.08); });
+  WARN.forEach(w => { const p = ease.out(prog(g, w.t0, w.t0 + 0.5)); w.sp.visible = g >= w.t0 && g < 224.5; w.sp.scale.setScalar(0.5 + 0.5 * p); w.sp.material.opacity = p; });
+  PLOT.forEach(m => { m.opacity = 0.85 * sm(g, 0, 0.6) * (1 - sm(g, 23, 24)); });
+  PILLAR.material.opacity = 0.4 * sm(g, 0, 1) * (1 - sm(g, 10, 12));
+  MAMAD_HL.material.opacity = 0.7 * sm(g, 124, 125.5) * (1 - sm(g, 134, 135.5));
+  BATH_L.forEach(m => { m.opacity = 0.95 * sm(g, 139, 140.5) * (1 - sm(g, 154, 155.5)); });
+  WC_L.forEach(m => { m.opacity = 0.95 * sm(g, 158, 159) * (1 - sm(g, 163, 164)); });
+  SOCK_HALO.opacity = 0.9 * sm(g, 188, 189) * (1 - sm(g, 195, 196)) * (0.7 + 0.3 * Math.sin(g * 6));
+  if (cam) {
+    const dx = cam.look[0] - cam.pos[0], dy = cam.look[1] - cam.pos[1], dz = cam.look[2] - cam.pos[2], dl = Math.hypot(dx, dy, dz) || 1;
+    FILL.position.set(cam.pos[0] + dx / dl * 1.5, cam.pos[1] + dy / dl * 1.5 + 0.2, cam.pos[2] + dz / dl * 1.5);
+    FILL.intensity = CUT ? 1.0 : 0;
+    if (EYE && ER) eyeHide(cam, ER);
+    if (!EYE) {
+      if ((g >= EYE_END(6) && g < 96) || (g >= 136 && g < 164)) FILL.intensity = 0.3;
+      if (g >= EYE_END(6) && g < 96) roomOnly([528, 291, 904, 526]);
+      else if (g >= 136 && g < 156) roomOnly([316, 0, 528, 289]);
+      else if (g >= 156 && g < 164) roomOnly([306, 290, 388, 457]);
+    }
+  }
+}
+
+// ---------- shots: one shared scene, each shot sets its own time and camera ----------
+const FSHOTS = SHOTS.map((s, i) => ({
+  id: 's' + String(i + 1).padStart(2, '0'), dur: s.d, caps: s.c, capAt: s.at, wide: true,
+  build() {
+    const t0 = START[i];
+    return { scene: S, sun: Wd.sun, hero: HERO, updaters: [(lt) => { const et = EYE_T[i] || 0; EYE = lt < et; ER = EYE_RECT[i] || null; update(t0 + lt, camEval(CAM[i], lt)); setHero(s.h); }], cam: lt => camEval(CAM[i], lt) };
+  }
+}));
+
+film({ W: 1920, H: 1080, xf: 0.4, vault: 'captions_vault.json', shots: FSHOTS });
+</script>
+</html>

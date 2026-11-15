@@ -1,0 +1,11 @@
+heavy_lock: 2 heavy jobs already running, waiting for a slot
+heavy_lock: got slot 1 after 1195s
+PASS
+
+P2 notes:
+P2 | NO_HERO | t=0.3 | s01 | __heroBox returned null (no hero registered in this shot) (+1 more samples)
+
+Sheets (CLEAN, safe to Read):
+  beat: C:/projects/_studio-animatzia/productions/toldot10g_3d/film_opener/_verify/_view/_verify_beat_sheet_1.jpg
+  phone: C:/projects/_studio-animatzia/productions/toldot10g_3d/film_opener/_verify/_view/_verify_phone_sheet_1.jpg
+SUMMARY | PASS | samples=3 | dur=12.9 | P0=0 P1=0 P2=1 | {"ready_s": 4.9, "gates_s": 24.1, "sheets_s": 12.7, "total_s": 63.6}
