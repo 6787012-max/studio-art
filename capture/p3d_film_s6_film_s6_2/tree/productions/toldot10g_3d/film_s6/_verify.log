@@ -1,0 +1,10 @@
+heavy_lock: 2 heavy jobs already running, waiting for a slot
+heavy_lock: got slot 1 after 362s
+P1 | HERO_SMALL | t=12.41 | s01 | hero height 20% of frame in the key shot (< 35%) | Fix: move the camera closer so the hero reaches 35% of the frame height
+P1 | HERO_SMALL | t=32.24 | s02 | hero height 20% of frame in the key shot (< 35%) | Fix: move the camera closer so the hero reaches 35% of the frame height
+P1 | HERO_SMALL | t=44.52 | s03 | hero height 20% of frame in the key shot (< 35%) | Fix: move the camera closer so the hero reaches 35% of the frame height
+P1 | HERO_SMALL | t=63.45 | s04 | hero height 20% of frame in the key shot (< 35%) | Fix: move the camera closer so the hero reaches 35% of the frame height
+P1 | HERO_SMALL | t=85.66 | s05 | hero height 20% of frame in the key shot (< 35%) | Fix: move the camera closer so the hero reaches 35% of the frame height
+P1 | HERO_SMALL | t=98.09 | s06 | hero height 20% of frame in the key shot (< 35%) | Fix: move the camera closer so the hero reaches 35% of the frame height
+P1 | HERO_SMALL | t=113.0 | s07 | hero height 20% of frame in the key shot (< 35%) | Fix: move the camera closer so the hero reaches 35% of the frame height
+SUMMARY | FAIL | samples=33 | dur=123.6 | P0=0 P1=7 P2=0 | {"ready_s": 734.8, "gates_s": 2831.5, "total_s": 3569.9}
