@@ -1,0 +1,70 @@
+{
+ "film": "film_s6.html",
+ "status": "FAIL",
+ "time": "2026-11-15T10:34:29",
+ "samples": 33,
+ "findings": [
+  {
+   "sev": "P1",
+   "code": "HERO_SMALL",
+   "t": 12.41,
+   "shot": "s01",
+   "detail": "hero height 20% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  },
+  {
+   "sev": "P1",
+   "code": "HERO_SMALL",
+   "t": 32.24,
+   "shot": "s02",
+   "detail": "hero height 20% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  },
+  {
+   "sev": "P1",
+   "code": "HERO_SMALL",
+   "t": 44.52,
+   "shot": "s03",
+   "detail": "hero height 20% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  },
+  {
+   "sev": "P1",
+   "code": "HERO_SMALL",
+   "t": 63.45,
+   "shot": "s04",
+   "detail": "hero height 20% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  },
+  {
+   "sev": "P1",
+   "code": "HERO_SMALL",
+   "t": 85.66,
+   "shot": "s05",
+   "detail": "hero height 20% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  },
+  {
+   "sev": "P1",
+   "code": "HERO_SMALL",
+   "t": 98.09,
+   "shot": "s06",
+   "detail": "hero height 20% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  },
+  {
+   "sev": "P1",
+   "code": "HERO_SMALL",
+   "t": 113.0,
+   "shot": "s07",
+   "detail": "hero height 20% of frame in the key shot (< 35%)",
+   "fix": "move the camera closer so the hero reaches 35% of the frame height"
+  }
+ ],
+ "sheets": null,
+ "timing": {
+  "ready_s": 15.0,
+  "gates_s": 363.6,
+  "total_s": 379.0
+ }
+}
