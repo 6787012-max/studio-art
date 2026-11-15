@@ -1,0 +1,18 @@
+{
+ "film": "film_s1.html",
+ "status": "PASS",
+ "time": "2026-11-13T10:33:18",
+ "samples": 33,
+ "findings": [],
+ "sheets": {
+  "beat": "C:/projects/_studio-animatzia/productions/toldot10g_3d/film_s1/_verify/_view/_verify_beat_sheet_1.jpg",
+  "seam": "C:/projects/_studio-animatzia/productions/toldot10g_3d/film_s1/_verify/_view/_verify_seams_1.jpg",
+  "phone": "C:/projects/_studio-animatzia/productions/toldot10g_3d/film_s1/_verify/_view/_verify_phone_sheet_1.jpg"
+ },
+ "timing": {
+  "ready_s": 27.2,
+  "gates_s": 277.9,
+  "sheets_s": 81.6,
+  "total_s": 387.0
+ }
+}
