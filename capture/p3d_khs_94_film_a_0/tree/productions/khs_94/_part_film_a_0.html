@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>khs 94 film a</title>
+<style>html,body{margin:0;background:#000}canvas{display:block;width:100vw;height:auto}</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>window.__T0=0.0000; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+// khs_94 / film_a (short94, phase B). Portrait 1080x1920, OBJECTS ONLY (no people, hands, arms, feet, faces, silhouettes).
+// 4 shots = 4 caption boxes (box1 CAP_01-04, box2 CAP_05-07, box3 CAP_08-09, box4 CAP_10-12).
+// Look: clear sky-blue to white horizon, grass-green life, warm amber = mitzva/light, slate-grey = sin.
+window.CLIP_DUR = 17.72;
+import { film, world, THREE, ease, clamp, lerp, mesh, toon, canvasTex } from '../../lib/stage3d.js';
+
+const PI = Math.PI;
+const GC = [0, 2.6, 0];          // globe centre
+const GRAD = 1.2;                // globe radius
+const FLOOR = -1.2;
+const SKY = 0x7fc8f0, GREEN = 0x4fae52, GREEN_D = 0x2f8a3f, GREEN_L = 0x9ed98a, TRUNK = 0x8a5a3c;
+const HOUSE = 0xfff4e0, ROOF = 0xff8a3d, AMBER = 0xffa53a, AMBER_L = 0xffd08a, SLATE = 0x5b6b7a, WHITE = 0xffffff;
+const INK = 0x2d4a5c, FLOOR_C = 0xf4fbff;
+
+const P = (t, a, b) => clamp((t - a) / (b - a), 0, 1);
+const sm = (t, a, b) => ease.sm(P(t, a, b));
+const mk = (geo, color, o) => { o = o || {}; const m = mesh(geo, toon(color, o.mat), Object.assign({ inkW: .008, inkColor: INK }, o)); m.castShadow = false; return m; };
+const put = (parent, geo, color, pos, o) => { const m = mk(geo, color, Object.assign({ pos }, o || {})); parent.add(m); return m; };
+
+function heroBox(Wd, fn) {
+  const g = new THREE.Group(), m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()); m.visible = false; g.add(m); Wd.add(g);
+  Wd.on(t => { const bs = fn(t).filter(Boolean); if (!bs.length) return; const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (const b of bs) for (let q = 0; q < 3; q++) { lo[q] = Math.min(lo[q], b[q] - b[q + 3]); hi[q] = Math.max(hi[q], b[q] + b[q + 3]); }
+    g.position.set((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2); g.scale.set(Math.max(hi[0] - lo[0], .01), Math.max(hi[1] - lo[1], .01), Math.max(hi[2] - lo[2], .01)); });
+  Wd.hero = g; return g;
+}
+function scene(heroFn) {
+  const Wd = world({ fogColor: 0xeaf7ff, fogNear: 40, fogFar: 120, skyTop: 0x7fc8f0, skyBottom: 0xf7fdff, hemiSky: 0xffffff, hemiGround: 0xe6f7e0, hemi: 1.0, sunColor: 0xfff6e6, sun: .7, sunPos: [3, 10, 8], shadowExt: 8, skyR: 260 });
+  const S = Wd.scene;
+  put(S, new THREE.BoxGeometry(260, .4, 260), 0xfbf1e0, [0, FLOOR - .2, 0], { ink: false, mat: { emissive: 0xfbf1e0, emissiveIntensity: .8 } });
+  heroBox(Wd, heroFn);
+  return { Wd, S };
+}
+function frame(Wd, fn) {
+  Wd.cam = lt => { const f = fn(lt); const a = f.az * PI / 180, T = f.T;
+    return { pos: [T[0] + Math.sin(a) * f.d, T[1] + f.el, T[2] + Math.cos(a) * f.d], look: [T[0], T[1], T[2]], fov: 50 }; };
+}
+// one continuous slow orbit: the azimuth depends on the GLOBAL clip time (tStart + local t), so the cuts still read as one orbit
+function orbit(Wd, tStart, dur, dA, dB, el, dy = -1.0) {
+  frame(Wd, lt => ({ T: [0, GC[1] + dy, 0], d: lerp(dA, dB, clamp(lt / dur, 0, 1)), az: 8 + 18 * (tStart + lt), el }));
+}
+
+// globe: body + land placed on the sphere surface, every item remembers its angle from the top (impact point)
+const dirOf = (lat, lon) => [Math.cos(lat) * Math.sin(lon), Math.sin(lat), Math.cos(lat) * Math.cos(lon)];
+function globeUnit(S) {
+  const g = new THREE.Group(); g.position.set(GC[0], GC[1], GC[2]); S.add(g);
+  const body = put(g, new THREE.SphereGeometry(GRAD, 40, 28), SKY, [0, 0, 0], { ink: false });
+  const U = { g, body, reg: [], grows: [] };
+  U.reg.push({ m: body, base: SKY, ang: .9 });
+  [[.55, .2, 'blob'], [.25, -.9, 'blob'], [-.2, .6, 'blob'], [-.45, -.3, 'blob'], [.1, 2.4, 'blob'], [-.35, 2.9, 'blob'], [.4, -2.2, 'blob'], [.75, 1.2, 'blob']]
+    .forEach(([la, lo, k]) => place(U, la, lo, k, null));
+  [[.6, .3, 'tree'], [.3, -.8, 'house'], [-.25, .7, 'tree'], [-.5, -.25, 'house'], [.15, 2.45, 'tree'], [-.3, 2.85, 'house'], [.45, -2.15, 'tree'], [.8, 1.25, 'house']]
+    .forEach(([la, lo, k]) => place(U, la, lo, k, null));
+  return U;
+}
+// place an object on the globe; t0 != null -> it grows from nothing starting at t0
+function place(U, lat, lon, kind, t0) {
+  const n = dirOf(lat, lon), N = new THREE.Vector3(n[0], n[1], n[2]);
+  const grp = new THREE.Group(); grp.position.set(n[0] * GRAD, n[1] * GRAD, n[2] * GRAD);
+  grp.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), N);
+  U.g.add(grp);
+  const ang = Math.acos(clamp(n[1], -1, 1));
+  const reg = (m, col) => U.reg.push({ m, base: col, ang });
+  if (kind === 'blob') reg(put(grp, new THREE.CylinderGeometry(.36, .42, .05, 22), GREEN, [0, .0, 0], { ink: false }), GREEN);
+  if (kind === 'tree') {
+    reg(put(grp, new THREE.CylinderGeometry(.025, .03, .12, 8), TRUNK, [0, .06, 0], { ink: false }), TRUNK);
+    reg(put(grp, new THREE.ConeGeometry(.09, .26, 10), GREEN_D, [0, .22, 0], { ink: false }), GREEN_D);
+  }
+  if (kind === 'house') {
+    reg(put(grp, new THREE.BoxGeometry(.16, .12, .16), HOUSE, [0, .06, 0], { ink: false }), HOUSE);
+    reg(put(grp, new THREE.ConeGeometry(.13, .1, 4), ROOF, [0, .17, 0], { ink: false, rot: [0, PI / 4, 0] }), ROOF);
+  }
+  if (kind === 'flower') reg(put(grp, new THREE.SphereGeometry(.05, 10, 8), AMBER_L, [0, .03, 0], { ink: false, mat: { emissive: AMBER_L, emissiveIntensity: .8 } }), AMBER_L);
+  if (t0 !== null) { grp.scale.setScalar(.001); U.grows.push({ grp, t0 }); }
+  return grp;
+}
+function growUpd(U, t) { U.grows.forEach(q => q.grp.scale.setScalar(Math.max(.001, sm(t, q.t0, q.t0 + .6)))); }
+// grey amount per item: fn(angle from top) in 0..1; base colour is mixed toward slate
+function paintGrey(U, fn) {
+  const slate = new THREE.Color(SLATE);
+  U.reg.forEach(it => { const k = clamp(fn(it.ang), 0, 1); it.m.material.color.set(it.base).lerp(slate, k); });
+}
+const spreadIn = (ang, spread) => clamp((spread - ang) / .6, 0, 1);
+
+// falling object that lands on the top of the globe, then disappears
+function drop(S, geo, col, t0, fall) {
+  const m = put(S, geo, col, [0, 4.5, 0], { ink: false, mat: { emissive: col, emissiveIntensity: .9 } });
+  m.visible = false;
+  return { m, t0, fall };
+}
+function dropUpd(d, t) {
+  const on = t >= d.t0 && t < d.t0 + d.fall; d.m.visible = on;
+  if (on) d.m.position.y = lerp(4.5, GC[1] + GRAD + .05, P(t, d.t0, d.t0 + d.fall));
+}
+// ring that runs once around the globe (flat, at the equator)
+function ringWave(S, t0, col) {
+  const m = put(S, new THREE.TorusGeometry(1.25, .045, 10, 56), col, [GC[0], GC[1], GC[2]], { ink: false, rot: [PI / 2, 0, 0], mat: { emissive: col, emissiveIntensity: 1 } });
+  m.visible = false; return { m, t0 };
+}
+function ringUpd(r, t) {
+  const on = t >= r.t0 && t <= r.t0 + 1.2; r.m.visible = on;
+  if (on) r.m.scale.setScalar(1 + .45 * P(t, r.t0, r.t0 + 1.2));
+}
+function halo(S) {
+  return put(S, new THREE.TorusGeometry(1.6, .06, 12, 56), AMBER, [0, 3.95, 0], { ink: false, rot: [PI / 2, 0, 0], mat: { emissive: AMBER, emissiveIntensity: .3 } });
+}
+const MARBLE = () => new THREE.SphereGeometry(.17, 16, 12);
+const STONE = () => new THREE.IcosahedronGeometry(.2, 0);
+
+// shot 1 (CAP_01-04, 0.00-5.13): "every deed has a world-wide influence" (marble + rings) and "a sin can destroy a world" (stone, grey spreads)
+function b1() {
+  const { Wd, S } = scene(t => [[0, GC[1], 0, 1.3, 1.3, 1.3]]);
+  orbit(Wd, 0, 5.13, 7.0, 6.4, 1.0);
+  const U = globeUnit(S);
+  const mb = drop(S, MARBLE(), AMBER, .2, .6);
+  const rings = [ringWave(S, 1.1, AMBER_L), ringWave(S, 1.8, AMBER_L), ringWave(S, 2.5, AMBER_L)];
+  const st = drop(S, STONE(), SLATE, 3.0, .6);
+  Wd.on(t => {
+    dropUpd(mb, t); rings.forEach(r => ringUpd(r, t)); dropUpd(st, t);
+    const spread = P(t, 3.4, 5.0) * 4.5;
+    paintGrey(U, ang => .85 * spreadIn(ang, spread));
+    U.g.rotation.y = .25 * t;
+  });
+  return Wd;
+}
+
+// shot 2 (CAP_05-07, 5.13-8.88): "the other side: a mitzva gives life" - amber drop, colour and green come back from the impact
+function b2() {
+  const { Wd, S } = scene(t => [[0, GC[1], 0, 1.3, 1.3, 1.3]]);
+  orbit(Wd, 5.13, 3.75, 6.4, 6.8, 1.0);
+  const U = globeUnit(S);
+  place(U, .7, -1.6, 'tree', 1.9); place(U, -.1, -1.9, 'tree', 2.3); place(U, .5, 2.9, 'tree', 2.7);
+  place(U, .2, -.3, 'flower', 3.1); place(U, -.3, 1.5, 'flower', 3.3); place(U, .35, 1.8, 'flower', 3.5);
+  const dA = drop(S, MARBLE(), AMBER, .2, .75);
+  Wd.on(t => {
+    dropUpd(dA, t);
+    const spreadBack = P(t, .3, 1.9) * 4.5;
+    paintGrey(U, ang => .85 * (1 - spreadIn(ang, spreadBack)));
+    growUpd(U, t);
+    U.g.rotation.y = .3 * t;
+  });
+  return Wd;
+}
+
+// shot 3 (CAP_08-09, 8.88-13.26): "we are partners in sustaining the world" - seven amber pillars rise from below, a golden halo above brightens
+function b3() {
+  const { Wd, S } = scene(t => [[0, 2.2, 0, 1.4, 2.0, 1.4]]);
+  const GND = 0.0;  // pillar bases at y=0: the whole pillar stack projects above 62% of the frame
+  orbit(Wd, 8.88, 4.38, 8.0, 9.2, .9, -1.8);
+  const U = globeUnit(S);
+  const pillars = [];
+  for (let i = 0; i < 7; i++) {
+    const a = 2 * PI * i / 7, x = .9 * Math.cos(a), z = .9 * Math.sin(a);
+    const pg = new THREE.Group(); pg.position.set(x, GND, z); S.add(pg);
+    put(pg, new THREE.CylinderGeometry(.07, .07, 1.8, 12), AMBER, [0, .9, 0], { ink: false, mat: { emissive: AMBER, emissiveIntensity: .6 } });
+    pg.scale.y = .001;
+    put(S, new THREE.SphereGeometry(.09, 12, 10), AMBER_L, [x, GND + .05, z], { ink: false, mat: { emissive: AMBER_L, emissiveIntensity: 1 } });
+    pillars.push({ pg, t0: .2 + i * .5 });
+  }
+  const hl = halo(S);
+  Wd.on(t => {
+    pillars.forEach(p => { p.pg.scale.y = Math.max(.001, sm(t, p.t0, p.t0 + 1.0)); });
+    hl.material.emissiveIntensity = .3 + .7 * sm(t, 0, 4.0);
+    U.g.rotation.y = .15 * t;
+  });
+  return Wd;
+}
+
+// shot 4 (CAP_10-12, 13.26-17.72): "amazing; repeat it a lot so we feel responsible" - three more marbles, a ring each time, the globe gets brighter, lights circle it
+function b4() {
+  const { Wd, S } = scene(t => [[0, GC[1], 0, 1.3, 1.3, 1.3]]);
+  orbit(Wd, 13.26, 4.46, 9.0, 7.6, 1.1);
+  const U = globeUnit(S);
+  const ds = [.3, 1.2, 2.1].map(t0 => drop(S, MARBLE(), AMBER_L, t0, .6));
+  const rs = [.9, 1.8, 2.7].map(t0 => ringWave(S, t0, AMBER_L));
+  const hl = halo(S);
+  U.body.material.color.set(0x9fe3ff);  // lighter living blue, no grey, no pink
+  const glow = put(S, new THREE.SphereGeometry(1.5, 32, 20), AMBER_L, [GC[0], GC[1], GC[2]], { ink: false, mat: { transparent: true, opacity: .2, emissive: AMBER_L, emissiveIntensity: .8 } });
+  const lights = [];
+  for (let i = 0; i < 8; i++) lights.push(put(S, new THREE.SphereGeometry(.05, 10, 8), AMBER_L, [0, 0, 0], { ink: false, mat: { emissive: AMBER_L, emissiveIntensity: 1 } }));
+  Wd.on(t => {
+    ds.forEach(d => dropUpd(d, t)); rs.forEach(r => ringUpd(r, t));
+    glow.material.opacity = .12 + .12 * sm(t, 0, 4.0);
+    hl.material.emissiveIntensity = .6 + .4 * sm(t, 0, 4.0);
+    lights.forEach((l, i) => { const a = 2 * PI * i / 8 + .8 * t; l.position.set(2.0 * Math.cos(a), GC[1] + .25 * Math.sin(a * 2), 2.0 * Math.sin(a)); });
+    U.g.rotation.y = .2 * t;
+  });
+  return Wd;
+}
+
+window.CAP_FS_SCALE = 0.85;  // all four boxes: one font step smaller (same size everywhere), so each box fits 3 lines
+const SH = (id, dur, caps, capAt, build) => ({ id, dur, wide: true, caps, capAt, build });
+film({
+  W: 1080, H: 1920, xf: .0001, vault: 'captions_vault.json',
+  shots: [
+    SH('s01', 5.13, ['G_CAP_01'], [0.0, 5.13], b1),
+    SH('s02', 3.75, ['G_CAP_05'], [0.0, 3.75], b2),
+    SH('s03', 4.38, ['G_CAP_08'], [0.0, 4.38], b3),
+    SH('s04', 4.46, ['G_CAP_10'], [0.0, 4.46], b4),
+  ]
+});
+</script>
+</html>

@@ -1,0 +1,159 @@
+{
+ "fps": 30,
+ "films": {
+  "film_a": {
+   "titleDur": 0,
+   "recapDur": 0,
+   "shots": [
+    {
+     "id": "s01",
+     "brief": "s01",
+     "dur": 5.13,
+     "briefDur": 5.13,
+     "captions": [
+      {
+       "id": "G_CAP_01",
+       "at": 0.5,
+       "until": 4.83
+      }
+     ],
+     "capAt": [
+      0.5
+     ],
+     "words": []
+    },
+    {
+     "id": "s02",
+     "brief": "s02",
+     "dur": 3.75,
+     "briefDur": 3.75,
+     "captions": [
+      {
+       "id": "G_CAP_05",
+       "at": 0.5,
+       "until": 3.45
+      }
+     ],
+     "capAt": [
+      0.5
+     ],
+     "words": []
+    },
+    {
+     "id": "s03",
+     "brief": "s03",
+     "dur": 4.38,
+     "briefDur": 4.38,
+     "captions": [
+      {
+       "id": "G_CAP_08",
+       "at": 0.5,
+       "until": 4.08
+      }
+     ],
+     "capAt": [
+      0.5
+     ],
+     "words": []
+    },
+    {
+     "id": "s04",
+     "brief": "s04",
+     "dur": 4.46,
+     "briefDur": 4.46,
+     "captions": [
+      {
+       "id": "G_CAP_10",
+       "at": 0.5,
+       "until": 4.16
+      }
+     ],
+     "capAt": [
+      0.5
+     ],
+     "words": []
+    }
+   ],
+   "audio": {
+    "narration": null,
+    "music": null
+   }
+  }
+ },
+ "shots": [
+  {
+   "id": "s01",
+   "brief": "s01",
+   "dur": 5.13,
+   "briefDur": 5.13,
+   "captions": [
+    {
+     "id": "G_CAP_01",
+     "at": 0.5,
+     "until": 4.83
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s02",
+   "brief": "s02",
+   "dur": 3.75,
+   "briefDur": 3.75,
+   "captions": [
+    {
+     "id": "G_CAP_05",
+     "at": 0.5,
+     "until": 3.45
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s03",
+   "brief": "s03",
+   "dur": 4.38,
+   "briefDur": 4.38,
+   "captions": [
+    {
+     "id": "G_CAP_08",
+     "at": 0.5,
+     "until": 4.08
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s04",
+   "brief": "s04",
+   "dur": 4.46,
+   "briefDur": 4.46,
+   "captions": [
+    {
+     "id": "G_CAP_10",
+     "at": 0.5,
+     "until": 4.16
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  }
+ ],
+ "audio": {
+  "narration": null,
+  "music": null
+ },
+ "titleDur": 0,
+ "recapDur": 0
+}
