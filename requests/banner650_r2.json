@@ -1,0 +1,11 @@
+{
+ "jobs": [
+  {
+   "name": "olive_branch",
+   "prompt": "a single elegant golden olive branch with leaves, isolated on a pure black background, metallic gold, ornamental, horizontal, no people, no text",
+   "seed": 8,
+   "w": 1536,
+   "h": 512
+  }
+ ]
+}
