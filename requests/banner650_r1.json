@@ -1,0 +1,25 @@
+{
+ "jobs": [
+  {
+   "name": "bg_panorama",
+   "prompt": "wide panoramic soft abstract landscape of Jerusalem stone hills at golden hour, warm golden sunlight rays, soft sky with gentle clouds, deep navy blue and gold color palette, elegant painterly atmospheric haze, minimal, empty landscape, no people, no text, no buildings, no religious symbols",
+   "seed": 11,
+   "w": 1536,
+   "h": 640
+  },
+  {
+   "name": "gold_texture",
+   "prompt": "seamless luxurious brushed gold foil texture, warm metallic gold, subtle fine grain, abstract flat texture, no text, no objects",
+   "seed": 5,
+   "w": 1024,
+   "h": 1024
+  },
+  {
+   "name": "navy_dust",
+   "prompt": "elegant deep navy blue velvet background with subtle floating golden dust particles and soft bokeh lights, dark, abstract, no people, no text, no objects",
+   "seed": 21,
+   "w": 1536,
+   "h": 640
+  }
+ ]
+}
