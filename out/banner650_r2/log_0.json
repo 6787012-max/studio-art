@@ -1,0 +1,13 @@
+[
+ {
+  "name": "olive_branch",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1536,
+   512
+  ],
+  "seconds": 18.7
+ }
+]
