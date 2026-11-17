@@ -1,0 +1,25 @@
+{
+ "jobs": [
+  {
+   "name": "ad1_scale",
+   "w": 1024,
+   "h": 1280,
+   "seed": 11,
+   "prompt": "Photorealistic vertical photograph, warm golden light. Antique brass balance scales on a dark wooden table with a stack of old gold coins on one pan, next to an open ancient Talmud folio with yellowed pages beside it. Soft warm side light, shallow depth of field, rich textures, cinematic. No people, no hands, no text, no letters, no writing, no symbols, no logos."
+  },
+  {
+   "name": "ad2_dawn",
+   "w": 1024,
+   "h": 1280,
+   "seed": 22,
+   "prompt": "Photorealistic vertical landscape photograph of the Judean desert hills at dawn, the first golden sunlight rising over the mountain ridges, soft pink and blue sky, morning mist in the valleys, dramatic light, high detail, cinematic. No people, no animals, no text, no letters, no writing, no logos."
+  },
+  {
+   "name": "ad3_path",
+   "w": 1024,
+   "h": 1280,
+   "seed": 33,
+   "prompt": "Photorealistic vertical photograph of a winding ancient stone path climbing through green Judean hills at sunrise, the path curving up toward the light, soft morning mist, warm golden highlights, natural textures, cinematic. No people, no text, no letters, no writing, no logos."
+  }
+ ]
+}
