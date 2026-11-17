@@ -353,8 +353,8 @@ function wrap(g, s, font, maxW) { g.font = font; rtl(g); const w = s.split(' '),
 // פריסת כתובית: פונקציה אחת שמשמשת גם לציור וגם ל-window.__caption (g = קנבס מדידה בלבד)
 function capLayout(g, W, H, s) {
   if (H > W) {   // portrait (Shorts): box <= .86W, font ~.062W (.05W if >4 lines), bottom edge at .80H (above phone UI), max 4 lines
-    const pad = W * .03, maxW = W * .86 - pad * 2; let fs = W * .062, font = `700 ${Math.round(fs)}px ${F_B}`, L = wrap(g, s, font, maxW);
-    if (L.length > 4) { fs = W * .05; font = `700 ${Math.round(fs)}px ${F_B}`; L = wrap(g, s, font, maxW); }
+    const pad = W * .03, maxW = W * .86 - pad * 2; let fs = W * .062 * (window.CAP_FS_SCALE || 1), font = `700 ${Math.round(fs)}px ${F_B}`, L = wrap(g, s, font, maxW);
+    if (L.length > 4) { fs = W * .05 * (window.CAP_FS_SCALE || 1); font = `700 ${Math.round(fs)}px ${F_B}`; L = wrap(g, s, font, maxW); }
     const lh = fs * 1.28, tp = fs * .34, bh = L.length * lh + tp * 2, by = H * .80 - bh;
     let mw = 0; g.font = font; rtl(g); for (const l of L) mw = Math.max(mw, g.measureText(l).width);
     return { font, L, lh, bh, by, mw, tp, r: fs * .36, rect: { x: W / 2 - mw / 2 - pad, y: by, w: mw + pad * 2, h: bh } };
