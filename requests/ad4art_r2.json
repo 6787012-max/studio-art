@@ -1,0 +1,18 @@
+{
+ "jobs": [
+  {
+   "name": "ad4_beit_midrash",
+   "w": 1024,
+   "h": 1280,
+   "seed": 44,
+   "prompt": "Photorealistic vertical photograph of an empty old Jewish study hall, a large open Talmud book on a wooden lectern in the center, morning light streaming through a tall arched window, warm wood tones, dust in the light beams, cinematic. No people, no hands, no text, no letters, no writing, no logos."
+  },
+  {
+   "name": "ad5_clock",
+   "w": 1024,
+   "h": 1280,
+   "seed": 55,
+   "prompt": "Photorealistic vertical still life photograph, an antique brass pocket clock beside an old open book and a lit candle on a dark wooden table, warm candlelight, soft shadows, shallow depth of field, cinematic. No people, no hands, no text, no letters, no writing, no logos."
+  }
+ ]
+}
