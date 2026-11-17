@@ -1,0 +1,41 @@
+[
+ {
+  "name": "ad1_scale",
+  "ok": true,
+  "tries": [],
+  "model": "flux-dev",
+  "size": [
+   1024,
+   1280
+  ],
+  "seconds": 55.1
+ },
+ {
+  "name": "ad2_dawn",
+  "ok": false,
+  "tries": [
+   {
+    "model": "flux-dev",
+    "error": "AppError: You have exceeded your ZeroGPU quota (112s requested vs. 83s left). Try again in 22:14:30. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens"
+   },
+   {
+    "model": "flux-schnell",
+    "error": "AppError: You have exceeded your ZeroGPU quota (90s requested vs. 83s left). Try again in 22:14:29. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens"
+   }
+  ]
+ },
+ {
+  "name": "ad3_path",
+  "ok": false,
+  "tries": [
+   {
+    "model": "flux-dev",
+    "error": "AppError: You have exceeded your ZeroGPU quota (112s requested vs. 83s left). Try again in 22:14:29. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens"
+   },
+   {
+    "model": "flux-schnell",
+    "error": "AppError: You have exceeded your ZeroGPU quota (90s requested vs. 83s left). Try again in 22:14:29. Authenticate with a Hugging Face token for more quota - https://huggingface.co/settings/tokens"
+   }
+  ]
+ }
+]
