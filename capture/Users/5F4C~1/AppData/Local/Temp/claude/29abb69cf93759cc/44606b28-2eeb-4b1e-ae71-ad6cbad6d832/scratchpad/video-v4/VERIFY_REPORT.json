@@ -1,0 +1,52 @@
+{
+ "film": "arachin_status.html",
+ "status": "PASS",
+ "time": "2026-11-17T15:31:14",
+ "samples": 23,
+ "findings": [
+  {
+   "sev": "P2",
+   "code": "NOT_EXPOSED",
+   "t": null,
+   "shot": null,
+   "detail": "window.__caption is not exposed by the page; the caption gate is skipped or degraded",
+   "fix": "rebuild the page against the upgraded lib/stage3d.js (contract in productions/_upgrade/CONTRACT.md)"
+  },
+  {
+   "sev": "P2",
+   "code": "NOT_EXPOSED",
+   "t": null,
+   "shot": null,
+   "detail": "window.__heroBox is not exposed by the page; the hero gate is skipped or degraded",
+   "fix": "rebuild the page against the upgraded lib/stage3d.js (contract in productions/_upgrade/CONTRACT.md)"
+  },
+  {
+   "sev": "P2",
+   "code": "NOT_EXPOSED",
+   "t": null,
+   "shot": null,
+   "detail": "window.__errors is not exposed by the page; the engine-error gate is skipped or degraded",
+   "fix": "rebuild the page against the upgraded lib/stage3d.js (contract in productions/_upgrade/CONTRACT.md)"
+  },
+  {
+   "sev": "P2",
+   "code": "NOT_EXPOSED",
+   "t": null,
+   "shot": null,
+   "detail": "window.__sceneHash is not exposed by the page; the exact-hash determinism gate is skipped or degraded",
+   "fix": "rebuild the page against the upgraded lib/stage3d.js (contract in productions/_upgrade/CONTRACT.md)"
+  }
+ ],
+ "sheets": {
+  "beat": "Y:/offload-from-D/daf-yomi-arachin-20261112/video-v4/_verify/_view/_verify_beat_sheet_1.jpg",
+  "seam": "Y:/offload-from-D/daf-yomi-arachin-20261112/video-v4/_verify/_view/_verify_seams_1.jpg",
+  "phone": "Y:/offload-from-D/daf-yomi-arachin-20261112/video-v4/_verify/_view/_verify_phone_sheet_1.jpg",
+  "phone_2": "Y:/offload-from-D/daf-yomi-arachin-20261112/video-v4/_verify/_view/_verify_phone_sheet_2.jpg"
+ },
+ "timing": {
+  "ready_s": 0.9,
+  "gates_s": 21.8,
+  "sheets_s": 35.7,
+  "total_s": 59.0
+ }
+}
