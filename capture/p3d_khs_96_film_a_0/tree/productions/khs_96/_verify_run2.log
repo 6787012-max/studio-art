@@ -1,0 +1,10 @@
+PASS
+
+Sheets (CLEAN, safe to Read):
+  beat: C:/projects/_studio-animatzia/productions/khs_96/_verify/_view/_verify_beat_sheet_1.jpg
+  seam: C:/projects/_studio-animatzia/productions/khs_96/_verify/_view/_verify_seams_1.jpg
+  phone: C:/projects/_studio-animatzia/productions/khs_96/_verify/_view/_verify_phone_sheet_1.jpg
+  beat_2: C:/projects/_studio-animatzia/productions/khs_96/_verify/_view/_verify_beat_sheet_2.jpg
+  phone_2: C:/projects/_studio-animatzia/productions/khs_96/_verify/_view/_verify_phone_sheet_2.jpg
+SUMMARY | PASS | samples=38 | dur=33.0 | P0=0 P1=0 P2=0 | {"ready_s": 1.1, "visual_pixels": {"s01": [0.666, 12.0], "s02": [0.631, 12.0], "s03": [0.665, 11.0], "s04": [0.66, 11.0], "s05": [0.648, 10.6], "s06": [0.646, 11.0], "s07": [0.651, 12.0], "s08": [0.651, 11.3]}, "gates_s": 56.9, "sheets_s": 27.4, "total_s": 85.7}
+rc=0
