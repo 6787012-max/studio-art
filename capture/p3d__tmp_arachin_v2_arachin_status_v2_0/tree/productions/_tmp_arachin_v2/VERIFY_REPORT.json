@@ -1,0 +1,82 @@
+{
+ "film": "arachin_status_v2.html",
+ "status": "PASS",
+ "time": "2026-11-18T07:48:52",
+ "samples": 23,
+ "findings": [
+  {
+   "sev": "P2",
+   "code": "NOT_EXPOSED",
+   "t": null,
+   "shot": null,
+   "detail": "window.__caption is not exposed by the page; the caption gate is skipped or degraded",
+   "fix": "rebuild the page against the upgraded lib/stage3d.js (contract in productions/_upgrade/CONTRACT.md)"
+  },
+  {
+   "sev": "P2",
+   "code": "NOT_EXPOSED",
+   "t": null,
+   "shot": null,
+   "detail": "window.__heroBox is not exposed by the page; the hero gate is skipped or degraded",
+   "fix": "rebuild the page against the upgraded lib/stage3d.js (contract in productions/_upgrade/CONTRACT.md)"
+  },
+  {
+   "sev": "P2",
+   "code": "NOT_EXPOSED",
+   "t": null,
+   "shot": null,
+   "detail": "window.__errors is not exposed by the page; the engine-error gate is skipped or degraded",
+   "fix": "rebuild the page against the upgraded lib/stage3d.js (contract in productions/_upgrade/CONTRACT.md)"
+  },
+  {
+   "sev": "P2",
+   "code": "NOT_EXPOSED",
+   "t": null,
+   "shot": null,
+   "detail": "window.__sceneHash is not exposed by the page; the exact-hash determinism gate is skipped or degraded",
+   "fix": "rebuild the page against the upgraded lib/stage3d.js (contract in productions/_upgrade/CONTRACT.md)"
+  },
+  {
+   "sev": "P2",
+   "code": "RICHNESS_UNKNOWN",
+   "t": null,
+   "shot": null,
+   "detail": "window.__richness is not exposed or returned nothing; scene richness gates (kinds, Hebrew in scene, map share) skipped",
+   "fix": "call installRichness(Wd.scene) in the film (lib/richness.js); old films stay P2 until rebuilt"
+  }
+ ],
+ "sheets": {
+  "beat": "C:/Users/5F4C~1/AppData/Local/Temp/claude/29abb69cf93759cc/44606b28-2eeb-4b1e-ae71-ad6cbad6d832/scratchpad/verify_v2/_view/verify_v2_beat_sheet_1.jpg",
+  "seam": null,
+  "phone": "C:/Users/5F4C~1/AppData/Local/Temp/claude/29abb69cf93759cc/44606b28-2eeb-4b1e-ae71-ad6cbad6d832/scratchpad/verify_v2/_view/verify_v2_phone_sheet_1.jpg",
+  "phone_2": "C:/Users/5F4C~1/AppData/Local/Temp/claude/29abb69cf93759cc/44606b28-2eeb-4b1e-ae71-ad6cbad6d832/scratchpad/verify_v2/_view/verify_v2_phone_sheet_2.jpg"
+ },
+ "timing": {
+  "ready_s": 1.0,
+  "visual_pixels": {
+   "s01": [
+    0.828,
+    8.7
+   ],
+   "s02": [
+    0.873,
+    8.2
+   ],
+   "s03": [
+    0.871,
+    6.4
+   ],
+   "s04": [
+    0.939,
+    7.2
+   ],
+   "s05": [
+    0.811,
+    5.3
+   ]
+  },
+  "gates_s": 53.5,
+  "sheets_s": 72.1,
+  "total_s": 128.4
+ }
+}
