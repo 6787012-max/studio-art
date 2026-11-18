@@ -1,0 +1,14 @@
+ready_seconds=1.9
+size=540x960 (canvas 1080x1920)
+t=1.60  draw_seconds=0.14
+t=5.00  draw_seconds=0.33
+t=10.00  draw_seconds=0.04
+t=15.90  draw_seconds=0.05
+t=21.50  draw_seconds=0.38
+CLEAN productions/khs_97/_stills_clean/_stills_still_01.60.jpg
+CLEAN productions/khs_97/_stills_clean/_stills_still_05.00.jpg
+CLEAN productions/khs_97/_stills_clean/_stills_still_10.00.jpg
+CLEAN productions/khs_97/_stills_clean/_stills_still_15.90.jpg
+CLEAN productions/khs_97/_stills_clean/_stills_still_21.50.jpg
+CLEAN productions/khs_97/_stills_clean/sheet.jpg (sheet)
+FIN
