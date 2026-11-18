@@ -1,0 +1,13 @@
+PASS
+
+P2 notes:
+P2 | HERO_SMALL | t=4.52 | s01 | hero height 20% of frame in the key shot (< 35%)
+P2 | HERO_SMALL | t=10.8 | s02 | hero height 29% of frame in the key shot (< 35%)
+P2 | HERO_SMALL | t=19.56 | s04 | hero height 24% of frame in the key shot (< 35%)
+P2 | HERO_SMALL | t=26.44 | s05 | hero height 28% of frame in the key shot (< 35%)
+
+Sheets (CLEAN, safe to Read):
+  seam: C:/projects/_studio-animatzia/productions/khs_95/_verify/_view/_verify_seams_1.jpg
+  phone_2: C:/projects/_studio-animatzia/productions/khs_95/_verify/_view/_verify_phone_sheet_2.jpg
+not CLEAN or not probed (do not Read): beat,phone
+SUMMARY | PASS | samples=28 | dur=40.2 | P0=0 P1=0 P2=4 | {"ready_s": 0.7, "visual_pixels": {"s01": [0.777, 8.7], "s02": [0.764, 9.2], "s03": [0.738, 7.2], "s04": [0.773, 8.4], "s05": [0.798, 8.8], "s06": [0.778, 8.0]}, "gates_s": 40.1, "sheets_s": 16.0, "total_s": 57.1}
