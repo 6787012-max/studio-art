@@ -210,7 +210,7 @@ window.STORY = function (K) {
       q.set([CUPS[0], 2.8 + bob(t, 2), .3], popE(P(2.6, 3.4, t)));
       tg.set([SPO[0], 2.3 + bob(t, 3), .4], popE(P(1.0, 1.8, t)));
       mt.set([METER[0], TOP + 1.5, METER[1]], popE(P(6.0, 6.6, t)));
-      ck.set([SPO[0] + .3, 2.6, .9], popE(P(6.4, 7.2, t)) * .9, .05 * Math.sin(t * 4) * (t > 7.2 ? 1 : 0));
+      ck.set([SPO[0] + 1.9, 2.5, .9], popE(P(6.4, 7.2, t)) * .9, .05 * Math.sin(t * 4) * (t > 7.2 ? 1 : 0));
       B.sc.f.set(t, { smile: -.2, talk: .8 * talkAmt(t, 9) * (1 - sm(P(3.6, 4.4, t))), look: [1, 0] });
       B.sp.f.set(t, { smile: .6, talk: t < 4.4 ? .3 * talkAmt(t, 11) : 0, look: [1, 0] });
       B.L.forEach(f => f.f.set(t, { smile: -.1, talk: 0, look: [-1, 0] }));
@@ -221,7 +221,7 @@ window.STORY = function (K) {
       [w[0], HH(truck([-1.2, 1.4, 0], { dur: w[0], dist0: 11.5, dist1: 11, h0: 1.8, h1: 2.0, a0: -6, a1: 6, fov0: 46, fov1: 46, shift: [.6, 0, 0] }), 31)],
       [w[1], HH(insert([SPO[0] + .6, 1.6, SPO[2]], { dur: w[1], dist0: 7.0, dist1: 6.6, h0: 1.6, h1: 1.7, a0: -6, a1: 6, fov0: 40, fov1: 40 }), 32)],
       [w[2], HH(insert([METER[0], 1.3, METER[1]], { dur: w[2], dist0: 6.8, dist1: 6.4, h0: 1.3, h1: 1.4, a0: -6, a1: 6, fov0: 40, fov1: 40 }), 33)],
-      [w[3], HH(crane([0.6, 1.4, 0], { dur: w[3], dist0: 9.0, dist1: 8.0, h0: 1.0, h1: 2.0, a0: 6, a1: -6, fov0: 42, fov1: 40 }), 34)]]);
+      [w[3], HH(crane([-2.4, 1.4, 0], { dur: w[3], dist0: 9.8, dist1: 9.2, h0: 1.0, h1: 2.0, a0: 6, a1: -6, fov0: 42, fov1: 40 }), 34)]]);
     return Wd;
   }
 
@@ -258,7 +258,7 @@ window.STORY = function (K) {
     });
     const w = [3.6, 3.6, 3.4, 3.4];
     Wd.cam = cuts([
-      [w[0], HH(truck([.6, 1.4, 0], { dur: w[0], dist0: 12, dist1: 11.4, h0: 1.8, h1: 2.0, a0: -6, a1: 6, fov0: 46, fov1: 46, shift: [.6, 0, 0] }), 41)],
+      [w[0], HH(truck([-2.0, 1.4, 0], { dur: w[0], dist0: 8.4, dist1: 8.0, h0: 1.6, h1: 1.8, a0: -6, a1: 6, fov0: 46, fov1: 46 }), 41)],
       [w[1], HH(insert([SPO[0] + .6, 1.6, SPO[2]], { dur: w[1], dist0: 7.4, dist1: 7.0, h0: 1.6, h1: 1.7, a0: -6, a1: 6, fov0: 40, fov1: 40 }), 42)],
       [w[2], HH(insert([HOUSE[0], 1.4, HOUSE[1]], { dur: w[2], dist0: 7.6, dist1: 7.2, h0: 1.4, h1: 1.6, a0: 6, a1: -6, fov0: 40, fov1: 40 }), 43)],
       [w[3], HH(crane([3.2, 1.2, 0], { dur: w[3], dist0: 9.5, dist1: 8.6, h0: .9, h1: 2.0, a0: -6, a1: 6, fov0: 44, fov1: 42 }), 44)]]);
@@ -284,7 +284,7 @@ window.STORY = function (K) {
       cx.set([MIDX, 2.6, .9], popE(P(3.8, 4.6, t)) * .9, .05 * Math.sin(t * 4) * (t > 4.6 ? 1 : 0));
       sk.set([MIDX, 2.6, .9], P(3.8, 4.6, t), 1.2);
       bub.set([SCR[0] + .9, 2.5 + bob(t, 1), .4], popE(P(.4, 1.2, t)));
-      kol.set([MIDX, 3.05 + bob(t, 2), .4], popE(P(5.0, 5.8, t)));
+      kol.set([MIDX, 1.8 + bob(t, 2), 1.3], popE(P(5.0, 5.8, t)));
       B.sc.f.set(t, { smile: -.3, talk: .3 * talkAmt(t, 17) * (1 - sm(P(.6, 1.2, t))), look: [1, 0] });
       B.sp.f.set(t, { smile: -.2, talk: .6 * talkAmt(t, 19) * sm(P(4.8, 5.2, t)), surprise: .4 * sm(P(4.6, 5.2, t)), look: [-1, 0] });
       B.L.forEach(f => f.f.set(t, { smile: -.2, talk: 0, look: [1, 0] }));
@@ -333,9 +333,9 @@ window.STORY = function (K) {
     });
     const w = [3.5, 3.5, 3.5, 3.5];
     Wd.cam = cuts([
-      [w[0], HH(crane([-1.0, 1.4, PZ], { dur: w[0], dist0: 11, dist1: 10.4, h0: 2.0, h1: 2.8, a0: -6, a1: 6, fov0: 44, fov1: 42 }), 61)],
+      [w[0], HH(crane([-1.8, 1.4, PZ], { dur: w[0], dist0: 8.6, dist1: 8.2, h0: 2.0, h1: 2.6, a0: -6, a1: 6, fov0: 44, fov1: 42 }), 61)],
       [w[1], HH(insert([-1.4, .7, PZ], { dur: w[1], dist0: 6.4, dist1: 6.0, h0: 1.0, h1: 1.2, a0: -6, a1: 6, fov0: 40, fov1: 40 }), 62)],
-      [w[2], HH(insert([BOOK[0], 1.5, BOOK[2]], { dur: w[2], dist0: 6.6, dist1: 6.2, h0: 1.5, h1: 1.6, a0: -6, a1: 6, fov0: 40, fov1: 40 }), 63)],
+      [w[2], HH(insert([0.6, 1.2, PZ], { dur: w[2], dist0: 9.0, dist1: 8.6, h0: 1.6, h1: 1.8, a0: -6, a1: 6, fov0: 40, fov1: 40 }), 63)],
       [w[3], HH(crane([-0.4, 1.2, 0], { dur: w[3], dist0: 10.5, dist1: 9.6, h0: 1.4, h1: 2.2, a0: 6, a1: -6, fov0: 44, fov1: 42 }), 64)]]);
     return Wd;
   }
