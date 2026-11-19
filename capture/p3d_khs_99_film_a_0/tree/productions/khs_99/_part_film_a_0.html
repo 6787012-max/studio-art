@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>khs 99 film a</title>
+<style>html,body{margin:0;background:#000}canvas{display:block;width:100vw;height:auto}</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script>window.__T0=0.0000; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+// khs_99 / film_a (short99 "menatek mehamakor", cutting the tree off from its source), round 2.
+// Portrait 1080x1920. OBJECTS ONLY. No people, hands, arms, feet, faces, silhouettes or snake.
+// One toon tree on an olive hill; a golden spring of light joined to the trunk by gold lines.
+// 7 film shots = the 7 caption boxes. All beat times are ABSOLUTE clip seconds.
+// No Hebrew in this file: labels come from the vault (LBL_A..LBL_H).
+window.CLIP_DUR = 31.72;
+window.CAP_FS_SCALE = 1;
+import { film, world, THREE, ease, clamp, lerp, mesh, toon, label } from '../../lib/stage3d.js';
+import { installRichness } from '../../lib/richness.js';
+const VAULT = await (await fetch('captions_vault.json?v=1')).json();
+
+const PI = Math.PI;
+const SHOT_START = [0, 4.87, 8.44, 12.13, 16.60, 21.35, 26.19];
+const SHOT_DUR = [4.87, 3.57, 3.69, 4.47, 4.75, 4.84, 5.53];
+const SKY_TOP = 0xc7b3ec, SKY_LOW = 0xffc58a, FOG = 0xffd4a8;
+const OLIVE = 0x9aa84f, OLIVE_D = 0x748a3c, OLIVE_L = 0xb9c26a;
+const EMER = 0x17a673, EMER_D = 0x0f8259, EMER_L = 0x46c48c;
+const WALNUT = 0x7a4b2a, WOOD = 0xd9a46a, WOOD_D = 0x9a6a3c;
+const GOLD = 0xffc83a, GOLD_L = 0xffe27a, WG = 0xfff4d6;
+const PINK = 0xff5fa2, PINK_D = 0xe63f88;
+const RED = 0xb3261e;
+const GREY = 0x7b7396, GREY_L = 0x9d97b8, STONE = 0x8f8a9e;
+const CREAM = 0xfff3dc, CLOUD = 0xfff6ea, SUN = 0xffd27a;
+const FLOW_W = 0xfff0c2, FLOW_P = 0xffb3c9, FLOW_Y = 0xffd65a;
+const DUST = 0xefe6da, INK = 0x3d2b33;
+
+const P = (t, a, b) => clamp((t - a) / (b - a), 0, 1);
+const sm = (t, a, b) => ease.sm(P(t, a, b));
+const mk = (geo, color, o) => { o = o || {}; return mesh(geo, toon(color, o.mat), Object.assign({ inkW: .008, inkColor: INK }, o)); };
+const put = (parent, geo, color, pos, o) => { const m = mk(geo, color, Object.assign({ pos }, o || {})); parent.add(m); return m; };
+const Sph = (r, a, b) => new THREE.SphereGeometry(r, a || 24, b || 16);
+const Cyl = (r1, r2, h, s) => new THREE.CylinderGeometry(r1, r2, h, s || 12);
+const Bx = (x, y, z) => new THREE.BoxGeometry(x, y, z);
+const camL = (pos, look) => ({ pos, look, fov: 50 });
+const setOp = (m, o) => { m.material.transparent = true; m.material.opacity = o; m.visible = o > .01; };
+const hillY = (x, z) => -6.5 + .25 * Math.sqrt(Math.max(0, 196 - x * x - z * z));
+const tube = pts => new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 40, .12, 10, false);
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const Z = V(0, 0, 1);
+
+function glowTex() {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d'), gr = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+  gr.addColorStop(0, 'rgba(255,246,214,1)'); gr.addColorStop(.3, 'rgba(255,224,160,.55)'); gr.addColorStop(1, 'rgba(255,214,150,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 256, 256);
+  return new THREE.CanvasTexture(c);
+}
+const GLOW = glowTex();
+function halo(S, scale) {
+  const h = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, color: 0xffffff, transparent: true, opacity: .8, depthWrite: false, blending: THREE.AdditiveBlending }));
+  h.scale.setScalar(scale); h.visible = false; S.add(h); return h;
+}
+function heroBox(Wd, fn) {
+  const g = new THREE.Group(), m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()); m.visible = false; g.add(m); Wd.add(g);
+  Wd.on(t => { const bs = fn(t).filter(Boolean); if (!bs.length) return; const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (const b of bs) for (let q = 0; q < 3; q++) { lo[q] = Math.min(lo[q], b[q] - b[q + 3]); hi[q] = Math.max(hi[q], b[q] + b[q + 3]); }
+    g.position.set((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2); g.scale.set(Math.max(hi[0] - lo[0], .01), Math.max(hi[1] - lo[1], .01), Math.max(hi[2] - lo[2], .01)); });
+  Wd.hero = g; return g;
+}
+function plaque(Wd, text, pos, wood) {
+  const sp = label(Wd, text, { size: 96, height: .6, bg: wood ? 'rgba(201,150,96,.97)' : 'rgba(255,241,214,.95)', color: wood ? '#fff7e8' : '#3a2a2a', weight: 800, pos });
+  sp.userData.text = true; sp.visible = false; return sp;
+}
+
+function base(S) {
+  put(S, Sph(14, 72, 44), OLIVE, [0, -6.5, 0], { ink: false }).scale.set(1, .25, 1);
+  put(S, Sph(6, 24, 16), 0xb9a6e0, [-9, -6.5, -16], { ink: false }).scale.set(1.6, .6, 1);
+  put(S, Sph(5, 24, 16), 0xc9b6ea, [9, -7, -18], { ink: false }).scale.set(1.8, .55, 1);
+  for (let i = 0; i < 26; i++) {
+    const x = -6 + ((i * .618) % 1) * 12, z = 2 + ((i * .381) % 1) * 7;
+    put(S, Sph(.16, 12, 10), [FLOW_W, FLOW_P, FLOW_Y][i % 3], [x, hillY(x, z) + .12, z], { ink: false }).scale.set(1, .6, 1);
+  }
+  for (let i = 0; i < 12; i++) {
+    const x = -6.5 + ((i * .377) % 1) * 13, z = 1 + ((i * .713) % 1) * 8;
+    put(S, Sph(.18 + .06 * (i % 3), 12, 8), STONE, [x, hillY(x, z) + .05, z], { ink: false }).scale.set(1.3, .6, 1);
+  }
+  [[-5.4, -4.2], [4.6, -3.6], [-2.4, -5.8], [6.2, -6.0], [-7.4, -2.0], [7.5, -1.0]].forEach(([x, z], i) =>
+    put(S, Sph(.9 + .15 * (i % 2), 22, 16), i % 2 ? OLIVE_D : OLIVE_L, [x, hillY(x, z) + .55, z], { ink: false }));
+  for (let x = -6; x <= 6.01; x += 1.5) put(S, Bx(.16, 1.3, .16), WOOD, [x, hillY(x, -5) + .65, -5], { ink: false });
+  put(S, Bx(12.4, .12, .12), WOOD_D, [0, hillY(0, -5) + .5, -5], { ink: false });
+  put(S, Bx(12.4, .12, .12), WOOD_D, [0, hillY(0, -5) + .95, -5], { ink: false });
+  put(S, Sph(1.1, 24, 18), SUN, [-6, 6.5, -16], { ink: false, mat: { emissive: SUN, emissiveIntensity: .8 } });
+  [[4.5, 8.5, -15, 2.2], [-4.5, 11, -17, 2.4], [1, 13.5, -19, 1.6],
+    [-5.5, 7, -15, 2.0], [4.0, 9.5, -16, 1.8], [0, 6.2, -14, 1.6]].forEach(([x, y, z, s]) =>
+    put(S, Sph(1, 20, 14), CLOUD, [x, y, z], { ink: false, mat: { emissive: CLOUD, emissiveIntensity: .45 } }).scale.set(s, s * .3, s * .5));
+}
+
+function objects(E, S) {
+  // S1: candy-pink lure on a stand; a lantern with a white beam (the lantern is removed after S1)
+  E.lure = new THREE.Group(); S.add(E.lure);
+  E.lureBall = put(E.lure, Sph(1, 40, 28), PINK, [0, 0, 0], { ink: false, mat: { emissive: PINK, emissiveIntensity: .35 } });
+  E.stand = put(S, Cyl(.15, .2, 1.1, 14), WALNUT, [-1, -2.45, 1], { ink: false });
+  E.lantern = [put(S, Bx(.12, 3.7, .12), WOOD_D, [1.6, -1.15, .4], { ink: false }),
+    put(S, Sph(.4, 24, 18), CREAM, [1.6, .7, .4], { ink: false, mat: { emissive: WG, emissiveIntensity: 1.4 } })];
+  E.bg = new THREE.Group(); E.bg.position.set(1.6, .7, .4); S.add(E.bg);
+  E.beam = put(E.bg, Cyl(.14, .14, 1, 12), WG, [0, 0, 0], { ink: false, rot: [PI / 2, 0, 0], mat: { transparent: true, opacity: .5, emissive: WG, emissiveIntensity: 1 } });
+  E.spk = [];
+  for (let i = 0; i < 6; i++) E.spk.push(put(S, Sph(.08, 10, 8), WG, [0, 0, 0], { ink: false, mat: { emissive: WG, emissiveIntensity: 2, transparent: true, opacity: 0 } }));
+  // S2: the tree (emerald canopy on a walnut trunk)
+  E.tree = new THREE.Group(); E.tree.position.set(0, -3, 0); S.add(E.tree);
+  put(E.tree, Cyl(.3, .42, 5.6, 14), WALNUT, [0, 2.8, 0], { ink: false });
+  put(E.tree, Sph(2, 32, 22), EMER, [0, 6.4, 0], { ink: false });
+  put(E.tree, Sph(1.5, 28, 20), EMER_D, [1.6, 5.6, -.2], { ink: false });
+  put(E.tree, Sph(1.3, 26, 20), EMER_L, [.1, 8.2, .3], { ink: false });
+  put(E.tree, Sph(1.2, 24, 18), EMER_D, [-.6, 4.6, 1.2], { ink: false });
+  put(E.tree, Sph(1.1, 24, 18), EMER_L, [1.0, 4.8, 1.1], { ink: false });
+  // S4: the big branch on the left: a walnut stub stays on the trunk; the outer limb with a grey-violet cluster drifts away
+  const Q = V(-.8, 5.0, .2), C0 = V(-1.6, 5.4, .3);
+  const T0 = V(0, 4.2, 0);
+  E.stub = new THREE.Group(); E.stub.position.copy(T0); E.tree.add(E.stub);
+  const L1 = Q.clone().sub(T0).length();
+  E.stub.quaternion.setFromUnitVectors(Z, Q.clone().sub(T0).normalize());
+  put(E.stub, Cyl(.2, .26, 1, 12), WALNUT, [0, 0, L1 / 2], { ink: false, rot: [PI / 2, 0, 0] }).scale.set(1, L1, 1);
+  E.ob = new THREE.Group(); E.ob.position.copy(Q); E.tree.add(E.ob);
+  const d2 = C0.clone().sub(Q), L2 = d2.length();
+  E.ob.quaternion.setFromUnitVectors(Z, d2.normalize());
+  E.obMeshes = [];
+  const outer = put(E.ob, Cyl(.18, .22, 1, 12), WALNUT, [0, 0, L2 / 2], { ink: false, rot: [PI / 2, 0, 0] });
+  outer.scale.set(1, L2, 1); outer.userData.c = WALNUT; E.obMeshes.push(outer);
+  [[0, 0, L2, .62, EMER_D], [.35, .22, L2 + .25, .5, EMER], [-.3, -.15, L2 + .2, .45, EMER_L]].forEach(([x, y, z, r, c]) => {
+    const m = put(E.ob, Sph(r, 24, 18), c, [x, y, z], { ink: false }); m.userData.c = c; E.obMeshes.push(m); });
+  // S3: the gold source: a golden spring on the slope; thick gold lines from the trunk roots to it
+  E.spring = put(S, Sph(.75, 32, 24), GOLD_L, [-2.2, -2.5, 2.4], { ink: false, mat: { emissive: GOLD, emissiveIntensity: 1.0 } });
+  E.haloSpring = halo(S, 3.0); E.haloCut = halo(S, 2.4);
+  E.lineA = put(S, tube([V(0, -2.85, .4), V(-.55, -2.8, .9), V(-1.1, -2.75, 1.4)]), GOLD_L, [0, 0, 0], { ink: false, mat: { emissive: GOLD, emissiveIntensity: 1.2 } });
+  E.lineB = put(S, tube([V(-1.1, -2.75, 1.4), V(-1.65, -2.6, 1.9), V(-2.2, -2.5, 2.4)]), GOLD_L, [0, 0, 0], { ink: false, mat: { emissive: GOLD, emissiveIntensity: 1.2 } });
+  E.roots = [[.8, -2.95, 1.1], [.4, -2.95, 1.4], [-.2, -2.95, 1.2]].map(p => put(S, tube([V(0, -2.9, .3), V(p[0] * .6, -2.9, p[2] * .6), V(p[0], p[1], p[2])]), GOLD_L, [0, 0, 0], { ink: false, mat: { emissive: GOLD, emissiveIntensity: .8 } }));
+  // S3: the pink blade that snaps the gold line; its sparks
+  E.blade = put(S, Bx(.22, 4.0, .22), PINK, [0, 0, 0], { ink: false, mat: { emissive: PINK, emissiveIntensity: .6 } });
+  E.sparks = [];
+  for (let i = 0; i < 8; i++) E.sparks.push(put(S, Sph(.12, 10, 8), GOLD_L, [0, 0, 0], { ink: false, mat: { emissive: GOLD, emissiveIntensity: 2, transparent: true, opacity: 0 } }));
+  // S2 / S5: the wooden sign on the left; the candy-pink sign on the right (pops up, bounces, falls)
+  E.woodSign = new THREE.Group(); E.woodSign.position.set(-2.4, hillY(-2.4, 2.4), 2.4); S.add(E.woodSign);
+  put(E.woodSign, Cyl(.06, .06, 1.6, 10), WOOD_D, [0, .8, 0], { ink: false });
+  put(E.woodSign, Bx(1.8, 1.1, .12), WOOD, [0, 2.0, 0], { ink: false });
+  E.sign = new THREE.Group(); E.sign.position.set(2.2, hillY(2.2, 2.0), 2.0); S.add(E.sign);
+  put(E.sign, Cyl(.06, .06, 1.6, 10), WALNUT, [0, .8, 0], { ink: false });
+  put(E.sign, Bx(1.8, 1.1, .12), PINK, [0, 2.1, 0], { ink: false, mat: { emissive: PINK, emissiveIntensity: .25 } });
+  // S5: the brick-red "No!" stamp slams down in front of the sign
+  E.stamp = put(S, Cyl(1.3, 1.3, .3, 36), RED, [2.2, 6, 3.2], { ink: false, rot: [PI / 2, 0, 0] });
+  E.dust = [];
+  for (let i = 0; i < 6; i++) E.dust.push(put(S, Sph(.35, 12, 10), DUST, [0, 0, 0], { ink: false, mat: { transparent: true, opacity: 0 } }));
+  // S6: a big sign at the front, and a winding line of identical small pink signs (dominoes) into the distance
+  E.front = new THREE.Group(); E.front.position.set(-.8, hillY(-.8, 3.0), 3.0); S.add(E.front);
+  put(E.front, Bx(.14, 2.6, .14), WOOD_D, [-1.2, 1.3, 0], { ink: false });
+  put(E.front, Bx(.14, 2.6, .14), WOOD_D, [1.2, 1.3, 0], { ink: false });
+  put(E.front, Bx(3.2, 1.9, .16), PINK_D, [0, 2.6, 0], { ink: false });
+  E.dom = [];
+  for (let i = 0; i < 9; i++) {
+    const x = 1.4 * Math.sin(i * .55), z = -1.5 - 1.1 * i;
+    const g = new THREE.Group(); g.position.set(x, hillY(x, z), z); S.add(g);
+    put(g, Bx(1.0, 1.5, .12), PINK, [0, .75, 0], { ink: false, mat: { emissive: PINK, emissiveIntensity: .25 } });
+    E.dom.push(g);
+  }
+  E.plq = [['LBL_A', [.2, 4.87], [-2.6, -2.3, 2.2]], ['LBL_D', [5.6, 8.44], [-2.4, -1.1, 2.55], true],
+    ['LBL_E', [8.46, 21.6], [2.2, -.95, 2.2]], ['LBL_B', [9.6, 16.6], [-2.2, -1.7, 2.8], true],
+    ['LBL_C', [9.6, 16.6], [.7, -1.9, 2.2], true], ['LBL_F', [16.9, 21.35], [-3.0, .6, 1.8], true],
+    ['LBL_G', [21.6, 26.19], [2.2, -1.8, 3.6]], ['LBL_H', [26.19, 31.72], [-.8, -.5, 3.15], true]]
+    .map(([id, r, pos, wood]) => ({ sp: plaque(E.Wd, VAULT[id], pos, wood), r }));
+}
+
+function scene(k) {
+  const Wd = world({ fogColor: FOG, fogNear: 40, fogFar: 150, skyTop: SKY_TOP, skyBottom: SKY_LOW, hemiSky: 0xfff4e6, hemiGround: 0xc9a88a, hemi: 1, sunColor: 0xffe2b8, sun: .5, sunPos: [-4, 10, 8], shadowExt: 10, skyR: 260 });
+  const S = Wd.scene;
+  base(S);
+  const E = { Wd, S, k };
+  objects(E, S);
+  const rich = installRichness(S); Wd.on(rich.onFrame);
+  heroBox(Wd, [
+    () => [[0, -1.0, 1, 1.6, 1.6, 1]],
+    () => [[0, 1.5, 0, 2.1, 3.2, 1.5]],
+    () => [[0, 1.0, 0, 2.5, 3.2, 1.5]],
+    () => [[0, 1.5, 0, 2.5, 3.5, 1.5]],
+    () => [[0, 1.5, 0, 2.5, 3.5, 1.5]],
+    () => [[1.5, 0, 2, 2.5, 3.5, 1.5]],
+    () => [[-1, -1, -1, 4.5, 3.5, 3]]][k]);
+  return E;
+}
+
+function drive(E, t) {
+  const T = SHOT_START[E.k] + t;
+  // S1: the white beam drains the pink lure; it turns dull grey and shrinks to a pebble
+  const dr = sm(T, .4, 3.8);
+  E.lure.position.set(-1, lerp(-1, -2.75, sm(T, 2.4, 3.8)), 1);
+  E.lure.scale.setScalar(lerp(1, .24, dr));
+  E.lureBall.material.color.set(PINK).lerp(new THREE.Color(STONE), dr);
+  E.stand.visible = T < 3.9;
+  E.bg.lookAt(V(-1, -1, 1));
+  const L = Math.hypot(-1 - 1.6, -1 - .7, 1 - .4);
+  E.beam.position.set(0, 0, L / 2); E.beam.scale.set(1, L, 1);
+  E.bg.visible = T >= .2 && T < 4.3;
+  setOp(E.beam, .5 * (1 - sm(T, 3.6, 4.2)));
+  E.lantern.forEach(m => { m.visible = T < 4.5; });
+  E.spk.forEach((m, i) => { const a = T * 2 + i * PI / 3;
+    m.position.set(-1 + 1.5 * Math.cos(a), -1 + .5 * Math.sin(a) + .8, 1 + 1.5 * Math.sin(a));
+    setOp(m, T < 4 ? .9 * (1 - sm(T, 2.5, 3.8)) : 0); });
+  // S2: the tree grows; the wooden sign on the left stands firm
+  E.tree.visible = T >= 4.87;
+  E.tree.scale.setScalar(.62 * Math.max(sm(T, 4.87, 6.6), .001));
+  E.woodSign.visible = T >= 5.6;
+  E.woodSign.scale.setScalar(Math.max(sm(T, 5.6, 6.2), .001));
+  // S2 / S3: the pink sign pops up, bounces enticingly; in S5 it falls flat
+  E.sign.visible = T >= 8.44;
+  E.sign.scale.setScalar(Math.max(sm(T, 8.44, 9.2), .001));
+  E.sign.rotation.z = .12 * Math.sin(T * 7) * sm(T, 9.2, 9.9);
+  E.sign.rotation.x = -PI / 2 * sm(T, 22.5, 23.2);
+  // S4: the outer branch with its grey-violet cluster drifts away from the trunk (visible gap)
+  const g = sm(T, 16.6, 17.6) * (1 - sm(T, 23.3, 24.3));
+  E.ob.position.set(-.8 - .8 * g, 5.0 + .6 * g, .2 + 1.4 * g);
+  E.obMeshes.forEach(m => { m.material.color.set(m.userData.c).lerp(new THREE.Color(GREY), g); });
+  // S3: the gold lines; the blade swoops in and snaps the line at the middle; the gap opens
+  const lines = T >= 9.6;
+  [E.lineA, E.lineB, ...E.roots].forEach(m => { m.visible = lines; });
+  E.spring.visible = lines; E.haloSpring.visible = lines;
+  const cut = sm(T, 12.9, 13.6), recon = sm(T, 23.3, 24.3);
+  E.lineB.position.y = -.8 * cut * (1 - recon);
+  E.lineB.material.color.set(GOLD_L).lerp(new THREE.Color(GREY_L), cut * (1 - recon));
+  const pulse = sm(T, 23.6, 24.0) * (1 - sm(T, 24.2, 24.8));
+  E.lineB.material.emissiveIntensity = 1.2 + 2 * pulse;
+  E.lineA.material.emissiveIntensity = 1.2 + 2 * pulse;
+  E.haloSpring.position.set(-2.2, -2.5, 2.4); E.haloSpring.scale.setScalar(3.0 * (1 + .08 * Math.sin(T * 3)) + 1.5 * pulse);
+  E.haloSpring.material.opacity = .8;
+  E.haloCut.position.set(-1.1, -2.75, 1.4); E.haloCut.scale.setScalar(Math.max(2.4 * pulse, .001));
+  E.haloCut.visible = pulse > .01; E.haloCut.material.opacity = .8;
+  const bs = V(4.4, 1.9, 4.2), be = V(-1.1, -2.75, 1.4);
+  const bp = sm(T, 11.8, 12.8);
+  E.blade.position.set(lerp(bs.x, be.x, bp), lerp(bs.y, be.y, bp), lerp(bs.z, be.z, bp));
+  E.blade.rotation.z = Math.atan2(-(be.x - bs.x), be.y - bs.y);
+  setOp(E.blade, T >= 11.8 && T < 13.0 ? .95 * (1 - sm(T, 12.9, 13.1)) : 0);
+  E.sparks.forEach((m, i) => { const a = i * PI / 4, dt = Math.max(T - 12.9, 0);
+    m.position.set(-1.1 + Math.cos(a) * dt * 1.0, -2.75 - 1.2 * dt - .3 * (i % 2) * dt, 1.4 + Math.sin(a) * dt * .5);
+    setOp(m, T >= 12.9 && T < 13.9 ? .9 * (1 - sm(T, 13.1, 13.9)) : 0); });
+  // S5: the stamp slams down in front of the sign (dust puff); the sign cracks and falls flat
+  const sy = lerp(6, -1.8, sm(T, 21.35, 21.95));
+  E.stamp.position.set(2.2, sy, 3.2);
+  E.stamp.visible = T >= 21.35 && T < 26.19;
+  E.dust.forEach((m, i) => { const a = i * PI / 3, dt = Math.max(T - 21.95, 0);
+    m.position.set(2.2 + Math.cos(a) * dt * 1.6, -1.8 - 1.0 + dt * .7, 3.4 + .3 * dt);
+    setOp(m, T >= 21.95 && T < 22.8 ? .8 * (1 - sm(T, 22.2, 22.8)) : 0); });
+  E.sign.rotation.z += .04 * Math.sin(T * 50) * sm(T, 21.9, 22.4) * (1 - sm(T, 22.5, 22.8));
+  // S6: the big sign at the front appears; the dominoes topple one after another
+  E.front.visible = T >= 26.19;
+  E.front.scale.setScalar(Math.max(sm(T, 26.19, 26.9), .001));
+  E.dom.forEach((gr, i) => { gr.visible = T >= 26.19; const t0 = 27 + .36 * i; gr.rotation.x = -PI / 2 * sm(T, t0, t0 + .45); });
+  E.plq.forEach(q => {
+    q.sp.visible = T >= q.r[0] && T < q.r[1] && T >= SHOT_START[E.k] && T < SHOT_START[E.k] + SHOT_DUR[E.k];
+  });
+  E.plq[6].sp.position.set(2.2, sy, 3.6);
+}
+
+function build(k) {
+  const E = scene(k);
+  const CAMS = [
+    lt => camL([lerp(-.6, .4, P(lt, 0, 4.87)), -.4, 9.5], [0, -1.5, 0]),
+    lt => { const x = lerp(-1.0, -.2, P(lt, 0, 3.57)); return camL([x, -.4, 14], [x, -.4, 0]); },
+    () => camL([-.8, -3.1, 18], [-.8, -3.1, 0]),
+    () => camL([-.8, -3.6, 17], [0, -2.2, 0]),
+    () => camL([.4, -3.1, 18], [.4, -3.1, 0]),
+    () => camL([.4, -3.1, 18], [.4, -3.1, 0]),
+    lt => { const q = P(lt, 0, 5.53); return camL([lerp(.4, 5, q), lerp(-3.1, 4, q), lerp(18, 24, q)], [lerp(.4, 0, q), lerp(-3.1, -4.5, q), lerp(0, -3, q)]); },
+  ];
+  E.Wd.cam = CAMS[k];
+  E.Wd.on(t => drive(E, t));
+  return E.Wd;
+}
+
+const SH = (id, dur, caps, capAt, k) => ({ id, dur, wide: true, caps, capAt, build: () => build(k) });
+film({
+  W: 1080, H: 1920, xf: .0001, vault: 'captions_vault.json',
+  shots: [
+    SH('s01', 4.87, ['G_CAP_01'], [0], 0),
+    SH('s02', 3.57, ['G_CAP_04'], [0], 1),
+    SH('s03', 3.69, ['G_CAP_07'], [0], 2),
+    SH('s04', 4.47, ['G_CAP_10'], [0], 3),
+    SH('s05', 4.75, ['G_CAP_14'], [0], 4),
+    SH('s06', 4.84, ['G_CAP_18'], [0], 5),
+    SH('s07', 5.53, ['G_CAP_22'], [0], 6),
+  ]
+});
+const CAP_SCALE_BY_SHOT = [1, 1, 1, 1, 1, 1, 1], SHOT_START_GATE = SHOT_START;
+if (typeof window.__caption === 'function') {
+  const origCaption = window.__caption;
+  window.__caption = t => { let k = 0; while (k < SHOT_START_GATE.length - 1 && t >= SHOT_START_GATE[k + 1]) k++; window.CAP_FS_SCALE = CAP_SCALE_BY_SHOT[k]; return origCaption(t); };
+}
+</script>
+</html>
