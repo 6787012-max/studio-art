@@ -1,0 +1,5 @@
+G_CAP_01 win 0.0 3.82 len 3.82 units CAP_01,CAP_02,CAP_03
+G_CAP_04 win 3.84 8.23 len 4.39 units CAP_04,CAP_05,CAP_06
+G_CAP_07 win 8.25 12.43 len 4.18 units CAP_07,CAP_08,CAP_09
+G_CAP_10 win 12.45 17.4 len 4.95 units CAP_10,CAP_11,CAP_12
+shot starts [0.0, 3.84, 8.25, 12.45, 18.4] labels ['LBL_A', 'LBL_B', 'LBL_C', 'LBL_D', 'LBL_E', 'LBL_F', 'LBL_G', 'LBL_H'] clip 18.4 total 19.4

@@ -1,0 +1,9 @@
+P0 | HERO_NOT_VISIBLE | t=3.74 | s01 | hero is outside the frame | Fix: reframe: the hero must be on screen in every shot
+P1 | CAPTION_SHORT | t=0.1 | s01 | caption on screen 3.5 s (< 4.40 s) | Fix: each caption needs >= 4.4 s on screen: lengthen the window or cut words
+P1 | CAPTION_SHORT | t=3.9 | s02 | caption on screen 4.1 s (< 4.40 s) | Fix: each caption needs >= 4.4 s on screen: lengthen the window or cut words
+P1 | CAPTION_SHORT | t=8.3 | s03 | caption on screen 3.9 s (< 4.40 s) | Fix: each caption needs >= 4.4 s on screen: lengthen the window or cut words
+
+P2 notes:
+P2 | HERO_SMALL | t=1.92 | s01 | hero height 32% of frame in the key shot (< 35%)
+P2 | HERO_SMALL | t=6.04 | s02 | hero height 30% of frame in the key shot (< 35%)
+SUMMARY | FAIL | samples=18 | dur=18.4 | P0=1 P1=3 P2=2 | {"ready_s": 1.0, "visual_pixels": {"s01": [0.791, 11.3], "s02": [0.762, 11.4], "s03": [0.805, 10.4], "s04": [0.797, 15.0]}, "gates_s": 26.2, "total_s": 27.8}

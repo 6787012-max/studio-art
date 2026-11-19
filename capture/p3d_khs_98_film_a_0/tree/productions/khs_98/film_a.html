@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>khs 98 film a</title>
+<style>html,body{margin:0;background:#000}canvas{display:block;width:100vw;height:auto}</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+// khs_98 / film_a (short98 "lo onesh matana", a gift and not a punishment), phase B.
+// Portrait 1080x1920. OBJECTS ONLY. No people, hands, arms, feet, faces or silhouettes.
+// Cross-section of a garden bed: calm dawn garden above ground, cut-away soil with roots below.
+// The body is one cream seed with grey-violet stains (= the snake's filth). 4 film shots = the 4 caption boxes
+// (A 0.00-3.84, B 3.84-8.25, C 8.25-12.45, D 12.45-18.40); the six storyboard ideas S1..S6 are beats inside them.
+// All beat times below are ABSOLUTE clip seconds. No Hebrew in this file: labels come from the vault.
+window.CLIP_DUR = 18.40;
+window.CAP_FS_SCALE = 1;
+import { film, world, THREE, ease, clamp, lerp, mesh, toon, label } from '../../lib/stage3d.js';
+import { installRichness } from '../../lib/richness.js';
+const VAULT = await (await fetch('captions_vault.json?v=1')).json();
+
+const PI = Math.PI;
+const SY = -3.0;                                         // the seed rests in the soil at this height
+const SHOT_START = [0, 3.84, 8.25, 12.45];
+const SHOT_DUR = [3.84, 4.41, 4.20, 5.95];
+const AX = [.9, 1.15, .9];                               // seed ellipsoid radii
+const DAWN_TOP = 0xa9e6e4, DAWN_MID = 0xf6dcc9, PEACH = 0xffc7a2;
+const SOIL_A = 0x6b4226, SOIL_B = 0xc08650, SOIL_C = 0x5a3620, SOIL_D = 0xb17a46, SOIL_E = 0x4a2c1a;
+const SAGE = 0x9fcf8e, SAGE_D = 0x7fb774, LEAF = 0x7cc27f, LEAF_L = 0xa9e29a;
+const CREAM = 0xfff1d6, CREAM_W = 0xfffcf4, CREAM_D = 0xead2a2;
+const STAIN = 0x6e6686, HAZE = 0x9d97b8;
+const CORAL = 0xff7a66, CORAL_D = 0xe8604f;
+const GOLD = 0xffd98a, WG = 0xfff3c8, SUN = 0xffd27a;
+const WOOD = 0xcaa070, WOOD_D = 0x9a6e44, ROOT = 0x8a5a36;
+const PETAL = 0xffc6b0, PETAL_L = 0xffe2d2, CENTER = 0xffd65a, PINK = 0xf7a0b4, CLOUD = 0xfff8f0;
+const CHAIN = 0x4b4560, CHAIN_L = 0x6a6384;
+const PEBBLE = 0xb9a893, CRYSTAL = 0xcffff4;
+const INK = 0x3a2a2a;
+
+const P = (t, a, b) => clamp((t - a) / (b - a), 0, 1);
+const sm = (t, a, b) => ease.sm(P(t, a, b));
+const mk = (geo, color, o) => { o = o || {}; return mesh(geo, toon(color, o.mat), Object.assign({ inkW: .008, inkColor: INK }, o)); };
+const put = (parent, geo, color, pos, o) => { const m = mk(geo, color, Object.assign({ pos }, o || {})); parent.add(m); return m; };
+const Sph = (r, a, b) => new THREE.SphereGeometry(r, a || 24, b || 16);
+const Cyl = (r1, r2, h, s) => new THREE.CylinderGeometry(r1, r2, h, s || 12);
+const Bx = (x, y, z) => new THREE.BoxGeometry(x, y, z);
+const TR = (R, r) => new THREE.TorusGeometry(R, r, 12, 40);
+const cam = (x, y, z, ly) => ({ pos: [x, y, z], look: [0, ly, 0], fov: 50 });
+const setOp = (m, o) => { m.material.transparent = true; m.material.opacity = o; m.visible = o > .01; };
+
+// soft warm glow sprite (white-gold)
+function glowTex() {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d'), gr = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+  gr.addColorStop(0, 'rgba(255,246,214,1)'); gr.addColorStop(.3, 'rgba(255,224,160,.55)'); gr.addColorStop(1, 'rgba(255,214,150,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 256, 256);
+  return new THREE.CanvasTexture(c);
+}
+const GLOW = glowTex();
+
+function heroBox(Wd, fn) {
+  const g = new THREE.Group(), m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()); m.visible = false; g.add(m); Wd.add(g);
+  Wd.on(t => { const bs = fn(t).filter(Boolean); if (!bs.length) return; const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (const b of bs) for (let q = 0; q < 3; q++) { lo[q] = Math.min(lo[q], b[q] - b[q + 3]); hi[q] = Math.max(hi[q], b[q] + b[q + 3]); }
+    g.position.set((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2); g.scale.set(Math.max(hi[0] - lo[0], .01), Math.max(hi[1] - lo[1], .01), Math.max(hi[2] - lo[2], .01)); });
+  Wd.hero = g; return g;
+}
+// a plaque: cream board with a vault label, always facing the camera
+function plaque(Wd, text, pos, wood) {
+  const sp = label(Wd, text, { size: 96, height: .6, bg: wood ? 'rgba(201,150,96,.97)' : 'rgba(255,241,214,.95)', color: wood ? '#fff7e8' : '#3a2a2a', weight: 800, pos });
+  sp.userData.text = true; sp.visible = false; return sp;
+}
+
+// the garden bed and the cut-away soil (the same in every shot)
+function base(S) {
+  const L = [[0, -.9, SOIL_A], [-.9, -1.6, SOIL_B], [-1.6, -2.6, SOIL_C], [-2.6, -3.4, SOIL_D], [-3.4, -4.5, SOIL_C], [-4.5, -5.5, SOIL_E], [-5.5, -7.2, SOIL_E], [-7.2, -30, SOIL_E]];
+  L.forEach(([a, b, c]) => put(S, Bx(10, a - b, 1.2), c, [0, (a + b) / 2, 0], { ink: false }));
+  put(S, Bx(10.4, .28, 1.5), SAGE, [0, .02, 0], { ink: false });                       // grass line
+  for (let i = 0; i < 9; i++) put(S, Sph(.42, 14, 10), i % 2 ? SAGE : SAGE_D, [-4.6 + i * 1.15, .1, .5], { ink: false }).scale.set(1, .5, 1);
+  // garden behind the cut: bushes, flowers, a wooden fence, a small tree
+  [[-4.4, .95, -1.6, .9], [-2.5, 1.2, -2.2, .7], [.3, .8, -2.4, .6], [2.6, 1.1, -1.8, .8], [4.6, .7, -1.4, .6]]
+    .forEach(([x, y, z, r], i) => put(S, Sph(r, 22, 16), i % 2 ? LEAF : SAGE_D, [x, y * .9, z], { ink: false }));
+  for (let x = -5; x <= 5.01; x += 1.25) put(S, Bx(.16, 1.5, .16), WOOD, [x, .75, -3.2], { ink: false });
+  put(S, Bx(10.4, .12, .12), WOOD_D, [0, .9, -3.2], { ink: false }); put(S, Bx(10.4, .12, .12), WOOD_D, [0, .4, -3.2], { ink: false });
+  put(S, Cyl(.2, .26, 2.4, 12), WOOD_D, [4.9, 1.2, -2.4], { ink: false });
+  put(S, Sph(1.1, 24, 18), LEAF, [4.9, 3.0, -2.4], { ink: false });
+  [[-2.8, 1.1, -1.4], [-3.6, .3, -1.0]].forEach(([x, y, z]) => put(S, Sph(.14, 10, 8), PINK, [x, y, z], { ink: false }));
+  // sun and soft clouds (dawn, far back)
+  put(S, Sph(.9, 24, 18), SUN, [-2.5, 6.5, -8], { ink: false, mat: { emissive: SUN, emissiveIntensity: .8 } });
+  [[3.2, 7.6, -9, 1.5], [-4.8, 3.4, -9, 1.2]].forEach(([x, y, z, s]) => put(S, Sph(1, 20, 14), CLOUD, [x, y, z], { ink: false, mat: { emissive: CLOUD, emissiveIntensity: .45 } }).scale.set(s * 1.5, s * .45, s * .6));
+  // roots reaching from the grass line down toward the seed, pebbles and small glowing crystals in the soil (in front of the cut)
+  [[-3.6, 0], [-2.2, 1], [2.0, 0], [3.4, 1], [-4.3, 0]].forEach(([x, k]) => {
+    const pts = [new THREE.Vector3(x, 0, .8), new THREE.Vector3(x * .8, -1.2, .8), new THREE.Vector3(x * .5, -2.2, .9),
+      new THREE.Vector3(x > 0 ? 1.0 : -1.0, SY + (k ? .6 : -.5), 1.0)];
+    put(S, new THREE.TubeGeometry(new THREE.CatmullRomCurve3(pts), 30, .07, 8, false), ROOT, [0, 0, 0], { ink: false });
+  });
+  for (let i = 0; i < 14; i++) put(S, Sph(.1 + .07 * (i % 3), 10, 8), PEBBLE, [-4.6 + ((i * .618) % 1) * 9.2, -.6 - ((i * .377) % 1) * 5.8, .8], { ink: false });
+  for (let i = 0; i < 6; i++) put(S, new THREE.OctahedronGeometry(.22), CRYSTAL, [-4.2 + i * 1.7, -5.2 - (i % 2) * 1.1, .85], { ink: false, mat: { emissive: 0x9ff5e6, emissiveIntensity: .8 } });
+}
+
+// the seed (body), its stains (filth), the haze, the ribbon, the chain, the sprout, the bloom, the light and the sparkles
+function objects(E, S) {
+  E.seed = new THREE.Group(); E.seed.position.set(0, 4.2, 1.4); S.add(E.seed);
+  E.body = put(E.seed, Sph(1, 44, 30), CREAM, [0, 0, 0], { ink: false, mat: { emissive: CREAM, emissiveIntensity: .3 } });
+  E.body.scale.set(AX[0], AX[1], AX[2]);
+  put(E.seed, new THREE.ConeGeometry(.17, .46, 14), CREAM_D, [0, 1.3, 0], { ink: false });
+  E.stains = [];
+  [[.7, .45, .55], [-.75, .1, .6], [.15, -.5, .85], [-.55, -.6, .6], [.85, -.2, .45], [-.1, .8, .6], [.4, .75, .5]].forEach(d => {
+    const n = Math.hypot(d[0], d[1], d[2]), u = d.map(x => x / n);
+    const s = 1 / Math.sqrt(u[0] * u[0] / (AX[0] * AX[0]) + u[1] * u[1] / (AX[1] * AX[1]) + u[2] * u[2] / (AX[2] * AX[2]));
+    const m = put(E.seed, Sph(.2, 16, 12), STAIN, [u[0] * s * 1.02, u[1] * s * 1.02, u[2] * s * 1.02], { ink: false, mat: { transparent: true, opacity: .9 } });
+    m.scale.set(1.3, 1, .45); E.stains.push(m);
+  });
+  E.haze = [];
+  for (let i = 0; i < 16; i++) {
+    const a = i * 2.39996, o = [Math.cos(a) * 1.2, -.9 + 1.8 * ((i * .37) % 1), Math.sin(a) * .5];
+    const m = put(S, Sph(.1, 10, 8), HAZE, [0, 0, 0], { ink: false, mat: { transparent: true, opacity: 0 } });
+    m.userData.o = o; m.userData.sk = [Math.cos(a) * 1.6, -5.4 - (i % 5) * .35, .9 + Math.sin(a) * .4]; E.haze.push(m);
+  }
+  // ribbon (S4): two coral rings and a bow, all scaled from 0
+  E.rb1 = put(E.seed, TR(.95, .06), CORAL, [0, 0, 0], { ink: false, rot: [PI / 2, 0, 0] });
+  E.rb2 = put(E.seed, TR(.95, .06), CORAL_D, [0, 0, 0], { ink: false, rot: [0, PI / 2, 0] });
+  E.bow = [put(E.seed, Sph(.22, 16, 12), CORAL, [.26, 1.38, .12], { ink: false }), put(E.seed, Sph(.22, 16, 12), CORAL, [-.26, 1.38, .12], { ink: false }),
+    put(E.seed, Sph(.12, 12, 10), CORAL_D, [0, 1.32, .2], { ink: false })];
+  E.spk = [];
+  for (let i = 0; i < 8; i++) E.spk.push(put(S, Sph(.07, 10, 8), WG, [0, 0, 0], { ink: false, mat: { emissive: WG, emissiveIntensity: 2, transparent: true, opacity: 0 } }));
+  // chain (S3): dark links and a lock beside the seed; it dissolves into light dots
+  E.ch = new THREE.Group(); E.ch.position.set(-1.3, 0, 1.4); S.add(E.ch);
+  for (let i = 0; i < 5; i++) put(E.ch, TR(.26, .07), CHAIN, [0, -.3 - .55 * i, 0], { ink: false, rot: i % 2 ? [0, PI / 2, 0] : [0, 0, 0] });
+  // the chain is five links only (no lock)
+  // links only
+  E.dots = [];
+  for (let i = 0; i < 12; i++) E.dots.push(put(S, Sph(.1, 10, 8), WG, [0, 0, 0], { ink: false, mat: { emissive: WG, emissiveIntensity: 1.6, transparent: true, opacity: 0 } }));
+  // sprout (S5): a stem that grows from the seed top up through the soil, two leaves
+  E.spG = new THREE.Group(); E.spG.position.set(0, SY + .9, 1.4); S.add(E.spG);
+  E.stem = put(E.spG, Cyl(.12, .18, 1, 12), 0x5fd35f, [0, .5, 0], { ink: false, mat: { emissive: LEAF_L, emissiveIntensity: 0 } });
+  E.lfL = put(E.spG, Sph(.5, 16, 12), LEAF_L, [-.4, 1, 0], { ink: false });
+  E.lfR = put(E.spG, Sph(.5, 16, 12), LEAF_L, [.4, 1, 0], { ink: false });
+  // bloom (S6) at the top of the stem, and six small flowers on the grass line
+  E.bloom = new THREE.Group(); E.bloom.position.set(0, 2.7, 1.5); S.add(E.bloom);
+  for (let i = 0; i < 7; i++) { const a = i * 2 * PI / 7, m = put(E.bloom, Sph(.5, 16, 12), i % 2 ? 0xfff3d2 : 0xfffaf0, [Math.cos(a) * .55, Math.sin(a) * .55, 0], { ink: false, mat: { emissive: WG, emissiveIntensity: .4 } }); m.scale.set(.9, .5, .3); m.rotation.z = a; }
+  put(E.bloom, Sph(.26, 16, 12), CENTER, [0, 0, .1], { ink: false });
+  E.mini = [[-2.1, 3.0], [-1.4, 4.9], [-0.7, 2.4], [0.6, 2.5], [-2.6, 4.2], [0.9, 4.9]].map(([x, y], i) => { const g = new THREE.Group(); g.position.set(x, y, 1.5); S.add(g);
+    for (let j = 0; j < 5; j++) { const a = j * 2 * PI / 5, m = put(g, Sph(.14, 10, 8), i % 2 ? PINK : PETAL_L, [Math.cos(a) * .17, Math.sin(a) * .17, 0], { ink: false }); m.scale.set(1, 1, .6); }
+    put(g, Sph(.1, 10, 8), CENTER, [0, 0, .05], { ink: false }); g.scale.setScalar(.001); return g; });
+  // the soul: a white-gold light that comes down from the sky into the sprout
+  E.orb = put(S, Sph(.34, 28, 20), WG, [0, 7.2, 1.8], { ink: false, mat: { emissive: WG, emissiveIntensity: 1.8, transparent: true } });
+  E.orb.renderOrder = 5;
+  E.halo = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, color: 0xffffff, transparent: true, opacity: .8, depthWrite: false, blending: THREE.AdditiveBlending }));
+  E.halo.scale.setScalar(2.4); E.halo.visible = false; S.add(E.halo);
+  E.beam = put(S, Cyl(.12, .12, 1, 12), WG, [0, 0, 1.6], { ink: false, mat: { transparent: true, opacity: 0, emissive: WG, emissiveIntensity: 1 } });
+  E.post = put(S, Bx(.14, 1.4, .14), WOOD_D, [1.9, 1.9, 1.5], { ink: false }); E.post.visible = false;
+}
+
+function scene(k) {
+  const Wd = world({ fogColor: PEACH, fogNear: 40, fogFar: 150, skyTop: DAWN_TOP, skyBottom: DAWN_MID, hemiSky: 0xfff4e6, hemiGround: 0xc9a88a, hemi: 1, sunColor: 0xffe2b8, sun: .5, sunPos: [-4, 10, 8], shadowExt: 10, skyR: 260 });
+  const S = Wd.scene;
+  base(S);
+  const E = { Wd, S, k };
+  objects(E, S);
+  // the four in-scene plaques (vault labels); each is visible only inside its beat and its shot
+  E.plq = [['LBL_A', [.2, 3.84], [-1.9, 4.6, 1.6]], ['LBL_C', [.2, 3.0], [1.9, 5.4, 1.6]], ['LBL_B', [2.0, 8.25], [1.9, -1.9, 1.6]],
+    ['LBL_D', [5.8, 8.25], [-1.3, .9, 1.6]], ['LBL_E', [8.5, 10.6], [2.0, -.6, 1.6]], ['LBL_F', [10.6, 12.45], [-1.9, -.6, 1.6]],
+    ['LBL_G', [12.6, 18.4], [-1.5, 6.3, 1.6]], ['LBL_H', [16.3, 18.4], [1.9, 3.0, 1.6], true]]
+    .map(([id, r, pos, wood]) => ({ sp: plaque(Wd, VAULT[id], pos, wood), r }));
+  const rich = installRichness(S); Wd.on(rich.onFrame);   // scene-richness probe for verify_scene.py
+  heroBox(Wd, [t => { const y = lerp(4.2 + .12 * Math.sin(Math.min(t, 1.5) * 1.6), SY, sm(t, 1.5, 3.6)); return [[0, y, 1.4, 1.0, 1.2, 1.0]]; },() => [[0, SY, 1.4, 1.0, 1.2, 1.0]],
+    () => [[0, SY + 1, 1.4, 1.2, 1.6, 1.0]], () => [[0, 4.0, 1.4, 1.5, 2.2, 1.0]]][k]);
+  return E;
+}
+
+// one update per frame; T = absolute clip time (the shot start + local time)
+function drive(E, t) {
+  const T = SHOT_START[E.k] + t, k = E.k;
+  // seed: hovers above the garden (S1), descends into the soil (S2), then rests (S3..)
+  const sy = lerp(4.2 + .12 * Math.sin(Math.min(T, 1.5) * 1.6), SY, sm(T, 1.5, 3.6));
+  E.seed.position.set(0, sy, 1.4);
+  // S5: the shell is cleaned (stains fade, the cream turns bright white)
+  const clean = sm(T, 10.4, 11.0), pulse = 1 + .06 * Math.sin(T * 3);
+  E.body.material.color.set(CREAM).lerp(new THREE.Color(CREAM_W), clean);
+  E.stains.forEach(m => { m.scale.set(1.3 * pulse, pulse, .45); setOp(m, .9 * (1 - sm(T, 10.3, 10.5))); });
+  // S2: the grey-violet haze is drawn out of the shell and sinks into the soil, then fades
+  E.haze.forEach((m, i) => {
+    const f = sm(T, 1.5 + .06 * i, 5.6), o = m.userData.o, sk = m.userData.sk;
+    m.position.set(lerp(o[0], sk[0], f), lerp(sy + o[1], sk[1], f), lerp(1.4 + o[2], sk[2], f));
+    setOp(m, T >= 1.5 ? .85 * (1 - sm(T, 3.4, 5.9)) : 0);
+  });
+  // S3: the chain shrinks into soft light dots (it is not a punishment)
+  const fin = sm(T, 5.8, 6.3), diss = sm(T, 7.5, 8.2);
+  E.ch.visible = T >= 5.8 && T < 8.3;
+  E.ch.scale.setScalar(Math.max(fin * (1 - diss), .001));
+  E.dots.forEach((m, i) => {
+    const fx = (i * .618) % 1, fy = (i * .381) % 1;
+    m.position.set(-1.3 + (fx - .5) * 1.0, -.3 - 2.5 * fy + .15 * Math.max(T - 7.5, 0), 1.4 + .2 * fx);
+    setOp(m, T >= 7.5 && T < 8.25 ? sm(T, 7.5, 7.8) * (1 - sm(T, 8.0, 8.25)) : 0);
+  });
+  // S4: the coral ribbon wraps the seed like a gift bow; sparkles around it
+  const rs = sm(T, 8.3, 9.2) * (1 - sm(T, 10.3, 10.9));
+  [E.rb1, E.rb2, ...E.bow].forEach(m => { m.scale.setScalar(Math.max(rs, .001)); m.visible = rs > .001; });
+  E.spk.forEach((m, i) => { const a = T * 1.2 + i * PI / 4; m.position.set(Math.cos(a) * 1.45, sy + .9 * Math.sin(a), 1.4);
+    setOp(m, T >= 8.9 && T < 10.5 ? .9 * sm(T, 8.9, 9.4) * (1 - sm(T, 10.1, 10.5)) : 0); });
+  // S5: the sprout grows from the seed through the soil up to the sky
+  const H = T < 12.45 ? 3.2 * sm(T, 10.6, 12.4) : 3.2 + 2.8 * sm(T, 12.45, 13.6);
+  E.stem.scale.set(1, Math.max(H, .001), 1); E.stem.position.set(0, H / 2, 0);
+  E.stem.material.emissiveIntensity = .9 * sm(T, 12.9, 13.9);
+  const lf = Math.max(sm(T, 11.4, 12.4), .001);
+  E.lfL.position.set(-.4, H * .85, 0); E.lfR.position.set(.4, H * .85, 0); E.lfL.scale.setScalar(lf); E.lfR.scale.setScalar(lf);
+  // S6: the white-gold light comes down into the sprout; it blooms; small flowers open around it
+  const bl = Math.max(sm(T, 14.6, 16.2), .001);
+  E.bloom.position.set(0, SY + .9 + H + .1, 1.5); E.bloom.scale.setScalar(bl * 1.35); E.bloom.rotation.z = .25 * Math.sin(T * .8);
+  E.orb.visible = T >= 12.45 && T < 14.6;
+  const oy = lerp(7.2, 4.0, sm(T, 12.45, 14.0));
+  E.orb.position.set(0, oy, 1.8); E.orb.scale.setScalar(Math.max(1 - sm(T, 13.9, 14.5), .01));
+  E.halo.visible = T >= 12.45 && T < 14.9;
+  E.halo.position.set(0, oy, 1.8); E.halo.scale.setScalar(2.4 * (1 + .1 * Math.sin(T * 3)));
+  E.halo.material.opacity = .8 * (1 - sm(T, 14.2, 14.9));
+  E.mini.forEach((g, i) => g.scale.setScalar(Math.max(sm(T, 14.8 + .15 * i, 15.6 + .15 * i), .001)));
+  const botY = SY + .9 + H + .1;
+  E.beam.position.set(0, (oy + botY) / 2, 1.6); E.beam.scale.set(1, Math.max(oy - botY, .01), 1);
+  setOp(E.beam, .5 * sm(T, 12.4, 12.9) * (1 - sm(T, 13.9, 14.5)));
+  E.post.visible = T >= 12.45;
+  // plaques (in beat and in shot)
+  E.plq.forEach(q => { q.sp.visible = T >= q.r[0] && T < q.r[1] && T >= SHOT_START[k] && T < SHOT_START[k] + SHOT_DUR[k]; });
+}
+
+function build(k) {
+  const E = scene(k);
+  if (k === 0) E.Wd.cam = lt => { const T = lt, ly = lerp(1.2, -2.0, sm(T, 1.5, 3.84)); return cam(0, ly + .5, 12 - .8 * P(T, 0, 3.84), ly); };
+  if (k === 1) E.Wd.cam = lt => cam(0, -2.2, 11.2 - .5 * lt / 4.41, -2.6);
+  if (k === 2) E.Wd.cam = lt => { const T = SHOT_START[2] + lt, ly = lerp(-3.8, -2.9, sm(T, 10.44, 12.45)); return cam(0, ly + .5, 11, ly); };
+  if (k === 3) E.Wd.cam = lt => { const T = SHOT_START[3] + lt; return cam(0, 3.6, lerp(11, 15.5, sm(T, 16.8, 18.4)), 3.2); };
+  E.Wd.on(t => drive(E, t));
+  return E.Wd;
+}
+
+const SH = (id, dur, caps, capAt, k) => ({ id, dur, wide: true, caps, capAt, build: () => build(k) });
+film({
+  W: 1080, H: 1920, xf: .0001, vault: 'captions_vault.json',
+  shots: [
+    SH('s01', 3.84, ['G_CAP_01'], [0], 0),
+    SH('s02', 4.41, ['G_CAP_04'], [0], 1),
+    SH('s03', 4.20, ['G_CAP_07'], [0], 2),
+    SH('s04', 5.95, ['G_CAP_10'], [0], 3),
+  ]
+});
+// the caption gate (window.__caption) does not run the shot updaters, so give it the font step of the shot at time t
+const CAP_SCALE_BY_SHOT = [1, 1, 1, 1], SHOT_START_GATE = [0, 3.84, 8.25, 12.45];
+if (typeof window.__caption === 'function') {
+  const origCaption = window.__caption;
+  window.__caption = t => { let k = 0; while (k < SHOT_START_GATE.length - 1 && t >= SHOT_START_GATE[k + 1]) k++; window.CAP_FS_SCALE = CAP_SCALE_BY_SHOT[k]; return origCaption(t); };
+}
+</script>
+</html>

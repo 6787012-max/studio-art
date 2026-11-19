@@ -1,0 +1,4 @@
+warn: film_a s01: caption G_CAP_01 on screen 3.0 s < 4.5 s (brief duration too short; with --narration it is stretched)
+warn: film_a s02: caption G_CAP_04 on screen 3.6 s < 4.5 s (brief duration too short; with --narration it is stretched)
+warn: film_a s03: caption G_CAP_07 on screen 3.4 s < 4.5 s (brief duration too short; with --narration it is stretched)
+prep_production: khs_98 films=1 shots=4 captions=4 vault=4 keys ids_brief=ok(no Hebrew) timeline=brief-durations audio=skipped assets=0/0 ok warnings=3 out=C:/projects/_studio-animatzia/productions/khs_98
