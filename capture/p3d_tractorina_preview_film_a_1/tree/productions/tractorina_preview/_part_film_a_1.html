@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>tractorina preview film_a</title>
+<style>html,body{margin:0;background:#000}canvas{display:block}</style>
+<canvas id="c" width="1280" height="720"></canvas>
+<script>window.__T0=42.0000; window.__HQ_RENDER=true;</script>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js", "three/addons/": "../../node_modules/three/examples/jsm/" } }</script>
+<script type="module">
+// tractorina preview (84 s, 9 shots). Objects only: ATV quad bikes with eyes, one sad sedan, one silhouette hand (s07).
+// Every text is a vault ID (CAP_*, LBL_*). Pure function of t: __seek(t) and window.__T0 are handled by film().
+import { film, ease, prog, lerp, rng, THREE } from '../../lib/stage3d.js';
+import { shotWorld, atv, sedan, hills, olive, stone, puddle, sign, puffs, rope, hand, setEyes, setWheels, blink, COL, T, box, cyl, ball, mesh, toon } from './lib/tractor.js';
+
+// vault first (labels are drawn at build time, so the IDs must resolve before the shots are built)
+async function loadVault() {
+  try { const r = await fetch('captions_vault.json'); if (!r.ok) throw new Error('http ' + r.status); return await r.json(); }
+  catch (e) {
+    return await new Promise((res, rej) => {
+      const x = new XMLHttpRequest(); x.open('GET', 'captions_vault.json');
+      x.onload = () => { try { res(JSON.parse(x.responseText)); } catch (err) { rej(err); } };
+      x.onerror = () => rej(new Error('vault xhr failed')); x.send();
+    });
+  }
+}
+window.CAPTIONS_VAULT = Object.assign(window.CAPTIONS_VAULT || {}, await loadVault());
+
+const PI = Math.PI, deg = d => d * PI / 180;
+
+// ---------- s01 (6 s) desk-top macro: a toy ATV, a pencil rolls in and taps the wheel ----------
+function s01() {
+  const Wd = shotWorld({ ground: 'paper', skyTop: 0xf3ead2, skyBottom: 0xf3ead2, fog: false, sun: 2.4, hemi: 1.3 });
+  const a = atv(COL.red); Wd.add(a); Wd.hero = { group: a };
+  const pen = cyl(.045, .045, 1.8, COL.yellow, { pos: [-3, .05, .25] }); pen.rotation.z = PI / 2; Wd.add(pen);
+  Wd.add(box(1.3, .12, .9, 0x3a6fa8, { pos: [2.0, .06, -1.4] }));
+  Wd.add(box(1.0, .1, .7, 0xc84b3c, { pos: [2.0, .17, -1.4] }));
+  Wd.add(cyl(.24, .2, .32, 0xffffff, { pos: [-2.1, .16, -1.5] }));
+  olive(Wd, 2.6, 1.6, .45, 3);
+  Wd.on(t => {
+    pen.position.x = lerp(-3, -1.42, ease.out(prog(t, .4, 1.9)));
+    const tap = prog(t, 2.0, 2.4);
+    a.rotation.z = -.05 * Math.sin(PI * tap);
+    setWheels(a, t > 2.4 ? (t - 2.4) * 14 : 0);
+    setEyes(a, { sy: blink(t, 2.7, .5), dy: 0, dz: 0 });
+  });
+  Wd.cam = t => { const k = ease.io(prog(t, 0, 6)); return { pos: [.2, lerp(1.2, .9, k), lerp(3.6, 2.4, k)], look: [-.2, .35, 0], fov: 38 }; };
+  return Wd;
+}
+
+// ---------- s02 (9 s) wide crane over the muddy road after rain; the sedan rolls in and sinks ----------
+function s02() {
+  const Wd = shotWorld({ ground: 'dry' });
+  hills(Wd, -48, 5, [0xb9c7a0, 0xa6b98a, 0x93a878]);
+  olive(Wd, -7, -14, 1.1, 2); olive(Wd, 9, -18, 1.3, 7);
+  Wd.add(box(60, .02, 5.2, 0x7a6248, { pos: [0, .01, 0], ink: false, cast: false }));
+  const ps = [puddle(Wd, -1.6, 2.2, .9), puddle(Wd, .9, -1.2, .6), puddle(Wd, 3.0, 1.8, .5)];
+  sign(Wd, 'LBL_02a', [-3.8, 1.5, 2.8], { w: 1.6 });
+  stone(Wd, 2.2, .12, -2.4, .3); stone(Wd, -4.4, .1, -2.0, .22);
+  const car = sedan(); car.scale.setScalar(1.2); Wd.add(car); Wd.hero = { group: car };
+  const sp1 = puffs(Wd, 12, 11, 0x6e4f2e, .16), sp2 = puffs(Wd, 12, 12, 0x6e4f2e, .16);
+  const x0 = -6.2, x1 = -1.6;
+  Wd.on(t => {
+    const x = lerp(x0, x1, ease.out(prog(t, .4, 6.8)));
+    car.position.set(x, -.06 * ease.io(prog(t, 6.0, 8.6)), .3);
+    setWheels(car, (x - x0) / .17);
+    sp1.set(t, { x: x - .9, y: .1, z: .3, t0: 1.0, dur: 2.6, scale: 1.2 });
+    sp2.set(t, { x: x - .9, y: .1, z: .3, t0: 5.2, dur: 2.5, scale: 1.4 });
+    ps.forEach((p, i) => { const s = 1 + .06 * Math.sin(t * 3 + i); p.scale.set(s, 1, s); });
+    setEyes(car, { sy: blink(t, 3.4, 1) });
+  });
+  Wd.cam = t => {
+    const k = ease.io(prog(t, 0, 9)), cx = lerp(x0, x1, ease.out(prog(t, .4, 6.8)));
+    return { pos: [lerp(-3, -.8, k), lerp(3.0, 2.6, k), lerp(5.4, 5.0, k)], look: [lerp(-5.6, -1.0, k), .8, 0], fov: 45 };
+  };
+  return Wd;
+}
+
+// ---------- s03 (9 s) low close angle: the sedan's rear wheel spins in a crater, embarrassed face ----------
+function s03() {
+  const Wd = shotWorld({ ground: 'dry', skyTop: 0x9fd0f0 });
+  hills(Wd, -40, 9, [0xc4cfa6, 0xaebd8c]);
+  Wd.add(cyl(1.1, 1.25, .12, 0x5a3f22, { pos: [-.55, -.03, .1], ink: false, cast: false }));
+  const car = sedan(); car.scale.setScalar(1.25); Wd.add(car); Wd.hero = { group: car };
+  olive(Wd, 2.6, -2.2, 1.2, 4);
+  const pf = puffs(Wd, 10, 21, 0x6e4f2e, .14);
+  Wd.on(t => {
+    setWheels(car, t * 7);
+    setEyes(car, { sy: blink(t, 3.8, .3), dy: -.035, dz: .04 });
+    car.userData.sweat.position.y = car.userData.base + .05 * Math.sin(t * 4);
+    car.rotation.z = .02 * Math.sin(t * 8);
+    pf.set(t, { x: -.6, y: .12, z: .2, t0: Math.floor(t / 1.4) * 1.4, dur: 1.4, scale: 1.1 });
+  });
+  Wd.cam = t => ({ pos: [lerp(-2.4, -2.1, ease.sm(prog(t, 0, 9))), .5, lerp(1.6, 1.3, ease.sm(prog(t, 0, 9)))], look: [.2, .7, -.1], fov: 46 });
+  return Wd;
+}
+
+// ---------- s04 (10 s) four ATVs arrive diagonally, hop to a stop, ropes unspool in a fan; orbit camera ----------
+function s04() {
+  const Wd = shotWorld({ ground: 'dry' });
+  hills(Wd, -46, 3, [0xb9c7a0, 0xa6b98a]);
+  olive(Wd, -6, -8, 1, 5); olive(Wd, 6, -10, 1.2, 8);
+  const cols = [COL.red, COL.blue, COL.yellow, COL.green];
+  const F = [[-1.6, 1.2], [.3, .2], [2.2, -.8], [4.1, -1.8]];
+  const A = cols.map(c => { const a = atv(c); a.scale.setScalar(1.25); Wd.add(a); return a; });
+  const ropes = A.map(() => rope(Wd, 10));
+  const dust = A.map((_, i) => puffs(Wd, 8, 40 + i, COL.dust, .2));
+  Wd.hero = { group: A[0] };
+  const stopT = i => 3.6 + i * .3;
+  Wd.on(t => {
+    A.forEach((a, i) => {
+      const f = F[i], sx = f[0] - 2.6, sz = f[1] - 1.2;
+      const k = ease.out(prog(t, .2 + i * .25, stopT(i)));
+      const x = lerp(sx, f[0], k), z = lerp(sz, f[1], k);
+      const hop = .22 * Math.sin(PI * prog(t, stopT(i), stopT(i) + .7));
+      const bounce = (1 - k) * .03 * Math.abs(Math.sin(t * 16 + i));
+      a.position.set(x, hop + bounce, z);
+      setWheels(a, (x - sx) / .22);
+      setEyes(a, { sy: blink(t, 3.0, i) });
+      dust[i].set(t, { x: x - .8, y: .1, z, t0: .2 + i * .25, dur: 3.2, scale: 1.1 });
+      const Q = [2.8, .02, -1.6 + i * .95];
+      const u = ease.io(prog(t, 4.6 + i * .15, 6.6 + i * .15));
+      ropes[i].set([x - .58, .3, z], [lerp(x - .58, Q[0], u), lerp(.3, Q[1], u), lerp(z, Q[2], u)], .15);
+    });
+  });
+  Wd.cam = t => {
+    const a = lerp(-20, 20, ease.io(prog(t, 0, 10))) * PI / 180, R = 5.0;
+    return { pos: [.6 + R * Math.sin(a), 1.3, R * Math.cos(a)], look: [.6, .5, 0], fov: 45 };
+  };
+  return Wd;
+}
+
+// ---------- s05 (10 s) AWARENESS: the big-eyed ATV darts its eyes, locks on a stone under the sedan ----------
+const EYE_KEYS = [[0, 0, 0], [.9, 0, .045], [1.9, 0, -.045], [2.9, -.045, 0], [3.8, -.04, -.05]];
+function eyeDir(t) {
+  let i = 0; while (i < EYE_KEYS.length - 2 && t >= EYE_KEYS[i + 1][0]) i++;
+  const a = EYE_KEYS[i], b = EYE_KEYS[i + 1], k = ease.io(prog(t, a[0], b[0]));
+  const jit = t > 3.8 ? 0 : .006 * Math.sin(t * 23);
+  return [lerp(a[1], b[1], k) + jit, lerp(a[2], b[2], k) + jit];
+}
+function s05() {
+  const Wd = shotWorld({ ground: 'dry' });
+  hills(Wd, -40, 6, [0xb9c7a0, 0xa6b98a]);
+  const car = sedan(); car.position.set(.9, 0, -1.8); car.rotation.y = .12; Wd.add(car);
+  const big = atv(COL.yellow, { big: true }); big.position.set(-.5, 0, .5); Wd.add(big); Wd.hero = { group: big };
+  const st = stone(Wd, .45, .12, -1.2, .26);
+  const sg = sign(Wd, 'LBL_05a', [1.7, 1.1, -.4], { w: 1.2, size: 52 });
+  const rp = rope(Wd, 12, 0xd9b26a);
+  Wd.on(t => {
+    const d = eyeDir(t);
+    setEyes(big, { sy: blink(t, 2.4, .2), dy: d[0], dz: d[1] });
+    sg.scale.setScalar(Math.max(.0001, ease.out(prog(t, 3.4, 4.0))));
+    const pu = ease.io(prog(t, 7.0, 9.0));
+    st.position.set(lerp(.45, 1.5, pu), .12 + .25 * Math.sin(PI * pu), lerp(-1.2, .8, pu));
+    const lift = s => .3 * Math.sin(PI * s) * ease.sm(prog(t, 5.0, 6.0)) * (1 - ease.sm(prog(t, 7.0, 7.8)));
+    rp.set([.45, .24, .5], [.15, .25, -1.5], .08, lift);
+  });
+  Wd.cam = t => { const k = ease.sm(prog(t, 0, 10)); return { pos: [lerp(.2, .45, k), lerp(1.0, .85, k), lerp(3.4, 2.4, k)], look: [-.1, .4, -.2], fov: 42 }; };
+  return Wd;
+}
+
+// ---------- s06 (10 s) RESPONSIBILITY: insert on the tow bar; the rope knot slips, the ATV winces, retries ----------
+function s06() {
+  const Wd = shotWorld({ ground: 'dry' });
+  const big = atv(COL.yellow, { big: true }); Wd.add(big); Wd.hero = { group: big };
+  const knot = mesh(new THREE.TorusGeometry(.07, .025, 10, 20), toon(0xd9b26a), { pos: [.9, .24, 0], ink: false });
+  Wd.add(knot);
+  const rp = rope(Wd, 12, 0xd9b26a);
+  const tag = sign(Wd, 'LBL_06a', [1.3, .8, .4], { w: .8, post: false, size: 44, height: .2 });
+  const A = [1.25, .85, .45], BAR = [.9, .27, .2], HANG = [1.2, .8, .35];
+  Wd.on(t => {
+    // tie (0.5-2.5 s), knot appears (2.4 s), tug and slip (4-6 s), retie (7-8.6 s)
+    const tie = ease.io(prog(t, .5, 2.5)), slip = ease.io(prog(t, 5.0, 6.0));
+    const retie = ease.io(prog(t, 7.0, 8.6));
+    const tip = [lerp(HANG[0], BAR[0], Math.max(tie, retie)), lerp(HANG[1], BAR[1], Math.max(tie, retie)), lerp(HANG[2], BAR[2], Math.max(tie, retie))];
+    const tug = .05 * Math.sin(t * 22) * ease.sm(prog(t, 3.9, 4.6)) * (1 - ease.sm(prog(t, 5.0, 5.4)));
+    big.position.x = tug;
+    const kv = prog(t, 2.4, 2.9) * (1 - slip) * (1 - ease.sm(prog(t, 7.0, 7.4))) + ease.sm(prog(t, 8.6, 8.9));
+    knot.scale.setScalar(Math.max(.0001, kv));
+    knot.position.set(.9 + .25 * slip, .24 - .12 * slip, 0);
+    knot.rotation.y = .6 * slip;
+    const wince = prog(t, 4.0, 4.4) * (1 - prog(t, 6.0, 6.6));
+    setEyes(big, { sy: wince > 0 ? lerp(1, .3, wince) : blink(t, 3.1, .4), dy: wince * .02, dz: 0 });
+    rp.set(tip, A, .06);
+    tag.position.set(tip[0] + .12, tip[1] - .18, tip[2] + .05);
+  });
+  Wd.cam = t => { const k = ease.sm(prog(t, 0, 10)); return { pos: [lerp(.9, .6, k), lerp(.6, .5, k), lerp(1.6, 1.4, k)], look: [.5, .35, 0], fov: 40 }; };
+  return Wd;
+}
+
+// ---------- s07 (10 s) AUTHORITY: four ATVs wait, a silhouette hand with a whistle, then all four go ----------
+function s07() {
+  const Wd = shotWorld({ ground: 'dry', skyTop: 0x9fd0f0 });
+  hills(Wd, -30, 12, [0xa9b98a, 0x93a878]);
+  const stub = box(.2, 1.2, .2, COL.mud, { pos: [9, .6, 0] }); Wd.add(stub);
+  const cols = [COL.red, COL.yellow, COL.blue, COL.green];
+  const A = cols.map((c, i) => { const a = atv(c, { big: i === 1 }); a.scale.setScalar(1.4); a.position.set(-.4, 0, -1.2 + i * .8); Wd.add(a); return a; });
+  const ropes = A.map(() => rope(Wd, 10));
+  const hd = hand(Wd, [0, 4.4, -29]); hd.scale.setScalar(3.2);
+  sign(Wd, 'LBL_07a', [-2.6, 1.6, -1.4], { w: 1.4 });
+  const GO = 8.0, go = (t, i) => 4 * ease.in(prog(t, GO + i * .12, GO + 1.8 + i * .12));
+  Wd.hero = { group: A[1] };
+  Wd.on(t => {
+    A.forEach((a, i) => {
+      const travel = go(t, i);
+      const shake = t < GO ? .012 * Math.sin(t * 60 + i * 2) : 0;
+      a.position.set(-.4 + travel + shake, 0, -1.2 + i * .8);
+      setWheels(a, travel / .22 + (t < GO ? 0 : 0));
+      ropes[i].set([-.4 + 1.4 * .99 + travel + shake, .32, -1.2 + i * .8], [9, .8, 0], 0);
+      if (i === 1) setEyes(a, { sy: t < GO ? 1.2 + .06 * Math.sin(t * 4) : blink(t, 3.0, 0), dy: 0, dz: t < GO ? .012 * Math.sin(t * 50) : 0 });
+      else setEyes(a, { sy: blink(t, 3.0, i) });
+    });
+    const up = t < 7.5 ? lerp(3.4, 5.6, ease.out(prog(t, 1.0, 2.4))) : lerp(5.6, 3.4, ease.in(prog(t, 7.5, 8.2)));
+    hd.position.y = up;
+    hd.userData.glint.visible = t > 7.6 && t < 8.4;
+  });
+  Wd.cam = t => {
+    const hx = -.4 + go(t, 1);
+    return { pos: [hx - 1.0, 2.0, 5.6], look: [hx + .3, .8, 0], fov: 45 };
+  };
+  return Wd;
+}
+
+// ---------- s08 (12 s) COMMITMENT: three attempts in one locked wide shot; the third pops out ----------
+function s08() {
+  const Wd = shotWorld({ ground: 'dry' });
+  hills(Wd, -40, 14, [0xb9c7a0, 0xa6b98a]);
+  Wd.add(cyl(3.2, 3.2, .02, COL.mud, { pos: [.6, .01, 0], ink: false, cast: false }));
+  const car = sedan(); car.scale.setScalar(1.2); Wd.add(car); Wd.hero = { group: car };
+  Wd.add(box(4.2, .03, .08, COL.yellow, { pos: [.2, .03, 1.5], ink: false, cast: false }));
+  for (let i = 0; i <= 8; i++) Wd.add(box(.04, .12, .1, COL.dark, { pos: [-1.7 + i * .5, .07, 1.5], ink: false, cast: false }));
+  const lab = [sign(Wd, 'LBL_08a', [-1.3, 2.5, .4], { w: 1.0, post: false, size: 44, height: .24 }),
+    sign(Wd, 'LBL_08b', [0, 2.5, .4], { w: 1.0, post: false, size: 44, height: .24 }),
+    sign(Wd, 'LBL_08c', [1.3, 2.5, .4], { w: 1.0, post: false, size: 44, height: .24 })];
+  const lt0 = [2.5, 6.0, 9.5];
+  const p1 = puffs(Wd, 14, 51, COL.dust, .2), p2 = puffs(Wd, 14, 52, COL.dust, .2), p3 = puffs(Wd, 14, 53, COL.dust, .2);
+  const clods = puffs(Wd, 20, 61, COL.mud, .22);
+  const r = rng(77), lv = [];
+  for (let i = 0; i < 16; i++) {
+    const m = ball(.05, i % 2 ? 0x9bb85a : 0xd9a441, { ink: false, cast: false }); m.visible = false; Wd.add(m);
+    lv.push({ m, x: (r() - .5) * 6, y: 1.2 + r() * 2.2, z: (r() - .5) * 2.6, ph: r() * 6 });
+  }
+  const x = t => {
+    if (t < 1) return 0;
+    if (t < 3.5) return .8 * ease.out(prog(t, 1, 3.5));
+    if (t < 5.0) return .8 * (1 - ease.io(prog(t, 3.5, 5.0)));
+    if (t < 5.5) return 0;
+    if (t < 7.5) return 1.4 * ease.out(prog(t, 5.5, 7.5));
+    if (t < 8.4) return 1.4 * (1 - ease.io(prog(t, 7.5, 8.4)));
+    if (t < 8.5) return 0;
+    if (t < 9.2) return .5 * ease.out(prog(t, 8.5, 9.0));
+    return .5 + 3.2 * ease.in(prog(t, 9.2, 10.4));
+  };
+  const pushing = t => (t > 1 && t < 3.5) || (t > 5.5 && t < 7.5) || (t > 8.5 && t < 9.2);
+  Wd.on(t => {
+    const cx = x(t);
+    car.position.set(cx, -.04 * (pushing(t) ? 1 : 0), 0);
+    setWheels(car, cx / .17 + (pushing(t) ? 18 * t : 0));
+    setEyes(car, { sy: blink(t, 3.2, .7) });
+    p1.set(t, { x: -.6, y: .1, z: .2, t0: 1.0, dur: 2.5, scale: 1.1 });
+    p2.set(t, { x: -.6, y: .1, z: .2, t0: 5.5, dur: 2.5, scale: 1.2 });
+    p3.set(t, { x: -.6, y: .1, z: .2, t0: 8.5, dur: 2.5, scale: 1.2 });
+    clods.set(t, { x: .3, y: .2, z: .2, t0: 9.2, dur: 1.6, scale: 1.6 });
+    lab.forEach((g, i) => g.scale.setScalar(Math.max(.0001, ease.out(prog(t, lt0[i], lt0[i] + .4)))));
+    lv.forEach(o => {
+      const u = t - 9.5;
+      if (u < 0) { o.m.visible = false; return; }
+      o.m.visible = true;
+      o.m.position.set(o.x + .3 * Math.sin(u * 1.7 + o.ph), Math.max(.05, o.y - .45 * u), o.z + .08 * u);
+    });
+  });
+  Wd.cam = () => ({ pos: [0, 2.2, 6.8], look: [.6, .9, 0], fov: 42 });
+  return Wd;
+}
+
+// ---------- s09 (8 s) VICTORY: the sedan drives off, four ATVs rev, tyre circles, the logo badge ----------
+function s09() {
+  const Wd = shotWorld({ ground: 'dry' });
+  hills(Wd, -40, 21, [0xb9c7a0, 0xa6b98a]);
+  olive(Wd, -7, -10, 1.1, 9); olive(Wd, 7, -12, 1.2, 4);
+  [[-2.2, -1.6], [1.6, -1.6], [-2.2, 2.8], [1.6, 2.8]].forEach(([x, z]) => {
+    Wd.add(mesh(new THREE.TorusGeometry(1.1, .07, 8, 48), toon(COL.mud), { pos: [x, .02, z], rot: [-PI / 2, 0, 0], ink: false }));
+  });
+  const car = sedan(); Wd.add(car);
+  const r = rng(5);
+  for (let k = 0; k < 10; k++) {
+    const m = ball(.12, COL.mud, { ink: false, cast: false, pos: [(r() - .5) * 1.4, .3 + r() * .3, (r() - .5) * .5] });
+    m.scale.set(1, .4, 1); car.add(m);
+  }
+  const A = [COL.red, COL.blue, COL.yellow, COL.green].map((c, i) => { const a = atv(c); a.position.set(-2.7 + i * 1.8, 0, 1.6); Wd.add(a); return a; });
+  const exh = A.map((a, i) => puffs(Wd, 6, 90 + i, 0x9c9a94, .1));
+  Wd.hero = { group: A[0] };
+  const badge = new THREE.Group(); badge.position.set(0, 2.2, -1.5); badge.userData.kind = 'badge'; Wd.add(badge);
+  badge.add(mesh(new THREE.TorusGeometry(.7, .12, 12, 32), toon(0x2b2b2b), { pos: [0, 0, 0] }));
+  const leaf = ball(.14, COL.green, { ink: false, cast: false, pos: [-.25, .3, .05] }); leaf.scale.set(.5, 1.2, .2); badge.add(leaf);
+  badge.add(box(.4, .08, .3, 0x3a6fa8, { pos: [0, 0, .05] }));
+  sign(Wd, 'LBL_09a', [0, -1.2, 0], { w: 1.8, post: false, size: 48, height: .26, parent: badge });
+  Wd.on(t => {
+    car.position.x = lerp(0, 14, ease.in(prog(t, .6, 4.2)));
+    A.forEach((a, i) => {
+      a.position.y = .03 * Math.abs(Math.sin(t * 30 + i));
+      setWheels(a, t * 40);
+      setEyes(a, { sy: blink(t, 2.6, i) });
+      exh[i].set(t, { x: a.position.x - .6, y: .25, z: 1.6, t0: Math.floor(t / .8) * .8, dur: .8, scale: .8 });
+    });
+    badge.scale.setScalar(Math.max(.0001, ease.out(prog(t, .4, 1.2))));
+  });
+  Wd.cam = t => ({ pos: [0, lerp(1.8, 1.5, ease.sm(prog(t, 0, 8))), lerp(6.4, 6.0, ease.sm(prog(t, 0, 8)))], look: [0, 1.2, 0], fov: 40 });
+  return Wd;
+}
+
+film({
+  W: 1280, H: 720, vault: 'captions_vault.json',
+  shots: [
+    { id: 's01', dur: 6, caps: ['CAP_01'], capAt: [0.5], build: s01 },
+    { id: 's02', dur: 9, caps: ['CAP_02'], capAt: [0.5], build: s02 },
+    { id: 's03', dur: 9, caps: ['CAP_03'], capAt: [0.5], build: s03 },
+    { id: 's04', dur: 10, caps: ['CAP_04'], capAt: [0.5], build: s04 },
+    { id: 's05', dur: 10, caps: ['CAP_05'], capAt: [0.5], build: s05 },
+    { id: 's06', dur: 10, caps: ['CAP_06'], capAt: [0.5], build: s06 },
+    { id: 's07', dur: 10, caps: ['CAP_07'], capAt: [0.5], build: s07 },
+    { id: 's08', dur: 12, caps: ['CAP_08'], capAt: [0.5], build: s08 },
+    { id: 's09', dur: 8, caps: ['CAP_09'], capAt: [0.5], build: s09 },
+  ],
+});
+</script>
+</html>

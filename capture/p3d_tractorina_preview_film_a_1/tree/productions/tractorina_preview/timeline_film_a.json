@@ -1,0 +1,164 @@
+{
+ "fps": 30,
+ "titleDur": 4.2,
+ "recapDur": 0,
+ "shots": [
+  {
+   "id": "s01",
+   "brief": "s01",
+   "dur": 6.0,
+   "briefDur": 6.0,
+   "captions": [
+    {
+     "id": "CAP_01",
+     "at": 0.5,
+     "until": 5.7
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s02",
+   "brief": "s02",
+   "dur": 9.0,
+   "briefDur": 9.0,
+   "captions": [
+    {
+     "id": "CAP_02",
+     "at": 0.5,
+     "until": 8.7
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s03",
+   "brief": "s03",
+   "dur": 9.0,
+   "briefDur": 9.0,
+   "captions": [
+    {
+     "id": "CAP_03",
+     "at": 0.5,
+     "until": 8.7
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s04",
+   "brief": "s04",
+   "dur": 10.0,
+   "briefDur": 10.0,
+   "captions": [
+    {
+     "id": "CAP_04",
+     "at": 0.5,
+     "until": 9.7
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s05",
+   "brief": "s05",
+   "dur": 10.0,
+   "briefDur": 10.0,
+   "captions": [
+    {
+     "id": "CAP_05",
+     "at": 0.5,
+     "until": 9.7
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s06",
+   "brief": "s06",
+   "dur": 10.0,
+   "briefDur": 10.0,
+   "captions": [
+    {
+     "id": "CAP_06",
+     "at": 0.5,
+     "until": 9.7
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s07",
+   "brief": "s07",
+   "dur": 10.0,
+   "briefDur": 10.0,
+   "captions": [
+    {
+     "id": "CAP_07",
+     "at": 0.5,
+     "until": 9.7
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s08",
+   "brief": "s08",
+   "dur": 12.0,
+   "briefDur": 12.0,
+   "captions": [
+    {
+     "id": "CAP_08",
+     "at": 0.5,
+     "until": 11.7
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  },
+  {
+   "id": "s09",
+   "brief": "s09",
+   "dur": 8.0,
+   "briefDur": 8.0,
+   "captions": [
+    {
+     "id": "CAP_09",
+     "at": 0.5,
+     "until": 7.7
+    }
+   ],
+   "capAt": [
+    0.5
+   ],
+   "words": []
+  }
+ ],
+ "audio": {
+  "narration": null,
+  "music": null
+ }
+}
