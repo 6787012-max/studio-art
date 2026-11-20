@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<meta charset="utf-8">
+<title>khs 100 film a</title>
+<style>html,body{margin:0;background:#000}canvas{display:block;width:100vw;height:auto}</style>
+<canvas id="c" width="1080" height="1920"></canvas>
+<script type="importmap">{ "imports": { "three": "../../node_modules/three/build/three.module.js" } }</script>
+<script type="module">
+// khs_100 / film_a (short100 "ein melech bela am", the last short of the series), phase B, round 2.
+// Portrait 1080x1920. OBJECTS ONLY: no people, hands, arms, feet, faces, silhouettes.
+// A royal garden terrace: a golden crown on a ruby cushion on an ivory dais; small cream orbs = the people.
+// 10 film shots = the 10 caption boxes. All beat times are ABSOLUTE clip seconds (SHOT_START).
+// No Hebrew in this file: labels come from the vault (LBL_A..LBL_H).
+window.CLIP_DUR = 42.61;
+window.CAP_FS_SCALE = 1;
+import { film, world, THREE, ease, clamp, lerp, mesh, toon, label } from '../../lib/stage3d.js';
+import { installRichness } from '../../lib/richness.js';
+const VAULT = await (await fetch('captions_vault.json?v=1')).json();
+
+const PI = Math.PI;
+const SHOT_START = [0, 5.10, 10.43, 14.29, 19.45, 24.16, 27.89, 32.90, 36.14, 39.46];
+const SHOT_DUR = [5.10, 5.33, 3.86, 5.16, 4.71, 3.73, 5.01, 3.24, 3.32, 3.15];
+const TURQ = 0x5cc8d6, TURQ_P = 0xbfeef0, CREAM_LOW = 0xfff1d6, FOG = 0xe8f8f6;
+const NAVY = 0x1f2f6b, NAVY_L = 0x2d4390;
+const GOLD = 0xffc83a, GOLD_L = 0xffe27a;
+const IVORY = 0xfff6e6, IVORY_D = 0xeedcbb;
+const RUBY = 0xb3193b, RUBY_L = 0xe0405f;
+const MINT = 0x8fe3b0, MINT_D = 0x52c08a, MINT_L = 0xc2f5d6;
+const BRASS = 0xc9a24a, BRASS_L = 0xe9c86a, COPPER = 0xc46f3a;
+const SLATE = 0x6b6a8a, SLATE_L = 0x8f8fa8;
+const ORB = 0xfff6dc, PINK = 0xff8fb8, YEL = 0xffe27a, ORANGE = 0xffa04a;
+const WHITE = 0xffffff, AQUA = 0xa8ecff, WATER = 0xf2fdff, SUN = 0xffd86b, CLOUD = 0xffffff, INK = 0x4a3a40;
+
+const P = (t, a, b) => clamp((t - a) / (b - a), 0, 1);
+const sm = (t, a, b) => ease.sm(P(t, a, b));
+const mk = (geo, color, o) => { o = o || {}; return mesh(geo, toon(color, o.mat), Object.assign({ inkW: .008, inkColor: INK }, o)); };
+const put = (parent, geo, color, pos, o) => { const m = mk(geo, color, Object.assign({ pos }, o || {})); parent.add(m); return m; };
+const Sph = (r, a, b) => new THREE.SphereGeometry(r, a || 24, b || 16);
+const Cyl = (r1, r2, h, s) => new THREE.CylinderGeometry(r1, r2, h, s || 16);
+const Bx = (x, y, z) => new THREE.BoxGeometry(x, y, z);
+const Tor = (R, r, a) => new THREE.TorusGeometry(R, r, 12, 48, a || PI * 2);
+const camL = (pos, look, fov) => ({ pos, look, fov: fov || 50 });
+const kf = (T, keys) => {   // keys: [[t, x, z], ...]; eased path; y is set by the caller
+  if (T <= keys[0][0]) return [keys[0][1], keys[0][2]];
+  for (let i = 0; i < keys.length - 1; i++) {
+    const a = keys[i], b = keys[i + 1];
+    if (T <= b[0]) { const s = sm(T, a[0], b[0]); return [lerp(a[1], b[1], s), lerp(a[2], b[2], s)]; }
+  }
+  const l = keys[keys.length - 1]; return [l[1], l[2]];
+};
+
+function glowTex() {
+  const c = document.createElement('canvas'); c.width = c.height = 256;
+  const g = c.getContext('2d'), gr = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+  gr.addColorStop(0, 'rgba(255,250,225,1)'); gr.addColorStop(.3, 'rgba(255,230,160,.55)'); gr.addColorStop(1, 'rgba(255,220,150,0)');
+  g.fillStyle = gr; g.fillRect(0, 0, 256, 256);
+  return new THREE.CanvasTexture(c);
+}
+const GLOW = glowTex();
+function halo(S, scale, pos) {
+  const h = new THREE.Sprite(new THREE.SpriteMaterial({ map: GLOW, color: 0xffffff, transparent: true, opacity: .6, depthWrite: false, blending: THREE.AdditiveBlending }));
+  h.scale.setScalar(scale); if (pos) h.position.set(...pos); S.add(h); return h;
+}
+function heroBox(Wd, fn) {
+  const g = new THREE.Group(), m = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshBasicMaterial()); m.visible = false; g.add(m); Wd.add(g);
+  Wd.on(t => { const bs = fn(t).filter(Boolean); if (!bs.length) return; const lo = [1e9, 1e9, 1e9], hi = [-1e9, -1e9, -1e9];
+    for (const b of bs) for (let q = 0; q < 3; q++) { lo[q] = Math.min(lo[q], b[q] - b[q + 3]); hi[q] = Math.max(hi[q], b[q] + b[q + 3]); }
+    g.position.set((lo[0] + hi[0]) / 2, (lo[1] + hi[1]) / 2, (lo[2] + hi[2]) / 2); g.scale.set(Math.max(hi[0] - lo[0], .01), Math.max(hi[1] - lo[1], .01), Math.max(hi[2] - lo[2], .01)); });
+  Wd.hero = g; return g;
+}
+function sign(Wd, text, pos, o) {
+  o = o || {};
+  const sp = label(Wd, text, { size: o.size || 96, height: o.height || .6, bg: o.bg === undefined ? 'rgba(255,241,214,.96)' : o.bg,
+    color: o.color || '#3a2a2a', weight: 800, pos });
+  sp.userData.text = true; sp.visible = false; return sp;
+}
+// the sky: turquoise overhead, pale turquoise lower, a cream band at the horizon
+function skyDome(Wd) {
+  Wd.sky.visible = false;
+  const m = new THREE.Mesh(new THREE.SphereGeometry(260, 32, 16), new THREE.ShaderMaterial({
+    side: THREE.BackSide, depthWrite: false, fog: false,
+    uniforms: { top: { value: new THREE.Color(TURQ) }, pale: { value: new THREE.Color(TURQ_P) }, cream: { value: new THREE.Color(CREAM_LOW) } },
+    vertexShader: 'varying vec3 vP; void main(){ vP = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+    fragmentShader: 'uniform vec3 top; uniform vec3 pale; uniform vec3 cream; varying vec3 vP; void main(){ float h = vP.y; vec3 up = mix(pale, top, smoothstep(0.03, 0.42, h)); vec3 c = mix(cream, up, smoothstep(-0.01, 0.07, h)); gl_FragColor = vec4(c, 1.0); }' }));
+  m.renderOrder = -10; Wd.scene.add(m);
+}
+
+// ---- the terrace (static; hidden in the nature shots) ----
+function base(S0) {
+  const S = new THREE.Group(); S0.add(S);
+  put(S, Cyl(16, 16, .3, 48), MINT, [0, -6.55, 0], { ink: false });                       // lawn disc
+  put(S, Cyl(3.2, 3.2, .8, 40), IVORY, [0, -6.0, 0], { ink: false });                     // dais base
+  put(S, Cyl(2.5, 2.5, .8, 40), IVORY_D, [0, -5.2, 0], { ink: false });                   // dais middle
+  put(S, Cyl(1.8, 1.8, .8, 40), IVORY, [0, -4.4, 0], { ink: false });                     // dais top (surface y = -4.0)
+  for (let i = 0; i < 4; i++) { const a = i * PI / 2 + PI / 4;                              // gold studs on the dais rim
+    put(S, Sph(.14, 14, 10), GOLD, [Math.cos(a) * 3.2, -5.9, Math.sin(a) * 3.2], { ink: false }); }
+  [[-6.6, -3.2], [6.6, -3.2], [-9.2, -6.8], [9.2, -6.8]].forEach(([x, z]) => {
+    put(S, Cyl(.55, .62, 8.4, 20), IVORY, [x, -2.2, z], { ink: false });
+    put(S, Bx(1.5, .35, 1.5), GOLD, [x, 2.1, z], { ink: false });
+    put(S, Bx(1.5, .35, 1.5), GOLD, [x, -6.1, z], { ink: false }); });
+  [[-4.8, -2.8], [4.8, -2.8]].forEach(([x, z]) => {
+    put(S, Cyl(.07, .07, 6.8, 8), GOLD, [x, -.4, z], { ink: false });
+    put(S, Bx(1.7, 4.4, .08), NAVY, [x, -.6, z + .05], { ink: false });
+    put(S, Bx(1.8, .14, .14), GOLD, [x, 1.9, z + .05], { ink: false });
+    put(S, Bx(1.7, .12, .1), GOLD, [x, -2.9, z + .07], { ink: false }); });
+  [[-7.4, 1.5], [7.6, 1.2], [-5.6, 5.8], [5.4, 5.4], [-8.8, -1.2], [9.0, -1.8], [0, -8.8], [-4.2, -8.0], [4.4, -8.4]].forEach(([x, z], i) => {
+    put(S, Sph(1.1 + .2 * (i % 3), 24, 16), i % 2 ? MINT_D : MINT_L, [x, -5.6, z], { ink: false }).scale.set(1, .75, 1); });
+  [[-2.6, 6.4], [2.6, 6.4], [-7.6, 4.4], [7.6, 4.2]].forEach(([x, z], i) => {
+    put(S, Cyl(.42, .3, .6, 16), COPPER, [x, -5.7, z], { ink: false });
+    put(S, Sph(.46, 16, 12), i % 2 ? PINK : YEL, [x, -5.0, z], { ink: false }); });
+  for (let x = -8; x <= 8.01; x += 1.6) put(S, Bx(.14, 1.0, .14), IVORY, [x, -5.9, 9.4], { ink: false });
+  put(S, Bx(16.2, .1, .12), IVORY, [0, -5.5, 9.4], { ink: false }); put(S, Bx(16.2, .1, .12), IVORY, [0, -6.2, 9.4], { ink: false });
+  put(S, Sph(1.6, 24, 18), SUN, [-7, 9.5, -22], { ink: false, mat: { emissive: SUN, emissiveIntensity: .8 } });
+  [[4.5, 8.5, -18, 2.6], [-4.5, 11, -20, 2.8], [1, 13.5, -22, 1.9], [-6.5, 6.5, -17, 2.2], [5.5, 6, -16, 2.0]].forEach(([x, y, z, s]) =>
+    put(S, Sph(1, 20, 14), CLOUD, [x, y, z], { ink: false, mat: { emissive: CLOUD, emissiveIntensity: .35 } }).scale.set(s, s * .32, s * .5));
+  return S;
+}
+
+function objects(E, S) {
+  // ---- the crown on a ruby cushion (the hero) ----
+  E.crownG = new THREE.Group(); S.add(E.crownG);
+  E.crownMats = [];
+  const gold = (geo, pos, rot, c) => { const m = put(E.crownG, geo, c || GOLD, pos, { ink: false, rot: rot || [0, 0, 0], mat: { emissive: GOLD, emissiveIntensity: .55 } }); E.crownMats.push(m); return m; };
+  put(E.crownG, Cyl(1.25, 1.32, .38, 40), RUBY, [0, -3.81, 0], { ink: false });
+  put(E.crownG, Tor(1.25, .1, PI * 2), RUBY_L, [0, -3.62, 0], { ink: false, rot: [PI / 2, 0, 0] });
+  gold(Tor(.95, .14, PI * 2), [0, -3.38, 0], [PI / 2, 0, 0]);
+  gold(Cyl(.95, .95, .5, 40), [0, -3.1, 0]);
+  for (let i = 0; i < 5; i++) {
+    const a = i * PI * 2 / 5, x = Math.sin(a) * .8, z = Math.cos(a) * .8;
+    gold(new THREE.ConeGeometry(.22, 1.1, 14), [x, -2.1, z], [0, 0, 0]);
+    const j = put(E.crownG, Sph(.16, 14, 10), RUBY_L, [x * 1.2, -1.45, z * 1.2], { ink: false, mat: { emissive: RUBY_L, emissiveIntensity: .6 } }); E.crownMats.push(j);
+  }
+  gold(Sph(.22, 14, 10), [0, -1.4, 0]);
+  E.haloC = halo(S, 6.5, [0, -2.4, 0.2]);
+  E.plqA = sign(E.Wd, VAULT.LBL_A, [0, -5.1, 2.1], { size: 96, height: .6, bg: 'rgba(255,250,240,.97)' });
+  E.plqA.visible = true;
+  // ---- the people: small cream orbs (not faces, not figures) ----
+  E.grid = [];
+  const gp = [[-3, 4.8], [-1.5, 4.8], [0, 4.8], [1.5, 4.8], [3, 4.8], [-2.2, 6.8], [-0.7, 6.8], [0.8, 6.8], [2.3, 6.8], [-1.5, 8.6], [0, 8.6], [1.5, 8.6]];
+  gp.forEach(([x, z], i) => E.grid.push({ m: put(S, Sph(.36, 24, 18), ORB, [x, -6.04, z], { ink: false, mat: { emissive: ORB, emissiveIntensity: .6 } }), i, x, z }));
+  const orb = () => put(S, Sph(.36, 24, 18), ORB, [0, -6.04, 8.4], { ink: false, mat: { emissive: ORB, emissiveIntensity: .8 } });
+  E.orbA = orb(); E.orbB = orb(); E.orbC = orb(); E.orbL = orb();
+  // S1: lantern path from the dais outward (lit one by one on "needs us")
+  E.lanterns = [];
+  for (let i = 0; i < 10; i++) {
+    const z = 4.2 + i * .62;
+    [-1.6, 1.6].forEach(x => {
+      put(S, Cyl(.04, .05, .7, 8), BRASS, [x, -6.0, z], { ink: false });
+      const L = put(S, Sph(.2, 16, 12), YEL, [x, -5.5, z], { ink: false, mat: { emissive: YEL, emissiveIntensity: .1 } });
+      E.lanterns.push({ m: L, i }); });
+  }
+  // S3: the fork: a post with sign LBL_C at the split, the dim slate branch to the right
+  E.fork = sign(E.Wd, VAULT.LBL_C, [2.7, -4.6, 4.8], { size: 96, height: .6, bg: 'rgba(255,250,240,.97)' });
+  put(S, Cyl(.06, .06, 2.0, 8), BRASS, [2.7, -5.2, 4.8], { ink: false });
+  for (let i = 0; i < 9; i++) {
+    const t = i / 8, x = lerp(2.2, 4.6, t), z = lerp(4.6, 8.8, t) + .05 * Math.sin(i * 1.7);
+    put(S, Sph(.42, 14, 10), SLATE, [x + .3 * Math.sin(i), -6.2, z], { ink: false, mat: { emissive: SLATE, emissiveIntensity: .05 } }).scale.set(1.2, .4, 1); }
+  // S2: the plaque that rises beside the dais (about a third of the frame width)
+  E.plqB = sign(E.Wd, VAULT.LBL_B, [-0.6, -7.2, 4.2],{ size: 96, height: .75, bg: 'rgba(255,250,240,.97)' });
+  // S3: the navy banner hanging above the orb rows
+  E.plqH = sign(E.Wd, VAULT.LBL_H, [1.4, -3.2, 8.8],{ size: 96, height: .6, bg: 'rgba(31,47,107,.96)', color: '#fff7e8' });
+  // S4: the brass-copper clockwork, the hero of the robots shot
+  E.CW = new THREE.Group(); E.CW.position.set(6.2, -6.2, -.4); S.add(E.CW);
+  put(E.CW, Cyl(2.1, 2.3, .8, 32), COPPER, [0, .4, 0], { ink: false });
+  put(E.CW, Cyl(2.0, 2.0, .3, 32), BRASS, [0, .95, 0], { ink: false });
+  const gear = (x, y, R, n, c) => { const g = new THREE.Group(); g.position.set(x, y, 1.1); E.CW.add(g);
+    put(g, Cyl(R, R, .24, 28), c, [0, 0, 0], { ink: false, rot: [PI / 2, 0, 0] });
+    for (let i = 0; i < n; i++) { const a = i * PI * 2 / n; put(g, Bx(.24, .24, .34), BRASS_L, [Math.cos(a) * (R + .1), Math.sin(a) * (R + .1), 0], { ink: false }); }
+    return g; };
+  E.g1 = gear(-.8, 2.5, .95, 8, BRASS);
+  E.g2 = gear(.55, 1.7, .6, 6, BRASS_L);
+  E.g3 = gear(-2.0, 1.9, .5, 6, BRASS_L);
+  E.orr = new THREE.Group(); E.orr.position.set(0, 3.3, .6); E.CW.add(E.orr);
+  put(E.orr, Sph(.36, 20, 14), YEL, [0, 0, 0], { ink: false, mat: { emissive: YEL, emissiveIntensity: .7 } });
+  [.9, 1.35, 1.75].forEach(R => put(E.orr, Tor(R, .03, PI * 2), BRASS_L, [0, 0, 0], { ink: false, rot: [PI / 2, 0, 0] }));
+  E.pl1 = put(E.orr, Sph(.14, 14, 10), PINK, [.9, 0, 0], { ink: false });
+  E.pl2 = put(E.orr, Sph(.11, 14, 10), MINT_D, [1.35, 0, 0], { ink: false });
+  E.pl3 = put(E.orr, Sph(.12, 14, 10), AQUA, [1.75, 0, 0], { ink: false });
+  E.railG = new THREE.Group(); E.railG.position.set(0, 1.12, 0); E.CW.add(E.railG);
+  put(E.railG, Tor(1.6, .04, PI * 2), BRASS, [0, 0, 0], { ink: false, rot: [PI / 2, 0, 0] });
+  E.cars = [RUBY, NAVY_L, MINT_D].map(c => { const car = new THREE.Group(); E.railG.add(car);
+    put(car, Bx(.42, .2, .3), c, [0, .16, 0], { ink: false });
+    [-.15, .15].forEach(z => put(car, Cyl(.07, .07, .05, 10), INK, [0, .05, z], { ink: false, rot: [PI / 2, 0, 0] }));
+    return car; });
+  E.meto = new THREE.Group(); E.meto.position.set(1.4, .95, 1.0); E.CW.add(E.meto);
+  put(E.meto, Bx(.26, 1.7, .14), COPPER, [0, .85, 0], { ink: false });
+  E.clkSign = sign(E.Wd, VAULT.LBL_D, [6.2, -0.7, -0.4], { size: 96, height: .55 });
+  E.clkPlq = sign(E.Wd, VAULT.LBL_E, [6.2, -2.6, 3.0],{ size: 96, height: .55, bg: 'rgba(255,250,240,.97)' });
+  // S5: the warped lens (kept: approved)
+  E.lens = new THREE.Group(); E.lens.position.set(-6.2, -.8, 3.0); S.add(E.lens);
+  put(E.lens, Tor(1.9, .2, PI * 2), GOLD, [0, 0, 0], { ink: false, mat: { emissive: GOLD, emissiveIntensity: .4 } });
+  put(E.lens, new THREE.CircleGeometry(1.75, 40), AQUA, [0, 0, -.02], { ink: false, mat: { transparent: true, opacity: .18 } });
+  put(S, Cyl(.25, .4, 3.8, 16), GOLD, [-6.2, -4.6, 3.0], { ink: false });
+  const wavy = []; for (let i = 0; i <= 24; i++) { const y = -6.4 + i * .5; wavy.push(new THREE.Vector3(-6.2 + .55 * Math.sin(y * 1.1), y, 1.2)); }
+  E.wavy = mk(new THREE.TubeGeometry(new THREE.CatmullRomCurve3(wavy), 80, .42, 14, false), IVORY, { ink: false });
+  S.add(E.wavy);
+  E.straight = [put(S, Cyl(.42, .42, 12.8, 18), IVORY, [-9.6, .0, .8], { ink: false }), put(S, Cyl(.42, .42, 12.8, 18), IVORY, [-2.8, .0, .8], { ink: false })];
+  // S6: the garden arch, the nature reveal (waterfall, rainbow, big flowers) and the slate sign
+  E.arch = new THREE.Group(); S.add(E.arch);
+  put(E.arch, Cyl(.36, .36, 6.0, 16), IVORY, [-2.2, -3.4, 6.0], { ink: false });
+  put(E.arch, Cyl(.36, .36, 6.0, 16), IVORY, [2.2, -3.4, 6.0], { ink: false });
+  put(E.arch, Tor(2.2, .26, PI), GOLD, [0, -.4, 6.0], { ink: false });
+  for (let i = 0; i <= 8; i++) { const a = i * PI / 8, x = Math.cos(a) * 2.2, y = Math.sin(a) * 2.2 - .4;
+    put(E.arch, Sph(.32, 14, 10), [PINK, YEL, WHITE][i % 3], [x, y, 6.0], { ink: false }); }
+  for (let i = 0; i < 14; i++) { const x = -5.5 + i * .85, z = 7.6 + (i % 2) * .6;
+    put(E.arch, Sph(.34, 14, 10), [PINK, YEL, WHITE, MINT_L][i % 4], [x, -5.9, z], { ink: false }); }
+  E.nature = new THREE.Group(); S.add(E.nature);
+  put(E.nature, Sph(3.6, 28, 18), MINT_D, [-6.5, -3.4, -13.5], { ink: false }).scale.set(1, .7, 1);
+  put(E.nature, Sph(3.6, 28, 18), MINT, [6.5, -3.4, -13.5], { ink: false }).scale.set(1, .7, 1);
+  put(E.nature, Bx(6.4, 8.6, 2.2), MINT_D, [0, .6, -14], { ink: false });
+  E.water = put(E.nature, Bx(2.4, 8.0, .25), WATER, [0, .4, -12.8], { ink: false, mat: { transparent: true, opacity: .95, emissive: WATER, emissiveIntensity: .45 } });
+  put(E.nature, Cyl(3.2, 3.2, .2, 36), AQUA, [0, -6.2, -12.6], { ink: false });
+  [-.6, .6].forEach(x => put(E.nature, Bx(.18, 7.0, .1), WHITE, [x, .4, -12.6], { ink: false, mat: { emissive: WHITE, emissiveIntensity: .8 } }));
+  E.rain = [[RUBY_L, 6.2], [ORANGE, 6.6], [YEL, 7.0], [MINT_D, 7.4], [AQUA, 7.8], [PINK, 8.2]].map(([c, R]) =>
+    put(E.nature, Tor(R, .2, PI), c, [0, -1.5, -12.5], { ink: false, mat: { emissive: c, emissiveIntensity: .25 } }));
+  E.flowers = [];
+  for (let i = 0; i < 9; i++) { const x = -6.5 + i * 1.6, z = -7.5 - (i % 3) * 1.2;
+    const g = new THREE.Group(); g.position.set(x, -5.9, z); E.nature.add(g);
+    put(g, Cyl(.07, .07, 2.2, 8), MINT_D, [0, 1.1, 0], { ink: false });
+    const c = [PINK, YEL, WHITE][i % 3];
+    const h = put(g, Sph(.7, 24, 18), c, [0, 2.4, 0], { ink: false, mat: { emissive: c, emissiveIntensity: .25 } });
+    E.flowers.push({ g, h }); }
+  // big foreground flowers (camera at about their height), opening in the shot
+  [[-1.0, 0.3, -0.2, PINK], [1.1, 0.5, -0.4, YEL], [2.0, -0.6, -1.2, WHITE]].forEach(([x, y, z, c]) => {
+    const g = new THREE.Group(); g.position.set(x, -6.2, z); E.nature.add(g);
+    put(g, Cyl(.1, .1, y + 6.2, 8), MINT_D, [0, (y + 6.2) / 2, 0], { ink: false });
+    const h = put(g, Sph(.55, 24, 18), c, [0, y + 6.2, 0], { ink: false, mat: { emissive: c, emissiveIntensity: .3 } });
+    E.flowers.push({ g, h }); });
+  E.sun2 = put(E.nature, Sph(2.0, 24, 18), SUN, [-5, 8, -22], { ink: false, mat: { emissive: SUN, emissiveIntensity: .9 } });
+  E.lblF = sign(E.Wd, VAULT.LBL_F, [0, 3.2, -9.5], { size: 96, height: .7, bg: 'rgba(255,250,240,.97)' });
+  E.slate = sign(E.Wd, VAULT.LBL_G, [0.3, -0.9, -3.5],{ size: 96, height: .45, bg: 'rgba(107,106,138,.97)', color: '#f4f6fa' });
+  // everything that must vanish in the nature shots (the crown, the terrace, the people, the machine)
+  E.natHide = [E.crownG, E.haloC, E.plqA, E.plqB, E.plqH, E.fork, E.clkSign, E.clkPlq, E.CW, E.lens, E.wavy, ...E.straight,
+    E.orbA, E.orbB, E.orbC, E.orbL, ...E.grid.map(g => g.m), ...E.lanterns.map(l => l.m)];
+}
+
+function scene(k) {
+  const Wd = world({ fogColor: FOG, fogNear: 45, fogFar: 170, skyTop: TURQ, skyBottom: CREAM_LOW, hemiSky: 0xfff8ee, hemiGround: 0xd8c8a0, hemi: 1, sunColor: 0xfff0d0, sun: .6, sunPos: [-6, 12, 8], shadowExt: 14, skyR: 260 });
+  skyDome(Wd);
+  const S = Wd.scene;
+  const E = { Wd, S, k };
+  E.terrace = base(S);
+  objects(E, S);
+  const rich = installRichness(S); Wd.on(rich.onFrame);
+  heroBox(Wd, [
+    () => [[0, -2.6, 0, 2.4, 2.8, 2.4]],
+    () => [[0, -3.4, 3.0, 3.0, 2.8, 3.0]],
+    () => [[0, -3.0, 4.0, 4.0, 3.5, 4.0]],
+    () => [[0, -3.0, 4.0, 4.0, 3.5, 4.0]],
+    () => [[6.2, -2.4, -0.4, 2.4, 3.0, 2.4]],
+    () => [[6.2, -2.4, -0.4, 2.4, 3.0, 2.4]],
+    () => [[-6.2, -1.0, 3.0, 2.2, 3.0, 2.0]],
+    () => [[-6.2, -1.0, 3.0, 2.2, 3.0, 2.0]],
+    () => [[0, 0, -10, 6, 6, 4]],
+    () => [[0, 0, -8, 5, 6, 4]]][k]);
+  return E;
+}
+
+function drive(E, T) {
+  const k = E.k;
+  const nat = T >= 36.1;
+  // crown: brighter with each arrival, one stronger pulse when the plaque rises
+  const arrive = ts => ts.reduce((s, t0) => s + sm(T, t0, t0 + .4), 0) * .35;
+  const pulse = sm(T, 9.0, 9.3) * (1 - sm(T, 9.7, 10.4)) * .6;
+  const I = .55 + arrive([12.9, 13.8, 18.4]) + pulse;
+  E.crownMats.forEach(m => { m.material.emissiveIntensity = Math.min(I, 2.2) * (m.material.emissive && m.material.emissive.getHex() === RUBY_L ? .6 : 1); });
+  E.haloC.material.opacity = clamp(.28 + .35 * (I - .55), .2, .9);
+  E.haloC.scale.setScalar(6.5 + 2.2 * (I - .55));
+  // S1: lantern path lights from the dais outward on "needs us"
+  E.lanterns.forEach(({ m, i }) => { const v = sm(T, 6.6 + i * .16, 6.95 + i * .16); m.material.emissiveIntensity = .1 + 2.2 * v; });
+  // S2: the people pop up in neat rows; the plaque rises beside the dais
+  E.grid.forEach(({ m, i }) => { const t0 = 8.4 + i * .07; m.visible = T >= t0 - .01; m.scale.setScalar(Math.max(sm(T, t0, t0 + .4), .001)); m.position.y = -6.04 + .05 * Math.sin(T * 2 + i) * (T > 9 ? 1 : 0); });
+  E.plqB.visible = T >= 8.6 && T < 19.4; E.plqB.position.y = lerp(-7.2, -4.0, sm(T, 8.7, 9.6));
+  E.plqH.visible = T >= 8.4 && T < 19.4;
+  E.plqA.visible = true;
+  E.fork.visible = T >= 10.4 && T < 19.4;
+  // S3: orb A rolls to the dim side path, hesitates, turns back and rolls to the crown; B and C roll to the crown
+  const oy = -6.04;
+  let p = kf(T, [[10.2, 0, 8.4], [11.0, .2, 6.6], [11.6, .5, 5.2], [12.6, 2.9, 4.7], [13.4, 4.3, 6.0], [13.9, 4.6, 8.4], [14.8, 4.6, 8.4], [15.9, 4.0, 5.0], [16.8, 2.0, 4.2], [17.6, .4, 3.9], [18.4, 0, 3.8]]);
+  E.orbA.position.set(p[0], oy + .04 * Math.sin(T * 5), p[1]);
+  E.orbA.visible = T >= 10.2 && T < 18.6; E.orbA.scale.setScalar(Math.max(sm(T, 10.2, 10.6) * (1 - sm(T, 18.3, 18.6)), .001));
+  p = kf(T, [[10.4, -2.2, 8.4], [11.6, -.9, 4.9], [12.9, 0, 3.9]]);
+  E.orbB.position.set(p[0], oy, p[1]); E.orbB.visible = T >= 10.4 && T < 13.0; E.orbB.scale.setScalar(Math.max(sm(T, 10.4, 10.8) * (1 - sm(T, 12.6, 12.95)), .001));
+  p = kf(T, [[11.0, 2.2, 8.6], [12.6, .9, 5.2], [13.8, 0, 3.95]]);
+  E.orbC.position.set(p[0], oy, p[1]); E.orbC.visible = T >= 11.0 && T < 14.1; E.orbC.scale.setScalar(Math.max(sm(T, 11.0, 11.4) * (1 - sm(T, 13.6, 14.0)), .001));
+  // S5: an orb rolls in front of the lens
+  p = kf(T, [[27.9, -5.4, 7.0], [30.2, -6.2, 5.0], [33.4, -6.2, 5.0]]);
+  E.orbL.position.set(p[0], oy, p[1]); E.orbL.visible = T >= 27.9 && T < 33.4; E.orbL.scale.setScalar(Math.max(sm(T, 27.9, 28.3), .001));
+  // S4: the clockwork: every part moves on a fixed loop, never leaving its track; the crown does not flare
+  E.CW.visible = T >= 19.4 && T < 27.9;
+  E.g1.rotation.z = T * .9; E.g2.rotation.z = -T * 1.5; E.g3.rotation.z = T * 1.1;
+  E.pl1.position.set(Math.cos(T * .9) * .9, Math.sin(T * .9) * .9, 0);
+  E.pl2.position.set(Math.cos(T * .5) * 1.35, Math.sin(T * .5) * 1.35, 0);
+  E.pl3.position.set(Math.cos(T * .3) * 1.75, Math.sin(T * .3) * 1.75, 0);
+  E.orr.rotation.y = T * .15;
+  E.cars.forEach((c, i) => { const a = T * .55 + i * 2.094; c.position.set(Math.cos(a) * 1.6, 0, Math.sin(a) * 1.6); c.rotation.y = -a; });
+  E.meto.rotation.z = .32 * Math.sin(T * 2 * PI / 1.2);
+  E.clkSign.visible = T >= 19.5 && T < 27.9; E.clkPlq.visible = T >= 21.0 && T < 27.9;
+  // S5: the lens (outside the lens the columns stay straight)
+  E.lens.visible = T >= 27.8 && T < 36.2; E.wavy.visible = E.lens.visible; E.straight.forEach(m => { m.visible = E.lens.visible; });
+  // S6: the arch and the nature reveal
+  E.arch.visible = nat; E.nature.visible = nat;
+  E.lblF.visible = T >= 36.4 && T < 42.7;
+  E.flowers.forEach(({ g, h }, i) => { const s = sm(T, 36.4 + i * .08, 37.4 + i * .08); h.scale.setScalar(.45 + .55 * s); });
+  E.rain.forEach((r, i) => { r.scale.setScalar(Math.max(sm(T, 36.8 + i * .12, 38.2 + i * .12), .001)); });
+  E.water.material.opacity = .9 + .05 * Math.sin(T * 6);
+  E.water.position.y = .4 + .25 * Math.sin(T * 4);
+  // slate sign pops up at the last word, wobbles, then holds calm
+  E.slate.visible = T >= 40.4;
+  E.slate.scale.setScalar(Math.max(sm(T, 40.4, 40.9), .001));
+  E.slate.material.rotation = .12 * Math.sin(T * 7) * (1 - sm(T, 41.2, 42.0));
+  if (nat) E.natHide.forEach(o => { o.visible = false; });
+}
+
+function build(k) {
+  const E = scene(k);
+  const CAMS = [
+    lt => { const th = lerp(-1.1, -.25, P(lt, 0, 5.1)); return camL([11 * Math.sin(th), 1.8, 11 * Math.cos(th)], [0, -2.6, 0]); },
+    lt => { const q = P(lt, 0, 5.33), th = lerp(-.25, .35, q), r = lerp(12.5, 11, q); return camL([r * Math.sin(th), lerp(4.2, 4.8, q), r * Math.cos(th)], [0, -4.0, 3.0]); },
+    lt => { const q = P(lt, 0, 3.86); return camL([.5, -.8, lerp(12.5, 11, q)], [.2, -3.4, 4.0]); },
+    lt => { const q = P(lt, 0, 5.16); return camL([lerp(3.4, 2.8, q), lerp(3.8, 3.4, q), lerp(13.5, 11.5, q)], [1.4, -5.6, 5.4]); },
+    lt => camL([5.8, -1.0, 15.5], [6.0, -2.6, -0.4], 50),
+    lt => { const q = P(lt, 0, 3.73); return camL([5.8, -1.0, lerp(15.5, 14.5, q)], [6.0, -2.6, -0.4], 50); },
+    lt => camL([-3.8, -1.0, 12], [-6.2, -1.2, 2.5]),
+    lt => { const q = P(lt, 0, 3.24); return camL([-3.8, -1.2, lerp(12, 11, q)], [-6.2, -1.2, 2.5]); },
+    lt => { const q = P(lt, 0, 3.32); return camL([0, lerp(-2.0, -.4, q), lerp(14, 4, q)], [0, lerp(-.8, .4, q), -12]); },
+    lt => camL([0, -1.2, 4.2], [0, .6, -12]),
+  ];
+  E.Wd.cam = CAMS[k];
+  E.Wd.on(t => drive(E, SHOT_START[k] + t));
+  return E.Wd;
+}
+
+const SH = (id, dur, caps, capAt, k) => ({ id, dur, wide: true, caps, capAt, build: () => build(k) });
+film({
+  W: 1080, H: 1920, xf: .0001, vault: 'captions_vault.json',
+  shots: [
+    SH('s01', SHOT_DUR[0], ['G_CAP_01'], [0], 0),
+    SH('s02', SHOT_DUR[1], ['G_CAP_04'], [0], 1),
+    SH('s03', SHOT_DUR[2], ['G_CAP_07'], [0], 2),
+    SH('s04', SHOT_DUR[3], ['G_CAP_08'], [0], 3),
+    SH('s05', SHOT_DUR[4], ['G_CAP_11'], [0], 4),
+    SH('s06', SHOT_DUR[5], ['G_CAP_14'], [0], 5),
+    SH('s07', SHOT_DUR[6], ['G_CAP_17'], [0], 6),
+    SH('s08', SHOT_DUR[7], ['G_CAP_20'], [0], 7),
+    SH('s09', SHOT_DUR[8], ['G_CAP_23'], [0], 8),
+    SH('s10', SHOT_DUR[9], ['G_CAP_26'], [0], 9),
+  ]
+});
+</script>
+</html>
