@@ -404,20 +404,20 @@ window.STORY = function (K) {
   // ================================================================ ANSWER (20 s): slow crane over the table; the teapot at one side with a closed lid and a gentle smile; the blue cup at the other side, blue and happy again; the dark bubble small and crossed out between them
   function answer(dur) {
     const Wd = mkWorld({}); const B = build(Wd);
-    B.tp.g.position.set(-2.1, TOP, PZ); B.tp.g.rotation.y = .3;
-    B.cup.g.position.set(2.1, TOP, PZ); B.cup.g.rotation.y = -.3;
+    B.tp.g.position.set(-2.3, TOP, PZ + .6); B.tp.g.rotation.y = .3;
+    B.cup.g.position.set(2.3, TOP, PZ + .6); B.cup.g.rotation.y = -.3;
     B.lis.forEach(l => { l.g.visible = false; });
     const cx = mark3d(Wd, 'cross', 1.6);
-    cx.set([0, TOP + .6, PZ + .5], 1, 0);
+    cx.set([0, TOP + .6, PZ + .5], 0, 0); B.bub.g.visible = false;
     Wd.occ = [B.tp.g, B.cup.g]; Wd.center = [0, 1.2]; Wd.ansD = 6.4;
     Wd.on(t => {
       B.bub.g.position.set(0, TOP + .55 + .02 * Math.sin(t * 1.6), PZ);
-      B.bub.g.scale.setScalar(.5);
+      B.bub.g.scale.setScalar(.001);
       B.tp.f.set(t, { smile: .4, talk: .3 * talkAmt(t, 37), look: [1, 0] });
       B.cup.f.set(t, { smile: .9, talk: 0, look: [0, 0] });
       setWhite(B.cup, .001);
     });
-    Wd.camAns = cuts([[dur, HH(crane([0, 1.2, PZ], { dur, dist0: 10, dist1: 9.4, h0: 1.0, h1: 2.4, a0: 6, a1: -6, fov0: 44, fov1: 42, ease: 'out' }), 25)]]);
+    Wd.camAns = cuts([[dur, HH(crane([0, 1.5, PZ], { dur, dist0: 8.8, dist1: 8.4, h0: 1.0, h1: 2.2, a0: 6, a1: -6, fov0: 44, fov1: 42, ease: 'out' }), 25)]]);
     return Wd;
   }
 
