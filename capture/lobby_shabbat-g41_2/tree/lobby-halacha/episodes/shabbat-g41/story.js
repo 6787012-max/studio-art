@@ -235,7 +235,7 @@ window.STORY = function (K) {
     const dots = mkDots(Wd, 9, 0xffd07a, .022);
     const tN = tag(Wd, 'כל היום', 'green', 2.0);
     Wd.on(t => {
-      const u = sm(P(.6, 11, t));
+      const u = sm(P(.6, 14.5, t));
       const s = sunAt(u); sun.position.set(s[0], s[1], s[2]);
       dots.forEach((d, i) => { const q = sunAt(i / 8); d.position.set(q[0], q[1], q[2]); d.scale.setScalar(Math.max(.001, popE(P(.2 + .08 * i, 1.0 + .08 * i, t)) * .9)); });
       cup.f.set(t, { talk: t > 2 ? .4 * talkAmt(t, SEED_CUP) : 0, smile: .6, look: [.4, 0] });
@@ -248,7 +248,7 @@ window.STORY = function (K) {
       [3.5, HH(truck([0, 2.2, 0], { dur: 3.5, dist0: 8.6, dist1: 8.4, h0: .6, h1: .5, a0: -8, a1: 8, fov0: 42, fov1: 42 }), 16)],
       [4.0, HH(punch(pushIn(C4, { dur: 4.0, dist0: 6.2, dist1: 5.8, h0: .5, h1: .5, a0: 8, a1: -6, fov0: 40, fov1: 40 }), [3.0]), 17)],
       [3.5, HH(punch(insert(C4, { dur: 3.5, dist0: 5.2, dist1: 4.8, h0: .3, h1: .3, a0: -10, a1: 8, fov0: 36, fov1: 34 }), [3.6]), 18)],
-      [3.0, HH(pullOut([0, 2.3, -1.6], { dur: 3.0, dist0: 6.0, dist1: 7.0, h0: .5, h1: .6, a0: 6, a1: -6, fov0: 40, fov1: 42 }), 19)]
+      [5.0, HH(pullOut([0, 2.3, -1.6], { dur: 5.0, dist0: 6.0, dist1: 7.6, h0: .5, h1: .6, a0: 6, a1: -6, fov0: 40, fov1: 42 }), 19)]
     ]);
     return Wd;
   }
