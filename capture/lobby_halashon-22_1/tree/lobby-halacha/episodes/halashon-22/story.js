@@ -230,7 +230,7 @@ window.STORY = function (K) {
       dust.scale.setScalar(Math.max(.001, grow * (1 + .08 * Math.sin(t * 3) * sm(P(3, 4, t)))));
       spotG.position.set(rp[0], rp[1] + 2.0, 0);
       spotG.scale.setScalar(Math.max(.001, popE(P(3, 4, t))));
-      tMain.set([0, 2.95 + bob(t, 2), PZ], popE(P(4.2, 5.0, t)));
+      tMain.set([1.7, 2.45 + bob(t, 2), PZ], popE(P(4.2, 5.0, t)));
       B.tp.f.set(t, { smile: -.2, talk: .6 * talkAmt(t, 5), look: [1, 0] });
       B.tp.g.rotation.y = .5;
       B.cup.g.rotation.y = -.5;
@@ -259,7 +259,7 @@ window.STORY = function (K) {
       cd.position.y = CARD[1] + .05 * Math.sin(t * 1.8);
       forkA.set([0, 2.4, .7], tgA, sm(P(1.2, 2.4, t)));
       forkB.set([0, 2.4, .7], tgB, sm(P(1.2, 2.4, t)));
-      tMain.set([0, 2.95 + bob(t, 2), PZ], popE(P(1.5, 2.3, t)));
+      tMain.set([1.9, 1.95 + bob(t, 2), PZ], popE(P(1.5, 2.3, t)));
       B.tp.f.set(t, { smile: .2, talk: .6 * talkAmt(t, 9), look: [1, 0] });
       B.tp.g.rotation.y = .4;
       B.cup.g.rotation.y = -.6;
@@ -324,7 +324,7 @@ window.STORY = function (K) {
       B.cup.g.rotation.y = -.5;
       B.cup.f.set(t, { smile: 1, talk: .3 * talkAmt(t, 15) * sm(P(3, 4, t)), look: [-1, 0] });
       ck.set([1.8, 2.6 + bob(t, 2), .6], popE(P(4.6, 5.4, t)));
-      tMain.set([0, 3.25 + bob(t, 4), PZ], popE(P(6, 7, t)));
+      tMain.set([2.3, 2.2 + bob(t, 4), PZ], popE(P(6, 7, t)));
       idleLis(B, t);
     });
     Wd.cam = cuts([
@@ -358,7 +358,7 @@ window.STORY = function (K) {
       B.tp.g.rotation.y = .6;
       B.cup.g.rotation.y = -.6;
       B.cup.f.set(t, { smile: -.5, talk: 0, surprise: .6 * sm(P(3, 4, t)), look: [-1, 0] });
-      tMain.set([0, 3.1 + bob(t, 5), PZ], popE(P(4.5, 5.3, t)));
+      tMain.set([0, 2.5 + bob(t, 5), PZ], popE(P(4.5, 5.3, t)));
     });
     Wd.cam = cuts([
       [3.5, HH(crane([0, 1.4, PZ], { dur: 3.5, dist0: 9.8, dist1: 9.2, h0: 1.0, h1: 2.0, a0: -6, a1: 6, fov0: 44, fov1: 42 }), 61)],
@@ -388,7 +388,7 @@ window.STORY = function (K) {
       cloud.set(path(CA, CN, CO, f, s), popE(P(.8, 1.4, t)) * (1 - .4 * s));
       cx.set([0, 1.9, 1.1], popE(P(5.0, 5.8, t)) * .8, .05 * Math.sin(t * 4) * (t > 5.8 ? 1 : 0));
       sk.set([0, 1.9, .6], P(5.0, 5.8, t), 1.4);
-      tMain.set([0, 2.2 + bob(t, 4), PZ], popE(P(5.6, 6.4, t)));
+      tMain.set([-0.7, 1.3 + bob(t, 4), PZ + 1.2], popE(P(5.6, 6.4, t)));
       cd.position.y = CARD[1] + .04 * Math.sin(t * 1.6);
       B.tp.f.set(t, { smile: -.4, talk: .5 * talkAmt(t, 21), look: [1, 0] });
       B.tp.g.rotation.y = .6;
