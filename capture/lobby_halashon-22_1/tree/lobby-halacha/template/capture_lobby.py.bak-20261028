@@ -1,0 +1,136 @@
+# -*- coding: utf-8 -*-
+"""
+Remote capture (GitHub runner) of a lobby-halacha film part. Adapted from _studio-animatzia/tools/capture_remote.py.
+Differences: paths are relative to C:/projects (so the tree mirrors lobby-halacha/ and _studio-animatzia/ side by side and the
+relative imports of template/film.html keep working), and tools/capture.py is taken from the studio.
+    python template/capture_lobby.py <job> <scene.html> <out_dir> --dur 45 --include <files or folders relative to C:/projects>
+Only our own code is packed (the repo is public): the template, the episode, the studio lib and three.js.
+"""
+import argparse
+import io
+import json
+import os
+import shutil
+import subprocess
+import time
+
+ROOT = 'C:/projects'
+STUDIO = ROOT + '/_studio-animatzia'
+REPO = 'C:/projects/studio-art'
+
+# חשבון המכינה (בעל הריפו studio-art) — גם אם החשבון הפעיל של gh הוחלף
+try:
+    _tok = subprocess.run(['gh', 'auth', 'token', '-u', '6787012-max'], capture_output=True, text=True).stdout.strip()
+    if _tok:
+        os.environ['GH_TOKEN'] = _tok
+except Exception:
+    pass
+KEY = 0xA7
+NOWIN = getattr(subprocess, 'CREATE_NO_WINDOW', 0)
+BIN = ('.png', '.jpg', '.jpeg', '.webp', '.wav', '.mp3', '.flac', '.mp4')
+FONTS = ['C:/Windows/Fonts/Assistant-Bold.ttf', 'C:/Windows/Fonts/Assistant-Regular.ttf', 'C:/Windows/Fonts/SecularOne-Regular.ttf']
+xor = lambda b: bytes(x ^ KEY for x in b)
+
+
+def sh(cmd, check=True):
+    r = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace', creationflags=NOWIN)
+    if check and r.returncode:
+        raise SystemExit('FAILED: %s\n%s\n%s' % (' '.join(cmd), r.stdout[-1500:], r.stderr[-1500:]))
+    return r.stdout.strip()
+
+
+ap = argparse.ArgumentParser()
+ap.add_argument('job'); ap.add_argument('scene'); ap.add_argument('out_dir')
+ap.add_argument('--dur', type=float, required=True); ap.add_argument('--fps', type=int, default=30)
+ap.add_argument('--audio'); ap.add_argument('--include', nargs='+', default=[])
+a = ap.parse_args()
+R = os.path.join(REPO, 'capture', a.job)
+if os.path.isdir(R):
+    shutil.rmtree(R)
+os.makedirs(os.path.join(R, 'tree')); os.makedirs(os.path.join(R, 'fonts'))
+rel = lambda p: os.path.relpath(os.path.abspath(p), ROOT).replace(os.sep, '/')
+paths = set(a.include) | {os.path.dirname(rel(a.scene))} | ({rel(a.audio)} if a.audio else set())
+n = 0
+os.makedirs(os.path.join(R, 'tree', 'tools'), exist_ok=True)
+shutil.copy(STUDIO + '/tools/capture.py', os.path.join(R, 'tree', 'tools', 'capture.py')); n += 1
+for p in paths:
+    src = os.path.join(ROOT, p)
+    files = [src] if os.path.isfile(src) else [os.path.join(dp, f) for dp, _, fs in os.walk(src) for f in fs]
+    for f in files:
+        r = os.path.relpath(f, ROOT).replace(os.sep, '/')
+        if '/_work' in r or '/_stills/' in r or '/render/' in r or r.endswith(('.py', '.md')) or '/.git/' in r or ('/_part_' in r and r != rel(a.scene)) or \
+                (r.endswith('.mp4') and not (a.audio and r == rel(a.audio))):
+            continue
+        dst = os.path.join(R, 'tree', r + ('.bin' if r.lower().endswith(BIN) else ''))
+        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        with open(f, 'rb') as fi, open(dst, 'wb') as fo:
+            data = fi.read(); fo.write(xor(data) if r.lower().endswith(BIN) else data)
+        n += 1
+for f in FONTS:
+    shutil.copy(f, os.path.join(R, 'fonts'))
+job = {'scene': rel(a.scene), 'dur': a.dur, 'fps': a.fps, 'audio': rel(a.audio) if a.audio else None}
+io.open(os.path.join(R, 'job.json'), 'w', encoding='utf-8').write(json.dumps(job))
+print('packed %d files' % n, flush=True)
+
+LOCK = os.path.join(REPO, 'capture', '.dispatch.lock')
+
+
+def lock():
+    t = time.time()
+    while True:
+        try:
+            os.close(os.open(LOCK, os.O_CREAT | os.O_EXCL)); return
+        except FileExistsError:
+            if time.time() - os.path.getmtime(LOCK) > 600:   # נעילה יתומה
+                os.remove(LOCK)
+            time.sleep(3)
+
+
+def unlock():
+    if os.path.exists(LOCK):
+        os.remove(LOCK)
+
+
+lock()
+sh(['git', 'pull', '--rebase', '-q'], check=False)
+sh(['git', 'add', '-A']); sh(['git', 'commit', '-q', '-m', 'capture package ' + a.job], check=False)
+for _try in range(6):
+    if not subprocess.run(['git', 'push', '-q', 'origin', 'HEAD:main'], cwd=REPO, capture_output=True, creationflags=NOWIN).returncode:
+        break
+    sh(['git', 'pull', '--rebase', '-q'], check=False)
+else:
+    sh(['git', 'push', '-q', 'origin', 'HEAD:main'])
+before = sh(['gh', 'run', 'list', '--workflow', 'capture.yml', '--limit', '1', '--json', 'databaseId', '-q', '.[0].databaseId'], check=False)
+for _ in range(6):
+    r = subprocess.run(['gh', 'workflow', 'run', 'capture.yml', '-f', 'job=' + a.job], cwd=REPO, capture_output=True, text=True, creationflags=NOWIN)
+    if r.returncode == 0:
+        break
+    time.sleep(10)
+run_id = None
+for _ in range(40):
+    time.sleep(4)
+    rid = sh(['gh', 'run', 'list', '--workflow', 'capture.yml', '--limit', '1', '--json', 'databaseId', '-q', '.[0].databaseId'], check=False)
+    if rid and rid != before:
+        run_id = rid; break
+unlock()
+if not run_id:
+    raise SystemExit('capture run did not start')
+print('run', run_id, flush=True)
+t0 = time.time()
+r = subprocess.run(['gh', 'run', 'watch', run_id, '--exit-status', '--interval', '20'], cwd=REPO, capture_output=True, text=True,
+                   encoding='utf-8', errors='replace', creationflags=NOWIN)
+print('run finished: exit=%d  minutes=%.1f' % (r.returncode, (time.time() - t0) / 60), flush=True)
+if r.returncode:
+    print(sh(['gh', 'run', 'view', run_id, '--log-failed'], check=False)[-3000:]); raise SystemExit(1)
+lock()
+try:
+    sh(['git', 'pull', '--rebase', '-q'])
+finally:
+    unlock()
+os.makedirs(a.out_dir, exist_ok=True)
+src = os.path.join(R, 'out')
+for fn in os.listdir(src):
+    if fn.endswith('.bin'):
+        with open(os.path.join(src, fn), 'rb') as f, open(os.path.join(a.out_dir, fn[:-4]), 'wb') as g:
+            g.write(xor(f.read()))
+print(io.open(os.path.join(src, 'log.json'), encoding='utf-8').read())
