@@ -7,7 +7,7 @@ window.STORY = function (K) {
   const PI = Math.PI, sm = ease.sm, P = (a, b, t) => prog(t, a, b);
   const HH = (c, sd) => handheld(c, .03, sd);
   const cl01 = x => Math.min(1, Math.max(0, x));
-  const TOPY = .8, NUM = .45, SC = 1.35;
+  const TOPY = .8, NUM = .38, SC = 1.35;
   const ST = { gold: ['#fff4c2', '#7a5a00', '#d9a63a'], green: ['#f6fff2', '#1f6a2a', '#3f9a4a'], blue: ['#d9eaff', '#14408f', '#2f6ad0'],
                orange: ['#ffe4c4', '#8a3a00', '#e07a20'], grey: ['#ececec', '#4a4a4a', '#9a9a9a'], red: ['#ffe6e6', '#8a1010', '#e04040'], night: ['#14233f', '#ffffff', '#3a5fa0'] };
   const CLX = -.6, CLZ = .2;                    // the nail clipper standing on the table
@@ -126,7 +126,7 @@ window.STORY = function (K) {
   // Z = pull-back factor: every distance is multiplied, so tags and panels stay inside the frame
   const Z = 1.35;
   const std = (n, c) => cuts([
-    [3.5, HH(truck(c.wide, { dur: 3.5, dist0: (c.wd || 6.4) * Z, dist1: ((c.wd || 6.4) - .2) * Z, h0: .6, h1: .5, a0: -8, a1: 8, fov0: 42, fov1: 42 }), n)],
+    [3.5, HH(truck([c.wide[0], c.wide[1], -1.0], { dur: 3.5, dist0: (c.wd || 6.4) * Z, dist1: ((c.wd || 6.4) - .2) * Z, h0: .6, h1: .5, a0: -8, a1: 8, fov0: 42, fov1: 42 }), n)],
     [4.0, HH(punch(pushIn(c.med, { dur: 4.0, dist0: 3.4 * Z, dist1: 3.0 * Z, h0: .3, h1: .3, a0: 8, a1: -6, fov0: 42, fov1: 40 }), [c.pm]), n + 1)],
     [3.5, HH(punch(insert(c.ins, { dur: 3.5, dist0: 2.6 * Z, dist1: 2.5 * Z, h0: .2, h1: .25, a0: -10, a1: 8, fov0: 36, fov1: 34 }), [c.pi]), n + 2)],
     [3.0, HH(lowHero([0, 1.0, 0], { dur: 3.0, dist0: 3.4 * Z, dist1: 3.6 * Z, h0: -.1, h1: -.05, a0: -10, a1: -2, fov0: 42, fov1: 40 }), n + 3)]
@@ -150,7 +150,7 @@ window.STORY = function (K) {
     Wd.cam = cuts([
       [3.6, HH(pullOut([CLX, 1.24, CLZ], { dur: 3.6, dist0: .6, dist1: 2.0, h0: .35, h1: .5, a0: -10, a1: 8, fov0: 30, fov1: 38 }), 1)],
       [4.4, HH(punch(truck([CLX + .2, 1.1, 0], { dur: 4.4, dist0: 3.4, dist1: 3.4, h0: .4, h1: .4, a0: -12, a1: 12, fov0: 40, fov1: 40 }), [2.4]), 2)],
-      [6.0, HH(pullOut([0, 1.3, 0], { dur: 6.0, dist0: 3.2, dist1: 4.8, h0: .4, h1: .7, a0: 6, a1: -6, fov0: 40, fov1: 42 }), 3)]
+      [6.0, HH(pullOut([0, 1.3, 0], { dur: 6.0, dist0: 3.2, dist1: 4.6, h0: .4, h1: .7, a0: 6, a1: -6, fov0: 40, fov1: 42 }), 3)]
     ]);
     return Wd;
   }
@@ -177,10 +177,10 @@ window.STORY = function (K) {
       mt.arrow.scale.setScalar(Math.max(.001, popE(P(10.2, 11.0, t))));
       cres.set([METX + .32, TOPY + .6, METZ + .2], popE(P(.4, 1.2, t)) * .9, 0);
       cal.fc.set(t, { talk: .2 * talkAmt(t, SEED_CAL), smile: .3, look: [.6, 0] });
-      tN.set([0, 2.2, 1.0], popE(P(11.4, 12.2, t)) * NUM, 0);
+      tN.set([0, 2.2, -.5], popE(P(11.4, 12.2, t)) * NUM, 0);
     });
     Wd.center = [0, 0]; Wd.occ = [tN.g, dayT[0].g, dayT[1].g, dayT[2].g];
-    Wd.cam = std(4, { wide: [0, 1.5, 0], wd: 6.6, med: [-.9, 1.7, -.4], pm: 3.6, ins: [METX, 1.6, METZ], pi: 3.6 });
+    Wd.cam = std(4, { wide: [0, 1.5, 0], wd: 2.6, med: [-.9, 1.7, -.4], pm: 3.6, ins: [METX, 1.6, METZ], pi: 3.6 });
     return Wd;
   }
 
@@ -203,10 +203,10 @@ window.STORY = function (K) {
       sk.set(crossAt, P(4.6, 5.0, t), 1.0);
       cal.fc.set(t, { talk: .3 * talkAmt(t, SEED_CAL), smile: -.6, look: [-.4, 0], surprise: sm(P(4.6, 5.2, t)) });
       cl.f.set(t, { talk: .35 * talkAmt(t, SEED_CLIP), smile: -.4, look: [.4, 0], surprise: sm(P(4.6, 5.2, t)) });
-      tN.set([0, 2.2, 1.0], popE(P(5.6, 6.4, t)) * NUM, 0);
+      tN.set([0, 2.2, -.5], popE(P(5.6, 6.4, t)) * NUM, 0);
     });
     Wd.center = [0, 0]; Wd.occ = [tN.g, cr.g];
-    Wd.cam = std(8, { wide: [0, 1.5, 0], wd: 6.6, med: [0, 2.0, -1.6], pm: 4.4, ins: [DAY.sat, 2.2, -1.6], pi: 5.0 });
+    Wd.cam = std(8, { wide: [0, 1.5, 0], wd: 2.6, med: [0, 2.0, -1.6], pm: 4.4, ins: [DAY.sat, 2.2, -1.6], pi: 5.0 });
     return Wd;
   }
 
@@ -230,10 +230,10 @@ window.STORY = function (K) {
       sk.set(crossAt, P(3.6, 4.4, t), 1.0);
       cal.fc.set(t, { talk: .3 * talkAmt(t, SEED_CAL), smile: -.6, look: [.2, 0], surprise: sm(P(3.6, 4.2, t)) });
       cl.f.set(t, { talk: .4 * talkAmt(t, SEED_CLIP), smile: -.5, look: [.5, 0], surprise: sm(P(3.6, 4.2, t)) });
-      tN.set([0, 2.2, 1.0], popE(P(5.0, 5.8, t)) * NUM, 0);
+      tN.set([0, 2.2, -.5], popE(P(5.0, 5.8, t)) * NUM, 0);
     });
     Wd.center = [0, 0]; Wd.occ = [tN.g, cr.g];
-    Wd.cam = std(12, { wide: [0, 1.5, 0], wd: 6.6, med: [-.4, 2.0, -1.5], pm: 4.2, ins: [DAY.thu, 2.2, -1.6], pi: 4.4 });
+    Wd.cam = std(12, { wide: [0, 1.5, 0], wd: 2.6, med: [-.4, 2.0, -1.5], pm: 4.2, ins: [DAY.thu, 2.2, -1.6], pi: 4.4 });
     return Wd;
   }
 
@@ -258,15 +258,15 @@ window.STORY = function (K) {
       chk.set(checkAt, popE(P(9.6, 10.4, t)) * .6, .04 * Math.sin(t * 3));
       sk.set(checkAt, P(9.6, 10.6, t), 1.0);
       cal.fc.set(t, { talk: .3 * talkAmt(t, SEED_CAL), smile: .3 + .6 * sm(P(9.6, 10.4, t)), look: [.5, 0] });
-      tN.set([0, 2.2, 1.0], popE(P(3.6, 4.4, t)) * NUM, 0);
+      tN.set([0, 2.2, -.5], popE(P(3.6, 4.4, t)) * NUM, 0);
     });
     Wd.center = [0, 0]; Wd.occ = [tN.g, chk.g];
     const C4 = [-.4, 2.3, -1.6];                                                   // pulled back and higher: the header stays below the top 15% of the frame
     Wd.cam = cuts([
-      [3.5, HH(truck([0, 2.2, 0], { dur: 3.5, dist0: 8.6, dist1: 8.4, h0: .6, h1: .5, a0: -8, a1: 8, fov0: 42, fov1: 42 }), 16)],
-      [4.0, HH(punch(pushIn(C4, { dur: 4.0, dist0: 6.2, dist1: 5.8, h0: .5, h1: .5, a0: 8, a1: -6, fov0: 40, fov1: 40 }), [3.0]), 17)],
-      [3.5, HH(punch(insert([DAY.fri, 2.3, -1.6], { dur: 3.5, dist0: 5.2, dist1: 4.8, h0: .3, h1: .3, a0: -10, a1: 8, fov0: 36, fov1: 34 }), [9.6]), 18)],
-      [5.0, HH(pullOut([0, 2.3, -1.6], { dur: 5.0, dist0: 6.0, dist1: 7.6, h0: .5, h1: .6, a0: 6, a1: -6, fov0: 40, fov1: 42 }), 19)]
+      [3.5, HH(truck([0, 2.2, -1.0], { dur: 3.5, dist0: 3.6, dist1: 3.4, h0: .6, h1: .5, a0: -8, a1: 8, fov0: 42, fov1: 42 }), 16)],
+      [4.0, HH(punch(pushIn(C4, { dur: 4.0, dist0: 4.9, dist1: 4.6, h0: .5, h1: .5, a0: 8, a1: -6, fov0: 40, fov1: 40 }), [3.0]), 17)],
+      [3.5, HH(punch(insert([DAY.fri, 2.3, -1.6], { dur: 3.5, dist0: 4.2, dist1: 3.9, h0: .3, h1: .3, a0: -10, a1: 8, fov0: 36, fov1: 34 }), [9.6]), 18)],
+      [5.0, HH(pullOut([0, 2.3, -1.6], { dur: 5.0, dist0: 5.0, dist1: 4.8, h0: .5, h1: .6, a0: 6, a1: -6, fov0: 40, fov1: 42 }), 19)]
     ]);
     return Wd;
   }
@@ -291,10 +291,10 @@ window.STORY = function (K) {
       cl.setClick(Math.max(0, Math.sin(t * 2.5)) * .4);
       cl.f.set(t, { talk: .3 * talkAmt(t, SEED_CLIP), smile: .6, look: [.2, 0] });
       cal.fc.set(t, { talk: .2 * talkAmt(t, SEED_CAL), smile: .3, look: [.6, 0] });
-      tN.set([0, 2.2, 1.0], popE(P(3.0, 3.8, t)) * NUM, 0);
+      tN.set([0, 2.8, -.5], popE(P(3.0, 3.8, t)) * NUM, 0);
     });
     Wd.center = [0, 0]; Wd.occ = [tN.g];
-    Wd.cam = std(16, { wide: [0, 1.5, 0], wd: 6.6, med: [.6, 2.3, -1.6], pm: 3.6, ins: [DAY.wed, 2.4, -1.6], pi: 3.6 });
+    Wd.cam = std(16, { wide: [0, 1.5, 0], wd: 2.6, med: [.6, 2.3, -1.6], pm: 3.6, ins: [DAY.wed, 2.4, -1.6], pi: 3.6 });
     return Wd;
   }
 
@@ -322,10 +322,10 @@ window.STORY = function (K) {
       sk.set(crossAt, P(5.0, 5.8, t), 1.0);
       cal.fc.set(t, { talk: .3 * talkAmt(t, SEED_CAL), smile: -.6, look: [-.4, 0], surprise: sm(P(5.0, 5.6, t)) });
       cl.f.set(t, { talk: .4 * talkAmt(t, SEED_CLIP), smile: -.5, look: [.4, 0], surprise: sm(P(5.0, 5.6, t)) });
-      tN.set([-.7, 2.2, 1.0], popE(P(6.2, 7.0, t)) * NUM, 0);
+      tN.set([-.7, 2.2, -.5], popE(P(6.2, 7.0, t)) * NUM, 0);
     });
     Wd.center = [0, 0]; Wd.occ = [tN.g, cr.g];
-    Wd.cam = std(32, { wide: [0, 1.5, 0], wd: 6.6, med: [-.4, 2.0, -1.6], pm: 5.0, ins: [DAY.sat, 2.2, -1.6], pi: 5.6 });
+    Wd.cam = std(32, { wide: [0, 1.5, 0], wd: 2.6, med: [-.4, 2.0, -1.6], pm: 5.0, ins: [DAY.sat, 2.2, -1.6], pi: 5.6 });
     return Wd;
   }
 
@@ -344,7 +344,7 @@ window.STORY = function (K) {
       cal.fc.set(t, { talk: .3 * talkAmt(t, SEED_CAL), smile: .7, look: [-.5, 0] });
     });
     Wd.center = [0, 0]; Wd.occ = []; Wd.ansD = 6.4;
-    Wd.camAns = cuts([[20, HH(crane([1.6, 1.6, -1.0], { dur: 20, dist0: 7.6, dist1: 6.8, h0: .1, h1: 1.1, a0: 8, a1: -6, fov0: 42, fov1: 42, ease: 'out' }), 28)]]);
+    Wd.camAns = cuts([[20, HH(crane([1.6, 1.6, -1.0], { dur: 20, dist0: 5.0, dist1: 4.6, h0: .1, h1: 1.1, a0: 8, a1: -6, fov0: 42, fov1: 42, ease: 'out' }), 28)]]);
     return Wd;
   }
 
