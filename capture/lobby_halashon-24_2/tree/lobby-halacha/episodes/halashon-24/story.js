@@ -8,8 +8,11 @@ window.STORY = function (K) {
   // whole-frame lift: every camera aims lower so the subject sits above the caption band
   const LIFT = .5;
   const lift = p => [p[0], p[1] - LIFT, p[2]];
-  const pushIn = (p, o) => K.pushIn(lift(p), o), pullOut = (p, o) => K.pullOut(lift(p), o), truck = (p, o) => K.truck(lift(p), o);
-  const crane = (p, o) => K.crane(lift(p), o), insert = (p, o) => K.insert(lift(p), o);
+  // every camera at most 6.5 from its target; anything further is pulled in and narrowed to 36 degrees so the heroes fill the frame
+  const fit = o => { if (!o || o.dist0 === undefined) return o; if (o.dist0 <= 6.5 && o.dist1 <= 6.5) return o;
+    return Object.assign({}, o, { dist0: Math.min(o.dist0, 6.5), dist1: Math.min(o.dist1, 6.5), fov0: 36, fov1: 36 }); };
+  const pushIn = (p, o) => K.pushIn(lift(p), fit(o)), pullOut = (p, o) => K.pullOut(lift(p), fit(o)), truck = (p, o) => K.truck(lift(p), fit(o));
+  const crane = (p, o) => K.crane(lift(p), fit(o)), insert = (p, o) => K.insert(lift(p), fit(o));
   const PI = Math.PI, sm = ease.sm, P = (a, b, t) => prog(t, a, b);
   const HH = (c, sd) => handheld(c, .03, sd);
   const bob = (t, s) => Math.sin(t * 1.7 + s) * .05;
@@ -180,7 +183,7 @@ window.STORY = function (K) {
       B.tp.f.set(t, { smile: .6, talk: talkAmt(t, 3), look: [1, 0] });
       B.cup.f.set(t, { smile: 0, talk: 0, look: [1, 0] });
       B.mug.f.set(t, { smile: 0, talk: 0, look: [-1, 0] });
-      qq.set([BUB[0] + .9, 2.45 + bob(t, 3), PZ + .6], popE(P(1.4, 2.2, t)));
+      qq.set([BUB[0] + .9, 2.0 + bob(t, 3), PZ + .6], popE(P(1.4, 2.2, t)));
     });
     const w = [4, 3.5, 3.5, 3];
     Wd.cam = cuts([
@@ -203,8 +206,8 @@ window.STORY = function (K) {
       bu.strike.scale.x = Math.max(.001, sm(P(2.0, 2.8, t)));          // the grey line crosses the name out
       qCard.set([BUB[0], BUB[1], BUB[2] + .66], popE(P(.2, .8, t)));
       const ap = popE(P(.8, 1.6, t)) * (1 - sm(P(2.6, 3.4, t)));      // the stamp appears, then fades: it stays blank
-      tName.set([BUB[0] + 1.0, 2.4, PZ + .9], ap);
-      tNo.set([BUB[0] + 1.6, 1.5, PZ + 1.0], popE(P(1.5, 2.3, t)));
+      tName.set([BUB[0] + .6, 1.95, PZ + .9], ap);
+      tNo.set([-0.4, 1.95, PZ + 1.0], popE(P(1.5, 2.3, t)));
       B.tp.f.set(t, { smile: .2, talk: talkAmt(t, 3), look: [1, 0] });
       B.tp.g.rotation.y = .3;
       B.cup.f.set(t, { smile: 0, talk: 0, look: [1, 0] });
@@ -233,9 +236,9 @@ window.STORY = function (K) {
       th.set(f, false, t * 6);
       bulb.position.set(CUP0[0] - .45, 2.2 + bob(t, 2), PZ + .3);
       bulb.scale.setScalar(Math.max(.001, popE(P(1.8, 2.6, t))));
-      tH.set([CUP0[0] + .35, 2.45, PZ + .7], popE(P(2.4, 3.2, t)));
-      tS.set([CUP0[0] + .75, 1.4, PZ + .9], popE(P(.6, 1.2, t)));
-      tF.set([MUG[0] + .95, 2.45, MUG[2] + .2], popE(P(1.0, 1.8, t)));
+      tH.set([CUP0[0] + .35, 2.2, PZ + .7], popE(P(2.4, 3.2, t)));
+      tS.set([CUP0[0] - .9, 1.6, PZ + .9], popE(P(.6, 1.2, t)));
+      tF.set([MUG[0] + .95, 2.0, MUG[2] + .2], popE(P(1.0, 1.8, t)));
       B.tp.f.set(t, { smile: .7, talk: talkAmt(t, 5), look: [1, 0] });
       B.tp.g.rotation.y = .4;
       B.cup.f.set(t, { smile: .3, talk: 0, look: [0, 1], surprise: 0 });
@@ -244,7 +247,7 @@ window.STORY = function (K) {
     });
     Wd.cam = cuts([
       [3.5, HH(truck([0, 1.9, 0], { dur: 3.5, dist0: 12, dist1: 11.6, h0: 1.8, h1: 2.0, a0: -6, a1: 6, fov0: 44, fov1: 44, shift: [.6, 0, 0] }), 31)],
-      [3.5, HH(punch(insert([MUG[0], 2.2, MUG[2] + 1], { dur: 3.5, dist0: 7.0, dist1: 6.6, h0: 1.2, h1: 1.4, a0: -6, a1: 6, fov0: 40, fov1: 40 }), [2.4]), 32)],
+      [3.5, HH(punch(insert([0.9, 1.7, -1.2], { dur: 3.5, dist0: 6.4, dist1: 6.2, h0: 1.6, h1: 1.8, a0: -6, a1: 6, fov0: 40, fov1: 40 }), [2.4]), 32)],
       [3.5, HH(insert([CUP0[0], 1.5, PZ], { dur: 3.5, dist0: 5.6, dist1: 5.2, h0: 1.4, h1: 1.6, a0: 6, a1: -6, fov0: 40, fov1: 40 }), 33)],
       [3.5, HH(crane([0, 1.6, 0], { dur: 3.5, dist0: 9.5, dist1: 8.8, h0: .8, h1: 2.0, a0: 6, a1: -6, fov0: 42, fov1: 40 }), 34)]]);
     return Wd;
@@ -291,7 +294,7 @@ window.STORY = function (K) {
       const f = sm(P(.6, 3.6, t));
       glass.set([lerp(BUB[0] + 1.6, BUB[0], f), lerp(BUB[1] - 1.0, BUB[1], f), BUB[2] + .9], popE(P(.4, 1.2, t)));
       bu.flower.rotation.z = .5 * sm(P(0, 15, t));                              // the flower turns in the scan
-      zero.set([BUB[0] + 1.1, 2.4, PZ + .9], popE(P(3.6, 4.6, t)));
+      zero.set([BUB[0] + 1.1, 2.0, PZ + .9], popE(P(3.6, 4.6, t)));
       tNo.set([0.2, 1.3, PZ + 1.0], popE(P(4.6, 5.6, t)));
       B.tp.f.set(t, { smile: .6, talk: .5 * talkAmt(t, 11), look: [1, 0] });
       B.tp.g.rotation.y = .3;
