@@ -19,7 +19,7 @@ window.STORY = function (K) {
   const EAR = [-1.1, 1.95, -.9];               // the ear icon in front of the armchair's back
   const HRT = [-2.5, 1.9, -.6], BARP = [-2.5, .6, -.6];   // health heart and its green bar (beat 1)
   const RADN = [1.25, 1.4, -.75];              // where the notes leave the radio
-  const TAG_Y = 2.0;                           // beat tags, lower than the frame top (they were cut at the top at 2.3)
+  const TAG_Y = 1.9;                           // beat tags, lower than the frame top (they were cut at the top at 2.3)
   const CLR_FLOOR = 0xb98a5a;
   const BLUEP = ['#dbe9ff', '#14408f', '#2f6ad0'], ROSEP = ['#ffe1ec', '#8a1a4a', '#d9779a'];
   const GREENP = ['#e4f8e6', '#1f6a2a', '#3f9a4a'], WHITEP = ['#ffffff', '#2d3a6b', '#9aa7c4'];
@@ -33,7 +33,7 @@ window.STORY = function (K) {
     const m = texPlane(w, h, draw, { cw: cw || 512, ro: 9 }), g = new THREE.Group(), inner = new THREE.Group();
     inner.add(m); g.add(inner); g.visible = false; Wd.add(g); bill(Wd, g);
     return { g, m, set(pos, s, rz, a) { g.visible = s > .01 && (a === undefined || a > .01); if (!g.visible) return;
-      g.position.set(pos[0], pos[1], pos[2]); inner.scale.setScalar(s); inner.rotation.z = rz || 0; m.material.opacity = a === undefined ? 1 : a; } };
+      g.position.set(pos[0], pos[1], pos[2]); inner.scale.setScalar(s * .8); inner.rotation.z = rz || 0; m.material.opacity = a === undefined ? 1 : a; } };
   }
   const drawTag = (text, bg, fg, border) => (c, W2, H) => {
     c.fillStyle = bg; c.beginPath(); c.roundRect(W2 * .03, H * .06, W2 * .94, H * .88, H * .3); c.fill();
@@ -171,9 +171,9 @@ window.STORY = function (K) {
     Wd.occ = []; Wd.center = [1.0, 1.0]; Wd.qPos = [RAD[0], RAD[2] + .6];
     Wd.cam = C4(dur,
       HH(pullOut([RAD[0], 1.0, RAD[2]], { dur: dur * .25, dist0: 1.3, dist1: 2.2, h0: .9, h1: 1.1, a0: 4, a1: -4, fov0: 34, fov1: 36 }), 41),
-      HH(pullOut([0, 1.0, -.6], { dur: dur * .25, dist0: 3.2, dist1: 6.0, h0: .9, h1: 1.4, a0: -4, a1: 6, fov0: 38, fov1: 44 }), 42),
-      HH(truck([0, 1.0, -.2], { dur: dur * .25, dist0: 6.6, dist1: 6.2, h0: 1.1, h1: 1.3, a0: -8, a1: 8, fov0: 44, fov1: 44 }), 43),
-      HH(punch(pushIn([0, 1.0, -.2], { dur: dur * .25, dist0: 5.0, dist1: 4.4, h0: 1.2, h1: 1.4, a0: -6, a1: 6, fov0: 40, fov1: 38 }), [dur * .25 * .6]), 44));
+      HH(pullOut([0, 1.0, -.6], { dur: dur * .25, dist0: 3.2, dist1: 6, h0: .9, h1: 1.4, a0: -4, a1: 6, fov0: 38, fov1: 44 }), 42),
+      HH(truck([0, 1.0, -.2], { dur: dur * .25, dist0: 5.2, dist1: 4.8, h0: 1.1, h1: 1.3, a0: -8, a1: 8, fov0: 44, fov1: 44 }), 43),
+      HH(punch(pushIn([0, 1.0, -.2], { dur: dur * .25, dist0: 5, dist1: 4.4, h0: 1.2, h1: 1.4, a0: -6, a1: 6, fov0: 40, fov1: 38 }), [dur * .25 * .6]), 44));
     return Wd;
   }
 
@@ -206,10 +206,10 @@ window.STORY = function (K) {
     });
     Wd.occ = []; Wd.center = [-.3, 1.2];
     Wd.cam = C4(dur,
-      HH(punch(truck([0, 1.4, -.4], { dur: dur * .25, dist0: 8.6, dist1: 8.2, h0: 1.2, h1: 1.4, a0: -8, a1: 8, fov0: 46, fov1: 44 }), [1.4]), 11),
+      HH(punch(truck([0, 1.4, -.4], { dur: dur * .25, dist0: 5.2, dist1: 4.8, h0: 1.2, h1: 1.4, a0: -8, a1: 8, fov0: 46, fov1: 44 }), [1.4]), 11),
       HH(pushIn([-1.1, .9, -1.0], { dur: dur * .25, dist0: 5.2, dist1: 4.6, h0: 1.2, h1: 1.4, a0: -6, a1: 6, fov0: 42, fov1: 40 }), 12),
-      HH(insert([-2.1, 1.5, -.6], { dur: dur * .25, dist0: 4.2, dist1: 4.0, h0: 1.4, h1: 1.5, a0: 8, a1: -8, fov0: 36, fov1: 34 }), 13),
-      HH(orbitShot([-.3, 1.4, -.4], { dur: dur * .25, dist0: 7.2, dist1: 6.8, h0: 1.2, h1: 1.4, a0: -12, a1: 10, fov0: 44, fov1: 44 }), 14));
+      HH(insert([-2.1, 1.5, -.6], { dur: dur * .25, dist0: 4.2, dist1: 4, h0: 1.4, h1: 1.5, a0: 8, a1: -8, fov0: 36, fov1: 34 }), 13),
+      HH(orbitShot([-.3, 1.4, -.4], { dur: dur * .25, dist0: 5.2, dist1: 4.8, h0: 1.2, h1: 1.4, a0: -12, a1: 10, fov0: 44, fov1: 44 }), 14));
     return Wd;
   }
 
@@ -229,7 +229,7 @@ window.STORY = function (K) {
       SH.set([BARW[0], BARW[1], BARW[2] + .05], hit, 1.0);
       CRS.set([-.35, 2.05, -.8], popE(P(2.6, 3.2, t)) * .9, 0);
       Y.ear.scale.setScalar(1 + .05 * Math.sin(t * 4));
-      TG.set([.35, TAG_Y, .6], popE(P(1.2, 2.0, t)), 0, 1);
+      TG.set([0, TAG_Y, .6], popE(P(1.2, 2.0, t)), 0, 1);
       armLabel(Y, t);
       Y.blk.g.position.set(BLK[0], 0, BLK[2]);
       Y.T.blk.set([BLK[0], 1.15, BLK[2] + .6], 1, 0, 1);
@@ -239,10 +239,10 @@ window.STORY = function (K) {
     });
     Wd.occ = []; Wd.center = [0, 1.2];
     Wd.cam = C4(dur,
-      HH(crane([0, 1.8, -.4], { dur: dur * .25, dist0: 8.4, dist1: 8.0, h0: 1.0, h1: 1.4, a0: -8, a1: 8, fov0: 46, fov1: 44 }), 21),
-      HH(punch(pushIn([-.2, 1.2, .2], { dur: dur * .25, dist0: 6.0, dist1: 5.6, h0: 1.0, h1: 1.2, a0: -6, a1: 6, fov0: 42, fov1: 40 }), [dur * .25 * .5]), 22),
-      HH(insert([-.4, 1.6, -1.0], { dur: dur * .25, dist0: 4.2, dist1: 4.0, h0: 1.6, h1: 1.8, a0: 8, a1: -8, fov0: 36, fov1: 34 }), 23),
-      HH(orbitShot([0, 1.2, -.4], { dur: dur * .25, dist0: 7.4, dist1: 7.0, h0: 1.2, h1: 1.4, a0: -14, a1: 10, fov0: 44, fov1: 44 }), 24));
+      HH(crane([0, 1.8, -.4], { dur: dur * .25, dist0: 5.2, dist1: 4.8, h0: 1.0, h1: 1.4, a0: -8, a1: 8, fov0: 46, fov1: 44 }), 21),
+      HH(punch(pushIn([-.2, 1.2, .2], { dur: dur * .25, dist0: 6, dist1: 5.6, h0: 1.0, h1: 1.2, a0: -6, a1: 6, fov0: 42, fov1: 40 }), [dur * .25 * .5]), 22),
+      HH(insert([-.4, 1.6, -1.0], { dur: dur * .25, dist0: 4.2, dist1: 4, h0: 1.6, h1: 1.8, a0: 8, a1: -8, fov0: 36, fov1: 34 }), 23),
+      HH(orbitShot([0, 1.2, -.4], { dur: dur * .25, dist0: 5.2, dist1: 4.8, h0: 1.2, h1: 1.4, a0: -14, a1: 10, fov0: 44, fov1: 44 }), 24));
     return Wd;
   }
 
@@ -267,7 +267,7 @@ window.STORY = function (K) {
       Y.blk.g.position.set(p[0], p[1], p[2]);
       steps.forEach((b, i) => b.material.color.setHex(t > 1.9 + i * 1.2 ? 0x3fb84a : 0xb0b8c8));
       Y.T.blk.set([p[0], p[1] + 1.1, p[2] + .4], 1, 0, 1);
-      TG.set([.4, TAG_Y, .6], popE(P(2.0, 2.8, t)), 0, 1);
+      TG.set([0, TAG_Y, .6], popE(P(2.0, 2.8, t)), 0, 1);
       armLabel(Y, t);
       F(Y.blk.f, t, { smile: t > 7 ? 1 : .4, look: [1, .2], talk: t > 6 ? .6 * talkAmt(t, 44) : 0 });
       F(Y.fA, t, { smile: .2, look: [0, .2] });
@@ -275,10 +275,10 @@ window.STORY = function (K) {
     });
     Wd.occ = []; Wd.center = [1.0, 1.0];
     Wd.cam = C4(dur,
-      HH(truck([0, 1.4, -.4], { dur: dur * .25, dist0: 8.6, dist1: 8.2, h0: 1.2, h1: 1.4, a0: -8, a1: 8, fov0: 46, fov1: 44 }), 31),
-      HH(punch(pushIn([1.0, 1.2, .2], { dur: dur * .25, dist0: 6.0, dist1: 5.4, h0: 1.0, h1: 1.2, a0: -6, a1: 6, fov0: 42, fov1: 40 }), [dur * .25 * .5]), 32),
+      HH(truck([0, 1.4, -.4], { dur: dur * .25, dist0: 5.2, dist1: 4.8, h0: 1.2, h1: 1.4, a0: -8, a1: 8, fov0: 46, fov1: 44 }), 31),
+      HH(punch(pushIn([1.0, 1.2, .2], { dur: dur * .25, dist0: 6, dist1: 5.4, h0: 1.0, h1: 1.2, a0: -6, a1: 6, fov0: 42, fov1: 40 }), [dur * .25 * .5]), 32),
       HH(insert([1.8, 1.4, .2], { dur: dur * .25, dist0: 4.4, dist1: 4.2, h0: 1.2, h1: 1.4, a0: 8, a1: -8, fov0: 36, fov1: 34 }), 33),
-      HH(orbitShot([0, 1.2, -.4], { dur: dur * .25, dist0: 7.4, dist1: 7.0, h0: 1.2, h1: 1.4, a0: -12, a1: 10, fov0: 44, fov1: 44 }), 34));
+      HH(orbitShot([0, 1.2, -.4], { dur: dur * .25, dist0: 5.2, dist1: 4.8, h0: 1.2, h1: 1.4, a0: -12, a1: 10, fov0: 44, fov1: 44 }), 34));
     return Wd;
   }
 
@@ -316,10 +316,10 @@ window.STORY = function (K) {
     });
     Wd.occ = []; Wd.center = [0, 1.2];
     Wd.cam = C4(dur,
-      HH(truck([0, 1.4, -.4], { dur: dur * .25, dist0: 8.6, dist1: 8.2, h0: 1.2, h1: 1.4, a0: -8, a1: 8, fov0: 46, fov1: 44 }), 61),
-      HH(punch(pushIn([0, 1.2, .2], { dur: dur * .25, dist0: 6.0, dist1: 5.4, h0: 1.0, h1: 1.2, a0: -6, a1: 6, fov0: 42, fov1: 40 }), [dur * .25 * .5]), 62),
-      HH(insert([0, 1.6, .2], { dur: dur * .25, dist0: 4.2, dist1: 4.0, h0: 1.4, h1: 1.6, a0: 8, a1: -8, fov0: 36, fov1: 34 }), 63),
-      HH(orbitShot([0, 1.2, -.4], { dur: dur * .25, dist0: 7.4, dist1: 7.0, h0: 1.2, h1: 1.4, a0: -12, a1: 10, fov0: 44, fov1: 44 }), 64));
+      HH(truck([0, 1.4, -.4], { dur: dur * .25, dist0: 5.2, dist1: 4.8, h0: 1.2, h1: 1.4, a0: -8, a1: 8, fov0: 46, fov1: 44 }), 61),
+      HH(punch(pushIn([0, 1.2, .2], { dur: dur * .25, dist0: 6, dist1: 5.4, h0: 1.0, h1: 1.2, a0: -6, a1: 6, fov0: 42, fov1: 40 }), [dur * .25 * .5]), 62),
+      HH(insert([0, 1.6, .2], { dur: dur * .25, dist0: 4.2, dist1: 4, h0: 1.4, h1: 1.6, a0: 8, a1: -8, fov0: 36, fov1: 34 }), 63),
+      HH(orbitShot([0, 1.2, -.4], { dur: dur * .25, dist0: 5.2, dist1: 4.8, h0: 1.2, h1: 1.4, a0: -12, a1: 10, fov0: 44, fov1: 44 }), 64));
     return Wd;
   }
 
@@ -337,17 +337,17 @@ window.STORY = function (K) {
       armLabel(Y, t);
       Y.blk.g.position.set(BLK[0], .05 * Math.abs(Math.sin(t * 5)), BLK[2]);
       Y.T.blk.set([BLK[0], 1.15, BLK[2] + .6], 1, 0, 1);
-      TG.set([.4, TAG_Y, .6], popE(P(3.0, 3.8, t)), 0, 1);
+      TG.set([0, TAG_Y, .6], popE(P(3.0, 3.8, t)), 0, 1);
       F(Y.blk.f, t, { smile: .9, look: [1, .2], talk: .4 * talkAmt(t, 73) });
       F(Y.rad.f, t, { smile: .6, look: [-.5, .2], talk: .6 * talkAmt(t, 74) });
       F(Y.fA, t, { smile: .1, look: [0, .2] });
     });
     Wd.occ = []; Wd.center = [0, 1.2];
     Wd.cam = C4(dur,
-      HH(truck([0, 1.4, -.4], { dur: dur * .25, dist0: 8.6, dist1: 8.2, h0: 1.2, h1: 1.4, a0: -8, a1: 8, fov0: 46, fov1: 44 }), 71),
-      HH(punch(pushIn([-.4, 1.2, .2], { dur: dur * .25, dist0: 6.0, dist1: 5.4, h0: 1.0, h1: 1.2, a0: -6, a1: 6, fov0: 42, fov1: 40 }), [dur * .25 * .5]), 72),
-      HH(insert([-.7, 1.5, -.9], { dur: dur * .25, dist0: 4.2, dist1: 4.0, h0: 1.5, h1: 1.6, a0: 8, a1: -8, fov0: 36, fov1: 34 }), 73),
-      HH(orbitShot([0, 1.2, -.4], { dur: dur * .25, dist0: 7.4, dist1: 7.0, h0: 1.2, h1: 1.4, a0: -12, a1: 10, fov0: 44, fov1: 44 }), 74));
+      HH(truck([0, 1.4, -.4], { dur: dur * .25, dist0: 5.2, dist1: 4.8, h0: 1.2, h1: 1.4, a0: -8, a1: 8, fov0: 46, fov1: 44 }), 71),
+      HH(punch(pushIn([-.4, 1.2, .2], { dur: dur * .25, dist0: 6, dist1: 5.4, h0: 1.0, h1: 1.2, a0: -6, a1: 6, fov0: 42, fov1: 40 }), [dur * .25 * .5]), 72),
+      HH(insert([-.7, 1.5, -.9], { dur: dur * .25, dist0: 4.2, dist1: 4, h0: 1.5, h1: 1.6, a0: 8, a1: -8, fov0: 36, fov1: 34 }), 73),
+      HH(orbitShot([0, 1.2, -.4], { dur: dur * .25, dist0: 5.2, dist1: 4.8, h0: 1.2, h1: 1.4, a0: -12, a1: 10, fov0: 44, fov1: 44 }), 74));
     return Wd;
   }
 
@@ -368,7 +368,7 @@ window.STORY = function (K) {
       armLabel(Y, t);
       ZERO.set([.2, 1.6, -.9], popE(P(1.0, 1.6, t)), 0, 1);
       CK.set([ARM[0] - .9, 1.6, -.9], popE(P(2.4, 3.0, t)) * .9, 0);
-      TG.set([-.1, TAG_Y, .6], popE(P(3.4, 4.2, t)), 0, 1);
+      TG.set([0, TAG_Y, .6], popE(P(3.4, 4.2, t)), 0, 1);
       Y.blk.g.position.set(BLK[0], .05 * Math.abs(Math.sin(t * 5)), BLK[2]);
       Y.T.blk.set([BLK[0], 1.15, BLK[2] + .6], 1, 0, 1);
       F(Y.fA, t, { smile: .9, look: [0, .2] });
@@ -377,10 +377,10 @@ window.STORY = function (K) {
     });
     Wd.occ = []; Wd.center = [-.3, 1.2];
     Wd.cam = C4(dur,
-      HH(truck([0, 1.4, -.4], { dur: dur * .25, dist0: 8.6, dist1: 8.2, h0: 1.2, h1: 1.4, a0: -8, a1: 8, fov0: 46, fov1: 44 }), 91),
-      HH(punch(pushIn([-.6, 1.2, .2], { dur: dur * .25, dist0: 6.0, dist1: 5.4, h0: 1.0, h1: 1.2, a0: -6, a1: 6, fov0: 42, fov1: 40 }), [dur * .25 * .5]), 92),
-      HH(insert([-.8, 1.3, -.6], { dur: dur * .25, dist0: 4.2, dist1: 4.0, h0: 1.3, h1: 1.4, a0: 8, a1: -8, fov0: 36, fov1: 34 }), 93),
-      HH(orbitShot([0, 1.2, -.4], { dur: dur * .25, dist0: 7.4, dist1: 7.0, h0: 1.2, h1: 1.4, a0: -12, a1: 10, fov0: 44, fov1: 44 }), 94));
+      HH(truck([0, 1.4, -.4], { dur: dur * .25, dist0: 5.2, dist1: 4.8, h0: 1.2, h1: 1.4, a0: -8, a1: 8, fov0: 46, fov1: 44 }), 91),
+      HH(punch(pushIn([-.6, 1.2, .2], { dur: dur * .25, dist0: 6, dist1: 5.4, h0: 1.0, h1: 1.2, a0: -6, a1: 6, fov0: 42, fov1: 40 }), [dur * .25 * .5]), 92),
+      HH(insert([-.8, 1.3, -.6], { dur: dur * .25, dist0: 4.2, dist1: 4, h0: 1.3, h1: 1.4, a0: 8, a1: -8, fov0: 36, fov1: 34 }), 93),
+      HH(orbitShot([0, 1.2, -.4], { dur: dur * .25, dist0: 5.2, dist1: 4.8, h0: 1.2, h1: 1.4, a0: -12, a1: 10, fov0: 44, fov1: 44 }), 94));
     return Wd;
   }
 
@@ -399,7 +399,7 @@ window.STORY = function (K) {
       F(Y.fA, t, { smile: .2, look: [0, .2], talk: .3 * talkAmt(t, 5) });
     });
     Wd.occ = []; Wd.center = [0, 1.0]; Wd.ansD = 6.4;
-    Wd.camAns = cuts([[dur, HH(crane([0, 1.6, -1.0], { dur: dur, dist0: 8.2, dist1: 7.4, h0: .9, h1: 1.6, a0: 8, a1: -6, fov0: 42, fov1: 42, ease: 'out' }), 25)]]);
+    Wd.camAns = cuts([[dur, HH(crane([0, 1.6, -1.0], { dur: dur, dist0: 5.2, dist1: 4.8, h0: .9, h1: 1.6, a0: 8, a1: -6, fov0: 42, fov1: 42, ease: 'out' }), 25)]]);
     return Wd;
   }
 
