@@ -402,7 +402,7 @@ window.STORY = function (K) {
       F(Y.rad.f, t, { smile: 1, look: [-.4, .2], talk: .4 * talkAmt(t, 4) });
     });
     Wd.occ = []; Wd.center = [0, 1.0]; Wd.ansD = 6.4;
-    Wd.camAns = cuts([[dur, HH(crane([0, 1.4, -.6], { dur: dur, dist0: 4.2, dist1: 3.8, h0: .9, h1: 1.6, a0: 8, a1: -6, fov0: 42, fov1: 42, ease: 'out' }), 25)]]);
+    Wd.camAns = cuts([[dur, HH(crane([0, 1.6, -1.0], { dur: dur, dist0: 5.2, dist1: 4.8, h0: .9, h1: 1.6, a0: 8, a1: -6, fov0: 42, fov1: 42, ease: 'out' }), 25)]]);
     return Wd;
   }
 
