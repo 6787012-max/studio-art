@@ -210,9 +210,9 @@ window.STORY = function (K) {
     const w = [4, 3.5, 3.5, 3];
     Wd.cam = cuts([
       [w[0], HH(pullOut([TEAP0[0], 1.4, PZ], { dur: w[0], dist0: 1.3, dist1: 4.2, h0: .4, h1: 1.7, a0: 6, a1: -6, fov0: 36, fov1: 44 }), 51)],
-      [w[1], HH(truck([-.6, 1.2, 0], { dur: w[1], dist0: 8.4, dist1: 8.0, h0: 1.8, h1: 2.0, a0: -6, a1: 6, fov0: 44, fov1: 44, shift: [.6, 0, 0] }), 52)],
+      [w[1], HH(truck([-.6, 1.2, 0], { dur: w[1], dist0: 6.5, dist1: 6.2, h0: 1.8, h1: 2.0, a0: -6, a1: 6, fov0: 44, fov1: 44, shift: [.6, 0, 0] }), 52)],
       [w[2], HH(insert([CUP0[0] - .6, 1.3, PZ], { dur: w[2], dist0: 5.6, dist1: 5.2, h0: 1.3, h1: 1.4, a0: -6, a1: 6, fov0: 40, fov1: 40 }), 53)],
-      [w[3], HH(crane([0, 1.4, PZ], { dur: w[3], dist0: 10, dist1: 9.4, h0: .8, h1: 2.0, a0: -6, a1: 6, fov0: 42, fov1: 40 }), 54)]]);
+      [w[3], HH(crane([0, 1.4, PZ], { dur: w[3], dist0: 6.5, dist1: 6.2, h0: .8, h1: 2.0, a0: -6, a1: 6, fov0: 42, fov1: 40 }), 54)]]);
     return Wd;
   }
 
@@ -233,10 +233,10 @@ window.STORY = function (K) {
       B.mug.f.set(t, { smile: 0, talk: 0, look: [-1, 0] });
     });
     Wd.cam = cuts([
-      [3.5, HH(truck([-.4, 1.9, 0], { dur: 3.5, dist0: 11, dist1: 10.6, h0: 1.8, h1: 2.0, a0: -6, a1: 6, fov0: 44, fov1: 44, shift: [.6, 0, 0] }), 21)],
+      [3.5, HH(truck([-.4, 1.9, 0], { dur: 3.5, dist0: 6.5, dist1: 6.2, h0: 1.8, h1: 2.0, a0: -6, a1: 6, fov0: 44, fov1: 44, shift: [.6, 0, 0] }), 21)],
       [3.5, HH(punch(insert([TEAP0[0], 1.5, PZ], { dur: 3.5, dist0: 5.6, dist1: 5.2, h0: 1.4, h1: 1.6, a0: 6, a1: -6, fov0: 40, fov1: 40 }), [2.4]), 22)],
       [3.5, HH(insert([-.1, 1.4, PZ], { dur: 3.5, dist0: 5.8, dist1: 5.4, h0: 1.2, h1: 1.3, a0: -4, a1: 4, fov0: 40, fov1: 40 }), 23)],
-      [3.5, HH(crane([0, 1.8, 0], { dur: 3.5, dist0: 10.5, dist1: 9.8, h0: .8, h1: 2.0, a0: 6, a1: -6, fov0: 42, fov1: 40 }), 24)]]);
+      [3.5, HH(crane([0, 1.8, 0], { dur: 3.5, dist0: 6.5, dist1: 6.2, h0: .8, h1: 2.0, a0: 6, a1: -6, fov0: 42, fov1: 40 }), 24)]]);
     return Wd;
   }
 
@@ -258,10 +258,10 @@ window.STORY = function (K) {
       B.mug.f.set(t, { smile: 0, talk: 0, look: [-1, 0] });
     });
     Wd.cam = cuts([
-      [3.5, HH(truck([0, 1.9, 0], { dur: 3.5, dist0: 12, dist1: 11.6, h0: 1.8, h1: 2.0, a0: -6, a1: 6, fov0: 44, fov1: 44, shift: [.6, 0, 0] }), 31)],
+      [3.5, HH(truck([0, 1.9, 0], { dur: 3.5, dist0: 6.5, dist1: 6.2, h0: 1.8, h1: 2.0, a0: -6, a1: 6, fov0: 44, fov1: 44, shift: [.6, 0, 0] }), 31)],
       [3.5, HH(punch(insert([BUB[0] + .3, 2.2, PZ + .3], { dur: 3.5, dist0: 6.4, dist1: 6.2, h0: 1.6, h1: 1.8, a0: -6, a1: 6, fov0: 40, fov1: 40 }), [2.4]), 32)],
       [3.5, HH(insert([CUP0[0], 1.5, PZ], { dur: 3.5, dist0: 5.6, dist1: 5.2, h0: 1.4, h1: 1.6, a0: 6, a1: -6, fov0: 40, fov1: 40 }), 33)],
-      [3.5, HH(crane([0, 1.6, 0], { dur: 3.5, dist0: 9.5, dist1: 8.8, h0: .8, h1: 2.0, a0: 6, a1: -6, fov0: 42, fov1: 40 }), 34)]]);
+      [3.5, HH(crane([0, 1.6, 0], { dur: 3.5, dist0: 6.5, dist1: 6.2, h0: .8, h1: 2.0, a0: 6, a1: -6, fov0: 42, fov1: 40 }), 34)]]);
     return Wd;
   }
 
@@ -286,10 +286,10 @@ window.STORY = function (K) {
       B.mug.f.set(t, { smile: .1, talk: 0, look: [-1, 0] });
     });
     Wd.cam = cuts([
-      [3.5, HH(truck([0, 1.8, 0], { dur: 3.5, dist0: 11, dist1: 10.6, h0: 1.8, h1: 2.0, a0: -6, a1: 6, fov0: 44, fov1: 44, shift: [.6, 0, 0] }), 41)],
+      [3.5, HH(truck([0, 1.8, 0], { dur: 3.5, dist0: 6.5, dist1: 6.2, h0: 1.8, h1: 2.0, a0: -6, a1: 6, fov0: 44, fov1: 44, shift: [.6, 0, 0] }), 41)],
       [3.5, HH(punch(insert([-.7, 1.7, PZ], { dur: 3.5, dist0: 5.6, dist1: 5.2, h0: 1.4, h1: 1.5, a0: -6, a1: 6, fov0: 40, fov1: 40 }), [2.6]), 42)],
       [3.5, HH(insert([-.1, 1.4, -.9], { dur: 3.5, dist0: 6.0, dist1: 5.6, h0: 1.4, h1: 1.5, a0: 6, a1: -6, fov0: 40, fov1: 40 }), 43)],
-      [3.5, HH(crane([0, 1.5, 0], { dur: 3.5, dist0: 9.5, dist1: 8.8, h0: .8, h1: 2.0, a0: -6, a1: 6, fov0: 42, fov1: 40 }), 44)]]);
+      [3.5, HH(crane([0, 1.5, 0], { dur: 3.5, dist0: 6.5, dist1: 6.2, h0: .8, h1: 2.0, a0: -6, a1: 6, fov0: 42, fov1: 40 }), 44)]]);
     return Wd;
   }
 
@@ -317,10 +317,10 @@ window.STORY = function (K) {
       B.mug.f.set(t, { smile: .3, talk: 0, look: [-1, 0] });
     });
     Wd.cam = cuts([
-      [4, HH(truck([0, 1.6, 0], { dur: 4, dist0: 10, dist1: 9.6, h0: 1.8, h1: 2.0, a0: -6, a1: 6, fov0: 44, fov1: 44, shift: [.6, 0, 0] }), 51)],
+      [4, HH(truck([0, 1.6, 0], { dur: 4, dist0: 6.5, dist1: 6.2, h0: 1.8, h1: 2.0, a0: -6, a1: 6, fov0: 44, fov1: 44, shift: [.6, 0, 0] }), 51)],
       [4, HH(punch(insert([BUB[0] + .2, 2.1, PZ + .3], { dur: 4, dist0: 6.0, dist1: 5.6, h0: 1.3, h1: 1.5, a0: 6, a1: -6, fov0: 40, fov1: 40 }), [2.2]), 52)],
-      [4, HH(pushIn([MUG[0] - .4, 2.3, MUG[2] + 1], { dur: 4, dist0: 7.6, dist1: 7.0, h0: 1.4, h1: 1.6, a0: -6, a1: 6, fov0: 42, fov1: 40 }), 53)],
-      [4, HH(crane([-.4, 1.5, 0], { dur: 4, dist0: 9.5, dist1: 8.8, h0: .8, h1: 2.0, a0: -6, a1: 6, fov0: 42, fov1: 40 }), 54)]]);
+      [4, HH(pushIn([MUG[0] - .4, 2.3, MUG[2] + 1], { dur: 4, dist0: 6.5, dist1: 6.2, h0: 1.4, h1: 1.6, a0: -6, a1: 6, fov0: 42, fov1: 40 }), 53)],
+      [4, HH(crane([-.4, 1.5, 0], { dur: 4, dist0: 6.5, dist1: 6.2, h0: .8, h1: 2.0, a0: -6, a1: 6, fov0: 42, fov1: 40 }), 54)]]);
     return Wd;
   }
 
@@ -331,7 +331,7 @@ window.STORY = function (K) {
     const th = thread(Wd);
     const ck = mark3d(Wd, 'cross', 1.0), sk = shock(Wd, 0xff7a7a);
     const tStamp = tag(Wd, 2.0, .6, 'לשון הרע', ...TAG_BAD);
-    const tCross = tag(Wd, 2.6, .55, 'לא לשון הרע', ...TAG_BAD);
+    const tCross = tag(Wd, 2.6, .55, 'אסור', ...TAG_BAD);
     Wd.occ = [B.tp.g, B.cup.g, B.mug.g]; Wd.center = [0, 1.7];
     Wd.on(t => {
       const tr = sm(P(.2, 1.4, t));
@@ -351,10 +351,10 @@ window.STORY = function (K) {
       B.mug.f.set(t, { smile: lerp(-.1, -.6, sm(P(2.6, 3.4, t))), talk: 0, surprise: sm(P(2.6, 3.4, t)), look: [-1, 0] });
     });
     Wd.cam = cuts([
-      [3.5, HH(crane([-1.2, 1.4, PZ], { dur: 3.5, dist0: 9.8, dist1: 9.2, h0: 1.0, h1: 2.0, a0: -6, a1: 6, fov0: 44, fov1: 42 }), 61)],
+      [3.5, HH(crane([-1.2, 1.4, PZ], { dur: 3.5, dist0: 6.5, dist1: 6.2, h0: 1.0, h1: 2.0, a0: -6, a1: 6, fov0: 44, fov1: 42 }), 61)],
       [3.5, HH(punch(insert([BUB[0] + .2, 2.2, PZ + .5], { dur: 3.5, dist0: 5.6, dist1: 5.2, h0: 1.4, h1: 1.6, a0: 6, a1: -6, fov0: 40, fov1: 40 }), [1.6]), 62)],
-      [3.5, HH(pushIn([MUG[0] - .4, 2.3, MUG[2] + 1], { dur: 3.5, dist0: 7.6, dist1: 7.0, h0: 1.4, h1: 1.6, a0: -6, a1: 6, fov0: 42, fov1: 40 }), 63)],
-      [3.5, HH(truck([.4, 1.3, 0], { dur: 3.5, dist0: 10, dist1: 9.4, h0: 1.6, h1: 2.0, a0: 6, a1: -6, fov0: 44, fov1: 42, shift: [.6, 0, 0] }), 64)]]);
+      [3.5, HH(pushIn([MUG[0] - .4, 2.3, MUG[2] + 1], { dur: 3.5, dist0: 6.5, dist1: 6.2, h0: 1.4, h1: 1.6, a0: -6, a1: 6, fov0: 42, fov1: 40 }), 63)],
+      [3.5, HH(truck([.4, 1.3, 0], { dur: 3.5, dist0: 6.5, dist1: 6.2, h0: 1.6, h1: 2.0, a0: 6, a1: -6, fov0: 44, fov1: 42, shift: [.6, 0, 0] }), 64)]]);
     return Wd;
   }
 
@@ -381,10 +381,10 @@ window.STORY = function (K) {
       B.mug.f.set(t, { smile: -.6, talk: 0, surprise: .4 * sm(P(3.2, 4.0, t)), look: [-1, 0] });
     });
     Wd.cam = cuts([
-      [3.5, HH(truck([0, 1.6, 0], { dur: 3.5, dist0: 10, dist1: 9.6, h0: 1.8, h1: 2.0, a0: -6, a1: 6, fov0: 44, fov1: 44, shift: [.6, 0, 0] }), 71)],
+      [3.5, HH(truck([0, 1.6, 0], { dur: 3.5, dist0: 6.5, dist1: 6.2, h0: 1.8, h1: 2.0, a0: -6, a1: 6, fov0: 44, fov1: 44, shift: [.6, 0, 0] }), 71)],
       [3.5, HH(punch(insert([SCX, 1.7, SCZ], { dur: 3.5, dist0: 5.6, dist1: 5.2, h0: 1.3, h1: 1.5, a0: 6, a1: -6, fov0: 40, fov1: 40 }), [2.0]), 72)],
-      [3.5, HH(pushIn([0.4, 1.3, PZ], { dur: 3.5, dist0: 7.0, dist1: 6.6, h0: 1.2, h1: 1.4, a0: -6, a1: 6, fov0: 40, fov1: 40 }), 73)],
-      [3.5, HH(crane([0, 1.5, 0], { dur: 3.5, dist0: 9.5, dist1: 8.8, h0: .8, h1: 2.0, a0: 6, a1: -6, fov0: 42, fov1: 40 }), 74)]]);
+      [3.5, HH(pushIn([0.4, 1.3, PZ], { dur: 3.5, dist0: 6.5, dist1: 6.2, h0: 1.2, h1: 1.4, a0: -6, a1: 6, fov0: 40, fov1: 40 }), 73)],
+      [3.5, HH(crane([0, 1.5, 0], { dur: 3.5, dist0: 6.5, dist1: 6.2, h0: .8, h1: 2.0, a0: 6, a1: -6, fov0: 42, fov1: 40 }), 74)]]);
     return Wd;
   }
 
