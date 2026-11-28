@@ -1,0 +1,69 @@
+# -*- coding: utf-8 -*-
+"""Re-render one failed part of a lobby-halacha episode (split into smaller pieces) and re-join the whole film.
+    python template/retry_part.py <episode_name_or_folder> <total_seconds> <part_index> [--split 2] [--part 70]
+Same division as render_parts.py (n = ceil(total/part)), so the new part replaces the old one.   (Adapted from azamra342/retry_part.py.)"""
+import argparse
+import io
+import math
+import os
+import subprocess
+import sys
+import threading
+import time
+
+HERE = os.path.dirname(os.path.abspath(__file__)).replace(os.sep, '/')
+BASE = os.path.dirname(HERE); PROJ = os.path.dirname(BASE)
+ap = argparse.ArgumentParser(); ap.add_argument('episode'); ap.add_argument('total', type=float); ap.add_argument('idx', type=int)
+ap.add_argument('--split', type=int, default=2); ap.add_argument('--part', type=float, default=70)
+a = ap.parse_args()
+ep_dir = os.path.abspath(a.episode if os.path.isdir(a.episode) else os.path.join(BASE, 'episodes', a.episode)).replace(os.sep, '/')
+ep = os.path.basename(ep_dir)
+ep_rel = os.path.relpath(ep_dir + '/episode.js', HERE).replace(os.sep, '/')
+INC = ['lobby-halacha/template/film.html', 'lobby-halacha/template/scenes.js', 'lobby-halacha/template/props.js', os.path.relpath(ep_dir, PROJ).replace(os.sep, '/') + '/episode.js',
+       '_studio-animatzia/lib/people_pro.js', '_studio-animatzia/lib/stage3d.js', '_studio-animatzia/lib/figure3d.js',
+       '_studio-animatzia/node_modules/three/build/three.module.js', '_studio-animatzia/node_modules/three/build/three.core.js']
+import glob as _g
+INC += [os.path.relpath(f, PROJ).replace(os.sep, '/') for f in _g.glob(ep_dir + '/*.js') if not f.endswith('/episode.js')]   # story.js etc.
+src = io.open(HERE + '/film.html', encoding='utf-8').read()
+n = max(1, math.ceil(a.total / a.part)); L = a.total / n
+P0, PD = a.idx * L, (L if a.idx < n - 1 else a.total - a.idx * L)
+outdir = ep_dir + '/render'; sub = '%s/part%02d_sub' % (outdir, a.idx); os.makedirs(sub, exist_ok=True)
+res = {}
+
+
+def one(k):
+    t0, d = P0 + k * PD / a.split, PD / a.split
+    page = '%s/_part_%s_%d_%d.html' % (HERE, ep, a.idx, k)
+    inject = '<script>window.__T0=%.4f;window.__EP="%s";</script>\n<script type="importmap">' % (t0, ep_rel)
+    io.open(page, 'w', encoding='utf-8', newline='').write(src.replace('<script type="importmap">', inject, 1))
+    r = subprocess.run([sys.executable, HERE + '/capture_lobby.py', 'lobbyr_%s_%d_%d' % (ep, a.idx, k), page, '%s/s%d' % (sub, k), '--dur', '%.4f' % d, '--include'] + INC,
+                       capture_output=True, text=True, encoding='utf-8', errors='replace')
+    res[k] = r.returncode
+    print('sub %d/%d t0=%.1f d=%.1f -> rc=%d %s' % (k + 1, a.split, t0, d, r.returncode, (r.stdout or '')[-160:].replace('\n', ' ')), flush=True)
+
+
+th = []
+for k in range(a.split):
+    t = threading.Thread(target=one, args=(k,)); t.start(); th.append(t); time.sleep(20)
+for t in th:
+    t.join()
+outs = ['%s/s%d/out.mp4' % (sub, k) for k in range(a.split)]
+if any(res.get(k) != 0 or not os.path.exists(outs[k]) for k in range(a.split)):
+    print('FAILED', res); sys.exit(1)
+pdir = '%s/part%02d' % (outdir, a.idx); os.makedirs(pdir, exist_ok=True)
+lst = sub + '/list.txt'; io.open(lst, 'w').write(''.join("file '%s'\n" % o for o in outs))
+subprocess.run(['ffmpeg', '-hide_banner', '-loglevel', 'error', '-y', '-f', 'concat', '-safe', '0', '-i', lst, '-c', 'copy', pdir + '/out.mp4'], check=True)
+# 11/11/2026: join into out.mp4 only when EVERY part exists and the length matches. Before, a partial join (15 s of 120)
+# landed in out.mp4 while other parts were still failing, and anyone waiting for out.mp4 took it as the finished film.
+missing = [i for i in range(n) if not os.path.exists('%s/part%02d/out.mp4' % (outdir, i))]
+if missing:
+    print('part %d ok; still missing parts %s - out.mp4 not written yet' % (a.idx, missing)); sys.exit(0)
+lst = outdir + '/parts.txt'
+io.open(lst, 'w').write(''.join("file '%s/part%02d/out.mp4'\n" % (outdir, i) for i in range(n)))
+tmp = outdir + '/_joining.mp4'
+subprocess.run(['ffmpeg', '-hide_banner', '-loglevel', 'error', '-y', '-f', 'concat', '-safe', '0', '-i', lst, '-c', 'copy', tmp], check=True)
+d = float(subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', tmp], capture_output=True, text=True).stdout)
+if abs(d - a.total) > 1.5:
+    print('joined %s: %.1fs but expected %.1f - out.mp4 not written' % (ep, d, a.total)); sys.exit(1)
+os.replace(tmp, outdir + '/out.mp4')
+print('joined %s: %.1fs (expected %.1f)' % (ep, d, a.total))
